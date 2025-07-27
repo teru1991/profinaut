@@ -1,0 +1,48 @@
+name: CI (Lint & Test)
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 0 * * 1'  # 毎週月曜 00:00 UTC → JST 9:00
+
+jobs:
+  python-test:
+    name: Python Lint & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run pytest
+        run: |
+          pytest --disable-warnings
+
+  rust-check:
+    name: Rust Format & Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Lint with Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Check Build
+        run: cargo check --all

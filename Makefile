@@ -1,30 +1,60 @@
 # ========================================
-# 📦 Profinaut - Makefile (Vault統合・本番構成対応版)
+# 📦 Profinaut - Makefile（Vault統合・GitHub Actions対応・単一Compose構成）
 # ========================================
-
-.PHONY: hello
-hello:
-	@echo "✅ Hello, Makefile is working!"
 
 # ========================================
 # 📁 パス定義
 # ========================================
-ENV_DIR := .env
-ENV_SCRIPT := scripts/init_env_files.sh
-SETUP_SCRIPT := scripts/setup.sh
-DOCKER_COMPOSE := docker/docker-compose.yml
-DOCKER_MONITOR := docker/docker-compose.monitoring.yml
-DOCKER_TEST := docker/docker-compose.override.yml
-BACKUP_SCRIPT := scripts/backup_all.sh
-COSIGN := cosign
+ENV_FILE := docker/.env
+DOCKER_COMPOSE := docker-compose.yml
+VAULT_INIT_SCRIPT := docker/vault/scripts/init.sh
+MERGE_ENV_SCRIPT := docker/vault/scripts/merge_env.sh
 
-# 以下省略…
+# ========================================
+# 🔰 ヘルプ
+# ========================================
+.PHONY: help
+help:
+	@echo "🛠 Profinaut Makefile - Available Commands:"
+	@grep -E '^[a-zA-Z_-]+:.*?##' Makefile | sed 's/:.*##/:/g' | column -t -s ':'
 
-# 🧹 初期セットアップ、🐳 Docker 操作、🧱 Rust ビルド / テスト  
-# 🔄 Kafka 初期化、🐍 Python 仮想環境  
-# 🔐 Vault 操作（vault-up / vault-init / vault-policy-write / vault-audit-log）  
-# 📦 Docker Cleanup、✅ pre-commit 対応、🌐 Frontend操作  
-# 💾 backup / 🔐 Dockerイメージ署名 (`make sign`)  
-# 📘 Makefileヘルプ（make help）  
+# ========================================
+# 🔐 Vault関連
+# ========================================
+vault-init: ## Vaultポリシー/AppRoleを自動投入
+	bash $(VAULT_INIT_SCRIPT)
 
-（全出力は上記のコード生成の通り）
+vault-merge-env: ## .env.generated → .env へ安全にマージ
+	bash $(MERGE_ENV_SCRIPT)
+
+# ========================================
+# 🐳 Docker関連
+# ========================================
+docker-up: ## Docker Compose 全サービス起動
+	docker compose -f $(DOCKER_COMPOSE) up -d
+
+docker-down: ## Docker Compose 停止
+	docker compose -f $(DOCKER_COMPOSE) down
+
+docker-pull: ## Dockerイメージをpull
+	docker compose -f $(DOCKER_COMPOSE) pull
+
+# ========================================
+# 🧪 テスト（Rust/Python共通）
+# ========================================
+test: ## Python+Rustのテスト実行
+	@echo "🧪 Running Python tests..."
+	pip install -r requirements.txt
+	pytest --disable-warnings
+	@echo "🔧 Running Rust checks..."
+	cargo check --all
+
+# ========================================
+# 🚀 デプロイ補助
+# ========================================
+release: docker-pull docker-up ## pullして再起動
+
+# ========================================
+# 🎉 初回セットアップ（Vault含む）
+# ========================================
+init: vault-init vault-merge-env docker-up ## Vault投入→envマージ→起動

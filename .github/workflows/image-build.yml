@@ -1,0 +1,41 @@
+name: Docker Image Build & Push
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 0 * * 1'  # 毎週月曜 00:00 UTC = JST 09:00
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        service:
+          - bot-manager
+          - signal-engine
+          - trade-executor
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push ${{ matrix.service }}
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/profinaut-${{ matrix.service }}:latest
+          docker build -t $IMAGE ./departments/$(echo ${{ matrix.service }} | sed 's/-/_/g')
+          docker push $IMAGE
