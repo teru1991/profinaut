@@ -1,7 +1,6 @@
 groups:
   - name: profinaut-alerts
     rules:
-
       # 🚨 Vault シークレット有効期限（24時間以内）
       - alert: VaultSecretExpiry
         expr: vault_secret_expiry_seconds < 86400
@@ -11,9 +10,9 @@ groups:
           job: vault
         annotations:
           summary: "Vault secret expiring soon"
-          description: "Vault secret will expire within 24 hours on {{ $labels.instance }}."
+          description: "Vault SECRET_ID will expire within 24 hours on {{ $labels.instance }}."
 
-      # ⚠️ Vault シークレットの更新が24時間以上行われていない
+      # ⚠️ Vault SECRET_ID の更新が遅延している
       - alert: VaultSecretUpdateStale
         expr: time() - vault_last_secret_update_timestamp_seconds > 86400
         for: 5m
@@ -21,8 +20,8 @@ groups:
           severity: warning
           job: vault
         annotations:
-          summary: "Vault secret update stale"
-          description: "No Vault secret has been updated in the last 24 hours on {{ $labels.instance }}."
+          summary: "Vault SECRET_ID not updated in 24h"
+          description: "No Vault SECRET_ID update in the last 24 hours on {{ $labels.instance }}."
 
       # 🚨 ディスク容量不足（10%未満）
       - alert: SystemDiskLow
@@ -90,3 +89,11 @@ groups:
           summary: "Trade error spike"
           description: "More than 5 trade errors occurred in the last 5 minutes for {{ $labels.bot_name }}."
 
+      - alert: VaultSecretExpiringSoon
+        expr: vault_secret_expiry_seconds < 3600
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Vault AppRole Secretがまもなく失効します（{{ $labels.role }}）"
+          description: "Secret TTL: {{ $value }}秒未満（5分以上継続）"

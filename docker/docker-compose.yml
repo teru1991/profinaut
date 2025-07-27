@@ -28,10 +28,9 @@ services:
     entrypoint: [ "bash", "init.sh" ]
     volumes:
       - ./vault:/vault
-      - ./docker/.env:/vault/.env  # ← これでも可（ただし scripts からは ../../.env を参照）
+      - ./docker/.env:/vault/.env
     depends_on:
       - vault
-
 
   mongo:
     image: mongo:6.0
@@ -268,11 +267,26 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      WATCHTOWER_CLEANUP: "true"                        # 古いイメージを自動削除
-      WATCHTOWER_POLL_INTERVAL: 300                    # 5分ごとにチェック（秒）
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_POLL_INTERVAL: 300
       WATCHTOWER_INCLUDE_RESTARTING: "true"
       WATCHTOWER_INCLUDE_STOPPED: "true"
-      WATCHTOWER_LABEL_ENABLE: "true"                  # ラベルで対象コンテナを限定
+      WATCHTOWER_LABEL_ENABLE: "true"
     depends_on:
       - vault-init
+      -
+  vault-exporter:
+    build:
+      context: ./vault/exporter
+    container_name: profinaut-vault-exporter
+    ports:
+      - "9811:9811"
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR}
+      VAULT_ROLE_ID: ${PROFINAUT_READONLY_ROLE_ID}
+      VAULT_SECRET_ID: ${PROFINAUT_READONLY_SECRET_ID}
+    restart: unless-stopped
+    depends_on:
+      - vault-init
+
 

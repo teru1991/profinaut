@@ -1,0 +1,46 @@
+name: Vault Inject CI
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 0 * * 1'  # 毎週月曜 00:00 UTC = JST 9:00
+
+jobs:
+  vault-inject:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🛠 Generate .env.generated from Vault
+        run: bash docker/vault/scripts/generate_env_ci.sh
+        env:
+          VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
+          PROFINAUT_ADMIN_ROLE_ID: ${{ secrets.PROFINAUT_ADMIN_ROLE_ID }}
+          PROFINAUT_ADMIN_SECRET_ID: ${{ secrets.PROFINAUT_ADMIN_SECRET_ID }}
+
+      - name: 📄 Load .env.generated and export AppRole
+        id: export-env
+        run: |
+          if [ ! -f docker/vault/.env.generated ]; then
+            echo "❌ .env.generated が見つかりません"
+            exit 1
+          fi
+
+          echo "✅ .env.generated を読み込み中..."
+          export $(grep -v '^#' docker/vault/.env.generated | xargs)
+
+          # 例：Bot ManagerのAppRoleをエクスポート
+          echo "BOT_MANAGER_ROLE_ID=$BOT_MANAGER_ROLE_ID" >> $GITHUB_ENV
+          echo "BOT_MANAGER_SECRET_ID=$BOT_MANAGER_SECRET_ID" >> $GITHUB_ENV
+
+      - name: ✅ 実行例：Vaultログイン用トークン取得（確認用）
+        run: |
+          curl --fail -s --request POST "$VAULT_ADDR/v1/auth/approle/login" \
+            --data "{\"role_id\":\"$BOT_MANAGER_ROLE_ID\",\"secret_id\":\"$BOT_MANAGER_SECRET_ID\"}" \
+            | jq

@@ -58,3 +58,8 @@ release: docker-pull docker-up ## pullして再起動
 # 🎉 初回セットアップ（Vault含む）
 # ========================================
 init: vault-init vault-merge-env docker-up ## Vault投入→envマージ→起動
+# ========================================
+# 🔐 Vault関連：.env.generated 自動生成
+# ========================================
+generate-env: ## Vaultから.env.generatedを生成（CI用）
+	bash docker/vault/scripts/generate_env_ci.sh

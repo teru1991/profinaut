@@ -1,0 +1,46 @@
+name: Webhook Test (Discord)
+
+on:
+  workflow_dispatch:  # 手動実行のみ
+
+jobs:
+  webhook-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📄 Load .env.generated for AppRole
+        run: |
+          if [ ! -f docker/vault/.env.generated ]; then
+            echo "❌ .env.generated が見つかりません"
+            exit 1
+          fi
+
+          echo "✅ Loading environment from .env.generated"
+          export $(grep -v '^#' docker/vault/.env.generated | xargs)
+
+          echo "WEBHOOK_ROLE_ID=$WEBHOOK_SERVER_ROLE_ID" >> $GITHUB_ENV
+          echo "WEBHOOK_SECRET_ID=$WEBHOOK_SERVER_SECRET_ID" >> $GITHUB_ENV
+
+      - name: 🚀 Send webhook test payload
+        run: |
+          TOKEN=$(curl -s --request POST "$VAULT_ADDR/v1/auth/approle/login" \
+            --data "{\"role_id\":\"$WEBHOOK_SERVER_ROLE_ID\",\"secret_id\":\"$WEBHOOK_SERVER_SECRET_ID\"}" \
+            | jq -r '.auth.client_token')
+
+          curl -s -X POST https://webhook.profinaut.studiokeke.com/webhook/alerts \
+            -H "X-Vault-Token: $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "username": "Profinaut Webhook",
+              "embeds": [{
+                "title": "✅ Webhook Test 成功",
+                "description": "GitHub Actions から Discord 通知を送信しました。",
+                "color": 65280
+              }]
+            }'

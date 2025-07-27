@@ -1,6 +1,10 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  external_labels:
+    cluster: profinaut-prod
+
+
 
 rule_files:
   - "rules/alert.rules.yml"
@@ -18,7 +22,7 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets:
-          - api.profinaut.studiokeke.com    # Signal Engine, Bot群用
+          - api.profinaut.studiokeke.com
     bearer_token_file: /etc/prometheus/tokens/profinaut-signal-token.txt
     tls_config:
       insecure_skip_verify: true
@@ -65,7 +69,7 @@ scrape_configs:
     tls_config:
       insecure_skip_verify: true
 
-  # --- Vault Exporter ---
+  # --- Vault 本体の組み込みメトリクス（/v1/sys/metrics）---
   - job_name: 'vault'
     scheme: https
     metrics_path: /v1/sys/metrics
@@ -76,7 +80,14 @@ scrape_configs:
     tls_config:
       insecure_skip_verify: true
 
-  # --- システム監視統合 Job（すべてのメトリクスをまとめる） ---
+  # ✅--- Vault SECRET TTL Exporter（ローカルExporter）---
+  - job_name: 'vault_secret_ttl_exporter'
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - vault-exporter:9811
+
+  # --- システム統合 Job（すべてまとめて監視） ---
   - job_name: 'system_monitor'
     scheme: https
     static_configs:

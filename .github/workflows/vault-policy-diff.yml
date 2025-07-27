@@ -1,0 +1,32 @@
+name: Vault Policy Diff Checker
+
+on:
+  push:
+    paths:
+      - 'docker/vault/policies/**/*.hcl'
+  pull_request:
+    paths:
+      - 'docker/vault/policies/**/*.hcl'
+
+jobs:
+  policy-diff:
+    name: Vault Policy Diff
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🛠 Compare policies using git diff
+        run: |
+          echo "🔍 変更された Vault ポリシー:"
+          git diff --name-only origin/main HEAD | grep 'docker/vault/policies/.*\.hcl' || echo "（変更なし）"
+
+          echo ""
+          echo "📝 差分:"
+          for file in $(git diff --name-only origin/main HEAD | grep 'docker/vault/policies/.*\.hcl'); do
+            echo "----------------------------------------"
+            echo "🔄 $file"
+            echo "----------------------------------------"
+            git diff origin/main -- "$file" || true
+          done
