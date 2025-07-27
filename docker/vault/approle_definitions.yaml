@@ -1,0 +1,149 @@
+approles:
+  # === 部門①〜⑱ ===
+  - name: bot-manager
+    policies: ["bot-manager"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: signal-engine
+    policies: ["signal-engine"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: risk-reward
+    policies: ["risk-reward"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: asset-allocator
+    policies: ["asset-allocator"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: trade-executor
+    policies: ["trade-executor"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: test-engine
+    policies: ["test-engine"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: strategy-evolver
+    policies: ["strategy-evolver"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: evaluator
+    policies: ["evaluator"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: monitoring
+    policies: ["monitoring"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: data-fetcher
+    policies: ["data-fetcher"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: pipeline-controller
+    policies: ["pipeline-controller"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: worker-controller
+    policies: ["worker-controller"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: bot-log
+    policies: ["bot-log"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: scheduler
+    policies: ["scheduler"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: auto-ops
+    policies: ["auto-ops"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: quality-audit
+    policies: ["quality-audit"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: ops-audit
+    policies: ["ops-audit"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: scenario-backtest
+    policies: ["scenario-backtest"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  # === 共通用途 ===
+  - name: ci-pipeline
+    policies: ["ci-pipeline"]
+    token_ttl: "15m"
+    token_max_ttl: "30m"
+    secret_id_ttl: "15m"
+    secret_id_num_uses: 1
+
+  - name: webhook-handler
+    policies: ["webhook-handler"]
+    token_ttl: "1h"
+    token_max_ttl: "4h"
+    secret_id_ttl: "1h"
+    secret_id_num_uses: 5
+
+  - name: readonly
+    policies: ["readonly"]
+    token_ttl: "24h"
+    token_max_ttl: "48h"
+    secret_id_ttl: "24h"
+    secret_id_num_uses: 0  # 無制限だが読み取りのみ
