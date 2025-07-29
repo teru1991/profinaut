@@ -30,6 +30,7 @@ services:
     volumes:
       - ./vault:/vault
       - ../docker/.env:/vault/.env
+      - ./vault/.env:/vault/.env
     depends_on:
       - vault
 
