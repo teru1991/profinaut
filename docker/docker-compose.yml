@@ -22,15 +22,17 @@ services:
     command: vault server -config=/vault/config/vault.hcl
 
   vault-init:
-    image: python:3.11
+    build:
+      context: .
+      dockerfile: vault/vault-init.Dockerfile
     container_name: profinaut-vault-init
     working_dir: /vault/scripts
-    entrypoint: [ "bash", "init.sh" ]
     volumes:
       - ./vault:/vault
-      - ./docker/.env:/vault/.env
+      - ../docker/.env:/vault/.env
     depends_on:
       - vault
+
 
   mongo:
     image: mongo:6.0
@@ -225,10 +227,11 @@ services:
       - vault-init
 
   webhook_test:
-    image: python:3.11-slim
+    build:
+      context: ./scripts/test_webhook
     volumes:
-      - ./departments/99_webhook_server:/app
-    entrypoint: ["python", "/app/test_webhook.py"]
+      - ./scripts/test_webhook:/app
+    entrypoint: [ "python", "/app/test_webhook.py" ]
     environment:
       VAULT_ADDR: ${VAULT_ADDR}
       WEBHOOK_SERVER_ROLE_ID: ${WEBHOOK_SERVER_ROLE_ID}
@@ -238,13 +241,12 @@ services:
       - vault-init
 
   webhook_test_sender:
-    image: python:3.11-slim
+    build:
+      context: ./scripts/test_webhook
     container_name: profinaut-webhook-test
-    depends_on:
-      - vault-init
-    entrypoint: [ "python", "/app/test_webhook.py" ]
     volumes:
-      - ./scripts/webhook_test:/app
+      - ./scripts/test_webhook:/app
+    entrypoint: [ "python", "/app/test_webhook.py" ]
     environment:
       VAULT_ADDR: ${VAULT_ADDR}
       VAULT_ROLE_ID: ${PROFINAUT_READONLY_ROLE_ID}
@@ -259,6 +261,10 @@ services:
             "color": 3066993
           }]
         }
+    depends_on:
+      - vault-init
+
+
 
   watchtower:
     image: containrrr/watchtower
@@ -274,11 +280,11 @@ services:
       WATCHTOWER_LABEL_ENABLE: "true"
     depends_on:
       - vault-init
-      -
+
   vault-exporter:
     build:
-      context: ./vault/exporter
-    container_name: profinaut-vault-exporter
+      context: vault/vault-exporter
+    container_name: profinaut-vault-scripts
     ports:
       - "9811:9811"
     environment:

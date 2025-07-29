@@ -1,4 +1,4 @@
-# docker/vault/exporter/Dockerfile
+# docker/vault/scripts/Dockerfile
 FROM python:3.11-slim
 WORKDIR /app
 COPY ./scripts/export_secret_expiry.py ./

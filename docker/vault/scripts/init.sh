@@ -3,8 +3,8 @@ set -e
 
 echo "🔐 Profinaut Vault 初期化開始..."
 
-# ⬅️ 🔧 .env の正しいパスを明示
-ENV_FILE="../../.env"
+# ✅ Docker Compose により /vault/.env にマウントされている
+ENV_FILE="/vault/.env"
 
 if [ ! -f "$ENV_FILE" ]; then
   echo "❌ .env ファイルが見つかりません: $ENV_FILE"
@@ -28,6 +28,13 @@ export VAULT_ADDR
 export VAULT_TOKEN=$(grep VAULT_TOKEN "$ENV_FILE" | cut -d '=' -f2)
 
 echo "✅ Vault is ready. Injecting..."
-python3 ../create_policies.py
-python3 ../create_approles.py
+python3 create_policies.py
+python3 create_approles.py
+
+# 🔄 .env.generated をマージ
+if [ -f "/vault/scripts/env.generated" ]; then
+  echo "🔄 .env.generated をマージ中..."
+  cat /vault/scripts/env.generated >> "$ENV_FILE"
+fi
+
 echo "🎉 完了しました！"

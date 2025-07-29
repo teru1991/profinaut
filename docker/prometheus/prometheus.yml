@@ -85,7 +85,7 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets:
-          - vault-exporter:9811
+          - vault-scripts:9811
 
   # --- システム統合 Job（すべてまとめて監視） ---
   - job_name: 'system_monitor'
