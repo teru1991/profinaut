@@ -29,8 +29,7 @@ services:
     working_dir: /vault/scripts
     volumes:
       - ./vault:/vault
-      - ../docker/.env:/vault/.env
-      - ./vault/.env:/vault/.env
+      - ./.env:/vault/.env
     depends_on:
       - vault
 
