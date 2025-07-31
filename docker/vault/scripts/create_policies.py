@@ -1,18 +1,17 @@
 import os
 import requests
 
-# ✅ Vault アドレスと証明書パス
+# Vault接続設定
 VAULT_ADDR = os.getenv("VAULT_ADDR", "https://vault.profinaut.studiokeke.com:8200")
 CERT_PATH = os.getenv("VAULT_CERT", "/vault/cert/origin_ca_rsa_root.pem")
 
-# ✅ Cloudflare Access Service Token
+# Cloudflare Access Token
 CF_CLIENT_ID = os.getenv("CF_ACCESS_CLIENT_ID")
 CF_CLIENT_SECRET = os.getenv("CF_ACCESS_CLIENT_SECRET")
 
-# ✅ オプションの Vault Token（AppRoleまたはOIDCで取得する場合）
+# Vault Token（AppRole / OIDCなどが使われる場合）
 VAULT_TOKEN = os.getenv("VAULT_TOKEN")
 
-# ✅ ヘッダー構築（Cloudflare Access優先）
 HEADERS = {
     "CF-Access-Client-Id": CF_CLIENT_ID,
     "CF-Access-Client-Secret": CF_CLIENT_SECRET,
@@ -20,29 +19,34 @@ HEADERS = {
 if VAULT_TOKEN:
     HEADERS["X-Vault-Token"] = VAULT_TOKEN
 
-# ✅ ポリシーディレクトリ（デフォルト: docker/vault/policies）
+# ポリシーディレクトリの確認
 POLICY_DIR = os.path.abspath(os.getenv("POLICY_DIR", "docker/vault/policies"))
-if not os.path.exists(POLICY_DIR):
-    raise FileNotFoundError(f"ポリシーディレクトリが見つかりません: {POLICY_DIR}")
+if not os.path.isdir(POLICY_DIR):
+    raise FileNotFoundError(f"❌ ポリシーディレクトリが見つかりません: {POLICY_DIR}")
 
-# ✅ ポリシーファイルをループ処理でアップロード
+# ポリシーごとにVaultへPUT
 for filename in os.listdir(POLICY_DIR):
-    if filename.endswith(".hcl"):
-        policy_name = filename.replace(".hcl", "")
-        policy_path = os.path.join(POLICY_DIR, filename)
+    if not filename.endswith(".hcl"):
+        continue
 
-        with open(policy_path, "r") as f:
-            policy_content = f.read()
+    policy_name = filename.removesuffix(".hcl")
+    policy_path = os.path.join(POLICY_DIR, filename)
 
-        url = f"{VAULT_ADDR}/v1/sys/policies/acl/{policy_name}"
-        response = requests.put(
+    with open(policy_path, "r") as f:
+        policy_content = f.read()
+
+    url = f"{VAULT_ADDR}/v1/sys/policies/acl/{policy_name}"
+    try:
+        resp = requests.put(
             url,
             headers=HEADERS,
             json={"policy": policy_content},
             verify=CERT_PATH,
+            timeout=15,
         )
-
-        if response.ok:
-            print(f"✅ {policy_name} => アップロード成功（{response.status_code}）")
+        if resp.ok:
+            print(f"✅ {policy_name} → アップロード成功")
         else:
-            print(f"❌ {policy_name} => エラー（{response.status_code}）: {response.text}")
+            print(f"❌ {policy_name} → {resp.status_code}: {resp.text}")
+    except requests.exceptions.RequestException as e:
+        print(f"❌ {policy_name} → リクエストエラー: {e}")
