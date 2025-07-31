@@ -1,49 +1,48 @@
 import os
 import requests
-from dotenv import load_dotenv
 
-# 📍 Vaultの自己署名証明書（Cloudflare Origin CA）パス
-CA_CERT_PATH = "/vault/cert/origin_ca_rsa_root.pem"
-
-# 🔧 .env ファイル読み込み（Vault Tokenや VAULT_ADDR を取得）
-ENV_PATH = os.environ.get("ENV_PATH", "/vault/.env")  # ← fallbackありに変更
-
-if not os.path.exists(ENV_PATH):
-    raise FileNotFoundError(f".env ファイルが見つかりません: {ENV_PATH}")
-
-load_dotenv(dotenv_path=ENV_PATH)
-
-
+# ✅ Vault アドレスと証明書パス
 VAULT_ADDR = os.getenv("VAULT_ADDR", "https://vault.profinaut.studiokeke.com:8200")
+CERT_PATH = os.getenv("VAULT_CERT", "/vault/cert/origin_ca_rsa_root.pem")
+
+# ✅ Cloudflare Access Service Token
+CF_CLIENT_ID = os.getenv("CF_ACCESS_CLIENT_ID")
+CF_CLIENT_SECRET = os.getenv("CF_ACCESS_CLIENT_SECRET")
+
+# ✅ オプションの Vault Token（AppRoleまたはOIDCで取得する場合）
 VAULT_TOKEN = os.getenv("VAULT_TOKEN")
 
-if not VAULT_ADDR or not VAULT_TOKEN:
-    raise RuntimeError("❌ VAULT_ADDR または VAULT_TOKEN が未定義です。")
+# ✅ ヘッダー構築（Cloudflare Access優先）
+HEADERS = {
+    "CF-Access-Client-Id": CF_CLIENT_ID,
+    "CF-Access-Client-Secret": CF_CLIENT_SECRET,
+}
+if VAULT_TOKEN:
+    HEADERS["X-Vault-Token"] = VAULT_TOKEN
 
-HEADERS = {"X-Vault-Token": VAULT_TOKEN}
-POLICY_DIR = "/vault/policies"
-
-# 📁 ポリシーファイル存在チェック
+# ✅ ポリシーディレクトリ（デフォルト: docker/vault/policies）
+POLICY_DIR = os.path.abspath(os.getenv("POLICY_DIR", "docker/vault/policies"))
 if not os.path.exists(POLICY_DIR):
     raise FileNotFoundError(f"ポリシーディレクトリが見つかりません: {POLICY_DIR}")
 
-# 🔁 HCLファイルごとにアップロード処理
+# ✅ ポリシーファイルをループ処理でアップロード
 for filename in os.listdir(POLICY_DIR):
     if filename.endswith(".hcl"):
         policy_name = filename.replace(".hcl", "")
         policy_path = os.path.join(POLICY_DIR, filename)
 
         with open(policy_path, "r") as f:
-            policy = f.read()
+            policy_content = f.read()
 
         url = f"{VAULT_ADDR}/v1/sys/policies/acl/{policy_name}"
-        data = {"policy": policy}
+        response = requests.put(
+            url,
+            headers=HEADERS,
+            json={"policy": policy_content},
+            verify=CERT_PATH,
+        )
 
-        try:
-            resp = requests.put(url, headers=HEADERS, json=data, verify=CA_CERT_PATH)
-            resp.raise_for_status()
-            print(f"✅ {policy_name} => アップロード成功（{resp.status_code}）")
-        except requests.exceptions.SSLError as e:
-            print(f"❌ {policy_name} => SSLエラー: {e}")
-        except requests.exceptions.RequestException as e:
-            print(f"❌ {policy_name} => リクエストエラー: {e}")
+        if response.ok:
+            print(f"✅ {policy_name} => アップロード成功（{response.status_code}）")
+        else:
+            print(f"❌ {policy_name} => エラー（{response.status_code}）: {response.text}")
