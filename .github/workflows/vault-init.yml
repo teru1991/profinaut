@@ -1,4 +1,4 @@
-name: Vault Init (OIDC)
+name: Vault Init (Service Token)
 
 on:
   workflow_dispatch:
@@ -7,18 +7,11 @@ on:
 
 jobs:
   init-vault:
-    name: 🔐 Vault OIDC + Secrets Setup
+    name: 🔐 Vault Service Token Init & Secrets Sync
     runs-on: ubuntu-latest
-
-    permissions:
-      id-token: write
-      contents: read
 
     env:
       VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
-      VAULT_NAMESPACE: ""
-      VAULT_MOUNT: "oidc"
-      GITHUB_REPO: ${{ github.repository }}
       VAULT_CERT: /tmp/origin_ca.pem
 
     steps:
@@ -33,14 +26,24 @@ jobs:
           mkdir -p /tmp
           echo "${{ secrets.VAULT_ORIGIN_CA_PEM }}" > /tmp/origin_ca.pem
 
-      - name: 🔐 Init OIDC Method & GitHub Role
-        run: python3 docker/vault/scripts/init_oidc.py
+      - name: 🌐 Export Cloudflare Access Headers
+        run: |
+          echo "CF_ACCESS_CLIENT_ID=${{ secrets.CF_ACCESS_CLIENT_ID }}" >> $GITHUB_ENV
+          echo "CF_ACCESS_CLIENT_SECRET=${{ secrets.CF_ACCESS_CLIENT_SECRET }}" >> $GITHUB_ENV
 
-      - name: 📜 Upload Vault Policies
-        run: python3 docker/vault/scripts/create_policies.py
+      - name: 🔐 Upload Vault Policies
+        run: |
+          python3 docker/vault/scripts/create_policies.py
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
 
       - name: 🧬 Upload AppRoles & Generate env.generated
-        run: python3 docker/vault/scripts/create_approles.py
+        run: |
+          python3 docker/vault/scripts/create_approles.py
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
 
       - name: 🔁 Sync to GitHub Secrets
         uses: gliech/create-github-secret-action@v1
