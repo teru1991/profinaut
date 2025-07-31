@@ -1,7 +1,7 @@
 name: Vault Init (OIDC)
 
 on:
-  workflow_dispatch:  # 手動 or スケジュールで実行可能
+  workflow_dispatch:
   schedule:
     - cron: '0 0 * * 1'  # 毎週月曜 0:00 UTC = 月曜 9:00 JST
 
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      id-token: write  # ✅ OIDCトークン取得のため必須
+      id-token: write
       contents: read
 
     env:
@@ -25,7 +25,7 @@ jobs:
       - name: ⬇️ Checkout
         uses: actions/checkout@v4
 
-      - name: 🏗 Install Python deps
+      - name: 🏗 Install Python dependencies
         run: pip install requests python-dotenv pyyaml
 
       - name: 🧾 Prepare Origin CA Cert
@@ -34,18 +34,18 @@ jobs:
           echo "${{ secrets.VAULT_ORIGIN_CA_PEM }}" > /tmp/origin_ca.pem
 
       - name: 🔐 Init OIDC Method & GitHub Role
-        run: python3 scripts/init_oidc.py
+        run: python3 docker/vault/scripts/init_oidc.py
 
-      - name: 📜 Upload Policies
-        run: python3 scripts/create_policies.py
+      - name: 📜 Upload Vault Policies
+        run: python3 docker/vault/scripts/create_policies.py
 
-      - name: 🧬 Upload AppRoles & generate env
-        run: python3 scripts/create_approles.py
+      - name: 🧬 Upload AppRoles & Generate env.generated
+        run: python3 docker/vault/scripts/create_approles.py
 
-      - name: 🔁 Sync to GitHub Secrets (Optional)
+      - name: 🔁 Sync to GitHub Secrets
         uses: gliech/create-github-secret-action@v1
         with:
           secrets: |
-            $(cat /vault/scripts/env.generated | sed 's/^/  /')
+            $(awk -F= '{ printf "%s: %s\n", $1, $2 }' docker/vault/scripts/env.generated)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
