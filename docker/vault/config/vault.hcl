@@ -3,7 +3,6 @@ listener "tcp" {
   tls_disable     = false
   tls_cert_file   = "/vault/cert/vault-cert.pem"
   tls_key_file    = "/vault/cert/vault-key.pem"
-  tls_ca_file     = "/vault/cert/origin_ca_rsa_root.pem"  # ←これを指定
   tls_min_version = "tls12"
 }
 

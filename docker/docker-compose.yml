@@ -3,7 +3,7 @@ version: "3.9"
 services:
 
   vault:
-    image: hashicorp/vault:latest
+    image: hashicorp/vault:1.20.0
     container_name: profinaut-vault
     ports:
       - "8200:8200"
@@ -27,12 +27,14 @@ services:
       dockerfile: vault/vault-init.Dockerfile
     container_name: profinaut-vault-init
     working_dir: /vault/scripts
+    environment:
+      VAULT_ADDR: "https://vault.profinaut.studiokeke.com:8200"
+      REQUESTS_CA_BUNDLE: /vault/cert/origin_ca_rsa_root.pem
     volumes:
       - ./vault:/vault
-      - ./.env:/vault/.env
+      - ./vault/.env:/vault/.env
     depends_on:
       - vault
-
 
   mongo:
     image: mongo:6.0
@@ -162,7 +164,7 @@ services:
     container_name: profinaut-cloudflared
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     depends_on:
-      - vault-init
+      - vault
 
   bot_manager:
     build:

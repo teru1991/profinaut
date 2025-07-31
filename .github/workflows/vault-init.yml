@@ -1,0 +1,51 @@
+name: Vault Init (OIDC)
+
+on:
+  workflow_dispatch:  # 手動 or スケジュールで実行可能
+  schedule:
+    - cron: '0 0 * * 1'  # 毎週月曜 0:00 UTC = 月曜 9:00 JST
+
+jobs:
+  init-vault:
+    name: 🔐 Vault OIDC + Secrets Setup
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write  # ✅ OIDCトークン取得のため必須
+      contents: read
+
+    env:
+      VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
+      VAULT_NAMESPACE: ""
+      VAULT_MOUNT: "oidc"
+      GITHUB_REPO: ${{ github.repository }}
+      VAULT_CERT: /tmp/origin_ca.pem
+
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
+
+      - name: 🏗 Install Python deps
+        run: pip install requests python-dotenv pyyaml
+
+      - name: 🧾 Prepare Origin CA Cert
+        run: |
+          mkdir -p /tmp
+          echo "${{ secrets.VAULT_ORIGIN_CA_PEM }}" > /tmp/origin_ca.pem
+
+      - name: 🔐 Init OIDC Method & GitHub Role
+        run: python3 scripts/init_oidc.py
+
+      - name: 📜 Upload Policies
+        run: python3 scripts/create_policies.py
+
+      - name: 🧬 Upload AppRoles & generate env
+        run: python3 scripts/create_approles.py
+
+      - name: 🔁 Sync to GitHub Secrets (Optional)
+        uses: gliech/create-github-secret-action@v1
+        with:
+          secrets: |
+            $(cat /vault/scripts/env.generated | sed 's/^/  /')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
