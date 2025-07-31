@@ -6,11 +6,13 @@ from dotenv import load_dotenv
 CA_CERT_PATH = "/vault/cert/origin_ca_rsa_root.pem"
 
 # 🔧 .env ファイル読み込み（Vault Tokenや VAULT_ADDR を取得）
-ENV_PATH = "/vault/.env"
+ENV_PATH = os.environ.get("ENV_PATH", "/vault/.env")  # ← fallbackありに変更
+
 if not os.path.exists(ENV_PATH):
     raise FileNotFoundError(f".env ファイルが見つかりません: {ENV_PATH}")
 
 load_dotenv(dotenv_path=ENV_PATH)
+
 
 VAULT_ADDR = os.getenv("VAULT_ADDR", "https://vault.profinaut.studiokeke.com:8200")
 VAULT_TOKEN = os.getenv("VAULT_TOKEN")
