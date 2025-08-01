@@ -1,4 +1,4 @@
-name: Vault Diagnose
+name: 🔍 Vault Cloudflare Tunnel Diagnostics
 
 on:
   workflow_dispatch:
@@ -7,36 +7,49 @@ jobs:
   diagnose-vault:
     runs-on: ubuntu-latest
 
-    env:
-      VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
-      VAULT_CERT: /tmp/origin_ca.pem
-
     steps:
-      - name: 📥 Checkout
+      - name: 📁 Step 1: Checkout
         uses: actions/checkout@v4
 
-      - name: 🔧 Install diagnostics tools
-        run: sudo apt-get update && sudo apt-get install -y dnsutils curl
-
-      - name: 🧪 Step 1: DNS Resolution
+      - name: 📥 Step 2: Install curl and unzip (if needed)
         run: |
-          echo "🔍 dig vault.profinaut.studiokeke.com"
-          dig vault.profinaut.studiokeke.com
+          sudo apt-get update
+          sudo apt-get install -y curl unzip
 
-      - name: 🧪 Step 2: Basic TLS connection (no headers)
+      - name: 📄 Step 3: 確認用証明書ファイルの保存
         run: |
-          echo "🔍 curl --insecure to check TLS only"
-          curl -vk --max-time 10 "$VAULT_ADDR/v1/sys/health" || echo "❌ Basic TLS connection failed"
+          mkdir -p /tmp
+          echo "${{ secrets.VAULT_ROOT_CA_PEM }}" > /tmp/origin_ca.pem
 
-      - name: 🧪 Step 3: TLS with Origin CA Certificate
+      - name: 🌐 Step 4: VaultへのHealthチェック（CF Access経由）
         run: |
-          echo "${{ secrets.VAULT_ORIGIN_CA_PEM }}" > $VAULT_CERT
-          curl -v --max-time 10 --cacert $VAULT_CERT "$VAULT_ADDR/v1/sys/health" || echo "❌ TLS with custom CA failed"
+          echo "➡️ Vaultへ接続テスト開始..."
+          curl -vk https://vault.profinaut.studiokeke.com:8200/v1/sys/health \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            --cacert "$VAULT_CERT"
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          VAULT_CERT: /tmp/origin_ca.pem
 
-      - name: 🧪 Step 4: TLS with Cloudflare Access Headers
+      - name: 🧪 Step 5: Vaultへテストリクエスト送信
         run: |
-          curl -v --max-time 10 \
-            --cacert $VAULT_CERT \
-            -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
-            -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}" \
-            "$VAULT_ADDR/v1/sys/health" || echo "❌ TLS with CF headers failed"
+          echo "➡️ テスト用シークレットを送信..."
+          PAYLOAD='{
+            "data": {
+              "diagnostic": "Vaultアクセス成功"
+            }
+          }'
+          curl -X POST "$VAULT_ADDR/v1/secret/data/diagnostic" \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            -H "Content-Type: application/json" \
+            --data "$PAYLOAD" \
+            --cacert "$VAULT_CERT"
+        env:
+          VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          VAULT_CERT: /tmp/origin_ca.pem
+
