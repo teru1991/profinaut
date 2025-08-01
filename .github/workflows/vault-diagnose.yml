@@ -1,0 +1,42 @@
+name: Vault Diagnose
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose-vault:
+    runs-on: ubuntu-latest
+
+    env:
+      VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
+      VAULT_CERT: /tmp/origin_ca.pem
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔧 Install diagnostics tools
+        run: sudo apt-get update && sudo apt-get install -y dnsutils curl
+
+      - name: 🧪 Step 1: DNS Resolution
+        run: |
+          echo "🔍 dig vault.profinaut.studiokeke.com"
+          dig vault.profinaut.studiokeke.com
+
+      - name: 🧪 Step 2: Basic TLS connection (no headers)
+        run: |
+          echo "🔍 curl --insecure to check TLS only"
+          curl -vk --max-time 10 "$VAULT_ADDR/v1/sys/health" || echo "❌ Basic TLS connection failed"
+
+      - name: 🧪 Step 3: TLS with Origin CA Certificate
+        run: |
+          echo "${{ secrets.VAULT_ORIGIN_CA_PEM }}" > $VAULT_CERT
+          curl -v --max-time 10 --cacert $VAULT_CERT "$VAULT_ADDR/v1/sys/health" || echo "❌ TLS with custom CA failed"
+
+      - name: 🧪 Step 4: TLS with Cloudflare Access Headers
+        run: |
+          curl -v --max-time 10 \
+            --cacert $VAULT_CERT \
+            -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
+            -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}" \
+            "$VAULT_ADDR/v1/sys/health" || echo "❌ TLS with CF headers failed"
