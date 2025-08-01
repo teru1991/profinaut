@@ -9,28 +9,24 @@ jobs:
 
     env:
       VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
-      CF_ACCESS_CLIENT_ID: "${{ secrets.CF_ACCESS_CLIENT_ID }}"
-      CF_ACCESS_CLIENT_SECRET: "${{ secrets.CF_ACCESS_CLIENT_SECRET }}"
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
       VAULT_CERT: /tmp/origin_ca.pem
 
     steps:
-      # リポジトリのコードをチェックアウト
       - name: Step 1: Checkout
         uses: actions/checkout@v4
 
-      # 必要なツールをインストール
       - name: Step 2: Install curl and unzip
         run: |
           sudo apt-get update
           sudo apt-get install -y curl unzip
 
-      # 証明書ファイルを保存
       - name: Step 3: Save cert file
         run: |
           mkdir -p /tmp
           echo "${{ secrets.VAULT_ROOT_CA_PEM }}" > /tmp/origin_ca.pem
 
-      # Vaultのヘルスチェック
       - name: Step 4: Vault health check
         run: |
           echo "Vault health check..."
@@ -39,7 +35,6 @@ jobs:
             -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
             --cacert "$VAULT_CERT"
 
-      # テスト用シークレットを送信
       - name: Step 5: Vault test request
         run: |
           echo "Send test secret..."
