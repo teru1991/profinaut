@@ -1,51 +1,61 @@
+# ワークフローの名前を定義
 name: Vault Cloudflare Tunnel Diagnostics
 
+# ワークフローのトリガーを定義 (手動実行)
 on:
   workflow_dispatch:
 
+# 実行するジョブを定義
 jobs:
   diagnose-vault:
+    # このジョブを実行する環境 (仮想マシン) を指定
     runs-on: ubuntu-latest
 
+    # ジョブ全体で利用可能な環境変数を定義
     env:
       VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
       CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
       VAULT_CERT: /tmp/origin_ca.pem
 
+    # 実行する一連のステップを定義
     steps:
-      - name: Step 1: Checkout
+      - name: Step_1_Checkout
         uses: actions/checkout@v4
 
-      - name: Step 2: Install curl and unzip
+      - name: Step_2_Install_curl_and_unzip
+        # curlとunzipをインストール
         run: |
           sudo apt-get update
           sudo apt-get install -y curl unzip
 
-      - name: Step 3: Save cert file
+      - name: Step_3_Save_cert_file
+        # Cloudflare証明書をファイルに保存
         run: |
           mkdir -p /tmp
-          # VAULT_ROOT_CA_CA_PEM シークレットを証明書ファイルとして保存
+          # GitHub Secretsから証明書の内容をファイルに書き込む
           echo "${{ secrets.VAULT_ROOT_CA_PEM }}" > /tmp/origin_ca.pem
 
-      - name: Step 4: Vault health check
+      - name: Step_4_Vault_health_check
+        # Vaultのヘルスチェックエンドポイントにアクセス
         run: |
           echo "Vault health check..."
-          # Cloudflare Accessのヘッダーと証明書を指定してVaultのヘルスチェックを実行
+          # Cloudflare Accessヘッダーと証明書を指定してcurlを実行
           curl --fail -vk "$VAULT_ADDR/v1/sys/health" \
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
             -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
             --cacert "$VAULT_CERT"
 
-      - name: Step 5: Vault test request
+      - name: Step_5_Vault_test_request
+        # Vaultにテスト用シークレットを書き込む
         run: |
           echo "Sending test secret to Vault..."
-          # JSONペイロードを1行で定義して、YAMLの解析エラーを回避
+          # JSONペイロードを定義
           PAYLOAD='{"data":{"diagnostic":"Vaultアクセス成功"}}'
-          # Cloudflare Accessのヘッダーと証明書を指定してPOSTリクエストを送信
+          # Cloudflare Accessヘッダーと証明書を指定してPOSTリクエストを送信
           curl --fail -X POST "$VAULT_ADDR/v1/secret/data/diagnostic" \
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
-            -H "CF-ACCESS-CLIENT-SECRET: $CF_ACCESS_CLIENT_SECRET" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
             -H "Content-Type: application/json" \
             --data "$PAYLOAD" \
             --cacert "$VAULT_CERT"
