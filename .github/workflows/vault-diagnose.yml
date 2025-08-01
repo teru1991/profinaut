@@ -25,7 +25,7 @@ jobs:
       - name: Step 3: Save cert file
         run: |
           mkdir -p /tmp
-          # VAULT_ROOT_CA_PEM シークレットを証明書ファイルとして保存
+          # VAULT_ROOT_CA_CA_PEM シークレットを証明書ファイルとして保存
           echo "${{ secrets.VAULT_ROOT_CA_PEM }}" > /tmp/origin_ca.pem
 
       - name: Step 4: Vault health check
@@ -45,7 +45,7 @@ jobs:
           # Cloudflare Accessのヘッダーと証明書を指定してPOSTリクエストを送信
           curl --fail -X POST "$VAULT_ADDR/v1/secret/data/diagnostic" \
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
-            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            -H "CF-ACCESS-CLIENT-SECRET: $CF_ACCESS_CLIENT_SECRET" \
             -H "Content-Type: application/json" \
             --data "$PAYLOAD" \
             --cacert "$VAULT_CERT"
