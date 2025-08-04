@@ -2,6 +2,14 @@ version: "3.9"
 
 services:
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: profinaut-cloudflared
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARED_TUNNEL_TOKEN}  # ← ここが追加点
+    restart: unless-stopped
+
   vault:
     image: hashicorp/vault:1.20.0
     container_name: profinaut-vault
@@ -159,12 +167,6 @@ services:
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
 
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: profinaut-cloudflared
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
-    depends_on:
-      - vault
 
   bot_manager:
     build:

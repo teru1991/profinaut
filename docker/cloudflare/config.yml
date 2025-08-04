@@ -1,0 +1,19 @@
+tunnel: dc0e81d8-932a-4581-9d5e-603e60a6c8bb
+credentials-file: /etc/cloudflared/dc0e81d8-932a-4581-9d5e-603e60a6c8bb.json
+
+ingress:
+  - hostname: vault.profinaut.studiokeke.com
+    service: tcp://vault:8200
+  - hostname: webhook.profinaut.studiokeke.com
+    service: http://webhook_server:5000
+  - hostname: grafana.profinaut.studiokeke.com
+    service: http://grafana:3000
+  - hostname: prometheus.profinaut.studiokeke.com
+    service: http://prometheus:9090
+  - hostname: alerts.profinaut.studiokeke.com
+    service: http://alertmanager:9093
+  - hostname: app.profinaut.studiokeke.com
+    service: http://frontend:3000
+  - hostname: api.profinaut.studiokeke.com
+    service: http://signal_engine:8000
+  - service: http_status:404
