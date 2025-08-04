@@ -1,32 +1,37 @@
-name: Cloudflare Tunnel → Vault Connection Test
+name: 🔐 Vault Cloudflare Tunnel Token Test
 
 on:
   workflow_dispatch:
 
 jobs:
-  test-vault-tunnel:
+  vault-tunnel-test:
     runs-on: ubuntu-latest
-
     env:
-      TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
       VAULT_URL: https://vault.profinaut.studiokeke.com
 
     steps:
-      - name: 📥 Install cloudflared
+      - name: 📁 Step_1_Checkout_Repository
+        uses: actions/checkout@v4
+
+      - name: 📥 Step_2_Install_Cloudflared
         run: |
           curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o cloudflared
           chmod +x cloudflared
           sudo mv cloudflared /usr/local/bin/
+          cloudflared --version
 
-      - name: 📄 Save Cloudflare Origin CA
+      - name: 📄 Step_3_Save_Origin_CA_PEM_File
         run: |
+          mkdir -p /tmp
           echo "${{ secrets.VAULT_ROOT_CA_PEM }}" > /tmp/origin_ca.pem
 
-      - name: 🚇 Start Tunnel to Vault
+      - name: 🚀 Step_4_Start_Cloudflare_Tunnel
         run: |
-          nohup cloudflared tunnel --no-autoupdate run --token "$TUNNEL_TOKEN" > tunnel.log 2>&1 &
-          sleep 10
+          echo "Starting Cloudflare Tunnel..."
+          nohup cloudflared tunnel run --token "${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}" > cloudflared.log 2>&1 &
+          sleep 15  # Tunnelが立ち上がるまで待機
 
-      - name: 🧪 Test Vault Health Endpoint
+      - name: 🌐 Step_5_Vault_Health_Check
         run: |
+          echo "Checking Vault health via Tunnel..."
           curl -vk "$VAULT_URL/v1/sys/health" --cacert /tmp/origin_ca.pem
