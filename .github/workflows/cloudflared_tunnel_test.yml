@@ -25,11 +25,13 @@ jobs:
           mkdir -p /tmp
           echo "${{ secrets.VAULT_ROOT_CA_PEM }}" > /tmp/origin_ca.pem
 
-      - name: 🚀 Step_4_Start_Cloudflare_Tunnel
+      - name: 🔍 Step_4_Check_Vault_Health
         run: |
-          echo "Starting Cloudflare Tunnel..."
-          nohup cloudflared tunnel run --token "${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}" > cloudflared.log 2>&1 &
-          sleep 15  # Tunnelが立ち上がるまで待機
+          echo "Checking Vault health via Tunnel..."
+          curl -vk "$VAULT_URL/v1/sys/health"
+        env:
+          VAULT_URL: https://vault.profinaut.studiokeke.com
+
 
       - name: 🌐 Step_5_Vault_Health_Check
         run: |
