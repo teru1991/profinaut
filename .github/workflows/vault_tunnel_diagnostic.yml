@@ -1,4 +1,4 @@
-name: 🧪 Vault_Tunnel_Diagnostic_Step_By_Step
+name: Vault_Tunnel_Diagnostic_Step_by_Step
 
 on:
   workflow_dispatch:
@@ -8,62 +8,60 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
+      # ✅ 443 でアクセス（:8200 は使わない）
+      VAULT_BASE_URL: https://vault.profinaut.studiokeke.com
       CF_ACCESS_CLIENT_ID: ${{ secrets.VAULT_CF_ACCESS_CLIENT_ID }}
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.VAULT_CF_ACCESS_CLIENT_SECRET }}
 
     steps:
-      - name: 📁 Step_1_Checkout
+      - name: Step_1_Checkout
         uses: actions/checkout@v4
 
-      - name: 🧰 Step_2_Install_Tools
+      - name: Step_2_Install_tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y curl dnsutils netcat-openbsd
-      
+          # netcat はディストリごとに仮想パッケージ名なので openbsd 実装を明示
+          sudo apt-get install -y curl dnsutils netcat-openbsd openssl
 
-      - name: 🌍 Step_3_DNS_Resolution
+      - name: Step_3_DNS_Resolve
         run: |
-          echo "🔍 DNS resolution for Vault:"
-          dig +short vault.profinaut.studiokeke.com
+          echo "🔍 dig +short vault.profinaut.studiokeke.com"
+          dig +short vault.profinaut.studiokeke.com || true
 
-      - name: 🔌 Step_4_TCP_Connection_Test_443
+      - name: Step_4_TCP_443_Reachability
         run: |
-          echo "🔌 Testing TCP connection to port 443..."
-          nc -zv vault.profinaut.studiokeke.com 443 || echo "❌ TCP connection to 443 failed"
+          echo "🔌 Checking TCP 443..."
+          nc -zv vault.profinaut.studiokeke.com 443 || echo "❌ TCP:443 not reachable"
 
-      - name: 🔌 Step_5_TCP_Connection_Test_8200
+      - name: Step_5_TLS_Server_Hello_and_Cert
         run: |
-          echo "🔌 Testing TCP connection to Vault port 8200..."
-          nc -zv vault.profinaut.studiokeke.com 8200 || echo "❌ TCP connection to 8200 failed"
+          echo "🔐 openssl s_client -connect ...:443 -servername ..."
+          # 証明書チェーンとSNI応答を確認（数秒で抜ける）
+          timeout 8 bash -c 'echo | openssl s_client -connect vault.profinaut.studiokeke.com:443 -servername vault.profinaut.studiokeke.com -tls1_3 -brief' || true
 
-      - name: 📄 Step_6_Save_Root_CA
+      # ここから HTTP レイヤ切り分け
+      - name: Step_6_Health_without_CF_Access_headers
         run: |
-          echo "📄 Saving VAULT_ROOT_CA_PEM to /tmp/root_ca.pem..."
-          printf "%b\n" "${{ secrets.VAULT_ROOT_CA_PEM }}" > /tmp/root_ca.pem
-          ls -l /tmp/root_ca.pem
+          echo "🌐 Request without CF-Access headers (expect 401/403)"
+          set -x
+          curl -i -sS "${VAULT_BASE_URL}/v1/sys/health" || true
+          set +x
 
-      - name: 🔐 Step_7_TLS_Handshake_Test
+      - name: Step_7_Health_with_CF_Access_headers
         run: |
-          echo "🔐 Performing TLS handshake with root CA..."
-          curl -vk https://vault.profinaut.studiokeke.com:8200 \
-            --cacert /tmp/root_ca.pem || echo "❌ TLS handshake failed"
+          echo "✅ Request with CF-Access headers (expect 200 or 429/5xx if Vault 側問題)"
+          set -x
+          curl -i -sS \
+            -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
+            -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
+            "${VAULT_BASE_URL}/v1/sys/health"
+          set +x
 
-      - name: 🔐 Step_8_Without_CA_Test (Expected Fail)
+      # 追加の詳細デバッグ（必要に応じて）
+      - name: Step_8_Verbose_TLS_with_Headers
         run: |
-          echo "⚠️ Checking Vault health without CA cert (may fail)..."
-          curl -vk "$VAULT_ADDR/v1/sys/health" || echo "❌ Expected failure due to missing CA"
-
-      - name: 🌐 Step_9_Health_With_CA
-        run: |
-          echo "🌐 Checking Vault health with CA cert only..."
-          curl -vk "$VAULT_ADDR/v1/sys/health" \
-            --cacert /tmp/root_ca.pem || echo "❌ Failed with CA"
-
-      - name: 🔐 Step_10_CF_Access_With_CA
-        run: |
-          echo "🔐 Checking Vault health with CF Access and CA cert..."
-          curl -vk "$VAULT_ADDR/v1/sys/health" \
-            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
-            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
-            --cacert /tmp/root_ca.pem || echo "❌ CF Access with CA failed"
+          echo "🔎 TLS verbose with headers（失敗時の深掘り用）"
+          curl -vk \
+            -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
+            -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
+            "${VAULT_BASE_URL}/v1/sys/health" || true
