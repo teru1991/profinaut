@@ -1,61 +1,48 @@
-# ワークフローの名前を定義
-name: Vault Cloudflare Tunnel Diagnostics
+name: 🩺 vault_diagnostics
 
-# ワークフローのトリガーを定義 (手動実行)
 on:
   workflow_dispatch:
 
-# 実行するジョブを定義
 jobs:
-  diagnose-vault:
-    # このジョブを実行する環境 (仮想マシン) を指定
+  diagnose_vault:
     runs-on: ubuntu-latest
 
-    # ジョブ全体で利用可能な環境変数を定義
     env:
-      VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
-      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-      VAULT_CERT: /tmp/origin_ca.pem
+      VAULT_URL: https://vault.profinaut.studiokeke.com:8200
+      CF_ACCESS_CLIENT_ID: ${{ secrets.VAULT_CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.VAULT_CF_ACCESS_CLIENT_SECRET }}
 
-    # 実行する一連のステップを定義
     steps:
-      - name: Step_1_Checkout
+      - name: step_1_checkout_repository
         uses: actions/checkout@v4
 
-      - name: Step_2_Install_curl_and_unzip
-        # curlとunzipをインストール
+      - name: step_2_dns_lookup
         run: |
-          sudo apt-get update
-          sudo apt-get install -y curl unzip
+          echo "🔍 DNS lookup..."
+          nslookup vault.profinaut.studiokeke.com || true
 
-      - name: Step_3_Save_cert_file
-        # Cloudflare証明書をファイルに保存
+      - name: step_3_tcp_port_test_8200
         run: |
-          mkdir -p /tmp
-          # GitHub Secretsから証明書の内容をファイルに書き込む
-          echo "${{ secrets.VAULT_ROOT_CA_PEM }}" > /tmp/origin_ca.pem
+          echo "🔍 TCP port 8200 接続テスト..."
+          timeout 10 bash -c "cat < /dev/null > /dev/tcp/vault.profinaut.studiokeke.com/8200" && echo "✅ 接続成功" || echo "❌ 接続失敗"
 
-      - name: Step_4_Vault_health_check
-        # Vaultのヘルスチェックエンドポイントにアクセス
+      - name: step_4_tls_handshake_without_header
         run: |
-          echo "Vault health check..."
-          # Cloudflare Accessヘッダーと証明書を指定してcurlを実行
-          curl --fail -vk "$VAULT_ADDR/v1/sys/health" \
+          echo "🔍 curl (TLSのみ・ヘッダーなし)..."
+          curl -vk $VAULT_URL || true
+
+      - name: step_5_tls_with_cf_access_headers
+        run: |
+          echo "🔍 curl (CF Accessヘッダー付き)..."
+          curl -vk $VAULT_URL/v1/sys/health \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" || true
+
+      - name: step_6_tls_with_cf_headers_and_origin_ca
+        run: |
+          echo "${{ secrets.VAULT_ORIGIN_CA_PEM }}" > /tmp/origin_ca.pem
+          echo "🔍 curl (CFヘッダー + origin_ca証明書)..."
+          curl -vk $VAULT_URL/v1/sys/health \
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
             -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
-            --cacert "$VAULT_CERT"
-
-      - name: Step_5_Vault_test_request
-        # Vaultにテスト用シークレットを書き込む
-        run: |
-          echo "Sending test secret to Vault..."
-          # JSONペイロードを定義
-          PAYLOAD='{"data":{"diagnostic":"Vaultアクセス成功"}}'
-          # Cloudflare Accessヘッダーと証明書を指定してPOSTリクエストを送信
-          curl --fail -X POST "$VAULT_ADDR/v1/secret/data/diagnostic" \
-            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
-            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
-            -H "Content-Type: application/json" \
-            --data "$PAYLOAD" \
-            --cacert "$VAULT_CERT"
+            --cacert /tmp/origin_ca.pem || true
