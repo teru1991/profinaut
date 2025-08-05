@@ -6,6 +6,7 @@ on:
 jobs:
   vault-tunnel-test:
     runs-on: ubuntu-latest
+
     env:
       VAULT_URL: https://vault.profinaut.studiokeke.com
 
@@ -25,15 +26,12 @@ jobs:
           mkdir -p /tmp
           echo "${{ secrets.VAULT_ROOT_CA_PEM }}" > /tmp/origin_ca.pem
 
-      - name: 🔍 Step_4_Check_Vault_Health
+      - name: 🔍 Step_4_Check_Vault_Health_Without_Cert
         run: |
-          echo "Checking Vault health via Tunnel..."
+          echo "⚠️ Checking Vault health without CA cert (may fail)..."
           curl -vk "$VAULT_URL/v1/sys/health"
-        env:
-          VAULT_URL: https://vault.profinaut.studiokeke.com
 
-
-      - name: 🌐 Step_5_Vault_Health_Check
+      - name: 🌐 Step_5_Check_Vault_Health_With_Cert
         run: |
-          echo "Checking Vault health via Tunnel..."
+          echo "✅ Checking Vault health with Origin CA cert..."
           curl -vk "$VAULT_URL/v1/sys/health" --cacert /tmp/origin_ca.pem
