@@ -19,7 +19,8 @@ jobs:
       - name: 🧰 Step_2_Install_Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y curl dnsutils netcat
+          sudo apt-get install -y curl dnsutils netcat-openbsd
+      
 
       - name: 🌍 Step_3_DNS_Resolution
         run: |
