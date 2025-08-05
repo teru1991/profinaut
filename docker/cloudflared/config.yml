@@ -1,13 +1,12 @@
 tunnel: dc0e81d8-932a-4581-9d5e-603e60a6c8bb
-credentials-file: ./dc0e81d8-932a-4581-9d5e-603e60a6c8bb.json
+credentials-file: /etc/cloudflared/credentials.json
 
 ingress:
   - hostname: vault.profinaut.studiokeke.com
     service: https://vault:8200
     originRequest:
-      originServerName: vault.internal        # （Vault の cert の CN/SAN に合わせる）
+      originServerName: vault.internal      # ← Vault サーバ証明書の CN/SAN に合わせる
       caPool: /etc/cloudflared/vault_root_ca.pem
-
 
   - hostname: webhook.profinaut.studiokeke.com
     service: http://webhook_server:8000

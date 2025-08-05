@@ -1,27 +1,40 @@
 version: "3.9"
 
+networks:
+  profinaut_net:
+    name: profinaut_net
+
 services:
 
+  # --- Cloudflare Tunnel -----------------------------------------------------
   cloudflared:
     image: cloudflare/cloudflared:latest
-    container_name: profinaut-cloudflared
+    container_name: profinaut_cloudflared
     command: tunnel run
-    environment:
-      TUNNEL_TOKEN: ${CLOUDFLARED_TUNNEL_TOKEN}  # ← ここが追加点
     restart: unless-stopped
+    networks: [profinaut_net]
+    volumes:
+      # cloudflared の設定と資格情報（read-only）
+      - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+      - ./cloudflared/dc0e81d8-932a-4581-9d5e-603e60a6c8bb.json:/etc/cloudflared/credentials.json:ro
+      # Vault の Root CA（cloudflared の originRequest.caPool で使用）
+      - ./vault/cert/origin_ca_rsa_root.pem:/etc/cloudflared/vault_root_ca.pem:ro
 
+  # --- Vault 本体 ------------------------------------------------------------
   vault:
     image: hashicorp/vault:1.20.0
-    container_name: profinaut-vault
-    ports:
-      - "8200:8200"
+    container_name: profinaut_vault
+    # 外部へ 8200 を公開しない（Cloudflare 経由のみ）
+    expose:
+      - "8200"
     environment:
-      VAULT_ADDR: "https://vault.profinaut.studiokeke.com:8200"
+      VAULT_ADDR: "https://vault:8200"   # 内部からは service 名でアクセス
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: ${AWS_REGION}
     cap_add:
       - IPC_LOCK
+    networks: [profinaut_net]
     volumes:
       - ./vault/config:/vault/config
       - ./vault/cert:/vault/cert
@@ -29,57 +42,68 @@ services:
       - ./vault/log:/vault/log
     command: vault server -config=/vault/config/vault.hcl
 
-  vault-init:
+  # --- Vault 初期化／シード ---------------------------------------------------
+  vault_init:
     build:
       context: .
       dockerfile: vault/vault-init.Dockerfile
-    container_name: profinaut-vault-init
+    container_name: profinaut_vault_init
     working_dir: /vault/scripts
     environment:
-      VAULT_ADDR: "https://vault.profinaut.studiokeke.com:8200"
+      # 内部向け URL（Cloudflare 経由ではない）
+      VAULT_ADDR: "https://vault:8200"
       REQUESTS_CA_BUNDLE: /vault/cert/origin_ca_rsa_root.pem
+      SSL_CERT_FILE: /vault/cert/origin_ca_rsa_root.pem
+      CURL_CA_BUNDLE: /vault/cert/origin_ca_rsa_root.pem
+    networks: [profinaut_net]
     volumes:
       - ./vault:/vault
       - ./vault/.env:/vault/.env
     depends_on:
       - vault
 
+  # --- MongoDB ---------------------------------------------------------------
   mongo:
     image: mongo:6.0
-    container_name: profinaut-mongo
+    container_name: profinaut_mongo
     ports:
       - "27017:27017"
+    networks: [profinaut_net]
     volumes:
       - ./storage/mongo/data:/data/db
     depends_on:
-      - vault-init
+      - vault_init
 
+  # --- PostgreSQL ------------------------------------------------------------
   postgres:
     image: postgres:15
-    container_name: profinaut-postgres
+    container_name: profinaut_postgres
     environment:
       POSTGRES_USER: profinaut
       POSTGRES_PASSWORD: profinautpass
       POSTGRES_DB: profinaut_db
     ports:
       - "5432:5432"
+    networks: [profinaut_net]
     volumes:
       - ./storage/postgres/data:/var/lib/postgresql/data
     depends_on:
-      - vault-init
+      - vault_init
 
+  # --- Zookeeper / Kafka -----------------------------------------------------
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
-    container_name: profinaut-zookeeper
+    container_name: profinaut_zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    networks: [profinaut_net]
     depends_on:
-      - vault-init
+      - vault_init
 
   kafka:
     image: confluentinc/cp-kafka:7.4.0
-    container_name: profinaut-kafka
+    container_name: profinaut_kafka
     ports:
       - "9092:9092"
     environment:
@@ -87,38 +111,61 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks: [profinaut_net]
     volumes:
       - ./storage/kafka/data:/var/lib/kafka/data
-    depends_on: [zookeeper, vault-init]
+    depends_on:
+      - zookeeper
+      - vault_init
 
+  kafka_init:
+    image: bitnami/kafka:latest
+    container_name: profinaut_kafka_init
+    networks: [profinaut_net]
+    entrypoint: ["/bin/bash", "/init_kafka_topics.sh"]
+    volumes:
+      - ./scripts/init_kafka_topics.sh:/init_kafka_topics.sh:ro
+    depends_on:
+      - kafka
+
+  # --- Prometheus / Grafana / Loki / Promtail / Alertmanager -----------------
   prometheus:
     image: prom/prometheus:latest
-    container_name: profinaut-prometheus
+    container_name: profinaut_prometheus
     ports:
       - "9090:9090"
     environment:
       CF_ACCESS_CLIENT_ID: ${METRICS_CF_ACCESS_CLIENT_ID}
       CF_ACCESS_CLIENT_SECRET: ${METRICS_CF_ACCESS_CLIENT_SECRET}
+      # 内部で Vault に TLS で行く場合はアンコメント
+      # SSL_CERT_FILE: /etc/ssl/private/vault_root_ca.pem
+      # CURL_CA_BUNDLE: /etc/ssl/private/vault_root_ca.pem
+    networks: [profinaut_net]
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./prometheus/rules:/etc/prometheus/rules
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+      # - ./vault/cert/origin_ca_rsa_root.pem:/etc/ssl/private/vault_root_ca.pem:ro
     depends_on:
-      - vault-init
+      - vault_init
 
   grafana:
     image: grafana/grafana:latest
-    container_name: profinaut-grafana
+    container_name: profinaut_grafana
     ports:
       - "3001:3000"
+    networks: [profinaut_net]
     volumes:
-      - ./prometheus/grafana_dashboard_template.json:/etc/grafana/provisioning/dashboards/dashboard.json
-    depends_on: [prometheus, vault-init]
+      - ./prometheus/grafana_dashboard_template.json:/etc/grafana/provisioning/dashboards/dashboard.json:ro
+    depends_on:
+      - prometheus
+      - vault_init
 
   loki:
     image: grafana/loki:2.9.0
-    container_name: profinaut-loki
+    container_name: profinaut_loki
     ports:
       - "3100:3100"
+    networks: [profinaut_net]
     volumes:
       - ./prometheus/loki-config.yml:/etc/loki/loki-config.yml:ro
       - ./storage/loki/index:/loki/index
@@ -127,12 +174,13 @@ services:
       - ./storage/loki/rules:/loki/rules
     command: -config.file=/etc/loki/loki-config.yml
     depends_on:
-      - vault-init
+      - vault_init
     restart: unless-stopped
 
   promtail:
     image: grafana/promtail:2.9.0
-    container_name: profinaut-promtail
+    container_name: profinaut_promtail
+    networks: [profinaut_net]
     volumes:
       - /var/log:/var/log
       - ./storage/logs:/app/logs
@@ -140,119 +188,147 @@ services:
       - ./kafka/log:/kafka/logs
       - ./prometheus/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
     command: -config.file=/etc/promtail/promtail-config.yml
-    depends_on: [vault-init, loki]
+    depends_on:
+      - vault_init
+      - loki
 
   alertmanager:
     image: prom/alertmanager
-    container_name: profinaut-alertmanager
+    container_name: profinaut_alertmanager
     ports:
       - "9093:9093"
+    networks: [profinaut_net]
     volumes:
-      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
     command: --config.file=/etc/alertmanager/alertmanager.yml
     depends_on:
-      - vault-init
+      - vault_init
 
+  # --- アプリケーション層 ----------------------------------------------------
   frontend:
     build:
       context: ../frontend
-    container_name: profinaut-frontend
+    container_name: profinaut_frontend
     ports:
       - "3000:3000"
     environment:
       NODE_ENV: production
     restart: unless-stopped
+    networks: [profinaut_net]
     depends_on:
-      - vault-init
+      - vault_init
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
-
 
   bot_manager:
     build:
       context: ../departments/01_bot_manager
-    container_name: profinaut-bot-manager
+    container_name: profinaut_bot_manager
     environment:
       CF_ACCESS_CLIENT_ID: ${METRICS_CF_ACCESS_CLIENT_ID}
       CF_ACCESS_CLIENT_SECRET: ${METRICS_CF_ACCESS_CLIENT_SECRET}
       RUST_LOG: info
-      VAULT_ADDR: ${VAULT_ADDR}
+      VAULT_ADDR: https://vault:8200
       VAULT_ROLE_ID: ${BOT_MANAGER_ROLE_ID}
       VAULT_SECRET_ID: ${BOT_MANAGER_SECRET_ID}
-    depends_on: [vault-init, kafka, mongo]
+      SSL_CERT_FILE: /etc/ssl/private/vault_root_ca.pem
+      CURL_CA_BUNDLE: /etc/ssl/private/vault_root_ca.pem
+    networks: [profinaut_net]
+    volumes:
+      - ./vault/cert/origin_ca_rsa_root.pem:/etc/ssl/private/vault_root_ca.pem:ro
+    depends_on:
+      - vault_init
+      - kafka
+      - mongo
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
 
   signal_engine:
     build:
       context: ../departments/02_signal_generator
-    container_name: profinaut-signal-engine
+    container_name: profinaut_signal_engine
     environment:
       CF_ACCESS_CLIENT_ID: ${SIGNAL_ENGINE_CF_ACCESS_CLIENT_ID}
       CF_ACCESS_CLIENT_SECRET: ${SIGNAL_ENGINE_CF_ACCESS_CLIENT_SECRET}
-      VAULT_ADDR: ${VAULT_ADDR}
+      VAULT_ADDR: https://vault:8200
       VAULT_ROLE_ID: ${SIGNAL_ENGINE_ROLE_ID}
       VAULT_SECRET_ID: ${SIGNAL_ENGINE_SECRET_ID}
-    depends_on: [vault-init, kafka, mongo]
+      SSL_CERT_FILE: /etc/ssl/private/vault_root_ca.pem
+      CURL_CA_BUNDLE: /etc/ssl/private/vault_root_ca.pem
+    networks: [profinaut_net]
+    volumes:
+      - ./vault/cert/origin_ca_rsa_root.pem:/etc/ssl/private/vault_root_ca.pem:ro
+    depends_on:
+      - vault_init
+      - kafka
+      - mongo
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
 
   trade_executor:
     build:
       context: ../departments/05_trade_executor
-    container_name: profinaut-trade-executor
+    container_name: profinaut_trade_executor
     environment:
       CF_ACCESS_CLIENT_ID: ${TRADE_EXECUTOR_CF_ACCESS_CLIENT_ID}
       CF_ACCESS_CLIENT_SECRET: ${TRADE_EXECUTOR_CF_ACCESS_CLIENT_SECRET}
-      VAULT_ADDR: ${VAULT_ADDR}
+      VAULT_ADDR: https://vault:8200
       VAULT_ROLE_ID: ${TRADE_EXECUTOR_ROLE_ID}
       VAULT_SECRET_ID: ${TRADE_EXECUTOR_SECRET_ID}
-    depends_on: [vault-init, kafka, mongo]
+      SSL_CERT_FILE: /etc/ssl/private/vault_root_ca.pem
+      CURL_CA_BUNDLE: /etc/ssl/private/vault_root_ca.pem
+    networks: [profinaut_net]
+    volumes:
+      - ./vault/cert/origin_ca_rsa_root.pem:/etc/ssl/private/vault_root_ca.pem:ro
+    depends_on:
+      - vault_init
+      - kafka
+      - mongo
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
-
-  kafka_init:
-    image: bitnami/kafka:latest
-    container_name: profinaut-kafka-init
-    depends_on: [kafka]
-    entrypoint: ["/bin/bash", "/init_kafka_topics.sh"]
-    volumes:
-      - ./scripts/init_kafka_topics.sh:/init_kafka_topics.sh
 
   webhook_server:
     build:
       context: ../departments/99_webhook_server
-    container_name: profinaut-webhook-server
+    container_name: profinaut_webhook_server
     environment:
       DISCORD_WEBHOOK_URL: ${DISCORD_ALERT_WEBHOOK}
     expose:
       - "5000"
+    networks: [profinaut_net]
     depends_on:
-      - vault-init
+      - vault_init
 
   webhook_test:
     build:
       context: ./scripts/test_webhook
-    volumes:
-      - ./scripts/test_webhook:/app
+    container_name: profinaut_webhook_test_runner
+    networks: [profinaut_net]
     entrypoint: [ "python", "/app/test_webhook.py" ]
     environment:
-      VAULT_ADDR: ${VAULT_ADDR}
+      VAULT_ADDR: https://vault:8200
       WEBHOOK_SERVER_ROLE_ID: ${WEBHOOK_SERVER_ROLE_ID}
       WEBHOOK_SERVER_SECRET_ID: ${WEBHOOK_SERVER_SECRET_ID}
       WEBHOOK_CHANNEL: alerts
+      SSL_CERT_FILE: /etc/ssl/private/vault_root_ca.pem
+      CURL_CA_BUNDLE: /etc/ssl/private/vault_root_ca.pem
+    volumes:
+      - ./scripts/test_webhook:/app:ro
+      - ./vault/cert/origin_ca_rsa_root.pem:/etc/ssl/private/vault_root_ca.pem:ro
     depends_on:
-      - vault-init
+      - vault_init
 
   webhook_test_sender:
     build:
       context: ./scripts/test_webhook
-    container_name: profinaut-webhook-test
+    container_name: profinaut_webhook_test
+    networks: [profinaut_net]
     volumes:
-      - ./scripts/test_webhook:/app
+      - ./scripts/test_webhook:/app:ro
+      - ./vault/cert/origin_ca_rsa_root.pem:/etc/ssl/private/vault_root_ca.pem:ro
     entrypoint: [ "python", "/app/test_webhook.py" ]
     environment:
-      VAULT_ADDR: ${VAULT_ADDR}
+      VAULT_ADDR: https://vault:8200
       VAULT_ROLE_ID: ${PROFINAUT_READONLY_ROLE_ID}
       VAULT_SECRET_ID: ${PROFINAUT_READONLY_SECRET_ID}
       WEBHOOK_CHANNEL: alerts
@@ -263,17 +339,18 @@ services:
             "title": "✅ Webhook Test",
             "description": "送信テストです。チャンネルへ接続しました。この通知がDiscordに届いていれば成功です。",
             "color": 3066993
-          }]
-        }
+          }]}
+      SSL_CERT_FILE: /etc/ssl/private/vault_root_ca.pem
+      CURL_CA_BUNDLE: /etc/ssl/private/vault_root_ca.pem
     depends_on:
-      - vault-init
+      - vault_init
 
-
-
+  # --- 自動更新（Watchtower） -----------------------------------------------
   watchtower:
     image: containrrr/watchtower
-    container_name: profinaut-watchtower
+    container_name: profinaut_watchtower
     restart: unless-stopped
+    networks: [profinaut_net]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
@@ -283,20 +360,21 @@ services:
       WATCHTOWER_INCLUDE_STOPPED: "true"
       WATCHTOWER_LABEL_ENABLE: "true"
     depends_on:
-      - vault-init
+      - vault_init
 
-  vault-exporter:
-    build:
-      context: vault/vault-exporter
-    container_name: profinaut-vault-scripts
-    ports:
-      - "9811:9811"
-    environment:
-      VAULT_ADDR: ${VAULT_ADDR}
-      VAULT_ROLE_ID: ${PROFINAUT_READONLY_ROLE_ID}
-      VAULT_SECRET_ID: ${PROFINAUT_READONLY_SECRET_ID}
-    restart: unless-stopped
-    depends_on:
-      - vault-init
-
-
+  # --- 追加: Vault Exporter など（必要に応じて有効化） ------------------------
+  # vault_exporter:
+  #   build:
+  #     context: vault/vault-exporter
+  #   container_name: profinaut_vault_exporter
+  #   ports:
+  #     - "9811:9811"
+  #   environment:
+  #     VAULT_ADDR: https://vault:8200
+  #     SSL_CERT_FILE: /etc/ssl/private/vault_root_ca.pem
+  #     CURL_CA_BUNDLE: /etc/ssl/private/vault_root_ca.pem
+  #   networks: [profinaut_net]
+  #   volumes:
+  #     - ./vault/cert/origin_ca_rsa_root.pem:/etc/ssl/private/vault_root_ca.pem:ro
+  #   depends_on:
+  #     - vault_init
