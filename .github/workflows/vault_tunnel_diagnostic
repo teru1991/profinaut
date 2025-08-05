@@ -1,0 +1,50 @@
+name: 🧪 Vault Tunnel Diagnostic (Step-by-step)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose-vault:
+    runs-on: ubuntu-latest
+
+    env:
+      VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
+      CF_ACCESS_CLIENT_ID: ${{ secrets.VAULT_CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.VAULT_CF_ACCESS_CLIENT_SECRET }}
+
+    steps:
+      - name: 📁 Step_1_Checkout
+        uses: actions/checkout@v4
+
+      - name: 📥 Step_2_Install_curl
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl
+
+      - name: 🧪 Step_3_Host_Resolve_Test
+        run: |
+          echo "🔍 Checking DNS resolution for Vault..."
+          dig +short vault.profinaut.studiokeke.com
+
+      - name: 🔌 Step_4_Connection_Test_Port443
+        run: |
+          echo "🔌 Testing TCP connection to port 443..."
+          timeout 5 bash -c '</dev/tcp/vault.profinaut.studiokeke.com/443' && echo "✅ Connection succeeded" || echo "❌ Connection failed"
+
+      - name: 📄 Step_5_Save_Certificate
+        run: |
+          mkdir -p /tmp
+          echo "${{ secrets.VAULT_ROOT_CA_PEM }}" > /tmp/origin_ca.pem
+
+      - name: 🔐 Step_6_TLS_Handshake_Test
+        run: |
+          echo "🔐 Performing TLS handshake..."
+          curl -vk https://vault.profinaut.studiokeke.com:8200 --cacert /tmp/origin_ca.pem || true
+
+      - name: 🌐 Step_7_Vault_Health_with_CF_Access
+        run: |
+          echo "🌐 Checking Vault health (CF Access)..."
+          curl -vk "$VAULT_ADDR/v1/sys/health" \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            --cacert /tmp/origin_ca.pem || true
