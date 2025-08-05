@@ -1,0 +1,48 @@
+name: vault_cloudflare_diagnostics
+
+on:
+  workflow_dispatch:
+
+jobs:
+  vault_diagnostics:
+    runs-on: ubuntu-latest
+    env:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      CF_ACCESS_CLIENT_ID: ${{ secrets.VAULT_CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.VAULT_CF_ACCESS_CLIENT_SECRET }}
+
+    steps:
+      - name: checkout_repository
+        uses: actions/checkout@v4
+
+      - name: step_1_basic_curl_without_headers
+        run: |
+          echo "🌐 Vault に基本接続中（ヘッダーなし）..."
+          curl -vk "${VAULT_ADDR}/v1/sys/health" || exit 1
+
+      - name: step_2_curl_with_cf_access_headers
+        run: |
+          echo "🔐 CF Access ヘッダー付きで Vault に接続中..."
+          curl -vk "${VAULT_ADDR}/v1/sys/health" \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" || exit 1
+
+      - name: step_3_create_origin_ca_pem
+        run: |
+          echo "${{ secrets.VAULT_ORIGIN_CA_PEM }}" > /tmp/origin_ca.pem
+
+      - name: step_4_curl_with_tls_verification
+        run: |
+          echo "✅ TLS証明書（Origin CA）を使って Vault に接続中..."
+          curl -vk --cacert /tmp/origin_ca.pem "${VAULT_ADDR}/v1/sys/health" \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" || exit 1
+
+      - name: step_5_test_vault_token_auth (optional)
+        if: ${{ secrets.VAULT_TOKEN != '' }}
+        env:
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+        run: |
+          echo "🔐 VAULT_TOKEN を使用して認証確認中..."
+          curl -vk --cacert /tmp/origin_ca.pem "${VAULT_ADDR}/v1/auth/token/lookup-self" \
+            -H "X-Vault-Token: $VAULT_TOKEN" || exit 1
