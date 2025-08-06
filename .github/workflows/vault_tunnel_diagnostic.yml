@@ -8,7 +8,6 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # ✅ 443 でアクセス（:8200 は使わない）
       VAULT_BASE_URL: https://vault.profinaut.studiokeke.com
       CF_ACCESS_CLIENT_ID: ${{ secrets.VAULT_CF_ACCESS_CLIENT_ID }}
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.VAULT_CF_ACCESS_CLIENT_SECRET }}
@@ -20,7 +19,6 @@ jobs:
       - name: Step_2_Install_tools
         run: |
           sudo apt-get update
-          # netcat はディストリごとに仮想パッケージ名なので openbsd 実装を明示
           sudo apt-get install -y curl dnsutils netcat-openbsd openssl
 
       - name: Step_3_DNS_Resolve
@@ -35,33 +33,67 @@ jobs:
 
       - name: Step_5_TLS_Server_Hello_and_Cert
         run: |
-          echo "🔐 openssl s_client -connect ...:443 -servername ..."
-          # 証明書チェーンとSNI応答を確認（数秒で抜ける）
-          timeout 8 bash -c 'echo | openssl s_client -connect vault.profinaut.studiokeke.com:443 -servername vault.profinaut.studiokeke.com -tls1_3 -brief' || true
+          echo "🔐 openssl s_client handshake + certs"
+          timeout 10 bash -c '
+            echo | openssl s_client \
+              -connect vault.profinaut.studiokeke.com:443 \
+              -servername vault.profinaut.studiokeke.com \
+              -showcerts -CApath /etc/ssl/certs -brief
+          ' || true
 
-      # ここから HTTP レイヤ切り分け
+      # 🔄 Optional: IP直指定テスト
+      - name: Step_6_1_IP_Force_Resolve_and_Curl
+        run: |
+          echo "📡 --resolve を使って直接IP指定での接続を試みます（DNSバイパス）"
+          IP=$(dig +short vault.profinaut.studiokeke.com | tail -n1)
+          echo "Resolved IP: $IP"
+          curl -vk \
+            --resolve vault.profinaut.studiokeke.com:443:$IP \
+            "${VAULT_BASE_URL}/v1/sys/health" || true
+
+      # 🔐 手動CA指定（Vault証明書のRoot CAを使用）
+      - name: Step_6_2_Curl_with_Manual_CA
+        run: |
+          echo "${{ secrets.VAULT_ROOT_CA_PEM }}" > /tmp/vault_root_ca.pem
+          curl -vk --cacert /tmp/vault_root_ca.pem \
+            "${VAULT_BASE_URL}/v1/sys/health" || true
+
       - name: Step_6_Health_without_CF_Access_headers
         run: |
           echo "🌐 Request without CF-Access headers (expect 401/403)"
-          set -x
           curl -i -sS "${VAULT_BASE_URL}/v1/sys/health" || true
-          set +x
 
       - name: Step_7_Health_with_CF_Access_headers
         run: |
-          echo "✅ Request with CF-Access headers (expect 200 or 429/5xx if Vault 側問題)"
-          set -x
+          echo "✅ Request with CF-Access headers (expect 200 or Vault-side error)"
           curl -i -sS \
             -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
             -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
-            "${VAULT_BASE_URL}/v1/sys/health"
-          set +x
+            "${VAULT_BASE_URL}/v1/sys/health" || true
 
-      # 追加の詳細デバッグ（必要に応じて）
       - name: Step_8_Verbose_TLS_with_Headers
         run: |
-          echo "🔎 TLS verbose with headers（失敗時の深掘り用）"
+          echo "🔎 TLS verbose with headers"
           curl -vk \
             -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
             -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
             "${VAULT_BASE_URL}/v1/sys/health" || true
+
+      - name: Step_8_1_Curl_Trace_Debug
+        run: |
+          echo "📘 --trace-ascii を使った詳細なTLSレベルの追跡"
+          curl --trace-ascii /dev/stdout -s \
+            -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
+            -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
+            "${VAULT_BASE_URL}/v1/sys/health" || true
+
+      - name: Step_9_Verify_Cert_Locally
+        run: |
+          echo "${{ secrets.VAULT_ROOT_CA_PEM }}" > /tmp/vault_root_ca.pem
+          echo | openssl s_client -connect vault.profinaut.studiokeke.com:443 \
+            -servername vault.profinaut.studiokeke.com \
+            -showcerts 2>/dev/null | \
+            openssl x509 -outform PEM > /tmp/vault_cert.pem
+
+          echo "🔍 openssl verify"
+          openssl verify -CAfile /tmp/vault_root_ca.pem /tmp/vault_cert.pem || true
