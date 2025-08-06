@@ -1,8 +1,11 @@
 listener "tcp" {
   address = "0.0.0.0:8200"
   tls_cert_file = "/vault/cert/vault-cert.pem"
-  tls_key_file = "/vault/cert/vault-key.pem"
-  tls_disable = false
+  tls_key_file  = "/vault/cert/vault-key.pem"
+  tls_disable   = false
+
+  tls_min_version = "tls12"
+  tls_server_name = "vault.internal"  # ← これが Cloudflared の originServerName と一致する必要あり
 }
 
 # 💾 ストレージ設定（fileベースの永続化）

@@ -1,3 +1,4 @@
+# ~/.cloudflared/config.yml または Docker の cloudflared ボリュームにある config.yml
 tunnel: dc0e81d8-932a-4581-9d5e-603e60a6c8bb
 credentials-file: /etc/cloudflared/credentials.json
 
@@ -5,19 +6,26 @@ ingress:
   - hostname: vault.profinaut.studiokeke.com
     service: https://vault:8200
     originRequest:
-      originServerName: vault.internal      # ← Vault サーバ証明書の CN/SAN に合わせる
+      originServerName: vault.profinaut.studiokeke.com
       caPool: /etc/cloudflared/vault_root_ca.pem
+      noTLSVerify: false
 
   - hostname: webhook.profinaut.studiokeke.com
     service: http://webhook_server:8000
 
-  - hostname: prometheus.profinaut.studiokeke.com
-    service: http://prometheus:9090
-
   - hostname: grafana.profinaut.studiokeke.com
     service: http://grafana:3000
 
+  - hostname: prometheus.profinaut.studiokeke.com
+    service: http://prometheus:9090
+
   - hostname: alerts.profinaut.studiokeke.com
     service: http://alertmanager:9093
+
+  - hostname: app.profinaut.studiokeke.com
+    service: http://frontend:3000
+
+  - hostname: api.profinaut.studiokeke.com
+    service: http://signal_engine:8000
 
   - service: http_status:404
