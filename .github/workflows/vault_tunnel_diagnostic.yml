@@ -41,7 +41,6 @@ jobs:
               -showcerts -CApath /etc/ssl/certs -brief
           ' || true
 
-      # 🔄 Optional: IP直指定テスト
       - name: Step_6_1_IP_Force_Resolve_and_Curl
         run: |
           echo "📡 --resolve を使って直接IP指定での接続を試みます（DNSバイパス）"
@@ -51,7 +50,6 @@ jobs:
             --resolve vault.profinaut.studiokeke.com:443:$IP \
             "${VAULT_BASE_URL}/v1/sys/health" || true
 
-      # 🔐 手動CA指定（Vault証明書のRoot CAを使用）
       - name: Step_6_2_Curl_with_Manual_CA
         run: |
           echo "${{ secrets.VAULT_ROOT_CA_PEM }}" > /tmp/vault_root_ca.pem
@@ -90,6 +88,7 @@ jobs:
       - name: Step_9_Verify_Cert_Locally
         run: |
           echo "${{ secrets.VAULT_ROOT_CA_PEM }}" > /tmp/vault_root_ca.pem
+
           echo | openssl s_client -connect vault.profinaut.studiokeke.com:443 \
             -servername vault.profinaut.studiokeke.com \
             -showcerts 2>/dev/null | \
