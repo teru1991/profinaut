@@ -9,90 +9,76 @@ jobs:
 
     env:
       VAULT_BASE_URL: https://vault.profinaut.studiokeke.com
+      VAULT_PORT: 443
       CF_ACCESS_CLIENT_ID: ${{ secrets.VAULT_CF_ACCESS_CLIENT_ID }}
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.VAULT_CF_ACCESS_CLIENT_SECRET }}
+      VAULT_ROOT_CA_PEM: ${{ secrets.VAULT_ROOT_CA_PEM }}
 
     steps:
-      - name: Step_1_Checkout
+      - name: step_1_checkout
         uses: actions/checkout@v4
 
-      - name: Step_2_Install_tools
+      - name: step_2_install_tools
         run: |
           sudo apt-get update
           sudo apt-get install -y curl dnsutils netcat-openbsd openssl
 
-      - name: Step_3_DNS_Resolve
+      - name: step_3_dns_lookup
         run: |
           echo "🔍 dig +short vault.profinaut.studiokeke.com"
-          dig +short vault.profinaut.studiokeke.com || true
+          dig +short vault.profinaut.studiokeke.com || echo "❌ DNS解決に失敗"
 
-      - name: Step_4_TCP_443_Reachability
+      - name: step_4_tcp_443_reachability
         run: |
-          echo "🔌 Checking TCP 443..."
-          nc -zv vault.profinaut.studiokeke.com 443 || echo "❌ TCP:443 not reachable"
+          echo "🔌 Checking TCP reachability on port 443..."
+          nc -zv vault.profinaut.studiokeke.com 443 || echo "❌ TCP 443 unreachable"
 
-      - name: Step_5_TLS_Server_Hello_and_Cert
+      - name: step_5_tls_handshake
         run: |
-          echo "🔐 openssl s_client handshake + certs"
-          timeout 10 bash -c '
-            echo | openssl s_client \
-              -connect vault.profinaut.studiokeke.com:443 \
-              -servername vault.profinaut.studiokeke.com \
-              -showcerts -CApath /etc/ssl/certs -brief
-          ' || true
+          echo "🔐 TLS handshake via openssl..."
+          timeout 10 bash -c 'echo | openssl s_client \
+            -connect vault.profinaut.studiokeke.com:${VAULT_PORT} \
+            -servername vault.profinaut.studiokeke.com \
+            -showcerts -CApath /etc/ssl/certs -brief' || echo "❌ TLS handshake failed"
 
-      - name: Step_6_1_IP_Force_Resolve_and_Curl
+      - name: step_6_1_force_ip_resolve_curl
         run: |
-          echo "📡 --resolve を使って直接IP指定での接続を試みます（DNSバイパス）"
           IP=$(dig +short vault.profinaut.studiokeke.com | tail -n1)
-          echo "Resolved IP: $IP"
-          curl -vk \
-            --resolve vault.profinaut.studiokeke.com:443:$IP \
-            "${VAULT_BASE_URL}/v1/sys/health" || true
+          echo "📡 Resolved IP: $IP"
+          curl -vk --resolve vault.profinaut.studiokeke.com:${VAULT_PORT}:$IP \
+            ${VAULT_BASE_URL}/v1/sys/health || echo "❌ IP直指定接続失敗"
 
-      - name: Step_6_2_Curl_with_Manual_CA
+      - name: step_6_2_curl_with_manual_ca
         run: |
-          echo "${{ secrets.VAULT_ROOT_CA_PEM }}" > /tmp/vault_root_ca.pem
+          echo "$VAULT_ROOT_CA_PEM" > /tmp/vault_root_ca.pem
           curl -vk --cacert /tmp/vault_root_ca.pem \
-            "${VAULT_BASE_URL}/v1/sys/health" || true
+            ${VAULT_BASE_URL}/v1/sys/health || echo "❌ 手動CA指定接続失敗"
 
-      - name: Step_6_Health_without_CF_Access_headers
+      - name: step_6_3_health_without_cf_access
         run: |
-          echo "🌐 Request without CF-Access headers (expect 401/403)"
-          curl -i -sS "${VAULT_BASE_URL}/v1/sys/health" || true
+          echo "🌐 Request without CF headers (expect 401 or 403)"
+          curl -i -sS ${VAULT_BASE_URL}/v1/sys/health || echo "❌ 通常リクエスト失敗"
 
-      - name: Step_7_Health_with_CF_Access_headers
+      - name: step_7_health_with_cf_access
         run: |
-          echo "✅ Request with CF-Access headers (expect 200 or Vault-side error)"
+          echo "✅ Request with CF Access Headers"
           curl -i -sS \
             -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
             -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
-            "${VAULT_BASE_URL}/v1/sys/health" || true
+            ${VAULT_BASE_URL}/v1/sys/health || echo "❌ ヘッダー付きリクエスト失敗"
 
-      - name: Step_8_Verbose_TLS_with_Headers
+      - name: step_8_verbose_tls_with_headers
         run: |
-          echo "🔎 TLS verbose with headers"
+          echo "🔎 Verbose TLS output with headers"
           curl -vk \
             -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
             -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
-            "${VAULT_BASE_URL}/v1/sys/health" || true
+            ${VAULT_BASE_URL}/v1/sys/health || echo "❌ TLS + ヘッダー接続失敗"
 
-      - name: Step_8_1_Curl_Trace_Debug
+      - name: step_9_tls_trace_debug
         run: |
-          echo "📘 --trace-ascii を使った詳細なTLSレベルの追跡"
+          echo "📘 --trace-ascii を使った詳細追跡"
           curl --trace-ascii /dev/stdout -s \
             -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
             -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
-            "${VAULT_BASE_URL}/v1/sys/health" || true
-
-      - name: Step_9_Verify_Cert_Locally
-        run: |
-          echo "${{ secrets.VAULT_ROOT_CA_PEM }}" > /tmp/vault_root_ca.pem
-
-          echo | openssl s_client -connect vault.profinaut.studiokeke.com:443 \
-            -servername vault.profinaut.studiokeke.com \
-            -showcerts 2>/dev/null | \
-            openssl x509 -outform PEM > /tmp/vault_cert.pem
-
-          echo "🔍 openssl verify"
-          openssl verify -CAfile /tmp/vault_root_ca.pem /tmp/vault_cert.pem || true
+            ${VAULT_BASE_URL}/v1/sys/health || echo "❌ Trace付き失敗"
