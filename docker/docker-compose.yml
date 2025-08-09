@@ -5,8 +5,6 @@ networks:
     name: profinaut_net
 
 services:
-
-  # --- Cloudflare Tunnel -----------------------------------------------------
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: profinaut_cloudflared
@@ -14,26 +12,21 @@ services:
     restart: unless-stopped
     networks: [profinaut_net]
     volumes:
-      # cloudflared の設定と資格情報（read-only）
       - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
       - ./cloudflared/dc0e81d8-932a-4581-9d5e-603e60a6c8bb.json:/etc/cloudflared/credentials.json:ro
-      # Vault の Root CA（cloudflared の originRequest.caPool で使用）
       - ./vault/cert/origin_ca_rsa_root.pem:/etc/cloudflared/vault_root_ca.pem:ro
 
-  # --- Vault 本体 ------------------------------------------------------------
   vault:
     image: hashicorp/vault:1.20.0
     container_name: profinaut_vault
-    # 外部へ 8200 を公開しない（Cloudflare 経由のみ）
     expose:
       - "8200"
     environment:
-      VAULT_ADDR: "https://vault:8200"   # 内部からは service 名でアクセス
+      VAULT_ADDR: "https://vault:8200"
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: ${AWS_REGION}
-    cap_add:
-      - IPC_LOCK
+    cap_add: [ "IPC_LOCK" ]
     networks: [profinaut_net]
     volumes:
       - ./vault/config:/vault/config
@@ -41,6 +34,7 @@ services:
       - ./storage/vault/data:/vault/data
       - ./vault/log:/vault/log
     command: vault server -config=/vault/config/vault.hcl
+
 
   # --- Vault 初期化／シード ---------------------------------------------------
   vault_init:
@@ -50,8 +44,7 @@ services:
     container_name: profinaut_vault_init
     working_dir: /vault/scripts
     environment:
-      # 内部向け URL（Cloudflare 経由ではない）
-      VAULT_ADDR: "https://vault:8200"
+      VAULT_ADDR: "https://vault:8200"           # Cloudflare 経由ではない内部向け
       REQUESTS_CA_BUNDLE: /vault/cert/origin_ca_rsa_root.pem
       SSL_CERT_FILE: /vault/cert/origin_ca_rsa_root.pem
       CURL_CA_BUNDLE: /vault/cert/origin_ca_rsa_root.pem
@@ -294,7 +287,7 @@ services:
     environment:
       DISCORD_WEBHOOK_URL: ${DISCORD_ALERT_WEBHOOK}
     expose:
-      - "5000"
+      - "8000"   # ← ingress 側の service: http://webhook_server:8000 と合わせる
     networks: [profinaut_net]
     depends_on:
       - vault_init
@@ -361,20 +354,3 @@ services:
       WATCHTOWER_LABEL_ENABLE: "true"
     depends_on:
       - vault_init
-
-  # --- 追加: Vault Exporter など（必要に応じて有効化） ------------------------
-  # vault_exporter:
-  #   build:
-  #     context: vault/vault-exporter
-  #   container_name: profinaut_vault_exporter
-  #   ports:
-  #     - "9811:9811"
-  #   environment:
-  #     VAULT_ADDR: https://vault:8200
-  #     SSL_CERT_FILE: /etc/ssl/private/vault_root_ca.pem
-  #     CURL_CA_BUNDLE: /etc/ssl/private/vault_root_ca.pem
-  #   networks: [profinaut_net]
-  #   volumes:
-  #     - ./vault/cert/origin_ca_rsa_root.pem:/etc/ssl/private/vault_root_ca.pem:ro
-  #   depends_on:
-  #     - vault_init
