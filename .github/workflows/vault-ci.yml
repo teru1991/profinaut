@@ -4,7 +4,10 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '0 0 * * 1'  # 毎週月曜 00:00 UTC = JST 9:00
+    - cron: '0 0 * * 1'  # 毎週月曜 00:00 UTC (= JST 09:00)
+
+permissions:
+  contents: read
 
 jobs:
   vault-inject:
@@ -13,34 +16,62 @@ jobs:
       run:
         shell: bash
 
+    env:
+      VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
+      VAULT_CERT: /tmp/origin_ca.pem
+      # AppRole（管理用・読み取り権限付）
+      PROFINAUT_ADMIN_ROLE_ID: ${{ secrets.PROFINAUT_ADMIN_ROLE_ID }}
+      PROFINAUT_ADMIN_SECRET_ID: ${{ secrets.PROFINAUT_ADMIN_SECRET_ID }}
+      # CF Access（Zero Trust通過）
+      CF_ACCESS_CLIENT_ID: ${{ secrets.VAULT_CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.VAULT_CF_ACCESS_CLIENT_SECRET }}
+      # 出力ファイル
+      ENV_OUT: docker/vault/.env.generated
+      SECRET_MANIFEST: docker/vault/secret_manifest.yml
+
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 🛠 Generate .env.generated from Vault
-        run: bash docker/vault/scripts/generate_env_ci.sh
-        env:
-          VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
-          PROFINAUT_ADMIN_ROLE_ID: ${{ secrets.PROFINAUT_ADMIN_ROLE_ID }}
-          PROFINAUT_ADMIN_SECRET_ID: ${{ secrets.PROFINAUT_ADMIN_SECRET_ID }}
-
-      - name: 📄 Load .env.generated and export AppRole
-        id: export-env
+      - name: 🔧 Install deps
         run: |
-          if [ ! -f docker/vault/.env.generated ]; then
-            echo "❌ .env.generated が見つかりません"
-            exit 1
-          fi
+          sudo apt-get update
+          sudo apt-get install -y jq
+          python3 - <<'PY'
+          import sys, subprocess
+          try:
+              import yaml  # noqa
+          except ImportError:
+              subprocess.check_call([sys.executable, "-m", "pip", "install", "pyyaml"])
+          PY
 
-          echo "✅ .env.generated を読み込み中..."
-          export $(grep -v '^#' docker/vault/.env.generated | xargs)
-
-          # 例：Bot ManagerのAppRoleをエクスポート
-          echo "BOT_MANAGER_ROLE_ID=$BOT_MANAGER_ROLE_ID" >> $GITHUB_ENV
-          echo "BOT_MANAGER_SECRET_ID=$BOT_MANAGER_SECRET_ID" >> $GITHUB_ENV
-
-      - name: ✅ 実行例：Vaultログイン用トークン取得（確認用）
+      - name: 📜 Place Origin CA
         run: |
-          curl --fail -s --request POST "$VAULT_ADDR/v1/auth/approle/login" \
-            --data "{\"role_id\":\"$BOT_MANAGER_ROLE_ID\",\"secret_id\":\"$BOT_MANAGER_SECRET_ID\"}" \
-            | jq
+          mkdir -p /tmp
+          echo "${{ secrets.VAULT_ORIGIN_CA_PEM }}" > "$VAULT_CERT"
+
+      # マニフェストが無ければサンプルを作る（初回用）
+      - name: 🧩 Prepare secret manifest (if missing)
+        run: |
+          if [ ! -f "$SECRET_MANIFEST" ]; then
+            mkdir -p "$(dirname "$SECRET_MANIFEST")"
+            cat > "$SECRET_MANIFEST" <<'YAML'
+# 例：kv-v2, mount "secret", パス配下のキーを環境変数に書き出す
+kv: v2
+mount: secret
+items:
+  - path: app/bot_manager
+    exports:
+      - VAULT_BOT_MANAGER_API_KEY: API_KEY
+      - VAULT_BOT_MANAGER_API_SECRET: API_SECRET
+  - path: discord_hooks/alerts
+    exports:
+      - DISCORD_ALERT_WEBHOOK_URL: DISCORD_WEBHOOK_URL
+
+  - name: 🛠 Generate .env.generated from Vault
+    run: bash docker/vault/scripts/generate_env_ci.sh
+
+  - name: 📄 Show .env.generated (masked)
+    run: |
+      echo "---- .env.generated ----" 
+      sed -E 's/=[^=]{6,}/=***MASKED***/' "$ENV_OUT" || true
