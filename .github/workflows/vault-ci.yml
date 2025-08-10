@@ -1,7 +1,7 @@
 name: Vault Inject CI
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   schedule:
     - cron: '0 0 * * 1'  # 毎週月曜 00:00 UTC (= JST 09:00)
 permissions:
@@ -56,18 +56,18 @@ jobs:
           if [ ! -f "$SECRET_MANIFEST" ]; then
             mkdir -p "$(dirname "$SECRET_MANIFEST")"
             cat > "$SECRET_MANIFEST" <<'YAML'
-# 例：kv-v2, mount "secret", パス配下のキーを環境変数に書き出す
-kv: v2
-mount: secret
-items:
-  - path: app/bot_manager
-    exports:
-      - VAULT_BOT_MANAGER_API_KEY: API_KEY
-      - VAULT_BOT_MANAGER_API_SECRET: API_SECRET
-  - path: discord_hooks/alerts
-    exports:
-      - DISCORD_ALERT_WEBHOOK_URL: DISCORD_WEBHOOK_URL
-          YAML
+            # 例：kv-v2, mount "secret", パス配下のキーを環境変数に書き出す
+            kv: v2
+            mount: secret
+            items:
+              - path: app/bot_manager
+                exports:
+                  - VAULT_BOT_MANAGER_API_KEY: API_KEY
+                  - VAULT_BOT_MANAGER_API_SECRET: API_SECRET
+              - path: discord_hooks/alerts
+                exports:
+                  - DISCORD_ALERT_WEBHOOK_URL: DISCORD_WEBHOOK_URL
+            YAML
           fi
 
       - name: 🛠 Generate .env.generated from Vault
