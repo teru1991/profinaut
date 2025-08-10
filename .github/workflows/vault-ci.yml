@@ -1,24 +1,21 @@
 name: Vault Inject CI
-
 on:
   push:
     branches: [main]
   schedule:
     - cron: '0 0 * * 1'  # 毎週月曜 00:00 UTC (= JST 09:00)
-
 permissions:
   contents: read
-
 jobs:
   vault-inject:
     runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
-
     env:
       VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
       VAULT_CERT: /tmp/origin_ca.pem
+      VAULT_CACERT: /tmp/origin_ca.pem
       # AppRole（管理用・読み取り権限付）
       PROFINAUT_ADMIN_ROLE_ID: ${{ secrets.PROFINAUT_ADMIN_ROLE_ID }}
       PROFINAUT_ADMIN_SECRET_ID: ${{ secrets.PROFINAUT_ADMIN_SECRET_ID }}
@@ -28,13 +25,13 @@ jobs:
       # 出力ファイル
       ENV_OUT: docker/vault/.env.generated
       SECRET_MANIFEST: docker/vault/secret_manifest.yml
-
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
       - name: 🔧 Install deps
         run: |
+          set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y jq
           python3 - <<'PY'
@@ -47,12 +44,15 @@ jobs:
 
       - name: 📜 Place Origin CA
         run: |
+          set -euo pipefail
           mkdir -p /tmp
-          echo "${{ secrets.VAULT_ORIGIN_CA_PEM }}" > "$VAULT_CERT"
+          # PEM の改行を保ったまま安全に書き込み
+          printf "%s" "${{ secrets.VAULT_ORIGIN_CA_PEM }}" > "$VAULT_CERT"
 
       # マニフェストが無ければサンプルを作る（初回用）
       - name: 🧩 Prepare secret manifest (if missing)
         run: |
+          set -euo pipefail
           if [ ! -f "$SECRET_MANIFEST" ]; then
             mkdir -p "$(dirname "$SECRET_MANIFEST")"
             cat > "$SECRET_MANIFEST" <<'YAML'
@@ -67,11 +67,22 @@ items:
   - path: discord_hooks/alerts
     exports:
       - DISCORD_ALERT_WEBHOOK_URL: DISCORD_WEBHOOK_URL
+          YAML
+          fi
 
-  - name: 🛠 Generate .env.generated from Vault
-    run: bash docker/vault/scripts/generate_env_ci.sh
+      - name: 🛠 Generate .env.generated from Vault
+        run: |
+          set -euo pipefail
+          bash docker/vault/scripts/generate_env_ci.sh
 
-  - name: 📄 Show .env.generated (masked)
-    run: |
-      echo "---- .env.generated ----" 
-      sed -E 's/=[^=]{6,}/=***MASKED***/' "$ENV_OUT" || true
+      - name: 📄 Show .env.generated (masked)
+        run: |
+          set -euo pipefail
+          echo "---- .env.generated ----"
+          # 1 行目の最初の = 以降を全てマスク（空や短い値も確実に隠す）
+          sed -E 's/=.*/=***MASKED***/' "$ENV_OUT" || true
+
+      - name: 🧹 Cleanup sensitive files
+        if: ${{ always() }}
+        run: |
+          rm -f "$VAULT_CERT"
