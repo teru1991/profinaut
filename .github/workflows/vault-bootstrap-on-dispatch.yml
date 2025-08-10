@@ -1,0 +1,119 @@
+name: 🔐 Vault Bootstrap (on repository_dispatch)
+
+on:
+  repository_dispatch:
+    types: [vault-first-boot]   # ← sentinel からのトリガ
+  workflow_dispatch:            # 手動実行も可
+
+permissions:
+  contents: read
+  secrets: write                # (任意) サービストークン等を保存するなら
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    env:
+      VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
+      VAULT_CERT: /tmp/origin_ca.pem
+      CF_ACCESS_CLIENT_ID: ${{ secrets.VAULT_CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.VAULT_CF_ACCESS_CLIENT_SECRET }}
+      POLICY_DIR: docker/vault/policies
+      APPROLE_DEFINITIONS: docker/vault/approle_definitions.yaml
+      ENV_GENERATED: docker/vault/scripts/env.generated
+      SERVICE_TOKEN_POLICIES: "admin,ci-maintainer"
+      SERVICE_TOKEN_TTL: "24h"
+      BOOTSTRAP_PGP_KEYS: ${{ secrets.BOOTSTRAP_PGP_KEYS }}   # 使わないなら未設定でもOK
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deps
+        run: |
+          sudo apt-get update -y && sudo apt-get install -y jq
+          pip install requests pyyaml
+          mkdir -p /tmp
+          echo "${{ secrets.VAULT_ORIGIN_CA_PEM }}" > "$VAULT_CERT"
+
+      - name: Health
+        id: health
+        run: |
+          set -e
+          r=$(curl -sS --cacert "$VAULT_CERT" \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            "$VAULT_ADDR/v1/sys/health")
+          echo "$r" | jq .
+          echo "initialized=$(echo "$r" | jq -r .initialized)" >> "$GITHUB_OUTPUT"
+
+      - name: Init (once)
+        if: steps.health.outputs.initialized == 'false'
+        id: init
+        run: |
+          set -e
+          body=$(jq -n '{recovery_shares:5, recovery_threshold:3}')
+          if [ -n "${BOOTSTRAP_PGP_KEYS:-}" ]; then
+            IFS=',' read -r -a arr <<< "$BOOTSTRAP_PGP_KEYS"
+            pgp_json=$(printf '%s\n' "${arr[@]}" | jq -R . | jq -s .)
+            body=$(echo "$body" | jq --argjson pgp "$pgp_json" '. + {pgp_keys:$pgp}')
+          fi
+          resp=$(curl -sS --fail -X PUT \
+            --cacert "$VAULT_CERT" \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            -H "Content-Type: application/json" \
+            -d "$body" \
+            "$VAULT_ADDR/v1/sys/init")
+          echo "$resp" | jq 'del(.root_token, .initial_root_token)'
+          echo "root_token=$(echo "$resp" | jq -r '.root_token // .initial_root_token')" >> "$GITHUB_OUTPUT"
+
+      - name: Policies (root token)
+        if: steps.health.outputs.initialized == 'false'
+        env:
+          VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
+        run: python3 docker/vault/scripts/create_policies.py
+
+      - name: AppRoles (root token)
+        if: steps.health.outputs.initialized == 'false'
+        env:
+          VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
+        run: python3 docker/vault/scripts/create_approles.py
+
+      - name: (Optional) Create service token → GH Secrets
+        if: steps.health.outputs.initialized == 'false'
+        env:
+          VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          body=$(jq -n --arg pol "$SERVICE_TOKEN_POLICIES" --arg ttl "$SERVICE_TOKEN_TTL" \
+                 '{policies:($pol|split(",")), ttl:$ttl}')
+          resp=$(curl -sS --fail -X POST \
+            --cacert "$VAULT_CERT" \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            -H "X-Vault-Token: $VAULT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$body" "$VAULT_ADDR/v1/auth/token/create")
+          tok=$(echo "$resp" | jq -r '.auth.client_token')
+          echo "::add-mask::$tok"
+          echo "✅ service token issued (masked)"
+
+      - name: Output env.generated (role/secret ids)
+        if: steps.health.outputs.initialized == 'false'
+        env:
+          VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
+        run: |
+          python3 docker/vault/scripts/create_approles.py
+          sed -E 's/=(.{6}).+$/=\1***MASKED***/' "$ENV_GENERATED" || true
+
+      - name: Revoke root
+        if: steps.health.outputs.initialized == 'false'
+        env:
+          VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
+        run: |
+          curl -sS --fail -X POST \
+            --cacert "$VAULT_CERT" \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            -H "X-Vault-Token: $VAULT_TOKEN" \
+            "$VAULT_ADDR/v1/auth/token/revoke-self" && echo "revoked"
