@@ -65,17 +65,20 @@ jobs:
 
       - name: Policies (root token)
         if: steps.health.outputs.initialized == 'false'
-        env: { VAULT_TOKEN: ${{ steps.init.outputs.root_token }} }
+        env:
+          VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
         run: python3 docker/vault/scripts/create_policies.py
 
       - name: AppRoles (root token)
         if: steps.health.outputs.initialized == 'false'
-        env: { VAULT_TOKEN: ${{ steps.init.outputs.root_token }} }
+        env:
+          VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
         run: python3 docker/vault/scripts/create_approles.py
 
       - name: (Optional) Service token (no secrets write here)
         if: steps.health.outputs.initialized == 'false'
-        env: { VAULT_TOKEN: ${{ steps.init.outputs.root_token }} }
+        env:
+          VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
         run: |
           body=$(jq -n --arg pol "$SERVICE_TOKEN_POLICIES" --arg ttl "$SERVICE_TOKEN_TTL" \
                  '{policies:($pol|split(",")), ttl:$ttl}')
@@ -92,14 +95,16 @@ jobs:
 
       - name: Output env.generated
         if: steps.health.outputs.initialized == 'false'
-        env: { VAULT_TOKEN: ${{ steps.init.outputs.root_token }} }
+        env:
+          VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
         run: |
           python3 docker/vault/scripts/create_approles.py
           sed -E 's/=(.{6}).+$/=\1***MASKED***/' "$ENV_GENERATED" || true
 
       - name: Revoke root
         if: steps.health.outputs.initialized == 'false'
-        env: { VAULT_TOKEN: ${{ steps.init.outputs.root_token }} }
+        env:
+          VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
         run: |
           curl -sS --fail -X POST \
             --cacert "$VAULT_CERT" \
