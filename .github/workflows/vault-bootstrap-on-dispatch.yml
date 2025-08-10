@@ -1,4 +1,4 @@
-name: 🔐 Vault Bootstrap (on repository_dispatch)
+name: "🔐 Vault Bootstrap (on repository_dispatch)"
 
 on:
   repository_dispatch:
@@ -12,29 +12,38 @@ permissions:
 jobs:
   bootstrap:
     runs-on: ubuntu-latest
+
     env:
+      # ---- Vault / CF Access ----
       VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
       VAULT_CERT: /tmp/origin_ca.pem
       CF_ACCESS_CLIENT_ID: ${{ secrets.VAULT_CF_ACCESS_CLIENT_ID }}
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.VAULT_CF_ACCESS_CLIENT_SECRET }}
+
+      # ---- Paths ----
       POLICY_DIR: docker/vault/policies
       APPROLE_DEFINITIONS: docker/vault/approle_definitions.yaml
       ENV_GENERATED: docker/vault/scripts/env.generated
+
+      # ---- Optional service token ----
       SERVICE_TOKEN_POLICIES: "admin,ci-maintainer"
       SERVICE_TOKEN_TTL: "24h"
+
+      # ---- Optional PGP recipients for init (comma-separated public keys) ----
       BOOTSTRAP_PGP_KEYS: ${{ secrets.BOOTSTRAP_PGP_KEYS }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
 
-      - name: Deps
+      - name: 🧰 Deps
         run: |
           sudo apt-get update -y && sudo apt-get install -y jq
-          pip install requests pyyaml
+          pip install --disable-pip-version-check -q requests pyyaml
           mkdir -p /tmp
           echo "${{ secrets.VAULT_ORIGIN_CA_PEM }}" > "$VAULT_CERT"
 
-      - name: Health
+      - name: 🌡️ Health
         id: health
         run: |
           r=$(curl -sS --cacert "$VAULT_CERT" \
@@ -44,7 +53,12 @@ jobs:
           echo "$r" | jq .
           echo "initialized=$(echo "$r" | jq -r .initialized)" >> "$GITHUB_OUTPUT"
 
-      - name: Init (once)
+      - name: 🧪 Sanity check (policy / approle defs)
+        run: |
+          [ -d "$POLICY_DIR" ] || { echo "❌ $POLICY_DIR not found"; exit 1; }
+          [ -f "$APPROLE_DEFINITIONS" ] || { echo "❌ $APPROLE_DEFINITIONS not found"; exit 1; }
+
+      - name: 🚀 Init (once)
         if: steps.health.outputs.initialized == 'false'
         id: init
         run: |
@@ -54,28 +68,34 @@ jobs:
             pgp_json=$(printf '%s\n' "${arr[@]}" | jq -R . | jq -s .)
             body=$(echo "$body" | jq --argjson pgp "$pgp_json" '. + {pgp_keys:$pgp}')
           fi
+
           resp=$(curl -sS --fail -X PUT \
             --cacert "$VAULT_CERT" \
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
             -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
             -H "Content-Type: application/json" \
             -d "$body" "$VAULT_ADDR/v1/sys/init")
+
           echo "$resp" | jq 'del(.root_token, .initial_root_token)'
           echo "root_token=$(echo "$resp" | jq -r '.root_token // .initial_root_token')" >> "$GITHUB_OUTPUT"
 
-      - name: Policies (root token)
+      - name: 📜 Policies (root token)
         if: steps.health.outputs.initialized == 'false'
         env:
           VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
-        run: python3 docker/vault/scripts/create_policies.py
+        run: |
+          python3 docker/vault/scripts/create_policies.py
 
-      - name: AppRoles (root token)
+      - name: 🧬 AppRoles (root token) → env.generated
         if: steps.health.outputs.initialized == 'false'
         env:
           VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
-        run: python3 docker/vault/scripts/create_approles.py
+        run: |
+          python3 docker/vault/scripts/create_approles.py
+          test -f "$ENV_GENERATED" || { echo "❌ $ENV_GENERATED not found"; exit 1; }
+          echo "✅ Generated $ENV_GENERATED"
 
-      - name: (Optional) Service token (no secrets write here)
+      - name: 🔑 (Optional) Issue short-lived service token
         if: steps.health.outputs.initialized == 'false'
         env:
           VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
@@ -93,15 +113,7 @@ jobs:
           echo "::add-mask::$tok"
           echo "✅ service token issued (masked)"
 
-      - name: Output env.generated
-        if: steps.health.outputs.initialized == 'false'
-        env:
-          VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
-        run: |
-          python3 docker/vault/scripts/create_approles.py
-          sed -E 's/=(.{6}).+$/=\1***MASKED***/' "$ENV_GENERATED" || true
-
-      - name: Revoke root
+      - name: 🧹 Revoke root (safety)
         if: steps.health.outputs.initialized == 'false'
         env:
           VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
@@ -112,7 +124,8 @@ jobs:
             -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
             -H "X-Vault-Token: $VAULT_TOKEN" \
             "$VAULT_ADDR/v1/auth/token/revoke-self" && echo "revoked"
-      - name: Copy master .env to docker/vault/.env
+
+      - name: 📄 Copy master .env → docker/vault/.env
         run: |
           if [ ! -f ".env" ]; then
             echo "❌ repo root に .env がありません"; exit 1
@@ -121,20 +134,50 @@ jobs:
           cp -f .env docker/vault/.env
           echo "✅ copied .env → docker/vault/.env"
 
-      - name: Merge env.generated → docker/vault/.env
-        env:
-          VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
+      - name: 🧩 Create merge_env.sh (inline)
         run: |
-          # env.generated は create_approles.py が出力済みの想定
-          if [ ! -f "docker/vault/scripts/env.generated" ]; then
-            echo "❌ env.generated が見つかりません"; exit 1
+          cat > docker/vault/scripts/merge_env.sh <<'EOS'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          SRC_MASTER="${1:?master .env path}"
+          DST_FILE="${2:?output .env path}"
+          GEN_FILE="${3:?env.generated path}"
+
+          tmp="$(mktemp)"
+          cp "$DST_FILE" "$tmp"
+
+          # 1) 既存キーのうち、env.generated に含まれるキーを一旦削除
+          #    2) env.generated を追記
+          # ※ KEY=VALUE 形式のみ対象（コメント/空行は保持）
+          awk -F= '
+            FNR==NR && $0 ~ /^[A-Za-z_][A-Za-z0-9_]*=/ { k[$1]=1; next }
+            FNR!=NR {
+              if ($0 ~ /^[A-Za-z_][A-Za-z0-9_]*=/) {
+                split($0, a, "=")
+                if (!(a[1] in k)) print $0
+              } else {
+                print $0
+              }
+            }
+          ' "$GEN_FILE" "$tmp" > "$DST_FILE"
+
+          # 追記（末尾にそのまま追加）
+          cat "$GEN_FILE" >> "$DST_FILE"
+          rm -f "$tmp"
+          EOS
+          chmod +x docker/vault/scripts/merge_env.sh
+
+      - name: 🔀 Merge env.generated → docker/vault/.env
+        run: |
+          if [ ! -f "$ENV_GENERATED" ]; then
+            echo "❌ $ENV_GENERATED が見つかりません"; exit 1
           fi
           bash docker/vault/scripts/merge_env.sh \
             .env \
             docker/vault/.env \
-            docker/vault/scripts/env.generated
+            "$ENV_GENERATED"
 
-          # マスクしてログ表示（値の露出はしない）
+          # 露出防止のため、先頭数行だけマスク表示
           awk -F= '
             $0 ~ /^[A-Za-z_][A-Za-z0-9_]*=/ {
               v=$2; if(length(v)>6){ printf "%s=%s***MASKED***\n",$1,substr(v,1,6) }
@@ -143,3 +186,9 @@ jobs:
             }
             { print }
           ' docker/vault/.env | sed -n "1,20p"
+
+      - name: 📦 Artifact (確認用)
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-vault-env-masked
+          path: docker/vault/.env
