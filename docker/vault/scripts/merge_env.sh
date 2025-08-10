@@ -1,36 +1,35 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-# 📍ファイルパス
-ENV_FILE="../.env"
-GEN_FILE=".env.generated"
-TMP_FILE=".env.merged"
+# 使い方:
+#   merge_env.sh <SOURCE_ENV> <TARGET_ENV> <APPEND_ENV>
+# 例:
+#   merge_env.sh .env docker/vault/.env docker/vault/scripts/env.generated
 
-# ✅ チェック
-if [ ! -f "$GEN_FILE" ]; then
-  echo "❌ $GEN_FILE が見つかりません。先に create_approles.py を実行してください。"
-  exit 1
+SRC="${1:?source .env path required}"
+DST="${2:?target .env path required}"
+APP="${3:?append .env path required}"
+
+# 1) マスターをコピー（初回生成 or 上書きしたくないなら存在時はバックアップ）
+mkdir -p "$(dirname "$DST")"
+if [[ -f "$DST" ]]; then
+  cp -f "$DST" "${DST}.bak.$(date +%Y%m%d%H%M%S)"
 fi
+cp -f "$SRC" "$DST"
 
-if [ ! -f "$ENV_FILE" ]; then
-  echo "❌ $ENV_FILE が見つかりません。"
-  exit 1
-fi
+# 2) 追記するキー一覧を抽出（#で始まる行、空行は無視）
+mapfile -t KEYS < <(grep -E '^[A-Za-z_][A-Za-z0-9_]*=' "$APP" | cut -d= -f1 | sort -u)
 
-# 🛠 上書きまたは追加
-echo "🔄 $GEN_FILE の内容を $ENV_FILE にマージします..."
+# 3) 既存の同名キーを削除
+for k in "${KEYS[@]}"; do
+  # ^KEY= の行を消す（コメントは残す）
+  sed -i.bak "/^${k}=.*/d" "$DST"
+done
+rm -f "${DST}.bak"
 
-# 古い ROLE_ID / SECRET_ID を除去
-cp "$ENV_FILE" "$TMP_FILE"
-while read -r line; do
-  key=$(echo "$line" | cut -d '=' -f1)
-  if grep -q "^$key=" "$TMP_FILE"; then
-    sed -i.bak "/^$key=/d" "$TMP_FILE"
-  fi
-done < "$GEN_FILE"
+# 4) 追記
+echo "" >> "$DST"
+echo "# ---- appended by merge_env.sh ($(date -Iseconds)) ----" >> "$DST"
+cat "$APP" >> "$DST"
 
-# マージ
-cat "$GEN_FILE" >> "$TMP_FILE"
-mv "$TMP_FILE" "$ENV_FILE"
-
-echo "✅ マージ完了: $ENV_FILE が更新されました。バックアップは $ENV_FILE.bak にあります。"
+echo "✅ merged: $SRC + $APP → $DST"

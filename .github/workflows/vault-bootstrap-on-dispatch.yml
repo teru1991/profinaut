@@ -112,3 +112,34 @@ jobs:
             -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
             -H "X-Vault-Token: $VAULT_TOKEN" \
             "$VAULT_ADDR/v1/auth/token/revoke-self" && echo "revoked"
+      - name: Copy master .env to docker/vault/.env
+        run: |
+          if [ ! -f ".env" ]; then
+            echo "❌ repo root に .env がありません"; exit 1
+          fi
+          mkdir -p docker/vault
+          cp -f .env docker/vault/.env
+          echo "✅ copied .env → docker/vault/.env"
+
+      - name: Merge env.generated → docker/vault/.env
+        env:
+          VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
+        run: |
+          # env.generated は create_approles.py が出力済みの想定
+          if [ ! -f "docker/vault/scripts/env.generated" ]; then
+            echo "❌ env.generated が見つかりません"; exit 1
+          fi
+          bash docker/vault/scripts/merge_env.sh \
+            .env \
+            docker/vault/.env \
+            docker/vault/scripts/env.generated
+
+          # マスクしてログ表示（値の露出はしない）
+          awk -F= '
+            $0 ~ /^[A-Za-z_][A-Za-z0-9_]*=/ {
+              v=$2; if(length(v)>6){ printf "%s=%s***MASKED***\n",$1,substr(v,1,6) }
+              else { print $1"="v }
+              next
+            }
+            { print }
+          ' docker/vault/.env | sed -n "1,20p"
