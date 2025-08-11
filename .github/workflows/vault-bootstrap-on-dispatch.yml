@@ -9,9 +9,16 @@ permissions:
   contents: read
   actions: read
 
+concurrency:
+  group: vault-bootstrap
+  cancel-in-progress: false
+
 jobs:
   bootstrap:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
 
     env:
       # ---- Vault / CF Access ----
@@ -38,14 +45,16 @@ jobs:
 
       - name: 🧰 Deps
         run: |
+          set -euo pipefail
           sudo apt-get update -y && sudo apt-get install -y jq
-          pip install --disable-pip-version-check -q requests pyyaml
-          mkdir -p /tmp
+          python3 -m pip install --disable-pip-version-check -q requests pyyaml
+          mkdir -p /tmp docker/vault/scripts
           echo "${{ secrets.VAULT_ORIGIN_CA_PEM }}" > "$VAULT_CERT"
 
       - name: 🌡️ Health
         id: health
         run: |
+          set -euo pipefail
           r=$(curl -sS --cacert "$VAULT_CERT" \
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
             -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
@@ -55,6 +64,7 @@ jobs:
 
       - name: 🧪 Sanity check (policy / approle defs)
         run: |
+          set -euo pipefail
           [ -d "$POLICY_DIR" ] || { echo "❌ $POLICY_DIR not found"; exit 1; }
           [ -f "$APPROLE_DEFINITIONS" ] || { echo "❌ $APPROLE_DEFINITIONS not found"; exit 1; }
 
@@ -62,6 +72,7 @@ jobs:
         if: steps.health.outputs.initialized == 'false'
         id: init
         run: |
+          set -euo pipefail
           body=$(jq -n '{recovery_shares:5, recovery_threshold:3}')
           if [ -n "${BOOTSTRAP_PGP_KEYS:-}" ]; then
             IFS=',' read -r -a arr <<< "$BOOTSTRAP_PGP_KEYS"
@@ -76,6 +87,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d "$body" "$VAULT_ADDR/v1/sys/init")
 
+          # Print without tokens
           echo "$resp" | jq 'del(.root_token, .initial_root_token)'
           echo "root_token=$(echo "$resp" | jq -r '.root_token // .initial_root_token')" >> "$GITHUB_OUTPUT"
 
@@ -84,6 +96,7 @@ jobs:
         env:
           VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
         run: |
+          set -euo pipefail
           python3 docker/vault/scripts/create_policies.py
 
       - name: 🧬 AppRoles (root token) → env.generated
@@ -91,6 +104,7 @@ jobs:
         env:
           VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
         run: |
+          set -euo pipefail
           python3 docker/vault/scripts/create_approles.py
           test -f "$ENV_GENERATED" || { echo "❌ $ENV_GENERATED not found"; exit 1; }
           echo "✅ Generated $ENV_GENERATED"
@@ -100,6 +114,7 @@ jobs:
         env:
           VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
         run: |
+          set -euo pipefail
           body=$(jq -n --arg pol "$SERVICE_TOKEN_POLICIES" --arg ttl "$SERVICE_TOKEN_TTL" \
                  '{policies:($pol|split(",")), ttl:$ttl}')
           resp=$(curl -sS --fail -X POST \
@@ -118,6 +133,7 @@ jobs:
         env:
           VAULT_TOKEN: ${{ steps.init.outputs.root_token }}
         run: |
+          set -euo pipefail
           curl -sS --fail -X POST \
             --cacert "$VAULT_CERT" \
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
@@ -127,6 +143,7 @@ jobs:
 
       - name: 📄 Copy master .env → docker/vault/.env
         run: |
+          set -euo pipefail
           if [ ! -f ".env" ]; then
             echo "❌ repo root に .env がありません"; exit 1
           fi
@@ -136,6 +153,8 @@ jobs:
 
       - name: 🧩 Create merge_env.sh (inline)
         run: |
+          set -euo pipefail
+          mkdir -p docker/vault/scripts
           cat > docker/vault/scripts/merge_env.sh <<'EOS'
           #!/usr/bin/env bash
           set -euo pipefail
@@ -143,12 +162,10 @@ jobs:
           DST_FILE="${2:?output .env path}"
           GEN_FILE="${3:?env.generated path}"
 
+          # DST をベースに、GEN のキーを一旦削除してから GEN を追記
           tmp="$(mktemp)"
           cp "$DST_FILE" "$tmp"
 
-          # 1) 既存キーのうち、env.generated に含まれるキーを一旦削除
-          #    2) env.generated を追記
-          # ※ KEY=VALUE 形式のみ対象（コメント/空行は保持）
           awk -F= '
             FNR==NR && $0 ~ /^[A-Za-z_][A-Za-z0-9_]*=/ { k[$1]=1; next }
             FNR!=NR {
@@ -161,14 +178,15 @@ jobs:
             }
           ' "$GEN_FILE" "$tmp" > "$DST_FILE"
 
-          # 追記（末尾にそのまま追加）
           cat "$GEN_FILE" >> "$DST_FILE"
           rm -f "$tmp"
           EOS
           chmod +x docker/vault/scripts/merge_env.sh
 
       - name: 🔀 Merge env.generated → docker/vault/.env
+        if: steps.health.outputs.initialized == 'false'
         run: |
+          set -euo pipefail
           if [ ! -f "$ENV_GENERATED" ]; then
             echo "❌ $ENV_GENERATED が見つかりません"; exit 1
           fi
@@ -188,6 +206,7 @@ jobs:
           ' docker/vault/.env | sed -n "1,20p"
 
       - name: 📦 Artifact (確認用)
+        if: steps.health.outputs.initialized == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: docker-vault-env-masked
