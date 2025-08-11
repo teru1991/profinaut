@@ -3,10 +3,10 @@ name: Vault Policy Diff Checker
 on:
   push:
     paths:
-      - 'docker/vault/policies/**/*.hcl'
+      - '../../docker/vault/approle/policies/**/*.hcl'
   pull_request:
     paths:
-      - 'docker/vault/policies/**/*.hcl'
+      - '../../docker/vault/approle/policies/**/*.hcl'
 
 jobs:
   policy-diff:

@@ -19,14 +19,14 @@ services:
   vault:
     image: hashicorp/vault:1.20.0
     container_name: profinaut_vault
-    expose:
-      - "8200"
+    expose: ["8200"]
     environment:
-      VAULT_ADDR: "https://vault:8200"    # 内部直接TLSの場合は証明書のSANに "vault" を含めてください
+      # 内部直TLSでアクセス（Cloudflare Access のヘッダ不要）
+      VAULT_ADDR: "https://vault:8200"
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: ${AWS_REGION}
-    cap_add: [ "IPC_LOCK" ]
+    cap_add: ["IPC_LOCK"]
     networks: [profinaut_net]
     volumes:
       - ./vault/config:/vault/config
@@ -41,8 +41,8 @@ services:
     container_name: profinaut_sentinel
     networks: [profinaut_net]
     environment:
-      GITHUB_REPO: ${GITHUB_REPO}                            # 例: StudioKeKe/profinaut
-      GH_DISPATCH_TOKEN: ${GH_DISPATCH_TOKEN}                # repo スコープの PAT
+      GITHUB_REPO: ${GITHUB_REPO}                  # 例: StudioKeKe/profinaut
+      GH_DISPATCH_TOKEN: ${GH_DISPATCH_TOKEN}      # repo スコープの PAT
       VAULT_ADDR: https://vault.profinaut.studiokeke.com:8200
       CF_ACCESS_CLIENT_ID: ${VAULT_CF_ACCESS_CLIENT_ID}
       CF_ACCESS_CLIENT_SECRET: ${VAULT_CF_ACCESS_CLIENT_SECRET}
@@ -58,7 +58,36 @@ services:
       chmod +x /notify_bootstrap.sh
       /notify_bootstrap.sh
 
-  # --- 以降のサービスは vault_init 依存を外し、必要に応じて vault にだけ依存 ---
+  # 🔧 Vault Agent: AppRole でログインし、env をテンプレート出力 & 自動更新
+  vault_agent:
+    image: hashicorp/vault:1.20.0
+    container_name: profinaut_vault_agent
+    networks: [profinaut_net]
+    restart: unless-stopped
+    environment:
+      # Agent 自身も内部の Vault に直TLS
+      VAULT_ADDR: https://vault:8200
+    depends_on:
+      - vault
+    volumes:
+      # CA証明書（VaultのOrigin CA）
+      - ./vault/cert/origin_ca_rsa_root.pem:/vault/agent/ca.pem:ro
+      # Agent 設定 & テンプレート
+      - ./vault/agent/config.hcl:/vault/agent/config.hcl:ro
+      - ./vault/agent/templates/app.env.tpl:/vault/agent/templates/app.env.tpl:ro
+      # AppRole 認証用クレデンシャル（ローカルに置き、必ず .gitignore ）
+      - ./vault/agent/approle/role_id:/vault/agent/approle/role_id:ro
+      - ./vault/agent/approle/secret_id:/vault/agent/approle/secret_id:ro
+      # 出力先（ホストへバインド、下流サービスが env_file として読む）
+      - ./vault/rendered:/vault/rendered
+    command: agent -config=/vault/agent/config.hcl
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /vault/rendered/docker_vault.env && grep -q '=' /vault/rendered/docker_vault.env"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # --- 以降のサービスは「vault_agent が env を作る」ことに依存 ---
   mongo:
     image: mongo:6.0
     container_name: profinaut_mongo
@@ -67,7 +96,10 @@ services:
     volumes:
       - ./storage/mongo/data:/data/db
     depends_on:
-      - vault
+      vault_agent:
+        condition: service_healthy
+    env_file:
+      - ./vault/rendered/docker_vault.env
 
   postgres:
     image: postgres:15
@@ -81,7 +113,10 @@ services:
     volumes:
       - ./storage/postgres/data:/var/lib/postgresql/data
     depends_on:
-      - vault
+      vault_agent:
+        condition: service_healthy
+    env_file:
+      - ./vault/rendered/docker_vault.env
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
@@ -90,7 +125,11 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     networks: [profinaut_net]
-    depends_on: [vault]
+    depends_on:
+      vault_agent:
+        condition: service_healthy
+    env_file:
+      - ./vault/rendered/docker_vault.env
 
   kafka:
     image: confluentinc/cp-kafka:7.4.0
@@ -105,8 +144,12 @@ services:
     volumes:
       - ./storage/kafka/data:/var/lib/kafka/data
     depends_on:
-      - zookeeper
-      - vault
+      zookeeper:
+        condition: service_started
+      vault_agent:
+        condition: service_healthy
+    env_file:
+      - ./vault/rendered/docker_vault.env
 
   kafka_init:
     image: bitnami/kafka:latest
@@ -116,7 +159,12 @@ services:
     volumes:
       - ./scripts/init_kafka_topics.sh:/init_kafka_topics.sh:ro
     depends_on:
-      - kafka
+      kafka:
+        condition: service_started
+      vault_agent:
+        condition: service_healthy
+    env_file:
+      - ./vault/rendered/docker_vault.env
 
   prometheus:
     image: prom/prometheus:latest
@@ -129,7 +177,11 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus/rules:/etc/prometheus/rules:ro
-    depends_on: [vault]
+    depends_on:
+      vault_agent:
+        condition: service_healthy
+    env_file:
+      - ./vault/rendered/docker_vault.env
 
   grafana:
     image: grafana/grafana:latest
@@ -139,8 +191,12 @@ services:
     volumes:
       - ./prometheus/grafana_dashboard_template.json:/etc/grafana/provisioning/dashboards/dashboard.json:ro
     depends_on:
-      - prometheus
-      - vault
+      prometheus:
+        condition: service_started
+      vault_agent:
+        condition: service_healthy
+    env_file:
+      - ./vault/rendered/docker_vault.env
 
   loki:
     image: grafana/loki:2.9.0
@@ -154,8 +210,12 @@ services:
       - ./storage/loki/boltdb-cache:/loki/boltdb-cache
       - ./storage/loki/rules:/loki/rules
     command: -config.file=/etc/loki/loki-config.yml
-    depends_on: [vault]
     restart: unless-stopped
+    depends_on:
+      vault_agent:
+        condition: service_healthy
+    env_file:
+      - ./vault/rendered/docker_vault.env
 
   promtail:
     image: grafana/promtail:2.9.0
@@ -169,8 +229,12 @@ services:
       - ./prometheus/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
     command: -config.file=/etc/promtail/promtail-config.yml
     depends_on:
-      - vault
-      - loki
+      loki:
+        condition: service_started
+      vault_agent:
+        condition: service_healthy
+    env_file:
+      - ./vault/rendered/docker_vault.env
 
   alertmanager:
     image: prom/alertmanager
@@ -180,7 +244,11 @@ services:
     volumes:
       - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
     command: --config.file=/etc/alertmanager/alertmanager.yml
-    depends_on: [vault]
+    depends_on:
+      vault_agent:
+        condition: service_healthy
+    env_file:
+      - ./vault/rendered/docker_vault.env
 
   frontend:
     build:
@@ -191,9 +259,13 @@ services:
       NODE_ENV: production
     restart: unless-stopped
     networks: [profinaut_net]
-    depends_on: [vault]
+    depends_on:
+      vault_agent:
+        condition: service_healthy
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+    env_file:
+      - ./vault/rendered/docker_vault.env
 
   bot_manager:
     build:
@@ -204,19 +276,22 @@ services:
       CF_ACCESS_CLIENT_SECRET: ${METRICS_CF_ACCESS_CLIENT_SECRET}
       RUST_LOG: info
       VAULT_ADDR: https://vault:8200
-      VAULT_ROLE_ID: ${BOT_MANAGER_ROLE_ID}
-      VAULT_SECRET_ID: ${BOT_MANAGER_SECRET_ID}
       SSL_CERT_FILE: /etc/ssl/private/vault_root_ca.pem
       CURL_CA_BUNDLE: /etc/ssl/private/vault_root_ca.pem
     networks: [profinaut_net]
     volumes:
       - ./vault/cert/origin_ca_rsa_root.pem:/etc/ssl/private/vault_root_ca.pem:ro
     depends_on:
-      - vault
-      - kafka
-      - mongo
+      kafka:
+        condition: service_started
+      mongo:
+        condition: service_started
+      vault_agent:
+        condition: service_healthy
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+    env_file:
+      - ./vault/rendered/docker_vault.env
 
   signal_engine:
     build:
@@ -226,19 +301,22 @@ services:
       CF_ACCESS_CLIENT_ID: ${SIGNAL_ENGINE_CF_ACCESS_CLIENT_ID}
       CF_ACCESS_CLIENT_SECRET: ${SIGNAL_ENGINE_CF_ACCESS_CLIENT_SECRET}
       VAULT_ADDR: https://vault:8200
-      VAULT_ROLE_ID: ${SIGNAL_ENGINE_ROLE_ID}
-      VAULT_SECRET_ID: ${SIGNAL_ENGINE_SECRET_ID}
       SSL_CERT_FILE: /etc/ssl/private/vault_root_ca.pem
       CURL_CA_BUNDLE: /etc/ssl/private/vault_root_ca.pem
     networks: [profinaut_net]
     volumes:
       - ./vault/cert/origin_ca_rsa_root.pem:/etc/ssl/private/vault_root_ca.pem:ro
     depends_on:
-      - vault
-      - kafka
-      - mongo
+      kafka:
+        condition: service_started
+      mongo:
+        condition: service_started
+      vault_agent:
+        condition: service_healthy
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+    env_file:
+      - ./vault/rendered/docker_vault.env
 
   trade_executor:
     build:
@@ -248,19 +326,22 @@ services:
       CF_ACCESS_CLIENT_ID: ${TRADE_EXECUTOR_CF_ACCESS_CLIENT_ID}
       CF_ACCESS_CLIENT_SECRET: ${TRADE_EXECUTOR_CF_ACCESS_CLIENT_SECRET}
       VAULT_ADDR: https://vault:8200
-      VAULT_ROLE_ID: ${TRADE_EXECUTOR_ROLE_ID}
-      VAULT_SECRET_ID: ${TRADE_EXECUTOR_SECRET_ID}
       SSL_CERT_FILE: /etc/ssl/private/vault_root_ca.pem
       CURL_CA_BUNDLE: /etc/ssl/private/vault_root_ca.pem
     networks: [profinaut_net]
     volumes:
       - ./vault/cert/origin_ca_rsa_root.pem:/etc/ssl/private/vault_root_ca.pem:ro
     depends_on:
-      - vault
-      - kafka
-      - mongo
+      kafka:
+        condition: service_started
+      mongo:
+        condition: service_started
+      vault_agent:
+        condition: service_healthy
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+    env_file:
+      - ./vault/rendered/docker_vault.env
 
   webhook_server:
     build:
@@ -270,4 +351,8 @@ services:
       DISCORD_WEBHOOK_URL: ${DISCORD_ALERT_WEBHOOK}
     expose: ["8000"]
     networks: [profinaut_net]
-    depends_on: [vault]
+    depends_on:
+      vault_agent:
+        condition: service_healthy
+    env_file:
+      - ./vault/rendered/docker_vault.env
