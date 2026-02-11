@@ -1,0 +1,11 @@
+{
+  "name": "profinaut",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-Exchange / Multi-Language Bot Management Dashboard",
+  "scripts": {
+    "dev": "docker compose up --build",
+    "test": "docker compose config -q && echo 'compose config validated'",
+    "migrate": "echo 'Migration wiring starts in Step 2 (FastAPI + Alembic)'"
+  }
+}
