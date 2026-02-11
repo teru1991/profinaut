@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: profinaut-postgres
+    environment:
+      POSTGRES_USER: profinaut
+      POSTGRES_PASSWORD: profinaut
+      POSTGRES_DB: profinaut
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U profinaut"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: profinaut-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  dashboard-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: profinaut-dashboard-api
+    environment:
+      DATABASE_URL: postgresql://profinaut:profinaut@postgres:5432/profinaut
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: uvicorn dashboard_api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: profinaut-worker
+    environment:
+      DATABASE_URL: postgresql://profinaut:profinaut@postgres:5432/profinaut
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: python -m worker.main
+
+volumes:
+  postgres_data:
