@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-02-11 — Step 11 (Module execution controls)
+- Added `POST /modules/{module_id}/run` to queue manual module runs.
+- Added `PATCH /module-runs/{run_id}` to update module run status and summary.
+- Added audit logging for module run trigger/update actions.
+- Added automated API test for trigger -> update -> filtered list flow.
+- Added `scripts/scaffold_step11.ps1`.
+- Bumped OpenAPI contract version to `1.8.0`.
+
+## 2026-02-11 — Step 10 (Execution quality telemetry)
+- Added `execution_quality_ts` persistence via Alembic migration `0007_execution_quality_ts`.
+- Added ingest endpoint `POST /ingest/execution-quality`.
+- Added analytics endpoint `GET /analytics/execution-quality` returning average slippage/latency/fill-ratio and sample count.
+- Added automated API test for execution quality ingest and summary aggregation.
+- Added `scripts/scaffold_step10.ps1`.
+- Bumped OpenAPI contract version to `1.7.0`.
+
 ## 2026-02-11 — Step 9 (NetPnL extension)
 - Added `cost_ledger` persistence via Alembic migration `0006_cost_ledger`.
 - Added ingest endpoint `POST /ingest/costs` for `FEE`/`FUNDING` cost entries.

@@ -103,6 +103,18 @@ class PaginatedModuleRuns(BaseModel):
     items: list[ModuleRunOut]
 
 
+
+
+class ModuleRunTriggerIn(BaseModel):
+    trigger_type: str = "MANUAL"
+    summary: dict | None = None
+
+
+class ModuleRunStatusUpdateIn(BaseModel):
+    status: str
+    summary: dict | None = None
+    ended_at: datetime | None = None
+
 class CommandIn(BaseModel):
     command_id: str
     instance_id: str
@@ -186,6 +198,24 @@ class ExposureSummaryResponse(BaseModel):
 
 
 
+
+
+
+class ExecutionQualityIn(BaseModel):
+    instance_id: str
+    symbol: str
+    slippage_bps: float
+    latency_ms: float
+    fill_ratio: float
+    timestamp: datetime
+
+
+class ExecutionQualitySummaryResponse(BaseModel):
+    generated_at: datetime
+    avg_slippage_bps: float
+    avg_latency_ms: float
+    avg_fill_ratio: float
+    samples: int
 
 class CostIn(BaseModel):
     instance_id: str

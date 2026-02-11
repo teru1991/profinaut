@@ -57,3 +57,15 @@
 1. Cost ingest accepts only `FEE` and `FUNDING` cost types for MVP NetPnL formula compliance.
 2. NetPnL summary is derived from latest realized/unrealized metrics and summed cost ledger amounts.
 3. NetPnL API supports optional symbol filter and returns UTC timestamped summary payload.
+
+
+## Step 10 defaults
+1. Execution quality ingest stores slippage/latency/fill ratio samples in `execution_quality_ts`.
+2. Execution quality summary returns simple averages and sample count for MVP.
+3. Symbol filter is optional and list-style aggregations remain admin-protected on analytics endpoints.
+
+
+## Step 11 defaults
+1. Module runs are queued via admin-triggered endpoint and persisted in `module_runs`.
+2. Module run status transitions are updated through admin endpoint with optional completion timestamp/summary.
+3. Module run list remains paginated and filterable by `module_id` and `status`.

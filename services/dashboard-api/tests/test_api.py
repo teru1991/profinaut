@@ -380,3 +380,91 @@ def test_net_pnl_formula_with_costs(client):
     assert body["fees"] == 10.0
     assert body["funding"] == 5.0
     assert body["net_pnl"] == 145.0
+
+
+def test_execution_quality_ingest_and_summary(client):
+    now = datetime.now(timezone.utc)
+    hb = {
+        "instance_id": "inst-eq-1",
+        "bot_id": "bot-eq-1",
+        "runtime_mode": "PAPER",
+        "exchange": "BINANCE",
+        "symbol": "BTCUSDT",
+        "version": "1.0.0",
+        "timestamp": now.isoformat(),
+        "metadata": {},
+    }
+    assert client.post("/ingest/heartbeat", json=hb).status_code == 202
+
+    assert client.post(
+        "/ingest/execution-quality",
+        json={
+            "instance_id": "inst-eq-1",
+            "symbol": "BTCUSDT",
+            "slippage_bps": 2.0,
+            "latency_ms": 120.0,
+            "fill_ratio": 0.95,
+            "timestamp": now.isoformat(),
+        },
+    ).status_code == 202
+    assert client.post(
+        "/ingest/execution-quality",
+        json={
+            "instance_id": "inst-eq-1",
+            "symbol": "BTCUSDT",
+            "slippage_bps": 4.0,
+            "latency_ms": 80.0,
+            "fill_ratio": 0.90,
+            "timestamp": now.isoformat(),
+        },
+    ).status_code == 202
+
+    summary = client.get("/analytics/execution-quality?symbol=BTCUSDT", headers={"X-Admin-Token": "test-admin-token"})
+    assert summary.status_code == 200
+    body = summary.json()
+    assert body["samples"] == 2
+    assert body["avg_slippage_bps"] == 3.0
+    assert body["avg_latency_ms"] == 100.0
+    assert body["avg_fill_ratio"] == 0.925
+
+
+def test_module_run_trigger_and_status_update(client):
+    now = datetime.now(timezone.utc).isoformat()
+    module = {
+        "module_id": "44444444-4444-4444-4444-444444444444",
+        "name": "alert-rules",
+        "description": "Alert rules module",
+        "enabled": True,
+        "execution_mode": "MANUAL_AND_SCHEDULED",
+        "schedule_cron": "*/10 * * * *",
+        "config": {},
+        "created_at": now,
+        "updated_at": now,
+    }
+    assert client.post("/modules", json=module, headers={"X-Admin-Token": "test-admin-token"}).status_code == 201
+
+    trigger = client.post(
+        "/modules/44444444-4444-4444-4444-444444444444/run",
+        json={"trigger_type": "MANUAL", "summary": {"reason": "operator"}},
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert trigger.status_code == 202
+    run_id = trigger.json()["run_id"]
+    assert trigger.json()["status"] == "QUEUED"
+
+    updated = client.patch(
+        f"/module-runs/{run_id}",
+        json={"status": "SUCCEEDED", "summary": {"processed": 3}},
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert updated.status_code == 200
+    body = updated.json()
+    assert body["status"] == "SUCCEEDED"
+    assert body["ended_at"] is not None
+
+    listed = client.get(
+        "/module-runs?module_id=44444444-4444-4444-4444-444444444444&status=SUCCEEDED",
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert listed.status_code == 200
+    assert listed.json()["total"] == 1

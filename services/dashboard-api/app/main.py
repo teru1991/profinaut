@@ -15,6 +15,7 @@ from .models import (
     CommandAckRecord,
     CommandRecord,
     CostLedgerRecord,
+    ExecutionQualityTsRecord,
     Instance,
     MetricTsRecord,
     Module,
@@ -29,6 +30,8 @@ from .schemas import (
     CommandIn,
     CommandOut,
     CostIn,
+    ExecutionQualityIn,
+    ExecutionQualitySummaryResponse,
     ExposureSummaryResponse,
     HealthResponse,
     HeartbeatAlertCheckResponse,
@@ -36,6 +39,9 @@ from .schemas import (
     MetricIn,
     ModuleIn,
     ModuleOut,
+    ModuleRunOut,
+    ModuleRunStatusUpdateIn,
+    ModuleRunTriggerIn,
     NetPnlSummaryResponse,
     PaginatedAuditLogs,
     PaginatedBots,
@@ -131,6 +137,26 @@ def ingest_metric(payload: MetricIn, db: Session = Depends(get_db)) -> dict:
             symbol=payload.symbol,
             metric_type=payload.metric_type,
             value=payload.value,
+            timestamp=payload.timestamp,
+        )
+    )
+    db.commit()
+    return {"status": "accepted"}
+
+
+@app.post("/ingest/execution-quality", status_code=202)
+def ingest_execution_quality(payload: ExecutionQualityIn, db: Session = Depends(get_db)) -> dict:
+    instance = db.get(Instance, payload.instance_id)
+    if instance is None:
+        raise HTTPException(status_code=404, detail="instance not found")
+
+    db.add(
+        ExecutionQualityTsRecord(
+            instance_id=payload.instance_id,
+            symbol=payload.symbol,
+            slippage_bps=payload.slippage_bps,
+            latency_ms=payload.latency_ms,
+            fill_ratio=payload.fill_ratio,
             timestamp=payload.timestamp,
         )
     )
@@ -238,6 +264,43 @@ def get_portfolio_exposure(actor: str = Depends(require_admin_actor), db: Sessio
         total_gross_exposure=total_gross,
         key_metrics=key_metrics,
         by_symbol=by_symbol,
+    )
+
+
+@app.get("/analytics/execution-quality", response_model=ExecutionQualitySummaryResponse)
+def get_execution_quality_summary(
+    actor: str = Depends(require_admin_actor),
+    symbol: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> ExecutionQualitySummaryResponse:
+    del actor
+    generated_at = datetime.now(timezone.utc)
+
+    query = select(ExecutionQualityTsRecord)
+    if symbol:
+        query = query.where(ExecutionQualityTsRecord.symbol == symbol)
+    rows = db.scalars(query).all()
+
+    samples = len(rows)
+    if samples == 0:
+        return ExecutionQualitySummaryResponse(
+            generated_at=generated_at,
+            avg_slippage_bps=0.0,
+            avg_latency_ms=0.0,
+            avg_fill_ratio=0.0,
+            samples=0,
+        )
+
+    avg_slippage = sum(float(r.slippage_bps) for r in rows) / samples
+    avg_latency = sum(float(r.latency_ms) for r in rows) / samples
+    avg_fill_ratio = sum(float(r.fill_ratio) for r in rows) / samples
+
+    return ExecutionQualitySummaryResponse(
+        generated_at=generated_at,
+        avg_slippage_bps=avg_slippage,
+        avg_latency_ms=avg_latency,
+        avg_fill_ratio=avg_fill_ratio,
+        samples=samples,
     )
 
 
@@ -389,6 +452,74 @@ def delete_module(module_id: str, actor: str = Depends(require_admin_actor), db:
         db.delete(row)
         write_audit(db, actor, "MODULE_DELETE", "module", module_id, "SUCCESS", {})
         db.commit()
+
+
+@app.post("/modules/{module_id}/run", response_model=ModuleRunOut, status_code=202)
+def trigger_module_run(
+    module_id: str,
+    payload: ModuleRunTriggerIn,
+    actor: str = Depends(require_admin_actor),
+    db: Session = Depends(get_db),
+) -> ModuleRunOut:
+    module = db.get(Module, module_id)
+    if module is None:
+        raise HTTPException(status_code=404, detail="Module not found")
+
+    run = ModuleRun(
+        run_id=str(__import__("uuid").uuid4()),
+        module_id=module_id,
+        trigger_type=payload.trigger_type,
+        status="QUEUED",
+        started_at=datetime.now(timezone.utc),
+        ended_at=None,
+        summary=payload.summary,
+    )
+    db.add(run)
+    write_audit(
+        db,
+        actor,
+        "MODULE_RUN_TRIGGER",
+        "module",
+        module_id,
+        "SUCCESS",
+        {"run_id": run.run_id, "trigger_type": payload.trigger_type},
+    )
+    db.commit()
+    db.refresh(run)
+    return run
+
+
+@app.patch("/module-runs/{run_id}", response_model=ModuleRunOut)
+def update_module_run_status(
+    run_id: str,
+    payload: ModuleRunStatusUpdateIn,
+    actor: str = Depends(require_admin_actor),
+    db: Session = Depends(get_db),
+) -> ModuleRunOut:
+    run = db.get(ModuleRun, run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="Module run not found")
+
+    run.status = payload.status
+    if payload.summary is not None:
+        run.summary = payload.summary
+    if payload.ended_at is not None:
+        run.ended_at = payload.ended_at
+    elif payload.status in {"SUCCEEDED", "FAILED", "CANCELED"}:
+        run.ended_at = datetime.now(timezone.utc)
+
+    write_audit(
+        db,
+        actor,
+        "MODULE_RUN_UPDATE",
+        "module_run",
+        run_id,
+        "SUCCESS",
+        {"status": payload.status},
+    )
+    db.commit()
+    db.refresh(run)
+    return run
 
 
 @app.post("/commands", response_model=CommandOut, status_code=202)

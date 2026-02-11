@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Profinaut Control Plane API
-  version: 1.6.0
+  version: 1.8.0
   description: |
     Step 2 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
     Contracts in this folder and in `contracts/schemas` are the SSOT.
@@ -117,6 +117,30 @@ paths:
         "202":
           description: Position accepted
 
+  /ingest/execution-quality:
+    post:
+      tags: [ingest]
+      summary: Ingest execution quality sample
+      operationId: postExecutionQuality
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [instance_id, symbol, slippage_bps, latency_ms, fill_ratio, timestamp]
+              properties:
+                instance_id: { type: string }
+                symbol: { type: string }
+                slippage_bps: { type: number }
+                latency_ms: { type: number }
+                fill_ratio: { type: number }
+                timestamp: { type: string, format: date-time }
+      responses:
+        "202":
+          description: Execution quality sample accepted
+
   /ingest/costs:
     post:
       tags: [ingest]
@@ -174,6 +198,32 @@ paths:
                         symbol: { type: string }
                         net_exposure: { type: number }
                         gross_exposure: { type: number }
+
+  /analytics/execution-quality:
+    get:
+      tags: [reconcile]
+      summary: Execution quality summary
+      operationId: getExecutionQualitySummary
+      parameters:
+        - in: query
+          name: symbol
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Execution quality summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, avg_slippage_bps, avg_latency_ms, avg_fill_ratio, samples]
+                properties:
+                  generated_at: { type: string, format: date-time }
+                  avg_slippage_bps: { type: number }
+                  avg_latency_ms: { type: number }
+                  avg_fill_ratio: { type: number }
+                  samples: { type: integer }
 
   /analytics/net-pnl:
     get:
@@ -539,6 +589,71 @@ paths:
       responses:
         "204":
           description: Module deleted
+
+  /modules/{module_id}/run:
+    post:
+      tags: [modules]
+      summary: Trigger a module run
+      operationId: triggerModuleRun
+      parameters:
+        - in: path
+          name: module_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                trigger_type: { type: string }
+                summary: { type: object }
+      responses:
+        "202":
+          description: Module run queued
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/module_run.schema.json
+
+  /module-runs/{run_id}:
+    patch:
+      tags: [modules]
+      summary: Update module run status
+      operationId: updateModuleRun
+      parameters:
+        - in: path
+          name: run_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELED]
+                summary:
+                  type: object
+                ended_at:
+                  type: string
+                  format: date-time
+      responses:
+        "200":
+          description: Updated module run
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/module_run.schema.json
 
   /module-runs:
     get:
