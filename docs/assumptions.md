@@ -8,3 +8,9 @@
 5. Time values across backend storage will be UTC ISO-8601 once API contracts are introduced in Step 1.
 6. Admin authentication in MVP uses `X-Admin-Token` sourced from `.env` (implemented in Step 2).
 7. Discord support before Step 7 is outbound webhook notifications only.
+
+## Step 1 defaults
+1. OpenAPI uses version `1.0.0` as the first SSOT baseline for V2.5+ bootstrap.
+2. Contract validation in CI uses Redocly CLI (OpenAPI lint) and Python `jsonschema` (schema correctness).
+3. Contract files are additive and backward-compatible at this stage; no breaking changes are introduced.
+4. List endpoints include pagination parameters (`page`, `page_size`) in the OpenAPI contract baseline.

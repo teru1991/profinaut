@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-02-11 — Step 1 (Contracts SSOT + CI enforcement)
+- Added OpenAPI contract at `contracts/openapi/control-plane.v1.yaml`.
+- Added JSON Schemas:
+  - `heartbeat.schema.json`
+  - `command.schema.json`
+  - `ack.schema.json`
+  - `reconcile.schema.json`
+  - `audit.schema.json`
+  - `module.schema.json`
+  - `module_run.schema.json`
+- Added contract validation scripts:
+  - `scripts/validate_contracts.ps1`
+  - `scripts/validate_json_schemas.py`
+- Updated npm scripts to include `contracts:lint` and made `test` run contract checks.
+- Updated CI workflow to enforce contract linting/validation.
+- Updated README with contract SSOT and validation commands.
+
 ## 2026-02-11 — Step 0 (Project Initialization)
 - Added required monorepo directory structure for contracts, services, SDKs, apps, infra, scripts, and docs.
 - Added Docker Compose baseline with PostgreSQL and placeholders for dashboard API and web app.

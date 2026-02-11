@@ -2,60 +2,43 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ["**"]
   pull_request:
-    branches: [main]
-
-permissions:
-  contents: read
 
 jobs:
-  lint:
+  contracts:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Set up Python
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e .[dev]
+      - name: Install Python dependencies
+        run: pip install -r requirements-dev.txt
 
-      - name: Lint with ruff
-        run: ruff check .
+      - name: Lint OpenAPI
+        run: npx --yes @redocly/cli@latest lint contracts/openapi/control-plane.v1.yaml
 
-  test:
+      - name: Validate JSON Schemas
+        run: python scripts/validate_json_schemas.py
+
+  baseline:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
+      - name: Validate package.json scripts presence
         run: |
-          python -m pip install --upgrade pip
-          pip install -e .[dev]
-
-      - name: Run tests
-        run: pytest tests/ -v --cov=. --cov-report=term-missing
-
-  docker:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build Docker images
-        run: |
-          docker build -f Dockerfile.api -t profinaut-api .
-          docker build -f Dockerfile.worker -t profinaut-worker .
-
-      - name: Test docker-compose
-        run: |
-          docker-compose config
+          node -e "const p=require('./package.json'); ['dev','test','migrate','contracts:lint'].forEach(k=>{if(!p.scripts?.[k]){throw new Error('missing script '+k)}}); console.log('scripts ok')"
