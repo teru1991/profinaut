@@ -4,7 +4,6 @@ Market data provider with caching.
 import logging
 import random
 from datetime import datetime
-from typing import Any
 
 from contracts.schemas import MarketData, MarketDataType
 

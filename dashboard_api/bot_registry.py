@@ -3,7 +3,6 @@ Bot registry and lifecycle management.
 """
 import logging
 from datetime import datetime
-from typing import Any
 
 from contracts.schemas import BotConfig, BotState, BotStatus
 

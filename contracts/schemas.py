@@ -2,13 +2,13 @@
 Core schemas shared across all services (SSOT).
 """
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class BotStatus(str, Enum):
+class BotStatus(StrEnum):
     """Bot lifecycle status."""
 
     STOPPED = "stopped"
@@ -18,7 +18,7 @@ class BotStatus(str, Enum):
     ERROR = "error"
 
 
-class MarketDataType(str, Enum):
+class MarketDataType(StrEnum):
     """Market data types."""
 
     PRICE = "price"

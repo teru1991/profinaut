@@ -89,7 +89,7 @@ async def create_bot(config: BotConfig):
         bot = await bot_registry.create_bot(config)
         return bot.state
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.post("/bots/{bot_id}/start", response_model=BotState)
@@ -108,7 +108,7 @@ async def start_bot(bot_id: str):
         bot = bot_registry.get_bot(bot_id)
         return bot.state if bot else None
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 @app.post("/bots/{bot_id}/stop", response_model=BotState)
@@ -122,7 +122,7 @@ async def stop_bot(bot_id: str):
         bot = bot_registry.get_bot(bot_id)
         return bot.state if bot else None
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 @app.get("/market-data/symbols", response_model=list[str])
@@ -132,7 +132,7 @@ async def list_symbols():
     return market_data_provider.list_symbols()
 
 
-@app.get("/market-data/{symbol}/price", response_model=MarketData)
+@app.get("/market-data/{symbol:path}/price", response_model=MarketData)
 async def get_price(symbol: str):
     """Get current price for a symbol."""
     request_counter.labels(endpoint="/market-data/price").inc()
@@ -140,7 +140,7 @@ async def get_price(symbol: str):
     return await market_data_provider.get_price(symbol)
 
 
-@app.get("/market-data/{symbol}/volume", response_model=MarketData)
+@app.get("/market-data/{symbol:path}/volume", response_model=MarketData)
 async def get_volume(symbol: str):
     """Get current volume for a symbol."""
     request_counter.labels(endpoint="/market-data/volume").inc()
@@ -148,7 +148,7 @@ async def get_volume(symbol: str):
     return await market_data_provider.get_volume(symbol)
 
 
-@app.get("/market-data/{symbol}/orderbook", response_model=MarketData)
+@app.get("/market-data/{symbol:path}/orderbook", response_model=MarketData)
 async def get_orderbook(symbol: str):
     """Get orderbook for a symbol."""
     request_counter.labels(endpoint="/market-data/orderbook").inc()

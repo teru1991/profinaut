@@ -1,7 +1,6 @@
 """
 Tests for dashboard API.
 """
-import pytest
 from fastapi.testclient import TestClient
 
 from dashboard_api.main import app
@@ -45,7 +44,7 @@ def test_list_symbols():
 
 def test_get_price():
     """Test getting price data."""
-    response = client.get("/market-data/BTC%2FUSD/price")
+    response = client.get("/market-data/BTC/USD/price")
     assert response.status_code == 200
     data = response.json()
     assert data["symbol"] == "BTC/USD"
