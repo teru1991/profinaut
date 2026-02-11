@@ -1,0 +1,378 @@
+openapi: 3.1.0
+info:
+  title: Profinaut Control Plane API
+  version: 1.2.0
+  description: |
+    Step 2 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
+    Contracts in this folder and in `contracts/schemas` are the SSOT.
+  license:
+    name: Proprietary
+    url: https://profinaut.local/license
+servers:
+  - url: https://api.profinaut.local
+
+security:
+  - AdminToken: []
+
+tags:
+  - name: system
+    description: System and service metadata endpoints.
+  - name: ingest
+    description: Agent-to-control-plane ingestion endpoints.
+  - name: bots
+    description: Bot inventory and status endpoints.
+  - name: commands
+    description: Command dispatch and acknowledgement endpoints.
+  - name: reconcile
+    description: Reconciliation reporting endpoints.
+  - name: audit
+    description: Audit trail query endpoints.
+  - name: modules
+    description: Module registry and module run endpoints.
+
+paths:
+  /healthz:
+    get:
+      tags: [system]
+      summary: Service health probe
+      operationId: getHealthz
+      security: []
+      responses:
+        "200":
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, timestamp]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /ingest/heartbeat:
+    post:
+      tags: [ingest]
+      summary: Ingest bot heartbeat
+      operationId: postHeartbeat
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/heartbeat.schema.json
+      responses:
+        "202":
+          description: Heartbeat accepted
+
+  /bots:
+    get:
+      tags: [bots]
+      summary: List bots with latest status
+      operationId: listBots
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Paginated bots
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, page_size, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+
+  /commands:
+    post:
+      tags: [commands]
+      summary: Create command for an instance
+      operationId: createCommand
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/command.schema.json
+      responses:
+        "202":
+          description: Command accepted for delivery
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/command.schema.json
+
+
+  /instances/{instance_id}/commands/pending:
+    get:
+      tags: [commands]
+      summary: Fetch pending commands for an instance
+      operationId: listPendingCommands
+      security: []
+      parameters:
+        - in: path
+          name: instance_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Pending command list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: ../schemas/command.schema.json
+
+  /commands/{command_id}/ack:
+    post:
+      tags: [commands]
+      summary: Ack command execution status from agent
+      operationId: ackCommand
+      security: []
+      parameters:
+        - in: path
+          name: command_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/ack.schema.json
+      responses:
+        "202":
+          description: Ack accepted
+
+  /reconcile:
+    post:
+      tags: [reconcile]
+      summary: Submit reconciliation result
+      operationId: postReconcile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/reconcile.schema.json
+      responses:
+        "202":
+          description: Reconcile result accepted
+
+  /audit/logs:
+    get:
+      tags: [audit]
+      summary: List audit logs
+      operationId: listAuditLogs
+      parameters:
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: page_size
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Paginated audit logs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, page_size, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: ../schemas/audit.schema.json
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+
+  /modules:
+    get:
+      tags: [modules]
+      summary: List module definitions
+      operationId: listModules
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - in: query
+          name: enabled
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Paginated modules
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, page_size, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: ../schemas/module.schema.json
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+    post:
+      tags: [modules]
+      summary: Create or update module definition
+      operationId: upsertModule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/module.schema.json
+      responses:
+        "201":
+          description: Module created or updated
+
+  /modules/{module_id}:
+    get:
+      tags: [modules]
+      summary: Get one module definition
+      operationId: getModule
+      parameters:
+        - in: path
+          name: module_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Module found
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/module.schema.json
+        "404":
+          description: Module not found
+    delete:
+      tags: [modules]
+      summary: Delete one module definition
+      operationId: deleteModule
+      parameters:
+        - in: path
+          name: module_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Module deleted
+
+  /module-runs:
+    get:
+      tags: [modules]
+      summary: List module runs
+      operationId: listModuleRuns
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - in: query
+          name: module_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELED]
+      responses:
+        "200":
+          description: Paginated module runs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, page_size, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: ../schemas/module_run.schema.json
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+
+components:
+  securitySchemes:
+    AdminToken:
+      type: apiKey
+      in: header
+      name: X-Admin-Token
