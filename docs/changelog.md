@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-02-11 — Step 11 (Module execution controls)
+- Added `POST /modules/{module_id}/run` to queue manual module runs.
+- Added `PATCH /module-runs/{run_id}` to update module run status and summary.
+- Added audit logging for module run trigger/update actions.
+- Added automated API test for trigger -> update -> filtered list flow.
+- Added `scripts/scaffold_step11.ps1`.
+- Bumped OpenAPI contract version to `1.8.0`.
+
 ## 2026-02-11 — Step 10 (Execution quality telemetry)
 - Added `execution_quality_ts` persistence via Alembic migration `0007_execution_quality_ts`.
 - Added ingest endpoint `POST /ingest/execution-quality`.

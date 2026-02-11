@@ -103,6 +103,18 @@ class PaginatedModuleRuns(BaseModel):
     items: list[ModuleRunOut]
 
 
+
+
+class ModuleRunTriggerIn(BaseModel):
+    trigger_type: str = "MANUAL"
+    summary: dict | None = None
+
+
+class ModuleRunStatusUpdateIn(BaseModel):
+    status: str
+    summary: dict | None = None
+    ended_at: datetime | None = None
+
 class CommandIn(BaseModel):
     command_id: str
     instance_id: str

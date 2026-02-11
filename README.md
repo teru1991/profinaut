@@ -1,6 +1,6 @@
 # Profinaut V2.5+ — Multi-Exchange / Multi-Language Bot Management Dashboard
 
-Step 10 delivers execution-quality telemetry and summary analytics on top of NetPnL/reconciliation/exposure foundations.
+Step 11 delivers module execution controls (manual trigger + run status updates) on top of analytics foundations.
 
 ## What is included
 - Contracts SSOT with OpenAPI + JSON Schemas (`contracts/`).
@@ -26,6 +26,10 @@ Step 10 delivers execution-quality telemetry and summary analytics on top of Net
   - `POST /ingest/execution-quality`
   - `GET /analytics/execution-quality`
   - Averages: slippage (bps), latency (ms), fill ratio
+- Module execution controls:
+  - `POST /modules/{module_id}/run`
+  - `PATCH /module-runs/{run_id}`
+  - `GET /module-runs` (paginated/filterable)
 
 ## Quick start (Windows 11 + Docker Desktop)
 1. Copy environment file:

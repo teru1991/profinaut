@@ -39,6 +39,9 @@ from .schemas import (
     MetricIn,
     ModuleIn,
     ModuleOut,
+    ModuleRunOut,
+    ModuleRunStatusUpdateIn,
+    ModuleRunTriggerIn,
     NetPnlSummaryResponse,
     PaginatedAuditLogs,
     PaginatedBots,
@@ -449,6 +452,74 @@ def delete_module(module_id: str, actor: str = Depends(require_admin_actor), db:
         db.delete(row)
         write_audit(db, actor, "MODULE_DELETE", "module", module_id, "SUCCESS", {})
         db.commit()
+
+
+@app.post("/modules/{module_id}/run", response_model=ModuleRunOut, status_code=202)
+def trigger_module_run(
+    module_id: str,
+    payload: ModuleRunTriggerIn,
+    actor: str = Depends(require_admin_actor),
+    db: Session = Depends(get_db),
+) -> ModuleRunOut:
+    module = db.get(Module, module_id)
+    if module is None:
+        raise HTTPException(status_code=404, detail="Module not found")
+
+    run = ModuleRun(
+        run_id=str(__import__("uuid").uuid4()),
+        module_id=module_id,
+        trigger_type=payload.trigger_type,
+        status="QUEUED",
+        started_at=datetime.now(timezone.utc),
+        ended_at=None,
+        summary=payload.summary,
+    )
+    db.add(run)
+    write_audit(
+        db,
+        actor,
+        "MODULE_RUN_TRIGGER",
+        "module",
+        module_id,
+        "SUCCESS",
+        {"run_id": run.run_id, "trigger_type": payload.trigger_type},
+    )
+    db.commit()
+    db.refresh(run)
+    return run
+
+
+@app.patch("/module-runs/{run_id}", response_model=ModuleRunOut)
+def update_module_run_status(
+    run_id: str,
+    payload: ModuleRunStatusUpdateIn,
+    actor: str = Depends(require_admin_actor),
+    db: Session = Depends(get_db),
+) -> ModuleRunOut:
+    run = db.get(ModuleRun, run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="Module run not found")
+
+    run.status = payload.status
+    if payload.summary is not None:
+        run.summary = payload.summary
+    if payload.ended_at is not None:
+        run.ended_at = payload.ended_at
+    elif payload.status in {"SUCCEEDED", "FAILED", "CANCELED"}:
+        run.ended_at = datetime.now(timezone.utc)
+
+    write_audit(
+        db,
+        actor,
+        "MODULE_RUN_UPDATE",
+        "module_run",
+        run_id,
+        "SUCCESS",
+        {"status": payload.status},
+    )
+    db.commit()
+    db.refresh(run)
+    return run
 
 
 @app.post("/commands", response_model=CommandOut, status_code=202)
