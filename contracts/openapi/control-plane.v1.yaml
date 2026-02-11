@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Profinaut Control Plane API
-  version: 1.8.0
+  version: 1.9.0
   description: |
     Step 2 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
     Contracts in this folder and in `contracts/schemas` are the SSOT.
@@ -654,6 +654,56 @@ paths:
             application/json:
               schema:
                 $ref: ../schemas/module_run.schema.json
+
+  /module-runs/{run_id}/cancel:
+    post:
+      tags: [modules]
+      summary: Cancel a running or queued module run
+      operationId: cancelModuleRun
+      parameters:
+        - in: path
+          name: run_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Canceled module run
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/module_run.schema.json
+
+  /module-runs/stats:
+    get:
+      tags: [modules]
+      summary: Module run status summary
+      operationId: getModuleRunStats
+      parameters:
+        - in: query
+          name: module_id
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Module run stats
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, total_runs, active_runs, status_counts]
+                properties:
+                  generated_at:
+                    type: string
+                    format: date-time
+                  total_runs:
+                    type: integer
+                  active_runs:
+                    type: integer
+                  status_counts:
+                    type: object
 
   /module-runs:
     get:

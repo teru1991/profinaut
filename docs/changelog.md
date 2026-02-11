@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-02-11 — Step 12 (Module run cancel + stats)
+- Added `POST /module-runs/{run_id}/cancel` to cancel non-terminal module runs.
+- Added `GET /module-runs/stats` for aggregated module run status counts.
+- Added audit logging for module run cancellation.
+- Added automated API test for run cancellation and stats summary.
+- Added `scripts/scaffold_step12.ps1`.
+- Bumped OpenAPI contract version to `1.9.0`.
+
 ## 2026-02-11 — Step 11 (Module execution controls)
 - Added `POST /modules/{module_id}/run` to queue manual module runs.
 - Added `PATCH /module-runs/{run_id}` to update module run status and summary.

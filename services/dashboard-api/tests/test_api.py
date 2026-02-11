@@ -468,3 +468,38 @@ def test_module_run_trigger_and_status_update(client):
     )
     assert listed.status_code == 200
     assert listed.json()["total"] == 1
+
+
+def test_module_run_cancel_and_stats(client):
+    now = datetime.now(timezone.utc).isoformat()
+    module = {
+        "module_id": "55555555-5555-5555-5555-555555555555",
+        "name": "indices-watch",
+        "description": "indices",
+        "enabled": True,
+        "execution_mode": "MANUAL_AND_SCHEDULED",
+        "schedule_cron": "*/5 * * * *",
+        "config": {},
+        "created_at": now,
+        "updated_at": now,
+    }
+    assert client.post("/modules", json=module, headers={"X-Admin-Token": "test-admin-token"}).status_code == 201
+
+    trigger = client.post(
+        "/modules/55555555-5555-5555-5555-555555555555/run",
+        json={"trigger_type": "MANUAL"},
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert trigger.status_code == 202
+    run_id = trigger.json()["run_id"]
+
+    cancel = client.post(f"/module-runs/{run_id}/cancel", headers={"X-Admin-Token": "test-admin-token"})
+    assert cancel.status_code == 200
+    assert cancel.json()["status"] == "CANCELED"
+
+    stats = client.get("/module-runs/stats?module_id=55555555-5555-5555-5555-555555555555", headers={"X-Admin-Token": "test-admin-token"})
+    assert stats.status_code == 200
+    body = stats.json()
+    assert body["total_runs"] == 1
+    assert body["active_runs"] == 0
+    assert body["status_counts"]["CANCELED"] == 1

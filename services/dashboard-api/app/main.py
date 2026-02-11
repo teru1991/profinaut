@@ -42,6 +42,7 @@ from .schemas import (
     ModuleRunOut,
     ModuleRunStatusUpdateIn,
     ModuleRunTriggerIn,
+    ModuleRunStatsResponse,
     NetPnlSummaryResponse,
     PaginatedAuditLogs,
     PaginatedBots,
@@ -760,6 +761,63 @@ def list_audit_logs(
     rows = db.scalars(select(AuditLog).order_by(AuditLog.timestamp.desc()).offset(offset).limit(page_size)).all()
     return PaginatedAuditLogs(page=page, page_size=page_size, total=total, items=rows)
 
+
+
+@app.post("/module-runs/{run_id}/cancel", response_model=ModuleRunOut)
+def cancel_module_run(
+    run_id: str,
+    actor: str = Depends(require_admin_actor),
+    db: Session = Depends(get_db),
+) -> ModuleRunOut:
+    run = db.get(ModuleRun, run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="Module run not found")
+
+    if run.status in {"SUCCEEDED", "FAILED", "CANCELED"}:
+        raise HTTPException(status_code=409, detail="module run already terminal")
+
+    run.status = "CANCELED"
+    run.ended_at = datetime.now(timezone.utc)
+
+    write_audit(
+        db,
+        actor,
+        "MODULE_RUN_CANCEL",
+        "module_run",
+        run_id,
+        "SUCCESS",
+        {},
+    )
+    db.commit()
+    db.refresh(run)
+    return run
+
+
+@app.get("/module-runs/stats", response_model=ModuleRunStatsResponse)
+def get_module_run_stats(
+    actor: str = Depends(require_admin_actor),
+    module_id: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> ModuleRunStatsResponse:
+    del actor
+    generated_at = datetime.now(timezone.utc)
+
+    query = select(ModuleRun)
+    if module_id:
+        query = query.where(ModuleRun.module_id == module_id)
+    rows = db.scalars(query).all()
+
+    status_counts: dict[str, int] = {}
+    for row in rows:
+        status_counts[row.status] = status_counts.get(row.status, 0) + 1
+
+    active_runs = sum(status_counts.get(s, 0) for s in ["QUEUED", "RUNNING"])
+    return ModuleRunStatsResponse(
+        generated_at=generated_at,
+        total_runs=len(rows),
+        active_runs=active_runs,
+        status_counts=status_counts,
+    )
 
 @app.get("/module-runs", response_model=PaginatedModuleRuns)
 def list_module_runs(

@@ -115,6 +115,14 @@ class ModuleRunStatusUpdateIn(BaseModel):
     summary: dict | None = None
     ended_at: datetime | None = None
 
+
+
+class ModuleRunStatsResponse(BaseModel):
+    generated_at: datetime
+    total_runs: int
+    active_runs: int
+    status_counts: dict
+
 class CommandIn(BaseModel):
     command_id: str
     instance_id: str

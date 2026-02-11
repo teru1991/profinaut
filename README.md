@@ -1,6 +1,6 @@
 # Profinaut V2.5+ — Multi-Exchange / Multi-Language Bot Management Dashboard
 
-Step 11 delivers module execution controls (manual trigger + run status updates) on top of analytics foundations.
+Step 12 delivers module run cancellation and run-stats summary on top of module execution controls.
 
 ## What is included
 - Contracts SSOT with OpenAPI + JSON Schemas (`contracts/`).
@@ -30,6 +30,9 @@ Step 11 delivers module execution controls (manual trigger + run status updates)
   - `POST /modules/{module_id}/run`
   - `PATCH /module-runs/{run_id}`
   - `GET /module-runs` (paginated/filterable)
+- Module run ops extension:
+  - `POST /module-runs/{run_id}/cancel`
+  - `GET /module-runs/stats`
 
 ## Quick start (Windows 11 + Docker Desktop)
 1. Copy environment file:

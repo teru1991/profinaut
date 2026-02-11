@@ -16,7 +16,8 @@ Build a contracts-first, module-driven bot management platform for multi-exchang
 - [x] **Step 9**: NetPnL extension (cost ingest + formula endpoint).
 - [x] **Step 10**: Execution quality telemetry + summary endpoint.
 - [x] **Step 11**: Module execution controls (manual trigger + run status updates).
-- [ ] **Step 12+**: advanced analytics and module expansion.
+- [x] **Step 12**: Module run cancellation and stats summary.
+- [ ] **Step 13+**: advanced analytics and module expansion.
 
 ## Guardrails
 - `contracts/` is SSOT and enforced in CI.

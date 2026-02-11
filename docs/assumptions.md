@@ -69,3 +69,9 @@
 1. Module runs are queued via admin-triggered endpoint and persisted in `module_runs`.
 2. Module run status transitions are updated through admin endpoint with optional completion timestamp/summary.
 3. Module run list remains paginated and filterable by `module_id` and `status`.
+
+
+## Step 12 defaults
+1. Module runs can be canceled only from non-terminal states (`QUEUED`, `RUNNING`).
+2. Module run stats provide lightweight aggregated counts by status for operations visibility.
+3. Module run cancellation/stats endpoints are admin-protected and UTC timestamped.
