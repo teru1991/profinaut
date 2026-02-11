@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-02-11 — Step 4 (Python Agent SDK MVP)
+- Added Python agent SDK under `sdk/python`.
+- Implemented core SDK components:
+  - `Command` + `CommandAck` models
+  - `CommandProcessor` with idempotency (`command_id`) + TTL (`expires_at`) handling
+  - `DeadmanSwitch` fallback logic (`SAFE_MODE` default, `FLATTEN` optional)
+  - control-plane HTTP client for heartbeat + ACK
+  - command source abstractions (HTTP pull and local file queue)
+  - runtime loop and executable `run_agent.py`
+- Added SDK test suite covering:
+  - expired command rejection
+  - duplicate command rejection
+  - dead-man switch timeout behavior
+  - runtime heartbeat + ACK processing
+- Added `scripts/scaffold_step4.ps1`.
+- Updated root npm scripts and CI to run SDK tests.
+
 ## 2026-02-11 — Step 3 (Frontend skeleton + bots polling)
 - Added Next.js TypeScript frontend scaffold under `apps/web`.
 - Implemented stable navigation shell and skeleton routes:

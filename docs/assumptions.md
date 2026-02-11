@@ -25,3 +25,8 @@
 1. Frontend uses Next.js App Router + TypeScript.
 2. Bots polling is implemented through Next API route proxy to avoid hardcoding token in browser code.
 3. Navigation skeleton pages are intentionally thin until functional modules are implemented in later steps.
+
+## Step 4 defaults
+1. Python SDK command source can be HTTP pull or local file queue for development/testing.
+2. Dead-man switch defaults to `SAFE_MODE` when control plane is unreachable past timeout; `FLATTEN` is configurable.
+3. SDK command processor is strict on idempotency and TTL and returns `REJECTED_DUPLICATE` / `REJECTED_EXPIRED`.

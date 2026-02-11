@@ -8,7 +8,7 @@ Build a contracts-first, module-driven bot management platform for multi-exchang
 - [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
 - [x] **Step 2**: Backend core (FastAPI + DB + Auth MVP + Health).
 - [x] **Step 3**: Frontend skeleton (Next.js pages + bots polling).
-- [ ] **Step 4**: Python Agent SDK MVP (heartbeat, commands, dead man switch).
+- [x] **Step 4**: Python Agent SDK MVP (heartbeat, commands, dead man switch).
 - [ ] **Step 5**: Command system end-to-end + audit persistence.
 - [ ] **Step 6**: Notification router (Discord webhook phase 1).
 - [ ] **Step 7**: Metrics/positions/exposure foundation + portfolio UI.
