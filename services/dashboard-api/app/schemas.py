@@ -1,0 +1,103 @@
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class HealthResponse(BaseModel):
+    status: str
+    timestamp: datetime
+
+
+class HeartbeatIn(BaseModel):
+    instance_id: str
+    bot_id: str
+    runtime_mode: str
+    exchange: str
+    symbol: str
+    version: str
+    timestamp: datetime
+    metadata: dict = Field(default_factory=dict)
+
+
+class BotOut(BaseModel):
+    bot_id: str
+    name: str
+    strategy_name: str
+    instance_id: str | None = None
+    runtime_mode: str | None = None
+    exchange: str | None = None
+    symbol: str | None = None
+    status: str | None = None
+    last_seen: datetime | None = None
+    version: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PaginatedBots(BaseModel):
+    page: int
+    page_size: int
+    total: int
+    items: list[BotOut]
+
+
+class ModuleIn(BaseModel):
+    module_id: str
+    name: str
+    description: str | None = None
+    enabled: bool
+    execution_mode: str
+    schedule_cron: str | None = None
+    config: dict
+    created_at: datetime
+    updated_at: datetime
+
+
+class ModuleOut(ModuleIn):
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PaginatedModules(BaseModel):
+    page: int
+    page_size: int
+    total: int
+    items: list[ModuleOut]
+
+
+class AuditLogOut(BaseModel):
+    audit_id: str
+    actor: str
+    action: str
+    target_type: str
+    target_id: str
+    result: str
+    details: dict
+    timestamp: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PaginatedAuditLogs(BaseModel):
+    page: int
+    page_size: int
+    total: int
+    items: list[AuditLogOut]
+
+
+class ModuleRunOut(BaseModel):
+    run_id: str
+    module_id: str
+    trigger_type: str
+    status: str
+    started_at: datetime
+    ended_at: datetime | None = None
+    summary: dict | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PaginatedModuleRuns(BaseModel):
+    page: int
+    page_size: int
+    total: int
+    items: list[ModuleRunOut]
