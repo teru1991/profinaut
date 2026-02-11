@@ -14,3 +14,9 @@
 2. Contract validation in CI uses Redocly CLI (OpenAPI lint) and Python `jsonschema` (schema correctness).
 3. Contract files are additive and backward-compatible at this stage; no breaking changes are introduced.
 4. List endpoints include pagination parameters (`page`, `page_size`) in the OpenAPI contract baseline.
+
+## Step 2 defaults
+1. Backend uses synchronous SQLAlchemy sessions for MVP simplicity.
+2. Heartbeat endpoint allows unauthenticated ingest in Step 2; admin endpoints require `X-Admin-Token`.
+3. `POST /ingest/heartbeat` auto-creates missing `bots` and `instances` records for onboarding.
+4. Module registry CRUD is implemented on core table `modules`; execution scheduling starts in later steps.

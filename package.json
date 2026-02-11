@@ -1,12 +1,13 @@
 {
   "name": "profinaut",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Multi-Exchange / Multi-Language Bot Management Dashboard",
   "scripts": {
     "dev": "docker compose up --build",
-    "test": "npm run contracts:lint",
-    "migrate": "echo 'Migration wiring starts in Step 2 (FastAPI + Alembic)'",
+    "test": "npm run contracts:lint && npm run test:api",
+    "test:api": "python -m pip install -r services/dashboard-api/requirements.txt && python -m pip install -r services/dashboard-api/requirements-dev.txt && PYTHONPATH=services/dashboard-api python -m pytest -q services/dashboard-api/tests",
+    "migrate": "cd services/dashboard-api && python -m pip install -r requirements.txt && alembic upgrade head",
     "contracts:lint": "npx --yes @redocly/cli@latest lint contracts/openapi/control-plane.v1.yaml && python scripts/validate_json_schemas.py"
   }
 }

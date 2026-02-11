@@ -1,4 +1,4 @@
 $ErrorActionPreference = "Stop"
 
-Write-Host "[dev] Starting Profinaut local stack via Docker Compose..." -ForegroundColor Cyan
+Write-Host "[dev] Starting Profinaut stack (Postgres + API + Web)..." -ForegroundColor Cyan
 docker compose up --build

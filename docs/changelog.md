@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-02-11 — Step 2 (Backend core + auth MVP + health)
+- Added FastAPI backend service scaffold in `services/dashboard-api`.
+- Added SQLAlchemy models and initial Alembic migration for:
+  - `bots`
+  - `instances`
+  - `bot_status`
+  - `audit_logs`
+  - `modules`
+  - `module_runs`
+- Implemented endpoints:
+  - `GET /healthz`
+  - `POST /ingest/heartbeat` (upsert)
+  - `GET /bots` (paginated, admin token)
+  - module registry CRUD (`GET/POST/GET:id/DELETE /modules`, admin token)
+- Added pytest coverage for health, heartbeat upsert, auth checks, and module CRUD.
+- Updated docker compose to run API service with migrations and uvicorn.
+- Updated scripts and npm commands for migration and API tests.
+- Updated CI to run backend tests in addition to contracts.
+
 ## 2026-02-11 — Step 1 (Contracts SSOT + CI enforcement)
 - Added OpenAPI contract at `contracts/openapi/control-plane.v1.yaml`.
 - Added JSON Schemas:

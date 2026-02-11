@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
   title: Profinaut Control Plane API
-  version: 1.0.0
+  version: 1.1.0
   description: |
-    Step 1 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
+    Step 2 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
     Contracts in this folder and in `contracts/schemas` are the SSOT.
   license:
     name: Proprietary
@@ -19,6 +19,8 @@ tags:
     description: System and service metadata endpoints.
   - name: ingest
     description: Agent-to-control-plane ingestion endpoints.
+  - name: bots
+    description: Bot inventory and status endpoints.
   - name: commands
     description: Command dispatch and acknowledgement endpoints.
   - name: reconcile
@@ -56,6 +58,7 @@ paths:
       tags: [ingest]
       summary: Ingest bot heartbeat
       operationId: postHeartbeat
+      security: []
       requestBody:
         required: true
         content:
@@ -65,6 +68,45 @@ paths:
       responses:
         "202":
           description: Heartbeat accepted
+
+  /bots:
+    get:
+      tags: [bots]
+      summary: List bots with latest status
+      operationId: listBots
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Paginated bots
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, page_size, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
 
   /commands:
     post:
@@ -90,6 +132,7 @@ paths:
       tags: [commands]
       summary: Ack command execution status from agent
       operationId: ackCommand
+      security: []
       parameters:
         - in: path
           name: command_id
@@ -218,6 +261,42 @@ paths:
       responses:
         "201":
           description: Module created or updated
+
+  /modules/{module_id}:
+    get:
+      tags: [modules]
+      summary: Get one module definition
+      operationId: getModule
+      parameters:
+        - in: path
+          name: module_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Module found
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/module.schema.json
+        "404":
+          description: Module not found
+    delete:
+      tags: [modules]
+      summary: Delete one module definition
+      operationId: deleteModule
+      parameters:
+        - in: path
+          name: module_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Module deleted
 
   /module-runs:
     get:

@@ -25,9 +25,14 @@ services:
     image: python:3.12-slim
     container_name: profinaut-dashboard-api
     working_dir: /workspace
-    command: ["sh", "-c", "echo 'dashboard-api placeholder (Step 0)'; sleep infinity"]
-    env_file:
-      - .env
+    command: [
+      "sh",
+      "-c",
+      "pip install -r requirements.txt && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://profinaut:profinaut@postgres:5432/profinaut}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-change-me-local-admin-token}
     ports:
       - "${DASHBOARD_API_PORT:-8000}:8000"
     volumes:
@@ -40,7 +45,7 @@ services:
     image: node:20-alpine
     container_name: profinaut-web
     working_dir: /workspace
-    command: ["sh", "-c", "echo 'web placeholder (Step 0)'; sleep infinity"]
+    command: ["sh", "-c", "echo 'web placeholder (Step 2)'; sleep infinity"]
     env_file:
       - .env
     ports:

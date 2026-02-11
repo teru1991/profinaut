@@ -32,6 +32,26 @@ jobs:
       - name: Validate JSON Schemas
         run: python scripts/validate_json_schemas.py
 
+  dashboard-api-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r services/dashboard-api/requirements.txt
+          pip install -r services/dashboard-api/requirements-dev.txt
+
+      - name: Run pytest
+        run: PYTHONPATH=services/dashboard-api pytest -q services/dashboard-api/tests
+
   baseline:
     runs-on: ubuntu-latest
 
@@ -41,4 +61,4 @@ jobs:
 
       - name: Validate package.json scripts presence
         run: |
-          node -e "const p=require('./package.json'); ['dev','test','migrate','contracts:lint'].forEach(k=>{if(!p.scripts?.[k]){throw new Error('missing script '+k)}}); console.log('scripts ok')"
+          node -e "const p=require('./package.json'); ['dev','test','test:api','migrate','contracts:lint'].forEach(k=>{if(!p.scripts?.[k]){throw new Error('missing script '+k)}}); console.log('scripts ok')"
