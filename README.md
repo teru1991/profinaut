@@ -1,17 +1,17 @@
 # Profinaut V2.5+ — Multi-Exchange / Multi-Language Bot Management Dashboard
 
-Step 4 delivers the Python Agent SDK MVP with heartbeat, command safety (TTL/idempotency), ACK flow, and dead-man switch behavior.
+Step 5 delivers command system end-to-end flow and audit persistence.
 
 ## What is included
 - Contracts SSOT with OpenAPI + JSON Schemas (`contracts/`).
-- Backend core service at `services/dashboard-api` (Step 2).
-- Frontend app at `apps/web` with navigation skeleton and bots polling (Step 3).
-- Python Agent SDK MVP at `sdk/python`:
-  - periodic heartbeat (default 30s)
-  - command processing with required `command_id` idempotency handling
-  - TTL enforcement via `expires_at` with `REJECTED_EXPIRED`
-  - command ACK publishing back to control plane
-  - dead-man switch fallback (`SAFE_MODE` default, `FLATTEN` optional)
+- Backend core service at `services/dashboard-api`.
+- Frontend app at `apps/web` with navigation skeleton and bots polling.
+- Python Agent SDK MVP at `sdk/python`.
+- Command E2E flow:
+  - admin creates command in API (`POST /commands`)
+  - agent pulls pending command (`GET /instances/{instance_id}/commands/pending`)
+  - agent sends ack (`POST /commands/{command_id}/ack`)
+  - backend persists command + ack and writes audit logs.
 
 ## Quick start (Windows 11 + Docker Desktop)
 1. Copy environment file:
@@ -26,10 +26,6 @@ Step 4 delivers the Python Agent SDK MVP with heartbeat, command safety (TTL/ide
    ```powershell
    ./scripts/test.ps1
    ```
-4. Run Python SDK tests only:
-   ```powershell
-   npm run test:sdk-python
-   ```
 
 ## Cross-platform npm commands
 ```bash
@@ -39,17 +35,6 @@ npm run migrate
 npm run web:dev
 npm run web:build
 npm run test:sdk-python
-```
-
-## Repository layout
-```text
-/contracts/{openapi,schemas}
-/services/{dashboard-api,notification,chatops,analytics}
-/sdk/{python,node,go}
-/apps/web
-/infra
-/scripts
-/docs
 ```
 
 ## Security baseline

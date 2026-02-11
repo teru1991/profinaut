@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-02-11 — Step 5 (Command E2E + Audit)
+- Added persistent command tables via Alembic migration `0002_commands_and_acks`:
+  - `commands`
+  - `command_acks`
+- Implemented command endpoints in dashboard API:
+  - `POST /commands` (admin issues command)
+  - `GET /commands/pending/{instance_id}` (agent pull)
+  - `POST /commands/{command_id}/ack` (agent ack)
+- Added audit persistence for command create + ack + module operations.
+- Updated SDK runner to default command pull URL to `/commands/pending/{instance_id}` when unset.
+- Added API tests for command end-to-end flow, audit log persistence, and expired-rejection ack path.
+- Added `scripts/scaffold_step5.ps1`.
+- Bumped OpenAPI contract version to `1.2.0` and added pending command path.
+
 ## 2026-02-11 — Step 4 (Python Agent SDK MVP)
 - Added Python agent SDK under `sdk/python`.
 - Implemented core SDK components:

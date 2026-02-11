@@ -4,10 +4,14 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from .auth import require_admin_token
+from .auth import require_admin_actor
 from .database import get_db
-from .models import AuditLog, Bot, BotStatus, Instance, Module, ModuleRun
+from .models import AuditLog, Bot, BotStatus, CommandAckRecord, CommandRecord, Instance, Module, ModuleRun
 from .schemas import (
+    CommandAckIn,
+    CommandAckOut,
+    CommandIn,
+    CommandOut,
     HealthResponse,
     HeartbeatIn,
     ModuleIn,
@@ -18,7 +22,21 @@ from .schemas import (
     PaginatedModules,
 )
 
-app = FastAPI(title="Profinaut Dashboard API", version="0.2.0")
+app = FastAPI(title="Profinaut Dashboard API", version="0.3.0")
+
+
+def write_audit(db: Session, actor: str, action: str, target_type: str, target_id: str, result: str, details: dict) -> None:
+    db.add(
+        AuditLog(
+            actor=actor,
+            action=action,
+            target_type=target_type,
+            target_id=target_id,
+            result=result,
+            details=details,
+            timestamp=datetime.now(timezone.utc),
+        )
+    )
 
 
 @app.get("/healthz", response_model=HealthResponse)
@@ -76,12 +94,14 @@ def ingest_heartbeat(payload: HeartbeatIn, db: Session = Depends(get_db)) -> dic
     return {"status": "accepted"}
 
 
-@app.get("/bots", response_model=PaginatedBots, dependencies=[Depends(require_admin_token)])
+@app.get("/bots", response_model=PaginatedBots)
 def list_bots(
+    actor: str = Depends(require_admin_actor),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=200),
     db: Session = Depends(get_db),
 ) -> PaginatedBots:
+    del actor
     total = db.scalar(select(func.count()).select_from(Bot)) or 0
     offset = (page - 1) * page_size
 
@@ -125,13 +145,15 @@ def list_bots(
     return PaginatedBots(page=page, page_size=page_size, total=total, items=items)
 
 
-@app.get("/modules", response_model=PaginatedModules, dependencies=[Depends(require_admin_token)])
+@app.get("/modules", response_model=PaginatedModules)
 def list_modules(
+    actor: str = Depends(require_admin_actor),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=200),
     enabled: bool | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> PaginatedModules:
+    del actor
     base_query = select(Module)
     count_query = select(func.count()).select_from(Module)
 
@@ -146,74 +168,151 @@ def list_modules(
     return PaginatedModules(page=page, page_size=page_size, total=total, items=rows)
 
 
-@app.post("/modules", response_model=ModuleOut, status_code=201, dependencies=[Depends(require_admin_token)])
-def create_or_update_module(payload: ModuleIn, db: Session = Depends(get_db)) -> ModuleOut:
+@app.post("/modules", response_model=ModuleOut, status_code=201)
+def create_or_update_module(payload: ModuleIn, actor: str = Depends(require_admin_actor), db: Session = Depends(get_db)) -> ModuleOut:
     row = db.get(Module, payload.module_id)
     data = payload.model_dump()
 
     if row is None:
         row = Module(**data)
         db.add(row)
+        action = "MODULE_CREATE"
     else:
         for key, value in data.items():
             setattr(row, key, value)
+        action = "MODULE_UPDATE"
 
+    write_audit(db, actor, action, "module", payload.module_id, "SUCCESS", {"enabled": payload.enabled})
     db.commit()
     db.refresh(row)
     return row
 
 
-@app.get("/modules/{module_id}", response_model=ModuleOut, dependencies=[Depends(require_admin_token)])
-def get_module(module_id: str, db: Session = Depends(get_db)) -> ModuleOut:
+@app.get("/modules/{module_id}", response_model=ModuleOut)
+def get_module(module_id: str, actor: str = Depends(require_admin_actor), db: Session = Depends(get_db)) -> ModuleOut:
+    del actor
     row = db.get(Module, module_id)
     if row is None:
         raise HTTPException(status_code=404, detail="Module not found")
     return row
 
 
-@app.delete("/modules/{module_id}", status_code=204, dependencies=[Depends(require_admin_token)])
-def delete_module(module_id: str, db: Session = Depends(get_db)) -> None:
+@app.delete("/modules/{module_id}", status_code=204)
+def delete_module(module_id: str, actor: str = Depends(require_admin_actor), db: Session = Depends(get_db)) -> None:
     row = db.get(Module, module_id)
     if row is not None:
         db.delete(row)
+        write_audit(db, actor, "MODULE_DELETE", "module", module_id, "SUCCESS", {})
         db.commit()
 
 
-@app.post("/commands", status_code=202, dependencies=[Depends(require_admin_token)])
-def create_command(payload: dict) -> dict:
+@app.post("/commands", response_model=CommandOut, status_code=202)
+def create_command(payload: CommandIn, actor: str = Depends(require_admin_actor), db: Session = Depends(get_db)) -> CommandOut:
+    if payload.expires_at <= payload.issued_at:
+        raise HTTPException(status_code=400, detail="expires_at must be greater than issued_at")
+
+    existing = db.get(CommandRecord, payload.command_id)
+    if existing is not None:
+        raise HTTPException(status_code=409, detail="command_id already exists")
+
+    instance = db.get(Instance, payload.instance_id)
+    if instance is None:
+        raise HTTPException(status_code=404, detail="instance not found")
+
+    row = CommandRecord(
+        command_id=payload.command_id,
+        instance_id=payload.instance_id,
+        command_type=payload.command_type,
+        issued_at=payload.issued_at,
+        expires_at=payload.expires_at,
+        payload=payload.payload,
+        status="PENDING",
+        created_by=actor,
+    )
+    db.add(row)
+    write_audit(db, actor, "COMMAND_CREATE", "command", payload.command_id, "SUCCESS", {"type": payload.command_type})
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+@app.get("/instances/{instance_id}/commands/pending", response_model=list[CommandOut])
+def get_pending_commands(instance_id: str, db: Session = Depends(get_db)) -> list[CommandOut]:
+    now = datetime.now(timezone.utc)
+    rows = db.scalars(
+        select(CommandRecord)
+        .where(CommandRecord.instance_id == instance_id)
+        .where(CommandRecord.status == "PENDING")
+        .where(CommandRecord.expires_at > now)
+        .order_by(CommandRecord.issued_at)
+    ).all()
+    return rows
+
+
+@app.post("/commands/{command_id}/ack", response_model=CommandAckOut, status_code=202)
+def ack_command(command_id: str, payload: CommandAckIn, db: Session = Depends(get_db)) -> CommandAckOut:
+    if payload.command_id != command_id:
+        raise HTTPException(status_code=400, detail="command_id mismatch")
+
+    command = db.get(CommandRecord, command_id)
+    if command is None:
+        raise HTTPException(status_code=404, detail="command not found")
+
+    ack = CommandAckRecord(
+        command_id=payload.command_id,
+        instance_id=payload.instance_id,
+        status=payload.status,
+        reason=payload.reason,
+        timestamp=payload.timestamp,
+    )
+    db.add(ack)
+    command.status = payload.status
+
+    write_audit(
+        db,
+        actor="agent",
+        action="COMMAND_ACK",
+        target_type="command",
+        target_id=command_id,
+        result="SUCCESS",
+        details={"ack_status": payload.status, "reason": payload.reason},
+    )
+    db.commit()
+    db.refresh(ack)
+    return ack
+
+
+@app.post("/reconcile", status_code=202)
+def post_reconcile(payload: dict, actor: str = Depends(require_admin_actor), db: Session = Depends(get_db)) -> dict:
+    write_audit(db, actor, "RECONCILE_SUBMIT", "reconcile", payload.get("instance_id", "unknown"), "SUCCESS", payload)
+    db.commit()
     return payload
 
 
-@app.post("/commands/{command_id}/ack", status_code=202)
-def ack_command(command_id: str, payload: dict) -> dict:
-    return {"command_id": command_id, **payload}
-
-
-@app.post("/reconcile", status_code=202, dependencies=[Depends(require_admin_token)])
-def post_reconcile(payload: dict) -> dict:
-    return payload
-
-
-@app.get("/audit/logs", response_model=PaginatedAuditLogs, dependencies=[Depends(require_admin_token)])
+@app.get("/audit/logs", response_model=PaginatedAuditLogs)
 def list_audit_logs(
+    actor: str = Depends(require_admin_actor),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=200),
     db: Session = Depends(get_db),
 ) -> PaginatedAuditLogs:
+    del actor
     total = db.scalar(select(func.count()).select_from(AuditLog)) or 0
     offset = (page - 1) * page_size
     rows = db.scalars(select(AuditLog).order_by(AuditLog.timestamp.desc()).offset(offset).limit(page_size)).all()
     return PaginatedAuditLogs(page=page, page_size=page_size, total=total, items=rows)
 
 
-@app.get("/module-runs", response_model=PaginatedModuleRuns, dependencies=[Depends(require_admin_token)])
+@app.get("/module-runs", response_model=PaginatedModuleRuns)
 def list_module_runs(
+    actor: str = Depends(require_admin_actor),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=200),
     module_id: str | None = Query(default=None),
     status: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> PaginatedModuleRuns:
+    del actor
     base_query = select(ModuleRun)
     count_query = select(func.count()).select_from(ModuleRun)
 

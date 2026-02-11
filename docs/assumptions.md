@@ -30,3 +30,8 @@
 1. Python SDK command source can be HTTP pull or local file queue for development/testing.
 2. Dead-man switch defaults to `SAFE_MODE` when control plane is unreachable past timeout; `FLATTEN` is configurable.
 3. SDK command processor is strict on idempotency and TTL and returns `REJECTED_DUPLICATE` / `REJECTED_EXPIRED`.
+
+## Step 5 defaults
+1. Command records persist in `commands`, and acknowledgements persist in `command_acks`.
+2. Audit logs capture command creation and ack events from all control paths.
+3. Agent command pull uses unauthenticated pending-command endpoint keyed by `instance_id` in Step 5; hardening can be added in later steps.

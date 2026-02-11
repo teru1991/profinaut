@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Profinaut Control Plane API
-  version: 1.1.0
+  version: 1.2.0
   description: |
     Step 2 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
     Contracts in this folder and in `contracts/schemas` are the SSOT.
@@ -126,6 +126,29 @@ paths:
             application/json:
               schema:
                 $ref: ../schemas/command.schema.json
+
+
+  /instances/{instance_id}/commands/pending:
+    get:
+      tags: [commands]
+      summary: Fetch pending commands for an instance
+      operationId: listPendingCommands
+      security: []
+      parameters:
+        - in: path
+          name: instance_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Pending command list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: ../schemas/command.schema.json
 
   /commands/{command_id}/ack:
     post:

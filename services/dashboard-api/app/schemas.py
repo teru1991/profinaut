@@ -101,3 +101,33 @@ class PaginatedModuleRuns(BaseModel):
     page_size: int
     total: int
     items: list[ModuleRunOut]
+
+
+class CommandIn(BaseModel):
+    command_id: str
+    instance_id: str
+    command_type: str
+    issued_at: datetime
+    expires_at: datetime
+    payload: dict = Field(default_factory=dict)
+
+
+class CommandOut(CommandIn):
+    status: str
+    created_by: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CommandAckIn(BaseModel):
+    command_id: str
+    instance_id: str
+    status: str
+    reason: str | None = None
+    timestamp: datetime
+
+
+class CommandAckOut(CommandAckIn):
+    ack_id: str
+
+    model_config = ConfigDict(from_attributes=True)

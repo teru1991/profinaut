@@ -27,7 +27,8 @@ def main() -> None:
         deadman_action=get_env("DEADMAN_ACTION", "SAFE_MODE"),
     )
 
-    source = HttpCommandSource(config.command_pull_url) if config.command_pull_url else FileCommandSource(config.command_file or "sdk/python/commands.json")
+    pull_url = config.command_pull_url or f"{config.control_plane_url.rstrip("/")}/instances/{config.instance_id}/commands/pending"
+    source = HttpCommandSource(pull_url) if pull_url else FileCommandSource(config.command_file or "sdk/python/commands.json")
     client = ControlPlaneClient(config.control_plane_url)
 
     runtime = AgentRuntime(config=config, source=source, client=client)
