@@ -51,3 +51,9 @@
 1. Reconciliation submissions persist in `reconcile_results` for historical query and auditability.
 2. A `MISMATCH` reconciliation status opens a WARNING alert and routes outbound notification via existing router/webhook path.
 3. Reconciliation list API supports pagination and basic filters (`instance_id`, `status`).
+
+
+## Step 9 defaults
+1. Cost ingest accepts only `FEE` and `FUNDING` cost types for MVP NetPnL formula compliance.
+2. NetPnL summary is derived from latest realized/unrealized metrics and summed cost ledger amounts.
+3. NetPnL API supports optional symbol filter and returns UTC timestamped summary payload.

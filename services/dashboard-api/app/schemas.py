@@ -185,6 +185,24 @@ class ExposureSummaryResponse(BaseModel):
     by_symbol: list[ExposureBySymbol]
 
 
+
+
+class CostIn(BaseModel):
+    instance_id: str
+    symbol: str
+    cost_type: str
+    amount: float
+    timestamp: datetime
+
+
+class NetPnlSummaryResponse(BaseModel):
+    generated_at: datetime
+    realized: float
+    unrealized: float
+    fees: float
+    funding: float
+    net_pnl: float
+
 class ReconcileIn(BaseModel):
     instance_id: str
     exchange_equity: float

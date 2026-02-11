@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-02-11 — Step 9 (NetPnL extension)
+- Added `cost_ledger` persistence via Alembic migration `0006_cost_ledger`.
+- Added ingest endpoint `POST /ingest/costs` for `FEE`/`FUNDING` cost entries.
+- Added analytics endpoint `GET /analytics/net-pnl` implementing MVP formula:
+  - `NetPnL = realized + unrealized - fees + funding`
+- Added automated API test for NetPnL formula validation with symbol filtering.
+- Added `scripts/scaffold_step9.ps1`.
+- Bumped OpenAPI contract version to `1.6.0`.
+
 ## 2026-02-11 — Step 8 (Reconciliation persistence + mismatch alerts)
 - Added `reconcile_results` persistence via Alembic migration `0005_reconcile_results`.
 - Upgraded `POST /reconcile` to typed/persistent behavior with instance validation.

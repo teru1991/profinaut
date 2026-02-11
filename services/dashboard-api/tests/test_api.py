@@ -314,3 +314,69 @@ def test_reconcile_persistence_and_mismatch_alert(client, monkeypatch):
     assert body["total"] == 1
     assert body["items"][0]["instance_id"] == "inst-recon-1"
     assert sent["count"] == 1
+
+
+def test_net_pnl_formula_with_costs(client):
+    now = datetime.now(timezone.utc)
+    hb = {
+        "instance_id": "inst-net-1",
+        "bot_id": "bot-net-1",
+        "runtime_mode": "PAPER",
+        "exchange": "BINANCE",
+        "symbol": "BTCUSDT",
+        "version": "1.0.0",
+        "timestamp": now.isoformat(),
+        "metadata": {},
+    }
+    assert client.post("/ingest/heartbeat", json=hb).status_code == 202
+
+    assert client.post(
+        "/ingest/metrics",
+        json={
+            "instance_id": "inst-net-1",
+            "symbol": "BTCUSDT",
+            "metric_type": "realized_pnl",
+            "value": 120.0,
+            "timestamp": now.isoformat(),
+        },
+    ).status_code == 202
+    assert client.post(
+        "/ingest/metrics",
+        json={
+            "instance_id": "inst-net-1",
+            "symbol": "BTCUSDT",
+            "metric_type": "unrealized_pnl",
+            "value": 30.0,
+            "timestamp": now.isoformat(),
+        },
+    ).status_code == 202
+
+    assert client.post(
+        "/ingest/costs",
+        json={
+            "instance_id": "inst-net-1",
+            "symbol": "BTCUSDT",
+            "cost_type": "FEE",
+            "amount": 10.0,
+            "timestamp": now.isoformat(),
+        },
+    ).status_code == 202
+    assert client.post(
+        "/ingest/costs",
+        json={
+            "instance_id": "inst-net-1",
+            "symbol": "BTCUSDT",
+            "cost_type": "FUNDING",
+            "amount": 5.0,
+            "timestamp": now.isoformat(),
+        },
+    ).status_code == 202
+
+    summary = client.get("/analytics/net-pnl?symbol=BTCUSDT", headers={"X-Admin-Token": "test-admin-token"})
+    assert summary.status_code == 200
+    body = summary.json()
+    assert body["realized"] == 120.0
+    assert body["unrealized"] == 30.0
+    assert body["fees"] == 10.0
+    assert body["funding"] == 5.0
+    assert body["net_pnl"] == 145.0

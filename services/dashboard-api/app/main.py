@@ -14,6 +14,7 @@ from .models import (
     BotStatus,
     CommandAckRecord,
     CommandRecord,
+    CostLedgerRecord,
     Instance,
     MetricTsRecord,
     Module,
@@ -27,6 +28,7 @@ from .schemas import (
     CommandAckOut,
     CommandIn,
     CommandOut,
+    CostIn,
     ExposureSummaryResponse,
     HealthResponse,
     HeartbeatAlertCheckResponse,
@@ -34,6 +36,7 @@ from .schemas import (
     MetricIn,
     ModuleIn,
     ModuleOut,
+    NetPnlSummaryResponse,
     PaginatedAuditLogs,
     PaginatedBots,
     PaginatedModuleRuns,
@@ -135,6 +138,28 @@ def ingest_metric(payload: MetricIn, db: Session = Depends(get_db)) -> dict:
     return {"status": "accepted"}
 
 
+@app.post("/ingest/costs", status_code=202)
+def ingest_cost(payload: CostIn, db: Session = Depends(get_db)) -> dict:
+    instance = db.get(Instance, payload.instance_id)
+    if instance is None:
+        raise HTTPException(status_code=404, detail="instance not found")
+
+    if payload.cost_type not in {"FEE", "FUNDING"}:
+        raise HTTPException(status_code=400, detail="cost_type must be FEE or FUNDING")
+
+    db.add(
+        CostLedgerRecord(
+            instance_id=payload.instance_id,
+            symbol=payload.symbol,
+            cost_type=payload.cost_type,
+            amount=payload.amount,
+            timestamp=payload.timestamp,
+        )
+    )
+    db.commit()
+    return {"status": "accepted"}
+
+
 @app.post("/ingest/positions", status_code=202)
 def ingest_position(payload: PositionIn, db: Session = Depends(get_db)) -> dict:
     instance = db.get(Instance, payload.instance_id)
@@ -213,6 +238,44 @@ def get_portfolio_exposure(actor: str = Depends(require_admin_actor), db: Sessio
         total_gross_exposure=total_gross,
         key_metrics=key_metrics,
         by_symbol=by_symbol,
+    )
+
+
+@app.get("/analytics/net-pnl", response_model=NetPnlSummaryResponse)
+def get_net_pnl_summary(
+    actor: str = Depends(require_admin_actor),
+    symbol: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> NetPnlSummaryResponse:
+    del actor
+    generated_at = datetime.now(timezone.utc)
+
+    def latest_metric(metric_type: str) -> float:
+        query = select(MetricTsRecord.value).where(MetricTsRecord.metric_type == metric_type)
+        if symbol:
+            query = query.where(MetricTsRecord.symbol == symbol)
+        value = db.scalar(query.order_by(MetricTsRecord.timestamp.desc()).limit(1))
+        return float(value) if value is not None else 0.0
+
+    fees_query = select(func.coalesce(func.sum(CostLedgerRecord.amount), 0)).where(CostLedgerRecord.cost_type == "FEE")
+    funding_query = select(func.coalesce(func.sum(CostLedgerRecord.amount), 0)).where(CostLedgerRecord.cost_type == "FUNDING")
+    if symbol:
+        fees_query = fees_query.where(CostLedgerRecord.symbol == symbol)
+        funding_query = funding_query.where(CostLedgerRecord.symbol == symbol)
+
+    realized = latest_metric("realized_pnl")
+    unrealized = latest_metric("unrealized_pnl")
+    fees = float(db.scalar(fees_query) or 0.0)
+    funding = float(db.scalar(funding_query) or 0.0)
+    net_pnl = realized + unrealized - fees + funding
+
+    return NetPnlSummaryResponse(
+        generated_at=generated_at,
+        realized=realized,
+        unrealized=unrealized,
+        fees=fees,
+        funding=funding,
+        net_pnl=net_pnl,
     )
 
 

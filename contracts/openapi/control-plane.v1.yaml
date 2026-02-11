@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Profinaut Control Plane API
-  version: 1.5.0
+  version: 1.6.0
   description: |
     Step 2 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
     Contracts in this folder and in `contracts/schemas` are the SSOT.
@@ -117,6 +117,31 @@ paths:
         "202":
           description: Position accepted
 
+  /ingest/costs:
+    post:
+      tags: [ingest]
+      summary: Ingest cost ledger entry (fees/funding)
+      operationId: postCost
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [instance_id, symbol, cost_type, amount, timestamp]
+              properties:
+                instance_id: { type: string }
+                symbol: { type: string }
+                cost_type:
+                  type: string
+                  enum: [FEE, FUNDING]
+                amount: { type: number }
+                timestamp: { type: string, format: date-time }
+      responses:
+        "202":
+          description: Cost accepted
+
   /portfolio/exposure:
     get:
       tags: [audit]
@@ -149,6 +174,33 @@ paths:
                         symbol: { type: string }
                         net_exposure: { type: number }
                         gross_exposure: { type: number }
+
+  /analytics/net-pnl:
+    get:
+      tags: [reconcile]
+      summary: Compute NetPnL summary
+      operationId: getNetPnlSummary
+      parameters:
+        - in: query
+          name: symbol
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: NetPnL summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, realized, unrealized, fees, funding, net_pnl]
+                properties:
+                  generated_at: { type: string, format: date-time }
+                  realized: { type: number }
+                  unrealized: { type: number }
+                  fees: { type: number }
+                  funding: { type: number }
+                  net_pnl: { type: number }
 
   /bots:
     get:

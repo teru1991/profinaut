@@ -1,6 +1,6 @@
 # Profinaut V2.5+ — Multi-Exchange / Multi-Language Bot Management Dashboard
 
-Step 8 delivers reconciliation persistence and mismatch alert routing on top of Step 7 metrics/positions/exposure foundation.
+Step 9 delivers NetPnL extension (cost ingest + formula endpoint) on top of reconciliation and exposure foundations.
 
 ## What is included
 - Contracts SSOT with OpenAPI + JSON Schemas (`contracts/`).
@@ -18,6 +18,10 @@ Step 8 delivers reconciliation persistence and mismatch alert routing on top of 
   - `POST /reconcile`
   - `GET /reconcile/results`
   - WARNING alert + outbound webhook routing on `MISMATCH`
+- NetPnL analytics extension:
+  - `POST /ingest/costs`
+  - `GET /analytics/net-pnl`
+  - Formula: `realized + unrealized - fees + funding`
 
 ## Quick start (Windows 11 + Docker Desktop)
 1. Copy environment file:

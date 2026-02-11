@@ -151,3 +151,14 @@ class ReconcileResultRecord(Base):
     difference: Mapped[float] = mapped_column(Numeric(20, 8), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class CostLedgerRecord(Base):
+    __tablename__ = "cost_ledger"
+
+    cost_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    instance_id: Mapped[str] = mapped_column(String(64), ForeignKey("instances.instance_id", ondelete="CASCADE"), nullable=False)
+    symbol: Mapped[str] = mapped_column(String(64), nullable=False)
+    cost_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    amount: Mapped[float] = mapped_column(Numeric(20, 8), nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
