@@ -1,0 +1,54 @@
+version: "3.9"
+
+name: profinaut
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: profinaut-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-profinaut}
+      POSTGRES_USER: ${POSTGRES_USER:-profinaut}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-profinaut}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-profinaut} -d ${POSTGRES_DB:-profinaut}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  dashboard-api:
+    image: python:3.12-slim
+    container_name: profinaut-dashboard-api
+    working_dir: /workspace
+    command: ["sh", "-c", "echo 'dashboard-api placeholder (Step 0)'; sleep infinity"]
+    env_file:
+      - .env
+    ports:
+      - "${DASHBOARD_API_PORT:-8000}:8000"
+    volumes:
+      - ./services/dashboard-api:/workspace
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    image: node:20-alpine
+    container_name: profinaut-web
+    working_dir: /workspace
+    command: ["sh", "-c", "echo 'web placeholder (Step 0)'; sleep infinity"]
+    env_file:
+      - .env
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    volumes:
+      - ./apps/web:/workspace
+    depends_on:
+      - dashboard-api
+
+volumes:
+  postgres_data:
