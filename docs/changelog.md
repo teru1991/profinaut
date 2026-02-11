@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-02-11 — Step 3 (Frontend skeleton + bots polling)
+- Added Next.js TypeScript frontend scaffold under `apps/web`.
+- Implemented stable navigation shell and skeleton routes:
+  - `/dashboard`
+  - `/bots`
+  - `/portfolio`
+  - `/markets`
+  - `/analytics`
+  - `/datasets`
+  - `/admin/modules`
+- Implemented Bots page polling every 5 seconds with table columns: status, last_seen, version.
+- Added Next API routes:
+  - `GET /api/bots` proxying to dashboard-api with `X-Admin-Token` from env
+  - `GET /api/healthz`
+- Updated Docker Compose web service to run Next.js dev server.
+- Added web npm scripts (`web:dev`, `web:build`) in root `package.json`.
+
 ## 2026-02-11 — Step 2 (Backend core + auth MVP + health)
 - Added FastAPI backend service scaffold in `services/dashboard-api`.
 - Added SQLAlchemy models and initial Alembic migration for:

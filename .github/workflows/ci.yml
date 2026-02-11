@@ -52,6 +52,23 @@ jobs:
       - name: Run pytest
         run: PYTHONPATH=services/dashboard-api pytest -q services/dashboard-api/tests
 
+  web-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install and build web
+        run: |
+          npm --prefix apps/web install
+          npm --prefix apps/web run build
+
   baseline:
     runs-on: ubuntu-latest
 
@@ -61,4 +78,4 @@ jobs:
 
       - name: Validate package.json scripts presence
         run: |
-          node -e "const p=require('./package.json'); ['dev','test','test:api','migrate','contracts:lint'].forEach(k=>{if(!p.scripts?.[k]){throw new Error('missing script '+k)}}); console.log('scripts ok')"
+          node -e "const p=require('./package.json'); ['dev','test','test:api','migrate','contracts:lint','web:dev','web:build'].forEach(k=>{if(!p.scripts?.[k]){throw new Error('missing script '+k)}}); console.log('scripts ok')"

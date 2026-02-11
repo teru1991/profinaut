@@ -10,4 +10,8 @@ python -m pip install -r requirements-dev.txt
 python -m pytest -q
 Pop-Location
 
+Write-Host "[test] Building web app..." -ForegroundColor Cyan
+npm --prefix apps/web install
+npm --prefix apps/web run build
+
 Write-Host "[test] All checks passed." -ForegroundColor Green

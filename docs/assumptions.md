@@ -20,3 +20,8 @@
 2. Heartbeat endpoint allows unauthenticated ingest in Step 2; admin endpoints require `X-Admin-Token`.
 3. `POST /ingest/heartbeat` auto-creates missing `bots` and `instances` records for onboarding.
 4. Module registry CRUD is implemented on core table `modules`; execution scheduling starts in later steps.
+
+## Step 3 defaults
+1. Frontend uses Next.js App Router + TypeScript.
+2. Bots polling is implemented through Next API route proxy to avoid hardcoding token in browser code.
+3. Navigation skeleton pages are intentionally thin until functional modules are implemented in later steps.

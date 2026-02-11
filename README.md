@@ -1,19 +1,21 @@
 # Profinaut V2.5+ — Multi-Exchange / Multi-Language Bot Management Dashboard
 
-Step 2 delivers backend core APIs with FastAPI + Alembic + PostgreSQL, admin token auth, and health endpoint.
+Step 3 delivers the frontend skeleton (Next.js + TypeScript) with stable navigation and Bots polling.
 
 ## What is included
 - Contracts SSOT with OpenAPI + JSON Schemas (`contracts/`).
-- Backend core service at `services/dashboard-api`:
-  - DB models + Alembic migration for `bots`, `instances`, `bot_status`, `audit_logs`, `modules`, `module_runs`.
-  - APIs:
-    - `GET /healthz`
-    - `POST /ingest/heartbeat` (upsert status)
-    - `GET /bots` (paginated, admin token)
-    - `GET/POST/GET:id/DELETE /modules` (admin token)
+- Backend core service at `services/dashboard-api` (Step 2).
+- Frontend app at `apps/web` with route skeleton:
+  - `/dashboard`
+  - `/bots`
+  - `/portfolio`
+  - `/markets`
+  - `/analytics`
+  - `/datasets`
+  - `/admin/modules`
+- Bots page polling via internal Next API route (`/api/bots`) that injects admin token from env.
 - PowerShell scripts for dev/test/migrate.
-- Cross-platform npm scripts for dev/test/migrate.
-- CI checks for contracts + backend tests.
+- Cross-platform npm scripts for Docker workflow and local web workflow.
 
 ## Quick start (Windows 11 + Docker Desktop)
 1. Copy environment file:
@@ -24,13 +26,10 @@ Step 2 delivers backend core APIs with FastAPI + Alembic + PostgreSQL, admin tok
    ```powershell
    ./scripts/dev.ps1
    ```
-3. Run tests:
+3. Open UI: `http://localhost:3000/bots`
+4. Run tests:
    ```powershell
    ./scripts/test.ps1
-   ```
-4. Apply migrations only:
-   ```powershell
-   ./scripts/migrate.ps1
    ```
 
 ## Cross-platform npm commands
@@ -38,6 +37,8 @@ Step 2 delivers backend core APIs with FastAPI + Alembic + PostgreSQL, admin tok
 npm run dev
 npm run test
 npm run migrate
+npm run web:dev
+npm run web:build
 ```
 
 ## Repository layout
@@ -53,4 +54,5 @@ npm run migrate
 
 ## Security baseline
 - Dashboard uses replaceable local admin auth header: `X-Admin-Token` from `.env`.
+- Frontend calls backend via Next API route with server-side token injection.
 - Exchange API keys are not stored in dashboard services.
