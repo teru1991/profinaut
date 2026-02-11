@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Node
+node_modules/
+apps/web/node_modules/
+apps/web/.next/
+
+# Env
+.env
+
+# OS
+.DS_Store
+Thumbs.db

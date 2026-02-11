@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/command.schema.json",
+  "title": "Command",
+  "type": "object",
+  "required": [
+    "command_id",
+    "instance_id",
+    "command_type",
+    "issued_at",
+    "expires_at"
+  ],
+  "properties": {
+    "command_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "instance_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "command_type": {
+      "type": "string",
+      "enum": [
+        "START",
+        "STOP",
+        "RESTART",
+        "CANCEL_ALL",
+        "FLATTEN",
+        "SAFE_MODE",
+        "SET_MODE",
+        "SYNC_BALANCE"
+      ]
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true,
+      "default": {}
+    }
+  },
+  "additionalProperties": false
+}
