@@ -183,3 +183,25 @@ class ExposureSummaryResponse(BaseModel):
     total_gross_exposure: float
     key_metrics: dict
     by_symbol: list[ExposureBySymbol]
+
+
+class ReconcileIn(BaseModel):
+    instance_id: str
+    exchange_equity: float
+    internal_equity: float
+    difference: float
+    status: str
+    timestamp: datetime
+
+
+class ReconcileOut(ReconcileIn):
+    reconcile_id: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PaginatedReconcileResults(BaseModel):
+    page: int
+    page_size: int
+    total: int
+    items: list[ReconcileOut]

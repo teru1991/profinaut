@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Profinaut Control Plane API
-  version: 1.4.0
+  version: 1.5.0
   description: |
     Step 2 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
     Contracts in this folder and in `contracts/schemas` are the SSOT.
@@ -302,6 +302,58 @@ paths:
       responses:
         "202":
           description: Reconcile result accepted
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/reconcile.schema.json
+
+  /reconcile/results:
+    get:
+      tags: [reconcile]
+      summary: List reconciliation results
+      operationId: listReconcileResults
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - in: query
+          name: instance_id
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [OK, MISMATCH]
+      responses:
+        "200":
+          description: Paginated reconciliation results
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, page_size, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: ../schemas/reconcile.schema.json
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
 
   /audit/logs:
     get:

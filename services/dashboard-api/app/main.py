@@ -19,6 +19,7 @@ from .models import (
     Module,
     ModuleRun,
     PositionCurrentRecord,
+    ReconcileResultRecord,
 )
 from .notifications import NotificationEvent, NotificationRouter, Severity
 from .schemas import (
@@ -38,6 +39,9 @@ from .schemas import (
     PaginatedModuleRuns,
     PaginatedModules,
     PositionIn,
+    PaginatedReconcileResults,
+    ReconcileIn,
+    ReconcileOut,
 )
 
 app = FastAPI(title="Profinaut Dashboard API", version="0.4.0")
@@ -471,11 +475,82 @@ def check_heartbeat_alerts(
     )
 
 
-@app.post("/reconcile", status_code=202)
-def post_reconcile(payload: dict, actor: str = Depends(require_admin_actor), db: Session = Depends(get_db)) -> dict:
-    write_audit(db, actor, "RECONCILE_SUBMIT", "reconcile", payload.get("instance_id", "unknown"), "SUCCESS", payload)
+@app.post("/reconcile", response_model=ReconcileOut, status_code=202)
+def post_reconcile(payload: ReconcileIn, actor: str = Depends(require_admin_actor), db: Session = Depends(get_db)) -> ReconcileOut:
+    instance = db.get(Instance, payload.instance_id)
+    if instance is None:
+        raise HTTPException(status_code=404, detail="instance not found")
+
+    row = ReconcileResultRecord(**payload.model_dump())
+    db.add(row)
+
+    notified = False
+    if payload.status == "MISMATCH":
+        checked_at = datetime.now(timezone.utc)
+        alert = AlertRecord(
+            source="reconcile",
+            severity="WARNING",
+            message=(
+                f"Reconciliation mismatch for {payload.instance_id}: "
+                f"exchange={payload.exchange_equity}, internal={payload.internal_equity}, diff={payload.difference}"
+            ),
+            target_type="instance",
+            target_id=payload.instance_id,
+            status="OPEN",
+            metadata_json={"difference": payload.difference, "timestamp": payload.timestamp.isoformat()},
+        )
+        db.add(alert)
+        settings = get_settings()
+        router = NotificationRouter(settings.discord_webhook_url)
+        event = NotificationEvent(
+            severity=Severity.WARNING,
+            title="Reconciliation Mismatch",
+            message=alert.message,
+            timestamp=checked_at,
+            metadata={"instance_id": payload.instance_id, "difference": payload.difference},
+        )
+        notified = router.route(event)
+        if notified:
+            alert.last_notified_at = checked_at
+
+    write_audit(
+        db,
+        actor,
+        "RECONCILE_SUBMIT",
+        "reconcile",
+        payload.instance_id,
+        "SUCCESS",
+        {"status": payload.status, "difference": payload.difference, "notified": notified},
+    )
     db.commit()
-    return payload
+    db.refresh(row)
+    return row
+
+
+@app.get("/reconcile/results", response_model=PaginatedReconcileResults)
+def list_reconcile_results(
+    actor: str = Depends(require_admin_actor),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200),
+    instance_id: str | None = Query(default=None),
+    status: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> PaginatedReconcileResults:
+    del actor
+    base_query = select(ReconcileResultRecord)
+    count_query = select(func.count()).select_from(ReconcileResultRecord)
+
+    if instance_id:
+        base_query = base_query.where(ReconcileResultRecord.instance_id == instance_id)
+        count_query = count_query.where(ReconcileResultRecord.instance_id == instance_id)
+    if status:
+        base_query = base_query.where(ReconcileResultRecord.status == status)
+        count_query = count_query.where(ReconcileResultRecord.status == status)
+
+    total = db.scalar(count_query) or 0
+    offset = (page - 1) * page_size
+    rows = db.scalars(base_query.order_by(ReconcileResultRecord.timestamp.desc()).offset(offset).limit(page_size)).all()
+    return PaginatedReconcileResults(page=page, page_size=page_size, total=total, items=rows)
 
 
 @app.get("/audit/logs", response_model=PaginatedAuditLogs)

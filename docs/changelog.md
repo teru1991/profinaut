@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-02-11 — Step 8 (Reconciliation persistence + mismatch alerts)
+- Added `reconcile_results` persistence via Alembic migration `0005_reconcile_results`.
+- Upgraded `POST /reconcile` to typed/persistent behavior with instance validation.
+- Added `GET /reconcile/results` with pagination and filters (`instance_id`, `status`).
+- Added mismatch alert routing: `MISMATCH` reconciliation creates WARNING alert and triggers outbound webhook notification when configured.
+- Added automated API test for reconciliation persistence/filtering and mismatch notification behavior.
+- Added `scripts/scaffold_step8.ps1`.
+- Bumped OpenAPI contract version to `1.5.0`.
+
 ## 2026-02-11 — Step 7 (Metrics/positions/exposure foundation)
 - Added metrics and positions persistence via Alembic migration `0004_metrics_positions`:
   - `metrics_ts`

@@ -45,3 +45,9 @@
 1. Time-series metrics foundation is implemented in `metrics_ts` with control-plane summary queries from Postgres for MVP.
 2. Current positions are stored in `positions_current` and aggregated by symbol for exposure summary.
 3. Portfolio UI reads exposure summary through a Next server route proxy.
+
+
+## Step 8 defaults
+1. Reconciliation submissions persist in `reconcile_results` for historical query and auditability.
+2. A `MISMATCH` reconciliation status opens a WARNING alert and routes outbound notification via existing router/webhook path.
+3. Reconciliation list API supports pagination and basic filters (`instance_id`, `status`).

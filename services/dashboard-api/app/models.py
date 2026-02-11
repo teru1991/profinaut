@@ -139,3 +139,15 @@ class PositionCurrentRecord(Base):
     net_exposure: Mapped[float] = mapped_column(Numeric(20, 8), nullable=False)
     gross_exposure: Mapped[float] = mapped_column(Numeric(20, 8), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class ReconcileResultRecord(Base):
+    __tablename__ = "reconcile_results"
+
+    reconcile_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    instance_id: Mapped[str] = mapped_column(String(64), ForeignKey("instances.instance_id", ondelete="CASCADE"), nullable=False)
+    exchange_equity: Mapped[float] = mapped_column(Numeric(20, 8), nullable=False)
+    internal_equity: Mapped[float] = mapped_column(Numeric(20, 8), nullable=False)
+    difference: Mapped[float] = mapped_column(Numeric(20, 8), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

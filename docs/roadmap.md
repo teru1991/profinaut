@@ -12,7 +12,8 @@ Build a contracts-first, module-driven bot management platform for multi-exchang
 - [x] **Step 5**: Command system end-to-end + audit persistence.
 - [x] **Step 6**: Notification router (Discord webhook phase 1).
 - [x] **Step 7**: Metrics/positions/exposure foundation + portfolio UI.
-- [ ] **Step 8+**: Reconciliation, NetPnL extensions, execution quality, module expansion.
+- [x] **Step 8**: Reconciliation persistence + mismatch alert routing.
+- [ ] **Step 9+**: NetPnL extensions, execution quality, module expansion.
 
 ## Guardrails
 - `contracts/` is SSOT and enforced in CI.

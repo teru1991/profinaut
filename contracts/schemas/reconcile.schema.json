@@ -27,11 +27,17 @@
     },
     "status": {
       "type": "string",
-      "enum": ["OK", "MISMATCH"]
+      "enum": [
+        "OK",
+        "MISMATCH"
+      ]
     },
     "timestamp": {
       "type": "string",
       "format": "date-time"
+    },
+    "reconcile_id": {
+      "type": "string"
     }
   },
   "additionalProperties": false

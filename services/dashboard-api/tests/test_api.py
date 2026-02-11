@@ -264,3 +264,53 @@ def test_metrics_positions_and_portfolio_exposure(client):
     assert body["total_gross_exposure"] == 210.0
     assert body["key_metrics"]["latest_equity"] == 1234.5
     assert body["key_metrics"]["tracked_positions"] == 2
+
+
+def test_reconcile_persistence_and_mismatch_alert(client, monkeypatch):
+    sent = {"count": 0}
+
+    class FakeResponse:
+        status_code = 204
+
+    def fake_post(url, json, timeout):
+        sent["count"] += 1
+        return FakeResponse()
+
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.example/webhook")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    monkeypatch.setattr("app.notifications.requests.post", fake_post)
+
+    now = datetime.now(timezone.utc)
+    hb = {
+        "instance_id": "inst-recon-1",
+        "bot_id": "bot-recon-1",
+        "runtime_mode": "PAPER",
+        "exchange": "BINANCE",
+        "symbol": "BTCUSDT",
+        "version": "1.0.0",
+        "timestamp": now.isoformat(),
+        "metadata": {},
+    }
+    assert client.post("/ingest/heartbeat", json=hb).status_code == 202
+
+    reconcile = {
+        "instance_id": "inst-recon-1",
+        "exchange_equity": 1000.0,
+        "internal_equity": 970.0,
+        "difference": 30.0,
+        "status": "MISMATCH",
+        "timestamp": now.isoformat(),
+    }
+
+    post_res = client.post("/reconcile", json=reconcile, headers={"X-Admin-Token": "test-admin-token"})
+    assert post_res.status_code == 202
+    assert post_res.json()["reconcile_id"]
+
+    listed = client.get("/reconcile/results?status=MISMATCH", headers={"X-Admin-Token": "test-admin-token"})
+    assert listed.status_code == 200
+    body = listed.json()
+    assert body["total"] == 1
+    assert body["items"][0]["instance_id"] == "inst-recon-1"
+    assert sent["count"] == 1
