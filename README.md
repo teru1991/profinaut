@@ -1,6 +1,6 @@
 # Profinaut V2.5+ — Multi-Exchange / Multi-Language Bot Management Dashboard
 
-Step 6 delivers notification routing (severity skeleton) and heartbeat-loss CRITICAL alerts with outbound Discord webhook notifications.
+Step 7 delivers metrics + positions + exposure foundation and portfolio exposure UI.
 
 ## What is included
 - Contracts SSOT with OpenAPI + JSON Schemas (`contracts/`).
@@ -8,10 +8,12 @@ Step 6 delivers notification routing (severity skeleton) and heartbeat-loss CRIT
 - Frontend app at `apps/web` with navigation skeleton and bots polling.
 - Python Agent SDK MVP at `sdk/python`.
 - Command E2E flow + audit persistence.
-- Notification router Phase 1:
-  - severity routing skeleton: INFO/WARNING/CRITICAL/AUDIT
-  - heartbeat-loss checker endpoint: `POST /alerts/heartbeat-check`
-  - outbound Discord webhook notifications (mock-tested)
+- Notification router Phase 1 (Discord webhook outbound).
+- Metrics/exposure foundation:
+  - `POST /ingest/metrics`
+  - `POST /ingest/positions`
+  - `GET /portfolio/exposure`
+  - Portfolio UI polling and rendering exposure summary
 
 ## Quick start (Windows 11 + Docker Desktop)
 1. Copy environment file:

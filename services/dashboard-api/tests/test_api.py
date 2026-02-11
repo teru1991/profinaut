@@ -189,3 +189,78 @@ def test_heartbeat_loss_triggers_critical_alert_and_webhook(client, monkeypatch)
     res2 = client.post("/alerts/heartbeat-check?stale_after_seconds=60", headers={"X-Admin-Token": "test-admin-token"})
     assert res2.status_code == 200
     assert res2.json()["alerts_created"] == 0
+
+
+def test_metrics_positions_and_portfolio_exposure(client):
+    now = datetime.now(timezone.utc)
+    hb1 = {
+        "instance_id": "inst-port-1",
+        "bot_id": "bot-port-1",
+        "runtime_mode": "PAPER",
+        "exchange": "BINANCE",
+        "symbol": "BTCUSDT",
+        "version": "1.0.0",
+        "timestamp": now.isoformat(),
+        "metadata": {},
+    }
+    hb2 = {
+        "instance_id": "inst-port-2",
+        "bot_id": "bot-port-2",
+        "runtime_mode": "PAPER",
+        "exchange": "BINANCE",
+        "symbol": "ETHUSDT",
+        "version": "1.0.0",
+        "timestamp": now.isoformat(),
+        "metadata": {},
+    }
+    assert client.post("/ingest/heartbeat", json=hb1).status_code == 202
+    assert client.post("/ingest/heartbeat", json=hb2).status_code == 202
+
+    assert (
+        client.post(
+            "/ingest/metrics",
+            json={
+                "instance_id": "inst-port-1",
+                "symbol": "BTCUSDT",
+                "metric_type": "equity",
+                "value": 1234.5,
+                "timestamp": now.isoformat(),
+            },
+        ).status_code
+        == 202
+    )
+
+    assert (
+        client.post(
+            "/ingest/positions",
+            json={
+                "instance_id": "inst-port-1",
+                "symbol": "BTCUSDT",
+                "net_exposure": 100.0,
+                "gross_exposure": 150.0,
+                "updated_at": now.isoformat(),
+            },
+        ).status_code
+        == 202
+    )
+    assert (
+        client.post(
+            "/ingest/positions",
+            json={
+                "instance_id": "inst-port-2",
+                "symbol": "ETHUSDT",
+                "net_exposure": -40.0,
+                "gross_exposure": 60.0,
+                "updated_at": now.isoformat(),
+            },
+        ).status_code
+        == 202
+    )
+
+    summary = client.get("/portfolio/exposure", headers={"X-Admin-Token": "test-admin-token"})
+    assert summary.status_code == 200
+    body = summary.json()
+    assert body["total_net_exposure"] == 60.0
+    assert body["total_gross_exposure"] == 210.0
+    assert body["key_metrics"]["latest_equity"] == 1234.5
+    assert body["key_metrics"]["tracked_positions"] == 2

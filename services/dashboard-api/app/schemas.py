@@ -153,3 +153,33 @@ class HeartbeatAlertCheckResponse(BaseModel):
     stale_threshold_seconds: int
     stale_instances: int
     alerts_created: int
+
+
+class MetricIn(BaseModel):
+    instance_id: str
+    symbol: str
+    metric_type: str
+    value: float
+    timestamp: datetime
+
+
+class PositionIn(BaseModel):
+    instance_id: str
+    symbol: str
+    net_exposure: float
+    gross_exposure: float
+    updated_at: datetime
+
+
+class ExposureBySymbol(BaseModel):
+    symbol: str
+    net_exposure: float
+    gross_exposure: float
+
+
+class ExposureSummaryResponse(BaseModel):
+    generated_at: datetime
+    total_net_exposure: float
+    total_gross_exposure: float
+    key_metrics: dict
+    by_symbol: list[ExposureBySymbol]

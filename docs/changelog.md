@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-02-11 — Step 7 (Metrics/positions/exposure foundation)
+- Added metrics and positions persistence via Alembic migration `0004_metrics_positions`:
+  - `metrics_ts`
+  - `positions_current`
+- Added ingestion endpoints:
+  - `POST /ingest/metrics`
+  - `POST /ingest/positions`
+- Added exposure summary endpoint:
+  - `GET /portfolio/exposure`
+  - returns total net/gross exposure, per-symbol breakdown, and key metrics
+- Updated Portfolio UI page to poll and render exposure summary.
+- Added Next API proxy route for portfolio exposure.
+- Added API tests for metrics/positions ingestion + exposure aggregation behavior.
+- Added `scripts/scaffold_step7.ps1`.
+- Bumped OpenAPI contract version to `1.4.0`.
+
 ## 2026-02-11 — Step 6 (Notification Router + Discord webhook)
 - Added notification router in dashboard API with severity skeleton:
   - INFO

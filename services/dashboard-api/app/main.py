@@ -5,27 +5,42 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .auth import require_admin_actor
-from .database import get_db
 from .config import get_settings
-from .models import AlertRecord, AuditLog, Bot, BotStatus, CommandAckRecord, CommandRecord, Instance, Module, ModuleRun
+from .database import get_db
+from .models import (
+    AlertRecord,
+    AuditLog,
+    Bot,
+    BotStatus,
+    CommandAckRecord,
+    CommandRecord,
+    Instance,
+    MetricTsRecord,
+    Module,
+    ModuleRun,
+    PositionCurrentRecord,
+)
 from .notifications import NotificationEvent, NotificationRouter, Severity
 from .schemas import (
     CommandAckIn,
     CommandAckOut,
     CommandIn,
     CommandOut,
+    ExposureSummaryResponse,
     HealthResponse,
     HeartbeatAlertCheckResponse,
     HeartbeatIn,
+    MetricIn,
     ModuleIn,
     ModuleOut,
     PaginatedAuditLogs,
     PaginatedBots,
     PaginatedModuleRuns,
     PaginatedModules,
+    PositionIn,
 )
 
-app = FastAPI(title="Profinaut Dashboard API", version="0.3.0")
+app = FastAPI(title="Profinaut Dashboard API", version="0.4.0")
 
 
 def write_audit(db: Session, actor: str, action: str, target_type: str, target_id: str, result: str, details: dict) -> None:
@@ -95,6 +110,106 @@ def ingest_heartbeat(payload: HeartbeatIn, db: Session = Depends(get_db)) -> dic
 
     db.commit()
     return {"status": "accepted"}
+
+
+@app.post("/ingest/metrics", status_code=202)
+def ingest_metric(payload: MetricIn, db: Session = Depends(get_db)) -> dict:
+    instance = db.get(Instance, payload.instance_id)
+    if instance is None:
+        raise HTTPException(status_code=404, detail="instance not found")
+
+    db.add(
+        MetricTsRecord(
+            instance_id=payload.instance_id,
+            symbol=payload.symbol,
+            metric_type=payload.metric_type,
+            value=payload.value,
+            timestamp=payload.timestamp,
+        )
+    )
+    db.commit()
+    return {"status": "accepted"}
+
+
+@app.post("/ingest/positions", status_code=202)
+def ingest_position(payload: PositionIn, db: Session = Depends(get_db)) -> dict:
+    instance = db.get(Instance, payload.instance_id)
+    if instance is None:
+        raise HTTPException(status_code=404, detail="instance not found")
+
+    existing = db.scalar(
+        select(PositionCurrentRecord)
+        .where(PositionCurrentRecord.instance_id == payload.instance_id)
+        .where(PositionCurrentRecord.symbol == payload.symbol)
+    )
+
+    if existing is None:
+        db.add(
+            PositionCurrentRecord(
+                instance_id=payload.instance_id,
+                symbol=payload.symbol,
+                net_exposure=payload.net_exposure,
+                gross_exposure=payload.gross_exposure,
+                updated_at=payload.updated_at,
+            )
+        )
+    else:
+        existing.net_exposure = payload.net_exposure
+        existing.gross_exposure = payload.gross_exposure
+        existing.updated_at = payload.updated_at
+
+    db.commit()
+    return {"status": "accepted"}
+
+
+@app.get("/portfolio/exposure", response_model=ExposureSummaryResponse)
+def get_portfolio_exposure(actor: str = Depends(require_admin_actor), db: Session = Depends(get_db)) -> ExposureSummaryResponse:
+    del actor
+    generated_at = datetime.now(timezone.utc)
+    rows = db.scalars(select(PositionCurrentRecord)).all()
+
+    by_symbol_map: dict[str, dict[str, float]] = {}
+    total_net = 0.0
+    total_gross = 0.0
+    for row in rows:
+        net = float(row.net_exposure)
+        gross = float(row.gross_exposure)
+        total_net += net
+        total_gross += gross
+
+        slot = by_symbol_map.setdefault(row.symbol, {"net_exposure": 0.0, "gross_exposure": 0.0})
+        slot["net_exposure"] += net
+        slot["gross_exposure"] += gross
+
+    by_symbol = [
+        {
+            "symbol": symbol,
+            "net_exposure": values["net_exposure"],
+            "gross_exposure": values["gross_exposure"],
+        }
+        for symbol, values in sorted(by_symbol_map.items())
+    ]
+
+    latest_equity = db.scalar(
+        select(MetricTsRecord.value)
+        .where(MetricTsRecord.metric_type == "equity")
+        .order_by(MetricTsRecord.timestamp.desc())
+        .limit(1)
+    )
+
+    key_metrics = {
+        "latest_equity": float(latest_equity) if latest_equity is not None else 0.0,
+        "tracked_positions": len(rows),
+        "tracked_symbols": len(by_symbol),
+    }
+
+    return ExposureSummaryResponse(
+        generated_at=generated_at,
+        total_net_exposure=total_net,
+        total_gross_exposure=total_gross,
+        key_metrics=key_metrics,
+        by_symbol=by_symbol,
+    )
 
 
 @app.get("/bots", response_model=PaginatedBots)

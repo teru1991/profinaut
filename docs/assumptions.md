@@ -40,3 +40,8 @@
 1. Notification router includes severity skeleton for INFO/WARNING/CRITICAL/AUDIT.
 2. Heartbeat-loss detection is triggered via API endpoint and raises CRITICAL alerts.
 3. Discord webhook notifications are outbound-only and optional (no two-way interactions before Step 7).
+
+## Step 7 defaults
+1. Time-series metrics foundation is implemented in `metrics_ts` with control-plane summary queries from Postgres for MVP.
+2. Current positions are stored in `positions_current` and aggregated by symbol for exposure summary.
+3. Portfolio UI reads exposure summary through a Next server route proxy.

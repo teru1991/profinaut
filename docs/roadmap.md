@@ -11,7 +11,7 @@ Build a contracts-first, module-driven bot management platform for multi-exchang
 - [x] **Step 4**: Python Agent SDK MVP (heartbeat, commands, dead man switch).
 - [x] **Step 5**: Command system end-to-end + audit persistence.
 - [x] **Step 6**: Notification router (Discord webhook phase 1).
-- [ ] **Step 7**: Metrics/positions/exposure foundation + portfolio UI.
+- [x] **Step 7**: Metrics/positions/exposure foundation + portfolio UI.
 - [ ] **Step 8+**: Reconciliation, NetPnL extensions, execution quality, module expansion.
 
 ## Guardrails
