@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Profinaut Control Plane API
-  version: 1.2.0
+  version: 1.4.0
   description: |
     Step 2 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
     Contracts in this folder and in `contracts/schemas` are the SSOT.
@@ -68,6 +68,87 @@ paths:
       responses:
         "202":
           description: Heartbeat accepted
+
+
+
+  /ingest/metrics:
+    post:
+      tags: [ingest]
+      summary: Ingest metrics time-series point
+      operationId: postMetric
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [instance_id, symbol, metric_type, value, timestamp]
+              properties:
+                instance_id: { type: string }
+                symbol: { type: string }
+                metric_type: { type: string }
+                value: { type: number }
+                timestamp: { type: string, format: date-time }
+      responses:
+        "202":
+          description: Metric accepted
+
+  /ingest/positions:
+    post:
+      tags: [ingest]
+      summary: Ingest latest position exposure
+      operationId: postPosition
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [instance_id, symbol, net_exposure, gross_exposure, updated_at]
+              properties:
+                instance_id: { type: string }
+                symbol: { type: string }
+                net_exposure: { type: number }
+                gross_exposure: { type: number }
+                updated_at: { type: string, format: date-time }
+      responses:
+        "202":
+          description: Position accepted
+
+  /portfolio/exposure:
+    get:
+      tags: [audit]
+      summary: Exposure summary across positions
+      operationId: getPortfolioExposure
+      responses:
+        "200":
+          description: Exposure summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, total_net_exposure, total_gross_exposure, key_metrics, by_symbol]
+                properties:
+                  generated_at:
+                    type: string
+                    format: date-time
+                  total_net_exposure:
+                    type: number
+                  total_gross_exposure:
+                    type: number
+                  key_metrics:
+                    type: object
+                  by_symbol:
+                    type: array
+                    items:
+                      type: object
+                      required: [symbol, net_exposure, gross_exposure]
+                      properties:
+                        symbol: { type: string }
+                        net_exposure: { type: number }
+                        gross_exposure: { type: number }
 
   /bots:
     get:
@@ -172,6 +253,40 @@ paths:
       responses:
         "202":
           description: Ack accepted
+
+
+  /alerts/heartbeat-check:
+    post:
+      tags: [audit]
+      summary: Check for stale heartbeats and emit CRITICAL alerts
+      operationId: checkHeartbeatAlerts
+      parameters:
+        - in: query
+          name: stale_after_seconds
+          required: false
+          schema:
+            type: integer
+            minimum: 30
+            maximum: 3600
+            default: 90
+      responses:
+        "200":
+          description: Heartbeat alert check summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [checked_at, stale_threshold_seconds, stale_instances, alerts_created]
+                properties:
+                  checked_at:
+                    type: string
+                    format: date-time
+                  stale_threshold_seconds:
+                    type: integer
+                  stale_instances:
+                    type: integer
+                  alerts_created:
+                    type: integer
 
   /reconcile:
     post:

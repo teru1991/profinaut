@@ -1,15 +1,44 @@
 # Changelog
 
+## 2026-02-11 — Step 7 (Metrics/positions/exposure foundation)
+- Added metrics and positions persistence via Alembic migration `0004_metrics_positions`:
+  - `metrics_ts`
+  - `positions_current`
+- Added ingestion endpoints:
+  - `POST /ingest/metrics`
+  - `POST /ingest/positions`
+- Added exposure summary endpoint:
+  - `GET /portfolio/exposure`
+  - returns total net/gross exposure, per-symbol breakdown, and key metrics
+- Updated Portfolio UI page to poll and render exposure summary.
+- Added Next API proxy route for portfolio exposure.
+- Added API tests for metrics/positions ingestion + exposure aggregation behavior.
+- Added `scripts/scaffold_step7.ps1`.
+- Bumped OpenAPI contract version to `1.4.0`.
+
+## 2026-02-11 — Step 6 (Notification Router + Discord webhook)
+- Added notification router in dashboard API with severity skeleton:
+  - INFO
+  - WARNING
+  - CRITICAL
+  - AUDIT
+- Added `alerts` persistence model and Alembic migration `0003_alerts`.
+- Implemented `POST /alerts/heartbeat-check` to detect stale heartbeats and create CRITICAL alerts.
+- Added Discord webhook send path for routed alerts (outbound only).
+- Added test coverage with mocked webhook for heartbeat-loss alerting and dedup behavior.
+- Added `scripts/scaffold_step6.ps1`.
+- Updated OpenAPI contract to `1.3.0`.
+
 ## 2026-02-11 — Step 5 (Command E2E + Audit)
 - Added persistent command tables via Alembic migration `0002_commands_and_acks`:
   - `commands`
   - `command_acks`
 - Implemented command endpoints in dashboard API:
   - `POST /commands` (admin issues command)
-  - `GET /commands/pending/{instance_id}` (agent pull)
+  - `GET /instances/{instance_id}/commands/pending` (agent pull)
   - `POST /commands/{command_id}/ack` (agent ack)
 - Added audit persistence for command create + ack + module operations.
-- Updated SDK runner to default command pull URL to `/commands/pending/{instance_id}` when unset.
+- Updated SDK runner to default command pull URL to `/instances/{instance_id}/commands/pending` when unset.
 - Added API tests for command end-to-end flow, audit log persistence, and expired-rejection ack path.
 - Added `scripts/scaffold_step5.ps1`.
 - Bumped OpenAPI contract version to `1.2.0` and added pending command path.

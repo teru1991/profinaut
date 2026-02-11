@@ -5,24 +5,42 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .auth import require_admin_actor
+from .config import get_settings
 from .database import get_db
-from .models import AuditLog, Bot, BotStatus, CommandAckRecord, CommandRecord, Instance, Module, ModuleRun
+from .models import (
+    AlertRecord,
+    AuditLog,
+    Bot,
+    BotStatus,
+    CommandAckRecord,
+    CommandRecord,
+    Instance,
+    MetricTsRecord,
+    Module,
+    ModuleRun,
+    PositionCurrentRecord,
+)
+from .notifications import NotificationEvent, NotificationRouter, Severity
 from .schemas import (
     CommandAckIn,
     CommandAckOut,
     CommandIn,
     CommandOut,
+    ExposureSummaryResponse,
     HealthResponse,
+    HeartbeatAlertCheckResponse,
     HeartbeatIn,
+    MetricIn,
     ModuleIn,
     ModuleOut,
     PaginatedAuditLogs,
     PaginatedBots,
     PaginatedModuleRuns,
     PaginatedModules,
+    PositionIn,
 )
 
-app = FastAPI(title="Profinaut Dashboard API", version="0.3.0")
+app = FastAPI(title="Profinaut Dashboard API", version="0.4.0")
 
 
 def write_audit(db: Session, actor: str, action: str, target_type: str, target_id: str, result: str, details: dict) -> None:
@@ -92,6 +110,106 @@ def ingest_heartbeat(payload: HeartbeatIn, db: Session = Depends(get_db)) -> dic
 
     db.commit()
     return {"status": "accepted"}
+
+
+@app.post("/ingest/metrics", status_code=202)
+def ingest_metric(payload: MetricIn, db: Session = Depends(get_db)) -> dict:
+    instance = db.get(Instance, payload.instance_id)
+    if instance is None:
+        raise HTTPException(status_code=404, detail="instance not found")
+
+    db.add(
+        MetricTsRecord(
+            instance_id=payload.instance_id,
+            symbol=payload.symbol,
+            metric_type=payload.metric_type,
+            value=payload.value,
+            timestamp=payload.timestamp,
+        )
+    )
+    db.commit()
+    return {"status": "accepted"}
+
+
+@app.post("/ingest/positions", status_code=202)
+def ingest_position(payload: PositionIn, db: Session = Depends(get_db)) -> dict:
+    instance = db.get(Instance, payload.instance_id)
+    if instance is None:
+        raise HTTPException(status_code=404, detail="instance not found")
+
+    existing = db.scalar(
+        select(PositionCurrentRecord)
+        .where(PositionCurrentRecord.instance_id == payload.instance_id)
+        .where(PositionCurrentRecord.symbol == payload.symbol)
+    )
+
+    if existing is None:
+        db.add(
+            PositionCurrentRecord(
+                instance_id=payload.instance_id,
+                symbol=payload.symbol,
+                net_exposure=payload.net_exposure,
+                gross_exposure=payload.gross_exposure,
+                updated_at=payload.updated_at,
+            )
+        )
+    else:
+        existing.net_exposure = payload.net_exposure
+        existing.gross_exposure = payload.gross_exposure
+        existing.updated_at = payload.updated_at
+
+    db.commit()
+    return {"status": "accepted"}
+
+
+@app.get("/portfolio/exposure", response_model=ExposureSummaryResponse)
+def get_portfolio_exposure(actor: str = Depends(require_admin_actor), db: Session = Depends(get_db)) -> ExposureSummaryResponse:
+    del actor
+    generated_at = datetime.now(timezone.utc)
+    rows = db.scalars(select(PositionCurrentRecord)).all()
+
+    by_symbol_map: dict[str, dict[str, float]] = {}
+    total_net = 0.0
+    total_gross = 0.0
+    for row in rows:
+        net = float(row.net_exposure)
+        gross = float(row.gross_exposure)
+        total_net += net
+        total_gross += gross
+
+        slot = by_symbol_map.setdefault(row.symbol, {"net_exposure": 0.0, "gross_exposure": 0.0})
+        slot["net_exposure"] += net
+        slot["gross_exposure"] += gross
+
+    by_symbol = [
+        {
+            "symbol": symbol,
+            "net_exposure": values["net_exposure"],
+            "gross_exposure": values["gross_exposure"],
+        }
+        for symbol, values in sorted(by_symbol_map.items())
+    ]
+
+    latest_equity = db.scalar(
+        select(MetricTsRecord.value)
+        .where(MetricTsRecord.metric_type == "equity")
+        .order_by(MetricTsRecord.timestamp.desc())
+        .limit(1)
+    )
+
+    key_metrics = {
+        "latest_equity": float(latest_equity) if latest_equity is not None else 0.0,
+        "tracked_positions": len(rows),
+        "tracked_symbols": len(by_symbol),
+    }
+
+    return ExposureSummaryResponse(
+        generated_at=generated_at,
+        total_net_exposure=total_net,
+        total_gross_exposure=total_gross,
+        key_metrics=key_metrics,
+        by_symbol=by_symbol,
+    )
 
 
 @app.get("/bots", response_model=PaginatedBots)
@@ -280,6 +398,77 @@ def ack_command(command_id: str, payload: CommandAckIn, db: Session = Depends(ge
     db.commit()
     db.refresh(ack)
     return ack
+
+
+@app.post("/alerts/heartbeat-check", response_model=HeartbeatAlertCheckResponse)
+def check_heartbeat_alerts(
+    actor: str = Depends(require_admin_actor),
+    stale_after_seconds: int = Query(default=90, ge=30, le=3600),
+    db: Session = Depends(get_db),
+) -> HeartbeatAlertCheckResponse:
+    checked_at = datetime.now(timezone.utc)
+    stale_cutoff = checked_at.timestamp() - stale_after_seconds
+
+    status_rows = db.scalars(select(BotStatus)).all()
+    stale_rows = [r for r in status_rows if r.last_seen.timestamp() < stale_cutoff]
+
+    settings = get_settings()
+    router = NotificationRouter(settings.discord_webhook_url)
+
+    alerts_created = 0
+    for row in stale_rows:
+        existing = db.scalar(
+            select(AlertRecord)
+            .where(AlertRecord.target_type == "instance")
+            .where(AlertRecord.target_id == row.instance_id)
+            .where(AlertRecord.source == "heartbeat_monitor")
+            .where(AlertRecord.status == "OPEN")
+        )
+        if existing is not None:
+            continue
+
+        alert = AlertRecord(
+            source="heartbeat_monitor",
+            severity=Severity.CRITICAL.value,
+            message=f"Heartbeat lost for instance {row.instance_id}",
+            target_type="instance",
+            target_id=row.instance_id,
+            status="OPEN",
+            created_at=checked_at,
+            metadata_json={"last_seen": row.last_seen.isoformat(), "bot_id": row.bot_id},
+        )
+        db.add(alert)
+        db.flush()
+
+        event = NotificationEvent(
+            severity=Severity.CRITICAL,
+            title="Heartbeat Lost",
+            message=f"Instance {row.instance_id} last seen at {row.last_seen.isoformat()}",
+            timestamp=checked_at,
+            metadata={"instance_id": row.instance_id, "bot_id": row.bot_id},
+        )
+        sent = router.route(event)
+        if sent:
+            alert.last_notified_at = checked_at
+
+        write_audit(
+            db,
+            actor=actor,
+            action="HEARTBEAT_LOSS_ALERT",
+            target_type="instance",
+            target_id=row.instance_id,
+            result="SUCCESS",
+            details={"severity": "CRITICAL", "notified": sent},
+        )
+        alerts_created += 1
+
+    db.commit()
+    return HeartbeatAlertCheckResponse(
+        checked_at=checked_at,
+        stale_threshold_seconds=stale_after_seconds,
+        stale_instances=len(stale_rows),
+        alerts_created=alerts_created,
+    )
 
 
 @app.post("/reconcile", status_code=202)

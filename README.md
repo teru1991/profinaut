@@ -1,17 +1,19 @@
 # Profinaut V2.5+ — Multi-Exchange / Multi-Language Bot Management Dashboard
 
-Step 5 delivers command system end-to-end flow and audit persistence.
+Step 7 delivers metrics + positions + exposure foundation and portfolio exposure UI.
 
 ## What is included
 - Contracts SSOT with OpenAPI + JSON Schemas (`contracts/`).
 - Backend core service at `services/dashboard-api`.
 - Frontend app at `apps/web` with navigation skeleton and bots polling.
 - Python Agent SDK MVP at `sdk/python`.
-- Command E2E flow:
-  - admin creates command in API (`POST /commands`)
-  - agent pulls pending command (`GET /instances/{instance_id}/commands/pending`)
-  - agent sends ack (`POST /commands/{command_id}/ack`)
-  - backend persists command + ack and writes audit logs.
+- Command E2E flow + audit persistence.
+- Notification router Phase 1 (Discord webhook outbound).
+- Metrics/exposure foundation:
+  - `POST /ingest/metrics`
+  - `POST /ingest/positions`
+  - `GET /portfolio/exposure`
+  - Portfolio UI polling and rendering exposure summary
 
 ## Quick start (Windows 11 + Docker Desktop)
 1. Copy environment file:

@@ -35,3 +35,13 @@
 1. Command records persist in `commands`, and acknowledgements persist in `command_acks`.
 2. Audit logs capture command creation and ack events from all control paths.
 3. Agent command pull uses unauthenticated pending-command endpoint keyed by `instance_id` in Step 5; hardening can be added in later steps.
+
+## Step 6 defaults
+1. Notification router includes severity skeleton for INFO/WARNING/CRITICAL/AUDIT.
+2. Heartbeat-loss detection is triggered via API endpoint and raises CRITICAL alerts.
+3. Discord webhook notifications are outbound-only and optional (no two-way interactions before Step 7).
+
+## Step 7 defaults
+1. Time-series metrics foundation is implemented in `metrics_ts` with control-plane summary queries from Postgres for MVP.
+2. Current positions are stored in `positions_current` and aggregated by symbol for exposure summary.
+3. Portfolio UI reads exposure summary through a Next server route proxy.

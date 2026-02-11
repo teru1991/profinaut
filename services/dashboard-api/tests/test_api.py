@@ -148,3 +148,119 @@ def test_expired_command_not_delivered(client):
     no_more = client.get("/instances/inst-expired/commands/pending")
     assert no_more.status_code == 200
     assert len(no_more.json()) == 0
+
+
+def test_heartbeat_loss_triggers_critical_alert_and_webhook(client, monkeypatch):
+    sent = {"count": 0}
+
+    class FakeResponse:
+        status_code = 204
+
+    def fake_post(url, json, timeout):
+        sent["count"] += 1
+        return FakeResponse()
+
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.example/webhook")
+    from app.config import get_settings
+    get_settings.cache_clear()
+
+    monkeypatch.setattr("app.notifications.requests.post", fake_post)
+
+    old = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+    hb = {
+        "instance_id": "inst-stale",
+        "bot_id": "bot-stale",
+        "runtime_mode": "PAPER",
+        "exchange": "BINANCE",
+        "symbol": "BTCUSDT",
+        "version": "1.0.0",
+        "timestamp": old,
+        "metadata": {},
+    }
+    assert client.post("/ingest/heartbeat", json=hb).status_code == 202
+
+    res = client.post("/alerts/heartbeat-check?stale_after_seconds=60", headers={"X-Admin-Token": "test-admin-token"})
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["alerts_created"] == 1
+    assert sent["count"] == 1
+
+    # second check should not duplicate OPEN alert
+    res2 = client.post("/alerts/heartbeat-check?stale_after_seconds=60", headers={"X-Admin-Token": "test-admin-token"})
+    assert res2.status_code == 200
+    assert res2.json()["alerts_created"] == 0
+
+
+def test_metrics_positions_and_portfolio_exposure(client):
+    now = datetime.now(timezone.utc)
+    hb1 = {
+        "instance_id": "inst-port-1",
+        "bot_id": "bot-port-1",
+        "runtime_mode": "PAPER",
+        "exchange": "BINANCE",
+        "symbol": "BTCUSDT",
+        "version": "1.0.0",
+        "timestamp": now.isoformat(),
+        "metadata": {},
+    }
+    hb2 = {
+        "instance_id": "inst-port-2",
+        "bot_id": "bot-port-2",
+        "runtime_mode": "PAPER",
+        "exchange": "BINANCE",
+        "symbol": "ETHUSDT",
+        "version": "1.0.0",
+        "timestamp": now.isoformat(),
+        "metadata": {},
+    }
+    assert client.post("/ingest/heartbeat", json=hb1).status_code == 202
+    assert client.post("/ingest/heartbeat", json=hb2).status_code == 202
+
+    assert (
+        client.post(
+            "/ingest/metrics",
+            json={
+                "instance_id": "inst-port-1",
+                "symbol": "BTCUSDT",
+                "metric_type": "equity",
+                "value": 1234.5,
+                "timestamp": now.isoformat(),
+            },
+        ).status_code
+        == 202
+    )
+
+    assert (
+        client.post(
+            "/ingest/positions",
+            json={
+                "instance_id": "inst-port-1",
+                "symbol": "BTCUSDT",
+                "net_exposure": 100.0,
+                "gross_exposure": 150.0,
+                "updated_at": now.isoformat(),
+            },
+        ).status_code
+        == 202
+    )
+    assert (
+        client.post(
+            "/ingest/positions",
+            json={
+                "instance_id": "inst-port-2",
+                "symbol": "ETHUSDT",
+                "net_exposure": -40.0,
+                "gross_exposure": 60.0,
+                "updated_at": now.isoformat(),
+            },
+        ).status_code
+        == 202
+    )
+
+    summary = client.get("/portfolio/exposure", headers={"X-Admin-Token": "test-admin-token"})
+    assert summary.status_code == 200
+    body = summary.json()
+    assert body["total_net_exposure"] == 60.0
+    assert body["total_gross_exposure"] == 210.0
+    assert body["key_metrics"]["latest_equity"] == 1234.5
+    assert body["key_metrics"]["tracked_positions"] == 2

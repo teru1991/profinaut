@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql://profinaut:profinaut@postgres:5432/profinaut"
     admin_token: str = "change-me-local-admin-token"
+    discord_webhook_url: str | None = None
 
 
 @lru_cache
