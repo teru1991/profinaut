@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Profinaut Control Plane API
-  version: 1.9.0
+  version: 1.10.0
   description: |
     Step 2 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
     Contracts in this folder and in `contracts/schemas` are the SSOT.
@@ -386,6 +386,39 @@ paths:
                   stale_threshold_seconds:
                     type: integer
                   stale_instances:
+                    type: integer
+                  alerts_created:
+                    type: integer
+
+  /alerts/module-runs/stuck-check:
+    post:
+      tags: [modules]
+      summary: Detect stuck module runs and create WARNING alerts
+      operationId: checkStuckModuleRuns
+      parameters:
+        - in: query
+          name: stale_after_seconds
+          required: false
+          schema:
+            type: integer
+            minimum: 60
+            maximum: 86400
+            default: 900
+      responses:
+        "200":
+          description: Stuck run alert check summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [checked_at, threshold_seconds, stuck_runs, alerts_created]
+                properties:
+                  checked_at:
+                    type: string
+                    format: date-time
+                  threshold_seconds:
+                    type: integer
+                  stuck_runs:
                     type: integer
                   alerts_created:
                     type: integer

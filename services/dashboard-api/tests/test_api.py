@@ -503,3 +503,63 @@ def test_module_run_cancel_and_stats(client):
     assert body["total_runs"] == 1
     assert body["active_runs"] == 0
     assert body["status_counts"]["CANCELED"] == 1
+
+
+def test_module_run_stuck_check_creates_warning_alert(client, monkeypatch):
+    sent = {"count": 0}
+
+    class FakeResponse:
+        status_code = 204
+
+    def fake_post(url, json, timeout):
+        sent["count"] += 1
+        return FakeResponse()
+
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.example/webhook")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    monkeypatch.setattr("app.notifications.requests.post", fake_post)
+
+    now = datetime.now(timezone.utc).isoformat()
+    module_id = "66666666-6666-6666-6666-666666666666"
+    module = {
+        "module_id": module_id,
+        "name": "stuck-watch",
+        "description": "stuck run detector test",
+        "enabled": True,
+        "execution_mode": "MANUAL_AND_SCHEDULED",
+        "schedule_cron": "*/5 * * * *",
+        "config": {},
+        "created_at": now,
+        "updated_at": now,
+    }
+    assert client.post("/modules", json=module, headers={"X-Admin-Token": "test-admin-token"}).status_code == 201
+
+    trigger = client.post(
+        f"/modules/{module_id}/run",
+        json={"trigger_type": "MANUAL"},
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert trigger.status_code == 202
+    run_id = trigger.json()["run_id"]
+
+    # move checker clock forward so run appears stale
+    class FutureDateTime:
+        @staticmethod
+        def now(tz=None):
+            return datetime.now(timezone.utc) + timedelta(hours=1)
+
+    monkeypatch.setattr("app.main.datetime", FutureDateTime)
+
+    res = client.post("/alerts/module-runs/stuck-check?stale_after_seconds=60", headers={"X-Admin-Token": "test-admin-token"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["stuck_runs"] == 1
+    assert body["alerts_created"] == 1
+    assert sent["count"] == 1
+
+    # second run should deduplicate OPEN alert
+    res2 = client.post("/alerts/module-runs/stuck-check?stale_after_seconds=60", headers={"X-Admin-Token": "test-admin-token"})
+    assert res2.status_code == 200
+    assert res2.json()["alerts_created"] == 0

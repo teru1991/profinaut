@@ -43,6 +43,7 @@ from .schemas import (
     ModuleRunStatusUpdateIn,
     ModuleRunTriggerIn,
     ModuleRunStatsResponse,
+    ModuleRunStuckCheckResponse,
     NetPnlSummaryResponse,
     PaginatedAuditLogs,
     PaginatedBots,
@@ -598,6 +599,78 @@ def ack_command(command_id: str, payload: CommandAckIn, db: Session = Depends(ge
     db.refresh(ack)
     return ack
 
+
+
+@app.post("/alerts/module-runs/stuck-check", response_model=ModuleRunStuckCheckResponse)
+def check_stuck_module_runs(
+    actor: str = Depends(require_admin_actor),
+    stale_after_seconds: int = Query(default=900, ge=60, le=86400),
+    db: Session = Depends(get_db),
+) -> ModuleRunStuckCheckResponse:
+    checked_at = datetime.now(timezone.utc)
+    cutoff_ts = checked_at.timestamp() - stale_after_seconds
+
+    running_rows = db.scalars(select(ModuleRun).where(ModuleRun.status.in_(["QUEUED", "RUNNING"]))).all()
+    stuck_rows = [r for r in running_rows if r.started_at.timestamp() < cutoff_ts]
+
+    settings = get_settings()
+    router = NotificationRouter(settings.discord_webhook_url)
+
+    alerts_created = 0
+    for row in stuck_rows:
+        target_id = row.run_id
+        existing = db.scalar(
+            select(AlertRecord)
+            .where(AlertRecord.source == "module_runs")
+            .where(AlertRecord.target_type == "module_run")
+            .where(AlertRecord.target_id == target_id)
+            .where(AlertRecord.status == "OPEN")
+        )
+        if existing is not None:
+            continue
+
+        alert = AlertRecord(
+            source="module_runs",
+            severity="WARNING",
+            message=f"Module run {row.run_id} appears stuck in status {row.status}",
+            target_type="module_run",
+            target_id=row.run_id,
+            status="OPEN",
+            metadata_json={"module_id": row.module_id, "started_at": row.started_at.isoformat(), "status": row.status},
+        )
+        db.add(alert)
+        db.flush()
+
+        sent = router.route(
+            NotificationEvent(
+                severity=Severity.WARNING,
+                title="Module Run Stuck",
+                message=alert.message,
+                timestamp=checked_at,
+                metadata={"run_id": row.run_id, "module_id": row.module_id},
+            )
+        )
+        if sent:
+            alert.last_notified_at = checked_at
+
+        write_audit(
+            db,
+            actor,
+            "MODULE_RUN_STUCK_ALERT",
+            "module_run",
+            row.run_id,
+            "SUCCESS",
+            {"notified": sent},
+        )
+        alerts_created += 1
+
+    db.commit()
+    return ModuleRunStuckCheckResponse(
+        checked_at=checked_at,
+        threshold_seconds=stale_after_seconds,
+        stuck_runs=len(stuck_rows),
+        alerts_created=alerts_created,
+    )
 
 @app.post("/alerts/heartbeat-check", response_model=HeartbeatAlertCheckResponse)
 def check_heartbeat_alerts(

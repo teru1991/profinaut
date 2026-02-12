@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-02-11 — Step 13 (Stuck module-run alerting)
+- Added `POST /alerts/module-runs/stuck-check` to detect stale `QUEUED`/`RUNNING` module runs.
+- Added WARNING alert creation and webhook routing for newly detected stuck runs.
+- Added dedup behavior to avoid duplicate OPEN alerts for the same module run.
+- Added automated API test for stuck-run detection, notification, and dedup behavior.
+- Added `scripts/scaffold_step13.ps1`.
+- Bumped OpenAPI contract version to `1.10.0`.
+
 ## 2026-02-11 — Step 12 (Module run cancel + stats)
 - Added `POST /module-runs/{run_id}/cancel` to cancel non-terminal module runs.
 - Added `GET /module-runs/stats` for aggregated module run status counts.

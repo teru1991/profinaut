@@ -1,6 +1,6 @@
 # Profinaut V2.5+ — Multi-Exchange / Multi-Language Bot Management Dashboard
 
-Step 12 delivers module run cancellation and run-stats summary on top of module execution controls.
+Step 13 delivers stuck module-run alerting with deduplicated notifications on top of module run controls.
 
 ## What is included
 - Contracts SSOT with OpenAPI + JSON Schemas (`contracts/`).
@@ -33,6 +33,9 @@ Step 12 delivers module run cancellation and run-stats summary on top of module 
 - Module run ops extension:
   - `POST /module-runs/{run_id}/cancel`
   - `GET /module-runs/stats`
+- Module run alerting extension:
+  - `POST /alerts/module-runs/stuck-check`
+  - WARNING alerts + outbound webhook routing (deduplicated)
 
 ## Quick start (Windows 11 + Docker Desktop)
 1. Copy environment file:

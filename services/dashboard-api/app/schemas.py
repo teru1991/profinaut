@@ -168,6 +168,14 @@ class AlertOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+
+
+class ModuleRunStuckCheckResponse(BaseModel):
+    checked_at: datetime
+    threshold_seconds: int
+    stuck_runs: int
+    alerts_created: int
+
 class HeartbeatAlertCheckResponse(BaseModel):
     checked_at: datetime
     stale_threshold_seconds: int

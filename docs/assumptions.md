@@ -75,3 +75,9 @@
 1. Module runs can be canceled only from non-terminal states (`QUEUED`, `RUNNING`).
 2. Module run stats provide lightweight aggregated counts by status for operations visibility.
 3. Module run cancellation/stats endpoints are admin-protected and UTC timestamped.
+
+
+## Step 13 defaults
+1. Stuck module run detection only considers non-terminal run statuses (`QUEUED`, `RUNNING`).
+2. WARNING alerts for stuck runs are deduplicated by OPEN alert per `module_run` target.
+3. Stuck-check endpoint is admin-protected and can optionally notify via existing webhook router.
