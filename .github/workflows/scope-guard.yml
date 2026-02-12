@@ -33,7 +33,7 @@ jobs:
           for f in "${files[@]}"; do
             scope=""
 
-            if [[ "$f" == apps/web/* || "$f" == services/dashboard-api/* || "$f" == "Dockerfile.api" || "$f" == "Dockerfile.web" ]]; then
+            if [[ "$f" == apps/web/* || "$f" == services/dashboard-api/* ]]; then
               scope="dashboard"
             elif [[ "$f" == contracts/* ]]; then
               scope="contracts"
