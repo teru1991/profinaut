@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Profinaut Control Plane API
-  version: 1.15.0
+  version: 1.16.0
   description: |
     Step 2 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
     Contracts in this folder and in `contracts/schemas` are the SSOT.
@@ -141,6 +141,28 @@ paths:
         "202":
           description: Execution quality sample accepted
 
+  /ingest/indices:
+    post:
+      tags: [ingest]
+      summary: Ingest market index time-series point
+      operationId: postIndex
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [instance_id, index_name, value, timestamp]
+              properties:
+                instance_id: { type: string }
+                index_name: { type: string }
+                value: { type: number }
+                timestamp: { type: string, format: date-time }
+      responses:
+        "202":
+          description: Index point accepted
+
   /ingest/costs:
     post:
       tags: [ingest]
@@ -198,6 +220,37 @@ paths:
                         symbol: { type: string }
                         net_exposure: { type: number }
                         gross_exposure: { type: number }
+
+  /analytics/indices/latest:
+    get:
+      tags: [reconcile]
+      summary: Latest values for ingested indices
+      operationId: getLatestIndices
+      parameters:
+        - in: query
+          name: index_name
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Latest indices summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, items]
+                properties:
+                  generated_at: { type: string, format: date-time }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [index_name, value, timestamp]
+                      properties:
+                        index_name: { type: string }
+                        value: { type: number }
+                        timestamp: { type: string, format: date-time }
 
   /analytics/equity-drawdown:
     get:

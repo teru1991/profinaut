@@ -211,6 +211,24 @@ class HeartbeatAlertCheckResponse(BaseModel):
     alerts_created: int
 
 
+class IndexIn(BaseModel):
+    instance_id: str
+    index_name: str
+    value: float
+    timestamp: datetime
+
+
+class IndexLatestItem(BaseModel):
+    index_name: str
+    value: float
+    timestamp: datetime
+
+
+class IndexLatestResponse(BaseModel):
+    generated_at: datetime
+    items: list[IndexLatestItem]
+
+
 class MetricIn(BaseModel):
     instance_id: str
     symbol: str

@@ -111,3 +111,9 @@
 1. Active-age analytics consider only non-terminal statuses (`QUEUED`, `RUNNING`).
 2. Oldest/average active durations are computed from `generated_at - started_at` in seconds.
 3. Empty active set returns zeroed metrics with `active_runs=0` for predictable clients.
+
+
+## Step 19 defaults
+1. Indices are ingested into `metrics_ts` with `metric_type=index` for MVP simplicity.
+2. Latest-index summary returns one latest datapoint per `index_name` based on timestamp ordering.
+3. Optional `index_name` filter scopes both ingest query and summary response without changing base schema.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-11 — Step 19 (Indices ingest + latest analytics)
+- Added `POST /ingest/indices` for index time-series ingestion.
+- Added `GET /analytics/indices/latest` for latest per-index values with optional filter.
+- Added automated API test for index ingest and latest-summary behavior.
+- Added `scripts/scaffold_step19.ps1`.
+- Bumped OpenAPI contract version to `1.16.0`.
+
 ## 2026-02-11 — Step 18 (Module run active-age analytics)
 - Added `GET /analytics/module-runs/active-age` for active-run age visibility.
 - Added summary fields: `active_runs`, `oldest_active_seconds`, `avg_active_seconds`.

@@ -797,3 +797,41 @@ def test_module_run_active_age_summary(client):
     assert body["active_runs"] == 2
     assert body["oldest_active_seconds"] >= 0.0
     assert body["avg_active_seconds"] >= 0.0
+
+
+def test_indices_ingest_and_latest_summary(client):
+    now = datetime.now(timezone.utc)
+    hb = {
+        "instance_id": "inst-idx-1",
+        "bot_id": "bot-idx-1",
+        "runtime_mode": "PAPER",
+        "exchange": "BINANCE",
+        "symbol": "BTCUSDT",
+        "version": "1.0.0",
+        "timestamp": now.isoformat(),
+        "metadata": {},
+    }
+    assert client.post("/ingest/heartbeat", json=hb).status_code == 202
+
+    points = [
+        {"index_name": "BTC_INDEX", "value": 50000.0, "timestamp": (now + timedelta(minutes=0)).isoformat()},
+        {"index_name": "BTC_INDEX", "value": 50100.0, "timestamp": (now + timedelta(minutes=1)).isoformat()},
+        {"index_name": "ETH_INDEX", "value": 3000.0, "timestamp": (now + timedelta(minutes=2)).isoformat()},
+    ]
+    for p in points:
+        assert client.post(
+            "/ingest/indices",
+            json={"instance_id": "inst-idx-1", **p},
+        ).status_code == 202
+
+    res = client.get("/analytics/indices/latest", headers={"X-Admin-Token": "test-admin-token"})
+    assert res.status_code == 200
+    body = res.json()
+    by_name = {item["index_name"]: item for item in body["items"]}
+    assert by_name["BTC_INDEX"]["value"] == 50100.0
+    assert by_name["ETH_INDEX"]["value"] == 3000.0
+
+    btc_only = client.get("/analytics/indices/latest?index_name=BTC_INDEX", headers={"X-Admin-Token": "test-admin-token"})
+    assert btc_only.status_code == 200
+    assert len(btc_only.json()["items"]) == 1
+    assert btc_only.json()["items"][0]["index_name"] == "BTC_INDEX"

@@ -1,6 +1,6 @@
 # Profinaut V2.5+ — Multi-Exchange / Multi-Language Bot Management Dashboard
 
-Step 18 delivers module run active-age analytics on top of throughput, failure-rate, performance, and drawdown analytics.
+Step 19 delivers indices telemetry ingest and latest-indices analytics on top of module-run analytics extensions.
 
 ## What is included
 - Contracts SSOT with OpenAPI + JSON Schemas (`contracts/`).
@@ -26,6 +26,10 @@ Step 18 delivers module run active-age analytics on top of throughput, failure-r
   - `POST /ingest/execution-quality`
   - `GET /analytics/execution-quality`
   - Averages: slippage (bps), latency (ms), fill ratio
+- Markets/indices extension:
+  - `POST /ingest/indices`
+  - `GET /analytics/indices/latest`
+  - Latest per-index values with optional filter
 - Module execution controls:
   - `POST /modules/{module_id}/run`
   - `PATCH /module-runs/{run_id}`

@@ -35,6 +35,8 @@ from .schemas import (
     EquityDrawdownResponse,
     ExposureSummaryResponse,
     HealthResponse,
+    IndexIn,
+    IndexLatestResponse,
     HeartbeatAlertCheckResponse,
     HeartbeatIn,
     MetricIn,
@@ -57,6 +59,7 @@ from .schemas import (
     PositionIn,
     PaginatedReconcileResults,
     ReconcileIn,
+    IndexLatestItem,
     ReconcileOut,
 )
 
@@ -170,6 +173,53 @@ def ingest_execution_quality(payload: ExecutionQualityIn, db: Session = Depends(
     db.commit()
     return {"status": "accepted"}
 
+
+
+
+@app.post("/ingest/indices", status_code=202)
+def ingest_index(payload: IndexIn, db: Session = Depends(get_db)) -> dict:
+    instance = db.get(Instance, payload.instance_id)
+    if instance is None:
+        raise HTTPException(status_code=404, detail="instance not found")
+
+    db.add(
+        MetricTsRecord(
+            instance_id=payload.instance_id,
+            symbol=payload.index_name,
+            metric_type="index",
+            value=payload.value,
+            timestamp=payload.timestamp,
+        )
+    )
+    db.commit()
+    return {"status": "accepted"}
+
+
+@app.get("/analytics/indices/latest", response_model=IndexLatestResponse)
+def get_latest_indices(
+    actor: str = Depends(require_admin_actor),
+    index_name: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> IndexLatestResponse:
+    del actor
+    generated_at = datetime.now(timezone.utc)
+
+    query = select(MetricTsRecord).where(MetricTsRecord.metric_type == "index")
+    if index_name:
+        query = query.where(MetricTsRecord.symbol == index_name)
+
+    rows = db.scalars(query.order_by(MetricTsRecord.timestamp.desc())).all()
+    latest_by_index: dict[str, MetricTsRecord] = {}
+    for row in rows:
+        if row.symbol not in latest_by_index:
+            latest_by_index[row.symbol] = row
+
+    items = [
+        IndexLatestItem(index_name=k, value=float(v.value), timestamp=v.timestamp)
+        for k, v in sorted(latest_by_index.items())
+    ]
+
+    return IndexLatestResponse(generated_at=generated_at, items=items)
 
 @app.post("/ingest/costs", status_code=202)
 def ingest_cost(payload: CostIn, db: Session = Depends(get_db)) -> dict:
