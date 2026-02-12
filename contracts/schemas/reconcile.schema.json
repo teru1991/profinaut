@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/reconcile.schema.json",
+  "title": "ReconcileResult",
+  "type": "object",
+  "required": [
+    "instance_id",
+    "exchange_equity",
+    "internal_equity",
+    "difference",
+    "status",
+    "timestamp"
+  ],
+  "properties": {
+    "instance_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "exchange_equity": {
+      "type": "number"
+    },
+    "internal_equity": {
+      "type": "number"
+    },
+    "difference": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "OK",
+        "MISMATCH"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reconcile_id": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

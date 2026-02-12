@@ -1,0 +1,9 @@
+{
+  "name": "Profinaut Dashboard",
+  "short_name": "Profinaut",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
+  "icons": []
+}
