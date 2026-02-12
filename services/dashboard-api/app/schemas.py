@@ -139,6 +139,12 @@ class ModuleRunFailureRateResponse(BaseModel):
     failure_rate: float
     window_size_used: int
 
+class ModuleRunThroughputResponse(BaseModel):
+    generated_at: datetime
+    window_hours: int
+    total_runs: int
+    runs_per_hour: float
+
 class CommandIn(BaseModel):
     command_id: str
     instance_id: str

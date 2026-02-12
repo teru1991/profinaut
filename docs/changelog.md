@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-11 — Step 17 (Module run throughput analytics)
+- Added `GET /analytics/module-runs/throughput` for windowed run-throughput analytics.
+- Added summary fields: `window_hours`, `total_runs`, `runs_per_hour`.
+- Added automated API test for deterministic throughput calculation.
+- Added `scripts/scaffold_step17.ps1`.
+- Bumped OpenAPI contract version to `1.14.0`.
+
 ## 2026-02-11 — Step 16 (Module run failure-rate analytics)
 - Added `GET /analytics/module-runs/failure-rate` for windowed FAILED-ratio analytics.
 - Added summary fields: `total_completed`, `failed_runs`, `failure_rate`, `window_size_used`.

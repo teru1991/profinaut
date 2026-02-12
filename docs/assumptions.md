@@ -99,3 +99,9 @@
 1. Failure-rate analytics consider only completed runs (`ended_at` set).
 2. A run counts as failure only when `status == FAILED` for this baseline.
 3. Summary is windowed by most-recent runs (`window_size`), default 50, max 500.
+
+
+## Step 17 defaults
+1. Throughput analytics count runs by `started_at` within a lookback window.
+2. Throughput is reported as `total_runs / window_hours` with default 24h window.
+3. Optional `module_id` filter scopes throughput to a single module.

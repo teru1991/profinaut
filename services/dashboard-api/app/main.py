@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlalchemy import func, select
@@ -43,6 +43,7 @@ from .schemas import (
     ModuleRunOut,
     ModuleRunPerformanceResponse,
     ModuleRunFailureRateResponse,
+    ModuleRunThroughputResponse,
     ModuleRunStatusUpdateIn,
     ModuleRunTriggerIn,
     ModuleRunStatsResponse,
@@ -1020,6 +1021,34 @@ def get_module_run_failure_rate(
         failed_runs=failed_runs,
         failure_rate=failure_rate,
         window_size_used=window_size,
+    )
+
+
+
+@app.get("/analytics/module-runs/throughput", response_model=ModuleRunThroughputResponse)
+def get_module_run_throughput(
+    actor: str = Depends(require_admin_actor),
+    module_id: str | None = Query(default=None),
+    window_hours: int = Query(default=24, ge=1, le=168),
+    db: Session = Depends(get_db),
+) -> ModuleRunThroughputResponse:
+    del actor
+    generated_at = datetime.now(timezone.utc)
+    cutoff = generated_at - timedelta(hours=window_hours)
+
+    query = select(ModuleRun).where(ModuleRun.started_at >= cutoff)
+    if module_id:
+        query = query.where(ModuleRun.module_id == module_id)
+    rows = db.scalars(query).all()
+
+    total_runs = len(rows)
+    runs_per_hour = (total_runs / window_hours) if window_hours > 0 else 0.0
+
+    return ModuleRunThroughputResponse(
+        generated_at=generated_at,
+        window_hours=window_hours,
+        total_runs=total_runs,
+        runs_per_hour=runs_per_hour,
     )
 
 @app.get("/module-runs", response_model=PaginatedModuleRuns)

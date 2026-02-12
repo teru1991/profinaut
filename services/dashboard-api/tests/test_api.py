@@ -706,3 +706,42 @@ def test_module_run_failure_rate_summary(client):
     assert body["failed_runs"] == 2
     assert round(body["failure_rate"], 6) == 0.4
     assert body["window_size_used"] == 5
+
+
+def test_module_run_throughput_summary(client):
+    now = datetime.now(timezone.utc)
+    module_id = "mod-throughput-1"
+    create = client.post(
+        "/modules",
+        headers={"X-Admin-Token": "test-admin-token"},
+        json={
+            "module_id": module_id,
+            "name": "Throughput Module",
+            "description": "test",
+            "enabled": True,
+            "execution_mode": "MANUAL",
+            "schedule_cron": None,
+            "config": {},
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat(),
+        },
+    )
+    assert create.status_code == 201
+
+    for _ in range(6):
+        trig = client.post(
+            f"/modules/{module_id}/run",
+            headers={"X-Admin-Token": "test-admin-token"},
+            json={"trigger_type": "MANUAL", "summary": {}},
+        )
+        assert trig.status_code == 202
+
+    res = client.get(
+        f"/analytics/module-runs/throughput?module_id={module_id}&window_hours=3",
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["window_hours"] == 3
+    assert body["total_runs"] == 6
+    assert round(body["runs_per_hour"], 6) == 2.0
