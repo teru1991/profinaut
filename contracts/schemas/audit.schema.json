@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/audit.schema.json",
+  "title": "AuditLog",
+  "type": "object",
+  "required": [
+    "audit_id",
+    "actor",
+    "action",
+    "target_type",
+    "target_id",
+    "result",
+    "timestamp"
+  ],
+  "properties": {
+    "audit_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "actor": {
+      "type": "string",
+      "minLength": 1
+    },
+    "action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target_type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "result": {
+      "type": "string",
+      "enum": ["SUCCESS", "FAILURE", "REJECTED"]
+    },
+    "details": {
+      "type": "object",
+      "additionalProperties": true,
+      "default": {}
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}
