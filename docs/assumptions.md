@@ -93,3 +93,9 @@
 1. Module run performance summary computes success rate from completed runs only.
 2. Duration analytics use (`ended_at - started_at`) in seconds, clamped at zero.
 3. P95 duration uses nearest-rank percentile over completed run durations and returns zero when no completed runs exist.
+
+
+## Step 16 defaults
+1. Failure-rate analytics consider only completed runs (`ended_at` set).
+2. A run counts as failure only when `status == FAILED` for this baseline.
+3. Summary is windowed by most-recent runs (`window_size`), default 50, max 500.

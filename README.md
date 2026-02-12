@@ -1,6 +1,6 @@
 # Profinaut V2.5+ — Multi-Exchange / Multi-Language Bot Management Dashboard
 
-Step 15 delivers module run performance analytics on top of equity drawdown and module run/alert controls.
+Step 16 delivers module run failure-rate analytics on top of performance and drawdown analytics.
 
 ## What is included
 - Contracts SSOT with OpenAPI + JSON Schemas (`contracts/`).
@@ -42,6 +42,8 @@ Step 15 delivers module run performance analytics on top of equity drawdown and 
 - Module run analytics extension:
   - `GET /analytics/module-runs/performance`
   - completion rate + avg/p95 duration summary
+  - `GET /analytics/module-runs/failure-rate`
+  - FAILED ratio over recent completed runs (windowed)
 
 ## Quick start (Windows 11 + Docker Desktop)
 1. Copy environment file:
