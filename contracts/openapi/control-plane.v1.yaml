@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Profinaut Control Plane API
-  version: 1.11.0
+  version: 1.13.0
   description: |
     Step 2 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
     Contracts in this folder and in `contracts/schemas` are the SSOT.
@@ -226,6 +226,70 @@ paths:
                   max_drawdown_abs: { type: number }
                   max_drawdown_pct: { type: number }
                   current_drawdown_pct: { type: number }
+
+
+  /analytics/module-runs/failure-rate:
+    get:
+      tags: [modules]
+      summary: Module run failure-rate summary
+      operationId: getModuleRunFailureRate
+      parameters:
+        - in: query
+          name: module_id
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: window_size
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 50
+      responses:
+        "200":
+          description: Module run failure-rate summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, total_completed, failed_runs, failure_rate, window_size_used]
+                properties:
+                  generated_at: { type: string, format: date-time }
+                  total_completed: { type: integer }
+                  failed_runs: { type: integer }
+                  failure_rate: { type: number }
+                  window_size_used: { type: integer }
+
+  /analytics/module-runs/performance:
+    get:
+      tags: [modules]
+      summary: Module run performance summary
+      operationId: getModuleRunPerformance
+      parameters:
+        - in: query
+          name: module_id
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Module run performance summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, total_runs, completed_runs, success_rate, avg_duration_seconds, p95_duration_seconds]
+                properties:
+                  generated_at: { type: string, format: date-time }
+                  total_runs: { type: integer }
+                  completed_runs: { type: integer }
+                  success_rate: { type: number }
+                  avg_duration_seconds: { type: number }
+                  p95_duration_seconds: { type: number }
 
   /analytics/execution-quality:
     get:

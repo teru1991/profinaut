@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-02-11 — Step 16 (Module run failure-rate analytics)
+- Added `GET /analytics/module-runs/failure-rate` for windowed FAILED-ratio analytics.
+- Added summary fields: `total_completed`, `failed_runs`, `failure_rate`, `window_size_used`.
+- Added automated API test for deterministic failure-rate calculation.
+- Added `scripts/scaffold_step16.ps1`.
+- Bumped OpenAPI contract version to `1.13.0`.
+
+## 2026-02-11 — Step 15 (Module run performance analytics)
+- Added `GET /analytics/module-runs/performance` for completion-rate and runtime duration analytics.
+- Added summary fields: `total_runs`, `completed_runs`, `success_rate`, `avg_duration_seconds`, `p95_duration_seconds`.
+- Added automated API test for deterministic duration and success-rate calculations.
+- Added `scripts/scaffold_step15.ps1`.
+- Bumped OpenAPI contract version to `1.12.0`.
+
 ## 2026-02-11 — Step 14 (Advanced analytics: equity drawdown)
 - Added `GET /analytics/equity-drawdown` to summarize drawdown statistics from equity metrics.
 - Added drawdown response schema with max/current drawdown fields.

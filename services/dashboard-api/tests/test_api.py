@@ -602,3 +602,107 @@ def test_equity_drawdown_summary(client):
     assert body["max_drawdown_abs"] == 300.0
     assert round(body["max_drawdown_pct"], 6) == 0.25
     assert round(body["current_drawdown_pct"], 6) == round(100.0 / 1200.0, 6)
+
+
+def test_module_run_performance_summary(client):
+    now = datetime.now(timezone.utc)
+    module_id = "mod-perf-1"
+    create = client.post(
+        "/modules",
+        headers={"X-Admin-Token": "test-admin-token"},
+        json={
+            "module_id": module_id,
+            "name": "Perf Module",
+            "description": "test",
+            "enabled": True,
+            "execution_mode": "MANUAL",
+            "schedule_cron": None,
+            "config": {},
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat(),
+        },
+    )
+    assert create.status_code == 201
+
+    durations = [10, 20, 40]
+    statuses = ["SUCCEEDED", "FAILED", "CANCELED"]
+    for dur, status in zip(durations, statuses):
+        trig = client.post(
+            f"/modules/{module_id}/run",
+            headers={"X-Admin-Token": "test-admin-token"},
+            json={"trigger_type": "MANUAL", "summary": {}},
+        )
+        assert trig.status_code == 202
+        run = trig.json()
+        started_at = datetime.fromisoformat(run["started_at"].replace("Z", "+00:00"))
+        ended_at = started_at + timedelta(seconds=dur)
+
+        upd = client.patch(
+            f"/module-runs/{run['run_id']}",
+            headers={"X-Admin-Token": "test-admin-token"},
+            json={"status": status, "summary": {}, "ended_at": ended_at.isoformat()},
+        )
+        assert upd.status_code == 200
+
+    res = client.get(
+        f"/analytics/module-runs/performance?module_id={module_id}",
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["total_runs"] == 3
+    assert body["completed_runs"] == 3
+    assert round(body["success_rate"], 6) == round(1 / 3, 6)
+    assert round(body["avg_duration_seconds"], 6) == round(sum(durations) / 3, 6)
+    assert body["p95_duration_seconds"] == 40
+
+
+def test_module_run_failure_rate_summary(client):
+    now = datetime.now(timezone.utc)
+    module_id = "mod-fail-1"
+    create = client.post(
+        "/modules",
+        headers={"X-Admin-Token": "test-admin-token"},
+        json={
+            "module_id": module_id,
+            "name": "Failure Module",
+            "description": "test",
+            "enabled": True,
+            "execution_mode": "MANUAL",
+            "schedule_cron": None,
+            "config": {},
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat(),
+        },
+    )
+    assert create.status_code == 201
+
+    statuses = ["SUCCEEDED", "FAILED", "SUCCEEDED", "FAILED", "CANCELED"]
+    for i, status in enumerate(statuses):
+        trig = client.post(
+            f"/modules/{module_id}/run",
+            headers={"X-Admin-Token": "test-admin-token"},
+            json={"trigger_type": "MANUAL", "summary": {}},
+        )
+        assert trig.status_code == 202
+        run = trig.json()
+        started_at = datetime.fromisoformat(run["started_at"].replace("Z", "+00:00"))
+        ended_at = started_at + timedelta(seconds=10 + i)
+
+        upd = client.patch(
+            f"/module-runs/{run['run_id']}",
+            headers={"X-Admin-Token": "test-admin-token"},
+            json={"status": status, "summary": {}, "ended_at": ended_at.isoformat()},
+        )
+        assert upd.status_code == 200
+
+    res = client.get(
+        f"/analytics/module-runs/failure-rate?module_id={module_id}&window_size=5",
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["total_completed"] == 5
+    assert body["failed_runs"] == 2
+    assert round(body["failure_rate"], 6) == 0.4
+    assert body["window_size_used"] == 5

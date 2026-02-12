@@ -123,6 +123,22 @@ class ModuleRunStatsResponse(BaseModel):
     active_runs: int
     status_counts: dict
 
+
+class ModuleRunPerformanceResponse(BaseModel):
+    generated_at: datetime
+    total_runs: int
+    completed_runs: int
+    success_rate: float
+    avg_duration_seconds: float
+    p95_duration_seconds: float
+
+class ModuleRunFailureRateResponse(BaseModel):
+    generated_at: datetime
+    total_completed: int
+    failed_runs: int
+    failure_rate: float
+    window_size_used: int
+
 class CommandIn(BaseModel):
     command_id: str
     instance_id: str

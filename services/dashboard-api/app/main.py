@@ -41,6 +41,8 @@ from .schemas import (
     ModuleIn,
     ModuleOut,
     ModuleRunOut,
+    ModuleRunPerformanceResponse,
+    ModuleRunFailureRateResponse,
     ModuleRunStatusUpdateIn,
     ModuleRunTriggerIn,
     ModuleRunStatsResponse,
@@ -948,6 +950,76 @@ def get_module_run_stats(
         total_runs=len(rows),
         active_runs=active_runs,
         status_counts=status_counts,
+    )
+
+
+
+@app.get("/analytics/module-runs/performance", response_model=ModuleRunPerformanceResponse)
+def get_module_run_performance(
+    actor: str = Depends(require_admin_actor),
+    module_id: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> ModuleRunPerformanceResponse:
+    del actor
+    generated_at = datetime.now(timezone.utc)
+
+    query = select(ModuleRun)
+    if module_id:
+        query = query.where(ModuleRun.module_id == module_id)
+    rows = db.scalars(query).all()
+
+    completed = [r for r in rows if r.ended_at is not None]
+    durations = [max(0.0, (r.ended_at - r.started_at).total_seconds()) for r in completed]
+
+    completed_runs = len(completed)
+    success_runs = sum(1 for r in completed if r.status == "SUCCEEDED")
+    success_rate = (success_runs / completed_runs) if completed_runs > 0 else 0.0
+
+    if durations:
+        durations_sorted = sorted(durations)
+        avg_duration = sum(durations_sorted) / len(durations_sorted)
+        p95_index = max(0, ((95 * len(durations_sorted) + 99) // 100) - 1)
+        p95_duration = durations_sorted[p95_index]
+    else:
+        avg_duration = 0.0
+        p95_duration = 0.0
+
+    return ModuleRunPerformanceResponse(
+        generated_at=generated_at,
+        total_runs=len(rows),
+        completed_runs=completed_runs,
+        success_rate=success_rate,
+        avg_duration_seconds=avg_duration,
+        p95_duration_seconds=p95_duration,
+    )
+
+
+
+@app.get("/analytics/module-runs/failure-rate", response_model=ModuleRunFailureRateResponse)
+def get_module_run_failure_rate(
+    actor: str = Depends(require_admin_actor),
+    module_id: str | None = Query(default=None),
+    window_size: int = Query(default=50, ge=1, le=500),
+    db: Session = Depends(get_db),
+) -> ModuleRunFailureRateResponse:
+    del actor
+    generated_at = datetime.now(timezone.utc)
+
+    query = select(ModuleRun).where(ModuleRun.ended_at.is_not(None))
+    if module_id:
+        query = query.where(ModuleRun.module_id == module_id)
+    rows = db.scalars(query.order_by(ModuleRun.started_at.desc()).limit(window_size)).all()
+
+    total_completed = len(rows)
+    failed_runs = sum(1 for r in rows if r.status == "FAILED")
+    failure_rate = (failed_runs / total_completed) if total_completed > 0 else 0.0
+
+    return ModuleRunFailureRateResponse(
+        generated_at=generated_at,
+        total_completed=total_completed,
+        failed_runs=failed_runs,
+        failure_rate=failure_rate,
+        window_size_used=window_size,
     )
 
 @app.get("/module-runs", response_model=PaginatedModuleRuns)
