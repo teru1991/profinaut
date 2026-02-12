@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Profinaut Control Plane API
-  version: 1.10.0
+  version: 1.11.0
   description: |
     Step 2 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
     Contracts in this folder and in `contracts/schemas` are the SSOT.
@@ -198,6 +198,34 @@ paths:
                         symbol: { type: string }
                         net_exposure: { type: number }
                         gross_exposure: { type: number }
+
+  /analytics/equity-drawdown:
+    get:
+      tags: [reconcile]
+      summary: Equity drawdown summary
+      operationId: getEquityDrawdown
+      parameters:
+        - in: query
+          name: symbol
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Equity drawdown summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, samples, peak_equity, latest_equity, max_drawdown_abs, max_drawdown_pct, current_drawdown_pct]
+                properties:
+                  generated_at: { type: string, format: date-time }
+                  samples: { type: integer }
+                  peak_equity: { type: number }
+                  latest_equity: { type: number }
+                  max_drawdown_abs: { type: number }
+                  max_drawdown_pct: { type: number }
+                  current_drawdown_pct: { type: number }
 
   /analytics/execution-quality:
     get:

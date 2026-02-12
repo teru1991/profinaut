@@ -81,3 +81,9 @@
 1. Stuck module run detection only considers non-terminal run statuses (`QUEUED`, `RUNNING`).
 2. WARNING alerts for stuck runs are deduplicated by OPEN alert per `module_run` target.
 3. Stuck-check endpoint is admin-protected and can optionally notify via existing webhook router.
+
+
+## Step 14 defaults
+1. Drawdown analytics use `equity` metrics from `metrics_ts`, ordered by timestamp, with optional symbol filter.
+2. Drawdown summary reports both maximum drawdown and current drawdown percentages.
+3. Empty series returns zeroed drawdown response with `samples=0` for predictable clients.

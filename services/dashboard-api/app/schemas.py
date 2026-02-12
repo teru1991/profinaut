@@ -240,6 +240,14 @@ class CostIn(BaseModel):
     amount: float
     timestamp: datetime
 
+class EquityDrawdownResponse(BaseModel):
+    generated_at: datetime
+    samples: int
+    peak_equity: float
+    latest_equity: float
+    max_drawdown_abs: float
+    max_drawdown_pct: float
+    current_drawdown_pct: float
 
 class NetPnlSummaryResponse(BaseModel):
     generated_at: datetime

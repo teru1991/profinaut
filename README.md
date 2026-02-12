@@ -1,6 +1,6 @@
 # Profinaut V2.5+ — Multi-Exchange / Multi-Language Bot Management Dashboard
 
-Step 13 delivers stuck module-run alerting with deduplicated notifications on top of module run controls.
+Step 14 delivers advanced analytics baseline with equity drawdown summary on top of module run/alert controls.
 
 ## What is included
 - Contracts SSOT with OpenAPI + JSON Schemas (`contracts/`).
@@ -36,6 +36,9 @@ Step 13 delivers stuck module-run alerting with deduplicated notifications on to
 - Module run alerting extension:
   - `POST /alerts/module-runs/stuck-check`
   - WARNING alerts + outbound webhook routing (deduplicated)
+- Advanced analytics extension:
+  - `GET /analytics/equity-drawdown`
+  - max/current drawdown summary from equity time-series
 
 ## Quick start (Windows 11 + Docker Desktop)
 1. Copy environment file:

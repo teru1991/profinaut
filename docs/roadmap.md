@@ -18,7 +18,8 @@ Build a contracts-first, module-driven bot management platform for multi-exchang
 - [x] **Step 11**: Module execution controls (manual trigger + run status updates).
 - [x] **Step 12**: Module run cancellation and stats summary.
 - [x] **Step 13**: Stuck module-run alerting and deduplicated notifications.
-- [ ] **Step 14+**: advanced analytics and module expansion.
+- [x] **Step 14**: Advanced analytics baseline (equity drawdown summary).
+- [ ] **Step 15+**: additional module expansion and analytics.
 
 ## Guardrails
 - `contracts/` is SSOT and enforced in CI.

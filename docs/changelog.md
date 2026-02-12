@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-11 — Step 14 (Advanced analytics: equity drawdown)
+- Added `GET /analytics/equity-drawdown` to summarize drawdown statistics from equity metrics.
+- Added drawdown response schema with max/current drawdown fields.
+- Added automated API test for drawdown calculation.
+- Added `scripts/scaffold_step14.ps1`.
+- Bumped OpenAPI contract version to `1.11.0`.
+
 ## 2026-02-11 — Step 13 (Stuck module-run alerting)
 - Added `POST /alerts/module-runs/stuck-check` to detect stale `QUEUED`/`RUNNING` module runs.
 - Added WARNING alert creation and webhook routing for newly detected stuck runs.

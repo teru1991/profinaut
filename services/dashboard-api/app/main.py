@@ -32,6 +32,7 @@ from .schemas import (
     CostIn,
     ExecutionQualityIn,
     ExecutionQualitySummaryResponse,
+    EquityDrawdownResponse,
     ExposureSummaryResponse,
     HealthResponse,
     HeartbeatAlertCheckResponse,
@@ -266,6 +267,63 @@ def get_portfolio_exposure(actor: str = Depends(require_admin_actor), db: Sessio
         total_gross_exposure=total_gross,
         key_metrics=key_metrics,
         by_symbol=by_symbol,
+    )
+
+@app.get("/analytics/equity-drawdown", response_model=EquityDrawdownResponse)
+def get_equity_drawdown(
+    actor: str = Depends(require_admin_actor),
+    symbol: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> EquityDrawdownResponse:
+    del actor
+    generated_at = datetime.now(timezone.utc)
+
+    query = (
+        select(MetricTsRecord)
+        .where(MetricTsRecord.metric_type == "equity")
+        .order_by(MetricTsRecord.timestamp.asc())
+    )
+    if symbol:
+        query = query.where(MetricTsRecord.symbol == symbol)
+
+    rows = db.scalars(query).all()
+    if not rows:
+        return EquityDrawdownResponse(
+            generated_at=generated_at,
+            samples=0,
+            peak_equity=0.0,
+            latest_equity=0.0,
+            max_drawdown_abs=0.0,
+            max_drawdown_pct=0.0,
+            current_drawdown_pct=0.0,
+        )
+
+    peak = float(rows[0].value)
+    max_dd_abs = 0.0
+    max_dd_pct = 0.0
+    latest = float(rows[-1].value)
+
+    for row in rows:
+        equity = float(row.value)
+        if equity > peak:
+            peak = equity
+        drawdown_abs = peak - equity
+        drawdown_pct = (drawdown_abs / peak) if peak > 0 else 0.0
+        if drawdown_abs > max_dd_abs:
+            max_dd_abs = drawdown_abs
+        if drawdown_pct > max_dd_pct:
+            max_dd_pct = drawdown_pct
+
+    current_dd_pct = ((peak - latest) / peak) if peak > 0 else 0.0
+
+    return EquityDrawdownResponse(
+        generated_at=generated_at,
+        samples=len(rows),
+        peak_equity=peak,
+        latest_equity=latest,
+        max_drawdown_abs=max_dd_abs,
+        max_drawdown_pct=max_dd_pct,
+        current_drawdown_pct=current_dd_pct,
     )
 
 

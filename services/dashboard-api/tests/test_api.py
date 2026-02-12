@@ -563,3 +563,42 @@ def test_module_run_stuck_check_creates_warning_alert(client, monkeypatch):
     res2 = client.post("/alerts/module-runs/stuck-check?stale_after_seconds=60", headers={"X-Admin-Token": "test-admin-token"})
     assert res2.status_code == 200
     assert res2.json()["alerts_created"] == 0
+
+
+def test_equity_drawdown_summary(client):
+    now = datetime.now(timezone.utc)
+    hb = {
+        "instance_id": "inst-dd-1",
+        "bot_id": "bot-dd-1",
+        "runtime_mode": "PAPER",
+        "exchange": "BINANCE",
+        "symbol": "BTCUSDT",
+        "version": "1.0.0",
+        "timestamp": now.isoformat(),
+        "metadata": {},
+    }
+    assert client.post("/ingest/heartbeat", json=hb).status_code == 202
+
+    equities = [1000.0, 1200.0, 900.0, 1100.0]
+    for i, eq in enumerate(equities):
+        ts = (now + timedelta(minutes=i)).isoformat()
+        assert client.post(
+            "/ingest/metrics",
+            json={
+                "instance_id": "inst-dd-1",
+                "symbol": "BTCUSDT",
+                "metric_type": "equity",
+                "value": eq,
+                "timestamp": ts,
+            },
+        ).status_code == 202
+
+    res = client.get("/analytics/equity-drawdown?symbol=BTCUSDT", headers={"X-Admin-Token": "test-admin-token"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["samples"] == 4
+    assert body["peak_equity"] == 1200.0
+    assert body["latest_equity"] == 1100.0
+    assert body["max_drawdown_abs"] == 300.0
+    assert round(body["max_drawdown_pct"], 6) == 0.25
+    assert round(body["current_drawdown_pct"], 6) == round(100.0 / 1200.0, 6)
