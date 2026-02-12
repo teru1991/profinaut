@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-11 — Step 20 (Resource telemetry ingest + latest analytics)
+- Added `POST /ingest/resource` for resource telemetry ingestion (CPU/memory).
+- Added `GET /analytics/resource/latest` for latest resource summary with optional `instance_id` filter.
+- Added automated API test for resource ingest and latest-summary behavior.
+- Added `scripts/scaffold_step20.ps1`.
+- Bumped OpenAPI contract version to `1.17.0`.
+
 ## 2026-02-11 — Step 19 (Indices ingest + latest analytics)
 - Added `POST /ingest/indices` for index time-series ingestion.
 - Added `GET /analytics/indices/latest` for latest per-index values with optional filter.

@@ -24,7 +24,8 @@ Build a contracts-first, module-driven bot management platform for multi-exchang
 - [x] **Step 17**: module run throughput analytics (windowed).
 - [x] **Step 18**: module run active-age analytics.
 - [x] **Step 19**: indices ingest and latest-index analytics.
-- [ ] **Step 20+**: additional module expansion and analytics.
+- [x] **Step 20**: resource telemetry ingest and latest summary analytics.
+- [ ] **Step 21+**: additional module expansion and analytics.
 
 ## Guardrails
 - `contracts/` is SSOT and enforced in CI.

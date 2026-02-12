@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Profinaut Control Plane API
-  version: 1.16.0
+  version: 1.17.0
   description: |
     Step 2 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
     Contracts in this folder and in `contracts/schemas` are the SSOT.
@@ -141,6 +141,28 @@ paths:
         "202":
           description: Execution quality sample accepted
 
+  /ingest/resource:
+    post:
+      tags: [ingest]
+      summary: Ingest resource telemetry sample
+      operationId: postResource
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [instance_id, cpu_pct, memory_pct, timestamp]
+              properties:
+                instance_id: { type: string }
+                cpu_pct: { type: number }
+                memory_pct: { type: number }
+                timestamp: { type: string, format: date-time }
+      responses:
+        "202":
+          description: Resource sample accepted
+
   /ingest/indices:
     post:
       tags: [ingest]
@@ -220,6 +242,32 @@ paths:
                         symbol: { type: string }
                         net_exposure: { type: number }
                         gross_exposure: { type: number }
+
+  /analytics/resource/latest:
+    get:
+      tags: [reconcile]
+      summary: Latest resource telemetry values
+      operationId: getLatestResource
+      parameters:
+        - in: query
+          name: instance_id
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Latest resource summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, latest_cpu_pct, latest_memory_pct]
+                properties:
+                  generated_at: { type: string, format: date-time }
+                  instance_id:
+                    type: [string, "null"]
+                  latest_cpu_pct: { type: number }
+                  latest_memory_pct: { type: number }
 
   /analytics/indices/latest:
     get:

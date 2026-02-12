@@ -211,6 +211,20 @@ class HeartbeatAlertCheckResponse(BaseModel):
     alerts_created: int
 
 
+class ResourceIn(BaseModel):
+    instance_id: str
+    cpu_pct: float
+    memory_pct: float
+    timestamp: datetime
+
+
+class ResourceLatestResponse(BaseModel):
+    generated_at: datetime
+    instance_id: str | None = None
+    latest_cpu_pct: float
+    latest_memory_pct: float
+
+
 class IndexIn(BaseModel):
     instance_id: str
     index_name: str

@@ -117,3 +117,9 @@
 1. Indices are ingested into `metrics_ts` with `metric_type=index` for MVP simplicity.
 2. Latest-index summary returns one latest datapoint per `index_name` based on timestamp ordering.
 3. Optional `index_name` filter scopes both ingest query and summary response without changing base schema.
+
+
+## Step 20 defaults
+1. Resource telemetry is stored in `metrics_ts` using `metric_type` values `resource_cpu_pct` and `resource_memory_pct`.
+2. Latest-resource summary returns the most recent CPU and memory samples and supports optional `instance_id` filtering.
+3. Empty resource history returns zeroed CPU/memory values for predictable clients.

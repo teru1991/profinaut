@@ -59,6 +59,8 @@ from .schemas import (
     PositionIn,
     PaginatedReconcileResults,
     ReconcileIn,
+    ResourceIn,
+    ResourceLatestResponse,
     IndexLatestItem,
     ReconcileOut,
 )
@@ -175,6 +177,65 @@ def ingest_execution_quality(payload: ExecutionQualityIn, db: Session = Depends(
 
 
 
+
+
+
+@app.post("/ingest/resource", status_code=202)
+def ingest_resource(payload: ResourceIn, db: Session = Depends(get_db)) -> dict:
+    instance = db.get(Instance, payload.instance_id)
+    if instance is None:
+        raise HTTPException(status_code=404, detail="instance not found")
+
+    db.add(
+        MetricTsRecord(
+            instance_id=payload.instance_id,
+            symbol="system",
+            metric_type="resource_cpu_pct",
+            value=payload.cpu_pct,
+            timestamp=payload.timestamp,
+        )
+    )
+    db.add(
+        MetricTsRecord(
+            instance_id=payload.instance_id,
+            symbol="system",
+            metric_type="resource_memory_pct",
+            value=payload.memory_pct,
+            timestamp=payload.timestamp,
+        )
+    )
+    db.commit()
+    return {"status": "accepted"}
+
+
+@app.get("/analytics/resource/latest", response_model=ResourceLatestResponse)
+def get_latest_resource(
+    actor: str = Depends(require_admin_actor),
+    instance_id: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> ResourceLatestResponse:
+    del actor
+    generated_at = datetime.now(timezone.utc)
+
+    cpu_query = select(MetricTsRecord).where(MetricTsRecord.metric_type == "resource_cpu_pct")
+    mem_query = select(MetricTsRecord).where(MetricTsRecord.metric_type == "resource_memory_pct")
+    if instance_id:
+        cpu_query = cpu_query.where(MetricTsRecord.instance_id == instance_id)
+        mem_query = mem_query.where(MetricTsRecord.instance_id == instance_id)
+
+    latest_cpu = db.scalar(cpu_query.order_by(MetricTsRecord.timestamp.desc()).limit(1))
+    latest_mem = db.scalar(mem_query.order_by(MetricTsRecord.timestamp.desc()).limit(1))
+
+    resolved_instance_id = instance_id
+    if resolved_instance_id is None:
+        resolved_instance_id = latest_cpu.instance_id if latest_cpu is not None else (latest_mem.instance_id if latest_mem is not None else None)
+
+    return ResourceLatestResponse(
+        generated_at=generated_at,
+        instance_id=resolved_instance_id,
+        latest_cpu_pct=float(latest_cpu.value) if latest_cpu is not None else 0.0,
+        latest_memory_pct=float(latest_mem.value) if latest_mem is not None else 0.0,
+    )
 
 @app.post("/ingest/indices", status_code=202)
 def ingest_index(payload: IndexIn, db: Session = Depends(get_db)) -> dict:

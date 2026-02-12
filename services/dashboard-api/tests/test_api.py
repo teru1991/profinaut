@@ -835,3 +835,35 @@ def test_indices_ingest_and_latest_summary(client):
     assert btc_only.status_code == 200
     assert len(btc_only.json()["items"]) == 1
     assert btc_only.json()["items"][0]["index_name"] == "BTC_INDEX"
+
+
+def test_resource_ingest_and_latest_summary(client):
+    now = datetime.now(timezone.utc)
+    hb = {
+        "instance_id": "inst-res-1",
+        "bot_id": "bot-res-1",
+        "runtime_mode": "PAPER",
+        "exchange": "BINANCE",
+        "symbol": "BTCUSDT",
+        "version": "1.0.0",
+        "timestamp": now.isoformat(),
+        "metadata": {},
+    }
+    assert client.post("/ingest/heartbeat", json=hb).status_code == 202
+
+    assert client.post(
+        "/ingest/resource",
+        json={
+            "instance_id": "inst-res-1",
+            "cpu_pct": 31.5,
+            "memory_pct": 62.25,
+            "timestamp": now.isoformat(),
+        },
+    ).status_code == 202
+
+    res = client.get("/analytics/resource/latest?instance_id=inst-res-1", headers={"X-Admin-Token": "test-admin-token"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["instance_id"] == "inst-res-1"
+    assert body["latest_cpu_pct"] == 31.5
+    assert body["latest_memory_pct"] == 62.25
