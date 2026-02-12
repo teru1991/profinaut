@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Profinaut Control Plane API
-  version: 1.17.0
+  version: 1.18.0
   description: |
     Step 2 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
     Contracts in this folder and in `contracts/schemas` are the SSOT.
@@ -268,6 +268,46 @@ paths:
                     type: [string, "null"]
                   latest_cpu_pct: { type: number }
                   latest_memory_pct: { type: number }
+
+
+  /analytics/resource/window:
+    get:
+      tags: [reconcile]
+      summary: Windowed resource telemetry summary
+      operationId: getResourceWindowSummary
+      parameters:
+        - in: query
+          name: instance_id
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: window_hours
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 168
+            default: 24
+      responses:
+        "200":
+          description: Windowed resource summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, window_hours, avg_cpu_pct, max_cpu_pct, avg_memory_pct, max_memory_pct, cpu_samples, memory_samples]
+                properties:
+                  generated_at: { type: string, format: date-time }
+                  window_hours: { type: integer }
+                  instance_id:
+                    type: [string, "null"]
+                  avg_cpu_pct: { type: number }
+                  max_cpu_pct: { type: number }
+                  avg_memory_pct: { type: number }
+                  max_memory_pct: { type: number }
+                  cpu_samples: { type: integer }
+                  memory_samples: { type: integer }
 
   /analytics/indices/latest:
     get:

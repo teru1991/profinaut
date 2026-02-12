@@ -225,6 +225,18 @@ class ResourceLatestResponse(BaseModel):
     latest_memory_pct: float
 
 
+class ResourceWindowSummaryResponse(BaseModel):
+    generated_at: datetime
+    window_hours: int
+    instance_id: str | None = None
+    avg_cpu_pct: float
+    max_cpu_pct: float
+    avg_memory_pct: float
+    max_memory_pct: float
+    cpu_samples: int
+    memory_samples: int
+
+
 class IndexIn(BaseModel):
     instance_id: str
     index_name: str

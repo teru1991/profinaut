@@ -867,3 +867,77 @@ def test_resource_ingest_and_latest_summary(client):
     assert body["instance_id"] == "inst-res-1"
     assert body["latest_cpu_pct"] == 31.5
     assert body["latest_memory_pct"] == 62.25
+
+
+def test_resource_window_summary(client):
+    now = datetime.now(timezone.utc)
+
+    hb_1 = {
+        "instance_id": "inst-resw-1",
+        "bot_id": "bot-resw-1",
+        "runtime_mode": "PAPER",
+        "exchange": "BINANCE",
+        "symbol": "BTCUSDT",
+        "version": "1.0.0",
+        "timestamp": now.isoformat(),
+        "metadata": {},
+    }
+    hb_2 = {
+        "instance_id": "inst-resw-2",
+        "bot_id": "bot-resw-2",
+        "runtime_mode": "PAPER",
+        "exchange": "BINANCE",
+        "symbol": "ETHUSDT",
+        "version": "1.0.0",
+        "timestamp": now.isoformat(),
+        "metadata": {},
+    }
+    assert client.post("/ingest/heartbeat", json=hb_1).status_code == 202
+    assert client.post("/ingest/heartbeat", json=hb_2).status_code == 202
+
+    samples = [
+        ("inst-resw-1", 20.0, 40.0, now - timedelta(hours=2)),
+        ("inst-resw-1", 30.0, 50.0, now - timedelta(minutes=30)),
+        ("inst-resw-2", 40.0, 60.0, now - timedelta(minutes=10)),
+        ("inst-resw-1", 10.0, 30.0, now - timedelta(hours=30)),  # outside default 24h window
+    ]
+
+    for instance_id, cpu, mem, ts in samples:
+        assert client.post(
+            "/ingest/resource",
+            json={
+                "instance_id": instance_id,
+                "cpu_pct": cpu,
+                "memory_pct": mem,
+                "timestamp": ts.isoformat(),
+            },
+        ).status_code == 202
+
+    summary_all = client.get(
+        "/analytics/resource/window",
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert summary_all.status_code == 200
+    body_all = summary_all.json()
+    assert body_all["window_hours"] == 24
+    assert body_all["cpu_samples"] == 3
+    assert body_all["memory_samples"] == 3
+    assert body_all["avg_cpu_pct"] == 30.0
+    assert body_all["max_cpu_pct"] == 40.0
+    assert body_all["avg_memory_pct"] == 50.0
+    assert body_all["max_memory_pct"] == 60.0
+
+    summary_filtered = client.get(
+        "/analytics/resource/window?instance_id=inst-resw-1&window_hours=3",
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert summary_filtered.status_code == 200
+    body_filtered = summary_filtered.json()
+    assert body_filtered["instance_id"] == "inst-resw-1"
+    assert body_filtered["window_hours"] == 3
+    assert body_filtered["cpu_samples"] == 2
+    assert body_filtered["memory_samples"] == 2
+    assert body_filtered["avg_cpu_pct"] == 25.0
+    assert body_filtered["max_cpu_pct"] == 30.0
+    assert body_filtered["avg_memory_pct"] == 45.0
+    assert body_filtered["max_memory_pct"] == 50.0

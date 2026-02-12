@@ -1,6 +1,6 @@
 # Profinaut V2.5+ — Multi-Exchange / Multi-Language Bot Management Dashboard
 
-Step 20 delivers resource telemetry ingest and latest resource analytics on top of indices and module-run analytics extensions.
+Step 21 delivers windowed resource analytics on top of resource/latest, indices, and module-run analytics extensions.
 
 ## What is included
 - Contracts SSOT with OpenAPI + JSON Schemas (`contracts/`).
@@ -29,7 +29,8 @@ Step 20 delivers resource telemetry ingest and latest resource analytics on top 
 - Resource telemetry extension:
   - `POST /ingest/resource`
   - `GET /analytics/resource/latest`
-  - Latest CPU/memory telemetry summary
+  - `GET /analytics/resource/window`
+  - Latest + windowed CPU/memory telemetry summaries
 - Markets/indices extension:
   - `POST /ingest/indices`
   - `GET /analytics/indices/latest`

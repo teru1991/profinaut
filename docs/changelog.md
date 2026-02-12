@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-11 — Step 21 (Resource telemetry windowed summary analytics)
+- Added `GET /analytics/resource/window` for windowed CPU/memory summary analytics.
+- Added summary fields: `avg_cpu_pct`, `max_cpu_pct`, `avg_memory_pct`, `max_memory_pct`, `cpu_samples`, and `memory_samples`.
+- Added automated API test for resource window summary behavior with filtering and window bounds.
+- Added `scripts/scaffold_step21.ps1`.
+- Bumped OpenAPI contract version to `1.18.0`.
+
 ## 2026-02-11 — Step 20 (Resource telemetry ingest + latest analytics)
 - Added `POST /ingest/resource` for resource telemetry ingestion (CPU/memory).
 - Added `GET /analytics/resource/latest` for latest resource summary with optional `instance_id` filter.

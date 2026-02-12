@@ -123,3 +123,10 @@
 1. Resource telemetry is stored in `metrics_ts` using `metric_type` values `resource_cpu_pct` and `resource_memory_pct`.
 2. Latest-resource summary returns the most recent CPU and memory samples and supports optional `instance_id` filtering.
 3. Empty resource history returns zeroed CPU/memory values for predictable clients.
+
+
+## Step 21 defaults
+1. Windowed resource analytics read CPU/memory telemetry from `metrics_ts` over a lookback window (default 24h, min 1h, max 168h).
+2. Summary returns average and maximum values separately for CPU and memory plus sample counts for predictable monitoring.
+3. Optional `instance_id` filter scopes the windowed aggregation to a single runtime instance without changing response shape.
+

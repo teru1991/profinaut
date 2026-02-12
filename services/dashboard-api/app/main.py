@@ -61,6 +61,7 @@ from .schemas import (
     ReconcileIn,
     ResourceIn,
     ResourceLatestResponse,
+    ResourceWindowSummaryResponse,
     IndexLatestItem,
     ReconcileOut,
 )
@@ -235,6 +236,50 @@ def get_latest_resource(
         instance_id=resolved_instance_id,
         latest_cpu_pct=float(latest_cpu.value) if latest_cpu is not None else 0.0,
         latest_memory_pct=float(latest_mem.value) if latest_mem is not None else 0.0,
+    )
+
+
+@app.get("/analytics/resource/window", response_model=ResourceWindowSummaryResponse)
+def get_resource_window_summary(
+    actor: str = Depends(require_admin_actor),
+    instance_id: str | None = Query(default=None),
+    window_hours: int = Query(default=24, ge=1, le=168),
+    db: Session = Depends(get_db),
+) -> ResourceWindowSummaryResponse:
+    del actor
+    generated_at = datetime.now(timezone.utc)
+    cutoff = generated_at - timedelta(hours=window_hours)
+
+    cpu_query = (
+        select(MetricTsRecord)
+        .where(MetricTsRecord.metric_type == "resource_cpu_pct")
+        .where(MetricTsRecord.timestamp >= cutoff)
+    )
+    mem_query = (
+        select(MetricTsRecord)
+        .where(MetricTsRecord.metric_type == "resource_memory_pct")
+        .where(MetricTsRecord.timestamp >= cutoff)
+    )
+    if instance_id:
+        cpu_query = cpu_query.where(MetricTsRecord.instance_id == instance_id)
+        mem_query = mem_query.where(MetricTsRecord.instance_id == instance_id)
+
+    cpu_rows = db.scalars(cpu_query).all()
+    mem_rows = db.scalars(mem_query).all()
+
+    cpu_values = [float(r.value) for r in cpu_rows]
+    mem_values = [float(r.value) for r in mem_rows]
+
+    return ResourceWindowSummaryResponse(
+        generated_at=generated_at,
+        window_hours=window_hours,
+        instance_id=instance_id,
+        avg_cpu_pct=(sum(cpu_values) / len(cpu_values)) if cpu_values else 0.0,
+        max_cpu_pct=max(cpu_values) if cpu_values else 0.0,
+        avg_memory_pct=(sum(mem_values) / len(mem_values)) if mem_values else 0.0,
+        max_memory_pct=max(mem_values) if mem_values else 0.0,
+        cpu_samples=len(cpu_values),
+        memory_samples=len(mem_values),
     )
 
 @app.post("/ingest/indices", status_code=202)
