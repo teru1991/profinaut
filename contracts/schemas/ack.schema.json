@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/ack.schema.json",
+  "title": "CommandAck",
+  "type": "object",
+  "required": [
+    "command_id",
+    "instance_id",
+    "status",
+    "timestamp"
+  ],
+  "properties": {
+    "command_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "instance_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ACCEPTED",
+        "COMPLETED",
+        "FAILED",
+        "REJECTED_EXPIRED",
+        "REJECTED_DUPLICATE"
+      ]
+    },
+    "reason": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

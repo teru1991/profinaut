@@ -1,0 +1,83 @@
+name: scope-guard
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  enforce-single-scope:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed files and enforce single scope
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          base_sha="${{ github.event.pull_request.base.sha }}"
+          head_sha="${{ github.event.pull_request.head.sha }}"
+
+          mapfile -t files < <(git diff --name-only "$base_sha" "$head_sha")
+
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No changed files detected; failing to avoid false pass."
+            exit 1
+          fi
+
+          declare -A scopes=()
+
+          for f in "${files[@]}"; do
+            scope=""
+
+            if [[ "$f" == apps/web/* || "$f" == services/dashboard-api/* || "$f" == "Dockerfile.api" || "$f" == "Dockerfile.web" ]]; then
+              scope="dashboard"
+            elif [[ "$f" == contracts/* ]]; then
+              scope="contracts"
+            elif [[ "$f" == sdk/python/* ]]; then
+              scope="sdk"
+            elif [[ "$f" == docs/* ]]; then
+              scope="docs"
+            fi
+
+            # repo-hygiene exact-file override
+            if [[ "$f" == ".github/CODEOWNERS" || \
+                  "$f" == ".github/pull_request_template.md" || \
+                  "$f" == ".github/copilot-instructions.md" || \
+                  "$f" == ".github/workflows/scope-guard.yml" || \
+                  "$f" == "docs/specs/parallel-task-safety.md" ]]; then
+              scope="repo-hygiene"
+            fi
+
+            if [[ -z "$scope" ]]; then
+              echo "❌ File does not map to an allowed scope: $f"
+              exit 1
+            fi
+
+            # Enforce repo-hygiene exact-file semantics
+            if [[ "$scope" == "repo-hygiene" ]]; then
+              case "$f" in
+                .github/CODEOWNERS|.github/pull_request_template.md|.github/copilot-instructions.md|.github/workflows/scope-guard.yml|docs/specs/parallel-task-safety.md) ;;
+                *)
+                  echo "❌ repo-hygiene scope allows only exact listed files: $f"
+                  exit 1
+                  ;;
+              esac
+            fi
+
+            scopes["$scope"]=1
+            echo "mapped: $f -> $scope"
+          done
+
+          scope_count="${#scopes[@]}"
+          echo "Detected scopes: ${!scopes[*]}"
+
+          if [[ "$scope_count" -ne 1 ]]; then
+            echo "❌ PR must contain exactly one scope. Found: ${!scopes[*]}"
+            exit 1
+          fi
+
+          echo "✅ scope-guard passed: single scope '${!scopes[*]}'"
