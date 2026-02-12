@@ -1,6 +1,6 @@
 # Profinaut V2.5+ — Multi-Exchange / Multi-Language Bot Management Dashboard
 
-Step 17 delivers module run throughput analytics on top of failure-rate, performance, and drawdown analytics.
+Step 18 delivers module run active-age analytics on top of throughput, failure-rate, performance, and drawdown analytics.
 
 ## What is included
 - Contracts SSOT with OpenAPI + JSON Schemas (`contracts/`).
@@ -46,6 +46,8 @@ Step 17 delivers module run throughput analytics on top of failure-rate, perform
   - FAILED ratio over recent completed runs (windowed)
   - `GET /analytics/module-runs/throughput`
   - run throughput over recent time window
+  - `GET /analytics/module-runs/active-age`
+  - active run count + oldest/average active duration
 
 ## Quick start (Windows 11 + Docker Desktop)
 1. Copy environment file:

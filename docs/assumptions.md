@@ -105,3 +105,9 @@
 1. Throughput analytics count runs by `started_at` within a lookback window.
 2. Throughput is reported as `total_runs / window_hours` with default 24h window.
 3. Optional `module_id` filter scopes throughput to a single module.
+
+
+## Step 18 defaults
+1. Active-age analytics consider only non-terminal statuses (`QUEUED`, `RUNNING`).
+2. Oldest/average active durations are computed from `generated_at - started_at` in seconds.
+3. Empty active set returns zeroed metrics with `active_runs=0` for predictable clients.

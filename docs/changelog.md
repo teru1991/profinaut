@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-11 — Step 18 (Module run active-age analytics)
+- Added `GET /analytics/module-runs/active-age` for active-run age visibility.
+- Added summary fields: `active_runs`, `oldest_active_seconds`, `avg_active_seconds`.
+- Added automated API test for active-run age summary behavior.
+- Added `scripts/scaffold_step18.ps1`.
+- Bumped OpenAPI contract version to `1.15.0`.
+
 ## 2026-02-11 — Step 17 (Module run throughput analytics)
 - Added `GET /analytics/module-runs/throughput` for windowed run-throughput analytics.
 - Added summary fields: `window_hours`, `total_runs`, `runs_per_hour`.

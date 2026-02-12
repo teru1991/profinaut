@@ -44,6 +44,7 @@ from .schemas import (
     ModuleRunPerformanceResponse,
     ModuleRunFailureRateResponse,
     ModuleRunThroughputResponse,
+    ModuleRunActiveAgeResponse,
     ModuleRunStatusUpdateIn,
     ModuleRunTriggerIn,
     ModuleRunStatsResponse,
@@ -1049,6 +1050,43 @@ def get_module_run_throughput(
         window_hours=window_hours,
         total_runs=total_runs,
         runs_per_hour=runs_per_hour,
+    )
+
+
+
+@app.get("/analytics/module-runs/active-age", response_model=ModuleRunActiveAgeResponse)
+def get_module_run_active_age(
+    actor: str = Depends(require_admin_actor),
+    module_id: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> ModuleRunActiveAgeResponse:
+    del actor
+    generated_at = datetime.now(timezone.utc)
+
+    query = select(ModuleRun).where(ModuleRun.status.in_(["QUEUED", "RUNNING"]))
+    if module_id:
+        query = query.where(ModuleRun.module_id == module_id)
+    rows = db.scalars(query).all()
+
+    if not rows:
+        return ModuleRunActiveAgeResponse(
+            generated_at=generated_at,
+            active_runs=0,
+            oldest_active_seconds=0.0,
+            avg_active_seconds=0.0,
+        )
+
+    ages = []
+    for r in rows:
+        started_at = r.started_at
+        if started_at.tzinfo is None:
+            started_at = started_at.replace(tzinfo=timezone.utc)
+        ages.append(max(0.0, (generated_at - started_at).total_seconds()))
+    return ModuleRunActiveAgeResponse(
+        generated_at=generated_at,
+        active_runs=len(rows),
+        oldest_active_seconds=max(ages),
+        avg_active_seconds=(sum(ages) / len(ages)),
     )
 
 @app.get("/module-runs", response_model=PaginatedModuleRuns)

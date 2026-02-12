@@ -745,3 +745,55 @@ def test_module_run_throughput_summary(client):
     assert body["window_hours"] == 3
     assert body["total_runs"] == 6
     assert round(body["runs_per_hour"], 6) == 2.0
+
+
+def test_module_run_active_age_summary(client):
+    now = datetime.now(timezone.utc)
+    module_id = "mod-active-age-1"
+    create = client.post(
+        "/modules",
+        headers={"X-Admin-Token": "test-admin-token"},
+        json={
+            "module_id": module_id,
+            "name": "ActiveAge Module",
+            "description": "test",
+            "enabled": True,
+            "execution_mode": "MANUAL",
+            "schedule_cron": None,
+            "config": {},
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat(),
+        },
+    )
+    assert create.status_code == 201
+
+    for _ in range(3):
+        trig = client.post(
+            f"/modules/{module_id}/run",
+            headers={"X-Admin-Token": "test-admin-token"},
+            json={"trigger_type": "MANUAL", "summary": {}},
+        )
+        assert trig.status_code == 202
+
+    # Close one run; leave two active
+    runs = client.get(
+        f"/module-runs?module_id={module_id}",
+        headers={"X-Admin-Token": "test-admin-token"},
+    ).json()["items"]
+    done_id = runs[0]["run_id"]
+    upd = client.patch(
+        f"/module-runs/{done_id}",
+        headers={"X-Admin-Token": "test-admin-token"},
+        json={"status": "SUCCEEDED", "summary": {}, "ended_at": (datetime.now(timezone.utc) + timedelta(seconds=1)).isoformat()},
+    )
+    assert upd.status_code == 200
+
+    res = client.get(
+        f"/analytics/module-runs/active-age?module_id={module_id}",
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["active_runs"] == 2
+    assert body["oldest_active_seconds"] >= 0.0
+    assert body["avg_active_seconds"] >= 0.0

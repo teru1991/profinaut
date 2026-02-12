@@ -145,6 +145,12 @@ class ModuleRunThroughputResponse(BaseModel):
     total_runs: int
     runs_per_hour: float
 
+class ModuleRunActiveAgeResponse(BaseModel):
+    generated_at: datetime
+    active_runs: int
+    oldest_active_seconds: float
+    avg_active_seconds: float
+
 class CommandIn(BaseModel):
     command_id: str
     instance_id: str
