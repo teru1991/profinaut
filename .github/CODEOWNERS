@@ -1,0 +1,16 @@
+# Global default owners
+* @profinaut/maintainers
+
+# Scope owners
+/apps/web/ @profinaut/dashboard
+/services/dashboard-api/ @profinaut/dashboard
+/contracts/ @profinaut/contracts
+/sdk/python/ @profinaut/sdk
+/docs/ @profinaut/docs
+
+# Repo-hygiene guards
+/.github/CODEOWNERS @profinaut/maintainers
+/.github/pull_request_template.md @profinaut/maintainers
+/.github/copilot-instructions.md @profinaut/maintainers
+/.github/workflows/scope-guard.yml @profinaut/maintainers
+/docs/specs/parallel-task-safety.md @profinaut/maintainers
