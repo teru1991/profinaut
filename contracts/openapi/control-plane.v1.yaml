@@ -1,0 +1,921 @@
+openapi: 3.1.0
+info:
+  title: Profinaut Control Plane API
+  version: 1.14.0
+  description: |
+    Step 2 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
+    Contracts in this folder and in `contracts/schemas` are the SSOT.
+  license:
+    name: Proprietary
+    url: https://profinaut.local/license
+servers:
+  - url: https://api.profinaut.local
+
+security:
+  - AdminToken: []
+
+tags:
+  - name: system
+    description: System and service metadata endpoints.
+  - name: ingest
+    description: Agent-to-control-plane ingestion endpoints.
+  - name: bots
+    description: Bot inventory and status endpoints.
+  - name: commands
+    description: Command dispatch and acknowledgement endpoints.
+  - name: reconcile
+    description: Reconciliation reporting endpoints.
+  - name: audit
+    description: Audit trail query endpoints.
+  - name: modules
+    description: Module registry and module run endpoints.
+
+paths:
+  /healthz:
+    get:
+      tags: [system]
+      summary: Service health probe
+      operationId: getHealthz
+      security: []
+      responses:
+        "200":
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, timestamp]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /ingest/heartbeat:
+    post:
+      tags: [ingest]
+      summary: Ingest bot heartbeat
+      operationId: postHeartbeat
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/heartbeat.schema.json
+      responses:
+        "202":
+          description: Heartbeat accepted
+
+
+
+  /ingest/metrics:
+    post:
+      tags: [ingest]
+      summary: Ingest metrics time-series point
+      operationId: postMetric
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [instance_id, symbol, metric_type, value, timestamp]
+              properties:
+                instance_id: { type: string }
+                symbol: { type: string }
+                metric_type: { type: string }
+                value: { type: number }
+                timestamp: { type: string, format: date-time }
+      responses:
+        "202":
+          description: Metric accepted
+
+  /ingest/positions:
+    post:
+      tags: [ingest]
+      summary: Ingest latest position exposure
+      operationId: postPosition
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [instance_id, symbol, net_exposure, gross_exposure, updated_at]
+              properties:
+                instance_id: { type: string }
+                symbol: { type: string }
+                net_exposure: { type: number }
+                gross_exposure: { type: number }
+                updated_at: { type: string, format: date-time }
+      responses:
+        "202":
+          description: Position accepted
+
+  /ingest/execution-quality:
+    post:
+      tags: [ingest]
+      summary: Ingest execution quality sample
+      operationId: postExecutionQuality
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [instance_id, symbol, slippage_bps, latency_ms, fill_ratio, timestamp]
+              properties:
+                instance_id: { type: string }
+                symbol: { type: string }
+                slippage_bps: { type: number }
+                latency_ms: { type: number }
+                fill_ratio: { type: number }
+                timestamp: { type: string, format: date-time }
+      responses:
+        "202":
+          description: Execution quality sample accepted
+
+  /ingest/costs:
+    post:
+      tags: [ingest]
+      summary: Ingest cost ledger entry (fees/funding)
+      operationId: postCost
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [instance_id, symbol, cost_type, amount, timestamp]
+              properties:
+                instance_id: { type: string }
+                symbol: { type: string }
+                cost_type:
+                  type: string
+                  enum: [FEE, FUNDING]
+                amount: { type: number }
+                timestamp: { type: string, format: date-time }
+      responses:
+        "202":
+          description: Cost accepted
+
+  /portfolio/exposure:
+    get:
+      tags: [audit]
+      summary: Exposure summary across positions
+      operationId: getPortfolioExposure
+      responses:
+        "200":
+          description: Exposure summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, total_net_exposure, total_gross_exposure, key_metrics, by_symbol]
+                properties:
+                  generated_at:
+                    type: string
+                    format: date-time
+                  total_net_exposure:
+                    type: number
+                  total_gross_exposure:
+                    type: number
+                  key_metrics:
+                    type: object
+                  by_symbol:
+                    type: array
+                    items:
+                      type: object
+                      required: [symbol, net_exposure, gross_exposure]
+                      properties:
+                        symbol: { type: string }
+                        net_exposure: { type: number }
+                        gross_exposure: { type: number }
+
+  /analytics/equity-drawdown:
+    get:
+      tags: [reconcile]
+      summary: Equity drawdown summary
+      operationId: getEquityDrawdown
+      parameters:
+        - in: query
+          name: symbol
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Equity drawdown summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, samples, peak_equity, latest_equity, max_drawdown_abs, max_drawdown_pct, current_drawdown_pct]
+                properties:
+                  generated_at: { type: string, format: date-time }
+                  samples: { type: integer }
+                  peak_equity: { type: number }
+                  latest_equity: { type: number }
+                  max_drawdown_abs: { type: number }
+                  max_drawdown_pct: { type: number }
+                  current_drawdown_pct: { type: number }
+
+
+  /analytics/module-runs/failure-rate:
+    get:
+      tags: [modules]
+      summary: Module run failure-rate summary
+      operationId: getModuleRunFailureRate
+      parameters:
+        - in: query
+          name: module_id
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: window_size
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 50
+      responses:
+        "200":
+          description: Module run failure-rate summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, total_completed, failed_runs, failure_rate, window_size_used]
+                properties:
+                  generated_at: { type: string, format: date-time }
+                  total_completed: { type: integer }
+                  failed_runs: { type: integer }
+                  failure_rate: { type: number }
+                  window_size_used: { type: integer }
+
+  /analytics/module-runs/throughput:
+    get:
+      tags: [modules]
+      summary: Module run throughput summary
+      operationId: getModuleRunThroughput
+      parameters:
+        - in: query
+          name: module_id
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: window_hours
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 168
+            default: 24
+      responses:
+        "200":
+          description: Module run throughput summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, window_hours, total_runs, runs_per_hour]
+                properties:
+                  generated_at: { type: string, format: date-time }
+                  window_hours: { type: integer }
+                  total_runs: { type: integer }
+                  runs_per_hour: { type: number }
+
+  /analytics/module-runs/performance:
+    get:
+      tags: [modules]
+      summary: Module run performance summary
+      operationId: getModuleRunPerformance
+      parameters:
+        - in: query
+          name: module_id
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Module run performance summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, total_runs, completed_runs, success_rate, avg_duration_seconds, p95_duration_seconds]
+                properties:
+                  generated_at: { type: string, format: date-time }
+                  total_runs: { type: integer }
+                  completed_runs: { type: integer }
+                  success_rate: { type: number }
+                  avg_duration_seconds: { type: number }
+                  p95_duration_seconds: { type: number }
+
+  /analytics/execution-quality:
+    get:
+      tags: [reconcile]
+      summary: Execution quality summary
+      operationId: getExecutionQualitySummary
+      parameters:
+        - in: query
+          name: symbol
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Execution quality summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, avg_slippage_bps, avg_latency_ms, avg_fill_ratio, samples]
+                properties:
+                  generated_at: { type: string, format: date-time }
+                  avg_slippage_bps: { type: number }
+                  avg_latency_ms: { type: number }
+                  avg_fill_ratio: { type: number }
+                  samples: { type: integer }
+
+  /analytics/net-pnl:
+    get:
+      tags: [reconcile]
+      summary: Compute NetPnL summary
+      operationId: getNetPnlSummary
+      parameters:
+        - in: query
+          name: symbol
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: NetPnL summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, realized, unrealized, fees, funding, net_pnl]
+                properties:
+                  generated_at: { type: string, format: date-time }
+                  realized: { type: number }
+                  unrealized: { type: number }
+                  fees: { type: number }
+                  funding: { type: number }
+                  net_pnl: { type: number }
+
+  /bots:
+    get:
+      tags: [bots]
+      summary: List bots with latest status
+      operationId: listBots
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Paginated bots
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, page_size, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+
+  /commands:
+    post:
+      tags: [commands]
+      summary: Create command for an instance
+      operationId: createCommand
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/command.schema.json
+      responses:
+        "202":
+          description: Command accepted for delivery
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/command.schema.json
+
+
+  /instances/{instance_id}/commands/pending:
+    get:
+      tags: [commands]
+      summary: Fetch pending commands for an instance
+      operationId: listPendingCommands
+      security: []
+      parameters:
+        - in: path
+          name: instance_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Pending command list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: ../schemas/command.schema.json
+
+  /commands/{command_id}/ack:
+    post:
+      tags: [commands]
+      summary: Ack command execution status from agent
+      operationId: ackCommand
+      security: []
+      parameters:
+        - in: path
+          name: command_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/ack.schema.json
+      responses:
+        "202":
+          description: Ack accepted
+
+
+  /alerts/heartbeat-check:
+    post:
+      tags: [audit]
+      summary: Check for stale heartbeats and emit CRITICAL alerts
+      operationId: checkHeartbeatAlerts
+      parameters:
+        - in: query
+          name: stale_after_seconds
+          required: false
+          schema:
+            type: integer
+            minimum: 30
+            maximum: 3600
+            default: 90
+      responses:
+        "200":
+          description: Heartbeat alert check summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [checked_at, stale_threshold_seconds, stale_instances, alerts_created]
+                properties:
+                  checked_at:
+                    type: string
+                    format: date-time
+                  stale_threshold_seconds:
+                    type: integer
+                  stale_instances:
+                    type: integer
+                  alerts_created:
+                    type: integer
+
+  /alerts/module-runs/stuck-check:
+    post:
+      tags: [modules]
+      summary: Detect stuck module runs and create WARNING alerts
+      operationId: checkStuckModuleRuns
+      parameters:
+        - in: query
+          name: stale_after_seconds
+          required: false
+          schema:
+            type: integer
+            minimum: 60
+            maximum: 86400
+            default: 900
+      responses:
+        "200":
+          description: Stuck run alert check summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [checked_at, threshold_seconds, stuck_runs, alerts_created]
+                properties:
+                  checked_at:
+                    type: string
+                    format: date-time
+                  threshold_seconds:
+                    type: integer
+                  stuck_runs:
+                    type: integer
+                  alerts_created:
+                    type: integer
+
+  /reconcile:
+    post:
+      tags: [reconcile]
+      summary: Submit reconciliation result
+      operationId: postReconcile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/reconcile.schema.json
+      responses:
+        "202":
+          description: Reconcile result accepted
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/reconcile.schema.json
+
+  /reconcile/results:
+    get:
+      tags: [reconcile]
+      summary: List reconciliation results
+      operationId: listReconcileResults
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - in: query
+          name: instance_id
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [OK, MISMATCH]
+      responses:
+        "200":
+          description: Paginated reconciliation results
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, page_size, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: ../schemas/reconcile.schema.json
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+
+  /audit/logs:
+    get:
+      tags: [audit]
+      summary: List audit logs
+      operationId: listAuditLogs
+      parameters:
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: page_size
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Paginated audit logs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, page_size, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: ../schemas/audit.schema.json
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+
+  /modules:
+    get:
+      tags: [modules]
+      summary: List module definitions
+      operationId: listModules
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - in: query
+          name: enabled
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Paginated modules
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, page_size, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: ../schemas/module.schema.json
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+    post:
+      tags: [modules]
+      summary: Create or update module definition
+      operationId: upsertModule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/module.schema.json
+      responses:
+        "201":
+          description: Module created or updated
+
+  /modules/{module_id}:
+    get:
+      tags: [modules]
+      summary: Get one module definition
+      operationId: getModule
+      parameters:
+        - in: path
+          name: module_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Module found
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/module.schema.json
+        "404":
+          description: Module not found
+    delete:
+      tags: [modules]
+      summary: Delete one module definition
+      operationId: deleteModule
+      parameters:
+        - in: path
+          name: module_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Module deleted
+
+  /modules/{module_id}/run:
+    post:
+      tags: [modules]
+      summary: Trigger a module run
+      operationId: triggerModuleRun
+      parameters:
+        - in: path
+          name: module_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                trigger_type: { type: string }
+                summary: { type: object }
+      responses:
+        "202":
+          description: Module run queued
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/module_run.schema.json
+
+  /module-runs/{run_id}:
+    patch:
+      tags: [modules]
+      summary: Update module run status
+      operationId: updateModuleRun
+      parameters:
+        - in: path
+          name: run_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELED]
+                summary:
+                  type: object
+                ended_at:
+                  type: string
+                  format: date-time
+      responses:
+        "200":
+          description: Updated module run
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/module_run.schema.json
+
+  /module-runs/{run_id}/cancel:
+    post:
+      tags: [modules]
+      summary: Cancel a running or queued module run
+      operationId: cancelModuleRun
+      parameters:
+        - in: path
+          name: run_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Canceled module run
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/module_run.schema.json
+
+  /module-runs/stats:
+    get:
+      tags: [modules]
+      summary: Module run status summary
+      operationId: getModuleRunStats
+      parameters:
+        - in: query
+          name: module_id
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Module run stats
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, total_runs, active_runs, status_counts]
+                properties:
+                  generated_at:
+                    type: string
+                    format: date-time
+                  total_runs:
+                    type: integer
+                  active_runs:
+                    type: integer
+                  status_counts:
+                    type: object
+
+  /module-runs:
+    get:
+      tags: [modules]
+      summary: List module runs
+      operationId: listModuleRuns
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - in: query
+          name: module_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELED]
+      responses:
+        "200":
+          description: Paginated module runs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, page_size, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: ../schemas/module_run.schema.json
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+
+components:
+  securitySchemes:
+    AdminToken:
+      type: apiKey
+      in: header
+      name: X-Admin-Token
