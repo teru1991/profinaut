@@ -7,8 +7,9 @@ on:
 jobs:
   enforce-single-scope:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout (full history)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -18,10 +19,36 @@ jobs:
         run: |
           set -euo pipefail
 
-          base_sha="${{ github.event.pull_request.base.sha }}"
-          head_sha="${{ github.event.pull_request.head.sha }}"
+          echo "Base ref: ${{ github.base_ref }}"
+          echo "Head ref: ${{ github.head_ref }}"
+          echo "Base SHA: ${{ github.event.pull_request.base.sha }}"
+          echo "Head SHA: ${{ github.event.pull_request.head.sha }}"
 
-          mapfile -t files < <(git diff --name-only "$base_sha" "$head_sha")
+          # Fetch the PR base/head refs explicitly to make diff stable and match PR UI behavior.
+          git fetch --no-tags --prune origin "${{ github.base_ref }}:${{ github.base_ref }}" || true
+          git fetch --no-tags --prune origin "${{ github.head_ref }}:${{ github.head_ref }}" || true
+
+          # Use three-dot diff (merge-base..head) which aligns better with GitHub PR file list.
+          # If refs are unavailable for any reason, fall back to SHA diff.
+          if git rev-parse --verify "${{ github.base_ref }}" >/dev/null 2>&1 && \
+             git rev-parse --verify "${{ github.head_ref }}" >/dev/null 2>&1; then
+            echo "Using ref diff: ${{ github.base_ref }}...${{ github.head_ref }}"
+            mapfile -t files < <(git diff --name-only "${{ github.base_ref }}...${{ github.head_ref }}")
+            mapfile -t status_lines < <(git diff --name-status "${{ github.base_ref }}...${{ github.head_ref }}")
+          else
+            base_sha="${{ github.event.pull_request.base.sha }}"
+            head_sha="${{ github.event.pull_request.head.sha }}"
+            echo "Falling back to SHA diff: $base_sha...$head_sha"
+            mapfile -t files < <(git diff --name-only "$base_sha...$head_sha")
+            mapfile -t status_lines < <(git diff --name-status "$base_sha...$head_sha")
+          fi
+
+          echo "== Changed files (name-status) =="
+          if [ ${#status_lines[@]} -eq 0 ]; then
+            echo "(none)"
+          else
+            printf '%s\n' "${status_lines[@]}"
+          fi
 
           if [ ${#files[@]} -eq 0 ]; then
             echo "No changed files detected; failing to avoid false pass."
@@ -33,7 +60,14 @@ jobs:
           for f in "${files[@]}"; do
             scope=""
 
-            if [[ "$f" == apps/web/* || "$f" == services/dashboard-api/* ]]; then
+            # repo-hygiene exact-file override (strict allow-list)
+            if [[ "$f" == ".github/CODEOWNERS" || \
+                  "$f" == ".github/pull_request_template.md" || \
+                  "$f" == ".github/copilot-instructions.md" || \
+                  "$f" == ".github/workflows/scope-guard.yml" || \
+                  "$f" == "docs/specs/parallel-task-safety.md" ]]; then
+              scope="repo-hygiene"
+            elif [[ "$f" == apps/web/* || "$f" == services/dashboard-api/* ]]; then
               scope="dashboard"
             elif [[ "$f" == contracts/* ]]; then
               scope="contracts"
@@ -41,15 +75,6 @@ jobs:
               scope="sdk"
             elif [[ "$f" == docs/* ]]; then
               scope="docs"
-            fi
-
-            # repo-hygiene exact-file override
-            if [[ "$f" == ".github/CODEOWNERS" || \
-                  "$f" == ".github/pull_request_template.md" || \
-                  "$f" == ".github/copilot-instructions.md" || \
-                  "$f" == ".github/workflows/scope-guard.yml" || \
-                  "$f" == "docs/specs/parallel-task-safety.md" ]]; then
-              scope="repo-hygiene"
             fi
 
             if [[ -z "$scope" ]]; then
@@ -80,4 +105,8 @@ jobs:
             exit 1
           fi
 
-          echo "✅ scope-guard passed: single scope '${!scopes[*]}'"
+          # Print the single scope name deterministically
+          for k in "${!scopes[@]}"; do
+            echo "✅ scope-guard passed: single scope '$k'"
+            break
+          done
