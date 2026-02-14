@@ -62,6 +62,10 @@ def log_event(level: str, event: str, run_id: str, bot_id: str, **fields: object
         "event": event,
         "run_id": run_id,
         "bot_id": bot_id,
+        "state": fields.pop("state", None),
+        "decision": fields.pop("decision", None),
+        "idempotency_key": fields.pop("idempotency_key", None),
+        "order_id": fields.pop("order_id", None),
         **fields,
     }
     print(json.dumps(payload, ensure_ascii=False))
@@ -74,7 +78,14 @@ def env_bool(name: str, default: bool = False) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
-def http_json(method: str, url: str, body: dict | None = None, timeout: float = 5.0) -> tuple[int, dict]:
+def http_json(
+    method: str,
+    url: str,
+    body: dict | None = None,
+    timeout: float = 5.0,
+    retries: int = 2,
+    backoff_seconds: float = 0.2,
+) -> tuple[int, dict]:
     data = None if body is None else json.dumps(body).encode("utf-8")
     request = urllib.request.Request(
         url,
@@ -82,21 +93,28 @@ def http_json(method: str, url: str, body: dict | None = None, timeout: float = 
         method=method,
         headers={"accept": "application/json", "content-type": "application/json"},
     )
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            raw_body = response.read().decode("utf-8")
-            payload = json.loads(raw_body) if raw_body else {}
-            return response.status, payload
-    except urllib.error.HTTPError as exc:
-        raw_body = exc.read().decode("utf-8")
-        detail = raw_body
+    for attempt in range(retries + 1):
         try:
-            detail = json.loads(raw_body)
-        except json.JSONDecodeError:
-            pass
-        raise BotError(f"HTTP {exc.code} for {method} {url}: {detail}") from exc
-    except (urllib.error.URLError, TimeoutError) as exc:
-        raise BotError(f"request failed for {method} {url}: {exc}") from exc
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                raw_body = response.read().decode("utf-8")
+                payload = json.loads(raw_body) if raw_body else {}
+                return response.status, payload
+        except urllib.error.HTTPError as exc:
+            raw_body = exc.read().decode("utf-8")
+            detail = raw_body
+            try:
+                detail = json.loads(raw_body)
+            except json.JSONDecodeError:
+                pass
+            if exc.code in {429, 500, 502, 503, 504} and attempt < retries:
+                time.sleep(backoff_seconds * (2**attempt))
+                continue
+            raise BotError(f"HTTP {exc.code} for {method} {url}: {detail}") from exc
+        except (urllib.error.URLError, TimeoutError) as exc:
+            if attempt < retries:
+                time.sleep(backoff_seconds * (2**attempt))
+                continue
+            raise BotError(f"request failed for {method} {url}: {exc}") from exc
 
 
 def fetch_ticker(marketdata_base_url: str, exchange: str, symbol: str) -> dict:
@@ -212,6 +230,25 @@ def run() -> int:
             error=f"Unsupported EXECUTION_MODE '{execution_mode}'",
             state="ERROR",
             decision="SKIP_ORDER",
+            idempotency_key=idempotency_key,
+        )
+        return 0
+
+    if (
+        market_exchange not in allowed_exchanges
+        or order_exchange not in allowed_exchanges
+        or market_symbol not in allowed_symbols
+        or order_symbol not in allowed_symbols
+    ):
+        log_event(
+            "WARN",
+            "new_order_blocked",
+            run_id,
+            bot_id,
+            reason="UNKNOWN_EXCHANGE_OR_SYMBOL",
+            state="SAFE",
+            decision="SKIP_ORDER",
+            idempotency_key=idempotency_key,
         )
         return 1
 
@@ -329,7 +366,16 @@ def run() -> int:
 
         return 0
     except (BotError, ValueError) as exc:
-        log_event("ERROR", "bot_error", run_id, bot_id, error=str(exc), state="ERROR", decision="SKIP_ORDER")
+        log_event(
+            "ERROR",
+            "bot_error",
+            run_id,
+            bot_id,
+            error=str(exc),
+            state="ERROR",
+            decision="SKIP_ORDER",
+            idempotency_key=idempotency_key,
+        )
         return 1
 
 
