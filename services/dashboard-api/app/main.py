@@ -1,6 +1,5 @@
 from datetime import UTC, datetime, timedelta
 import json
-import os
 import sys
 import time
 import urllib.error
@@ -291,8 +290,8 @@ def _probe_status_component(*, name: str, url: str, timeout_seconds: float) -> S
 @app.get("/api/status/summary", response_model=StatusSummaryResponse)
 def get_status_summary() -> StatusSummaryResponse:
     settings = get_settings()
-    timeout_seconds = max(0.1, min(settings.marketdata_timeout_seconds, 2.0))
-    execution_base_url = os.getenv("EXECUTION_BASE_URL", "http://127.0.0.1:8001").rstrip("/")
+    timeout_seconds = max(0.1, min(settings.status_summary_timeout_seconds, 2.0))
+    execution_base_url = settings.execution_base_url.rstrip("/")
     marketdata_base_url = settings.marketdata_base_url.rstrip("/")
     components = [
         _probe_status_component(name="marketdata.healthz", url=f"{marketdata_base_url}/healthz", timeout_seconds=timeout_seconds),
