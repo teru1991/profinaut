@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/execution/order.schema.json",
+  "title": "Order",
+  "description": "Order placement response and status tracking",
+  "type": "object",
+  "required": [
+    "order_id",
+    "status",
+    "accepted_ts_utc",
+    "exchange",
+    "symbol",
+    "side",
+    "qty",
+    "filled_qty"
+  ],
+  "properties": {
+    "order_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Exchange-assigned order ID"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "NEW",
+        "PARTIALLY_FILLED",
+        "FILLED",
+        "CANCELED",
+        "REJECTED",
+        "EXPIRED"
+      ],
+      "description": "Order status"
+    },
+    "accepted_ts_utc": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when order was accepted by exchange"
+    },
+    "exchange": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Exchange identifier"
+    },
+    "symbol": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Trading symbol"
+    },
+    "side": {
+      "type": "string",
+      "enum": ["BUY", "SELL"],
+      "description": "Order side"
+    },
+    "qty": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Order quantity"
+    },
+    "filled_qty": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Quantity filled so far"
+    }
+  },
+  "additionalProperties": false
+}
