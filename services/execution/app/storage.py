@@ -12,8 +12,16 @@ class OrderStorage:
         self._lock = threading.Lock()
         self._orders: dict[str, Order] = {}
         self._idempotency_map: dict[str, str] = {}  # idempotency_key -> order_id
+        self._client_order_id_map: dict[str, str] = {}  # idempotency_key -> client_order_id
+        self._order_client_map: dict[str, str] = {}  # order_id -> client_order_id
 
-    def create_order(self, intent: OrderIntent) -> Order | None:
+    def create_order(
+        self,
+        intent: OrderIntent,
+        *,
+        order_id: str | None = None,
+        client_order_id: str | None = None,
+    ) -> Order | None:
         """
         Create an order from an intent.
         Returns Order if successful, None if idempotency_key already exists.
@@ -24,7 +32,7 @@ class OrderStorage:
                 return None
 
             # Generate order_id and create order
-            order_id = f"paper-{uuid.uuid4()}"
+            order_id = order_id or f"paper-{uuid.uuid4()}"
             order = Order(
                 order_id=order_id,
                 status="NEW",
@@ -39,6 +47,9 @@ class OrderStorage:
             # Store order and idempotency mapping
             self._orders[order_id] = order
             self._idempotency_map[intent.idempotency_key] = order_id
+            if client_order_id is not None:
+                self._client_order_id_map[intent.idempotency_key] = client_order_id
+                self._order_client_map[order_id] = client_order_id
 
             return order
 
@@ -54,6 +65,23 @@ class OrderStorage:
             if order_id:
                 return self._orders.get(order_id)
             return None
+
+    def get_client_order_id_by_idempotency_key(self, idempotency_key: str) -> str | None:
+        with self._lock:
+            return self._client_order_id_map.get(idempotency_key)
+
+    def get_client_order_id_by_order_id(self, order_id: str) -> str | None:
+        with self._lock:
+            return self._order_client_map.get(order_id)
+
+    def cancel_order(self, order_id: str) -> Order | None:
+        with self._lock:
+            order = self._orders.get(order_id)
+            if order is None:
+                return None
+            updated = order.model_copy(update={"status": "CANCELED"})
+            self._orders[order_id] = updated
+            return updated
 
 
 # Global storage instance

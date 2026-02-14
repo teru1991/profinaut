@@ -8,15 +8,20 @@ from fastapi.testclient import TestClient
 os.environ["ALLOWED_SYMBOLS"] = "BTC/USDT,ETH/USDT"
 os.environ["ALLOWED_EXCHANGES"] = "binance,coinbase"
 
+import app.config as app_config  # noqa: E402
+import app.main as app_main  # noqa: E402
+import app.storage as app_storage  # noqa: E402
 from app.main import app  # noqa: E402
-from app.storage import OrderStorage, _storage  # noqa: E402
+from app.storage import OrderStorage  # noqa: E402
 
 
 @pytest.fixture()
 def client() -> Generator[TestClient, None, None]:
     # Reset storage before each test
-    global _storage
-    _storage = OrderStorage()
+    app_storage._storage = OrderStorage()
+    app_config._settings = None
+    app_main._degraded_reason = None
+    app_main._live_backoff_until_utc = None
 
     with TestClient(app) as c:
         yield c

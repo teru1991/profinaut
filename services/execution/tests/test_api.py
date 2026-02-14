@@ -195,3 +195,93 @@ def test_post_order_intent_rejects_unknown_field(client):
 
     response = client.post("/execution/order-intents", json=order_intent)
     assert response.status_code == 422
+
+
+def test_gmo_live_requires_explicit_feature_flag(client, monkeypatch):
+    monkeypatch.setenv("ALLOWED_EXCHANGES", "binance,coinbase,gmo")
+    order_intent = {
+        "idempotency_key": "gmo-live-disabled",
+        "exchange": "gmo",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "qty": 0.01,
+        "type": "MARKET",
+    }
+    response = client.post("/execution/order-intents", json=order_intent)
+    assert response.status_code == 403
+
+
+def test_gmo_live_place_and_cancel_with_idempotency_mapping(client, monkeypatch):
+    from app.live import PlaceOrderResult
+    from app.storage import get_storage
+
+    monkeypatch.setenv("EXECUTION_LIVE_ENABLED", "true")
+    monkeypatch.setenv("GMO_API_BASE_URL", "https://example.invalid")
+    monkeypatch.setenv("GMO_API_KEY", "k")
+    monkeypatch.setenv("GMO_API_SECRET", "s")
+    monkeypatch.setenv("ALLOWED_EXCHANGES", "binance,coinbase,gmo")
+
+    def _mock_place_order(self, **kwargs):
+        assert kwargs["client_order_id"].startswith("pfn-")
+        return PlaceOrderResult(order_id="gmo-order-1")
+
+    def _mock_cancel_order(self, **kwargs):
+        assert kwargs["order_id"] == "gmo-order-1"
+        assert kwargs["client_order_id"].startswith("pfn-")
+
+    monkeypatch.setattr("app.live.GmoLiveExecutor.place_order", _mock_place_order)
+    monkeypatch.setattr("app.live.GmoLiveExecutor.cancel_order", _mock_cancel_order)
+
+    order_intent = {
+        "idempotency_key": "gmo-live-enabled",
+        "exchange": "gmo",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "qty": 0.01,
+        "type": "MARKET",
+    }
+
+    create_res = client.post("/execution/order-intents", json=order_intent)
+    assert create_res.status_code == 201
+    assert create_res.json()["order_id"] == "gmo-order-1"
+
+    storage = get_storage()
+    assert storage.get_client_order_id_by_idempotency_key("gmo-live-enabled") is not None
+
+    cancel_res = client.post("/execution/orders/gmo-order-1/cancel")
+    assert cancel_res.status_code == 200
+    assert cancel_res.json()["status"] == "CANCELED"
+
+
+def test_gmo_live_429_degrades_and_applies_backoff(client, monkeypatch):
+    from app.live import LiveRateLimitError
+
+    monkeypatch.setenv("EXECUTION_LIVE_ENABLED", "true")
+    monkeypatch.setenv("GMO_API_BASE_URL", "https://example.invalid")
+    monkeypatch.setenv("GMO_API_KEY", "k")
+    monkeypatch.setenv("GMO_API_SECRET", "s")
+    monkeypatch.setenv("LIVE_BACKOFF_SECONDS", "60")
+    monkeypatch.setenv("ALLOWED_EXCHANGES", "binance,coinbase,gmo")
+
+    def _mock_place_order(self, **kwargs):
+        raise LiveRateLimitError("GMO live order rate limited")
+
+    monkeypatch.setattr("app.live.GmoLiveExecutor.place_order", _mock_place_order)
+
+    order_intent = {
+        "idempotency_key": "gmo-rate-limit",
+        "exchange": "gmo",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "qty": 0.01,
+        "type": "MARKET",
+    }
+    first = client.post("/execution/order-intents", json=order_intent)
+    assert first.status_code == 503
+
+    second = client.post(
+        "/execution/order-intents",
+        json={**order_intent, "idempotency_key": "gmo-rate-limit-2"},
+    )
+    assert second.status_code == 503
+    assert "degraded" in second.json()["detail"]
