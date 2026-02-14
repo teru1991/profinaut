@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Profinaut Control Plane API
-  version: 1.18.0
+  version: 1.19.0
   description: |
     Step 2 baseline contract for the Multi-Exchange / Multi-Language Bot Management Dashboard.
     Contracts in this folder and in `contracts/schemas` are the SSOT.
@@ -1219,6 +1219,9 @@ paths:
                       $ref: ../schemas/execution/fill.schema.json
 
 components:
+  schemas:
+    MarketDataTickerLatest:
+      $ref: ../schemas/marketdata/ticker_latest.schema.json
   securitySchemes:
     AdminToken:
       type: apiKey
