@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlalchemy import func, select
@@ -25,46 +25,46 @@ from .models import (
 )
 from .notifications import NotificationEvent, NotificationRouter, Severity
 from .schemas import (
+    CapabilitiesResponse,
     CommandAckIn,
     CommandAckOut,
     CommandIn,
     CommandOut,
-    CapabilitiesResponse,
     CostIn,
+    EquityDrawdownResponse,
     ExecutionQualityIn,
     ExecutionQualitySummaryResponse,
-    EquityDrawdownResponse,
     ExposureSummaryResponse,
     HealthResponse,
-    IndexIn,
-    IndexLatestResponse,
     HeartbeatAlertCheckResponse,
     HeartbeatIn,
+    IndexIn,
+    IndexLatestItem,
+    IndexLatestResponse,
     MetricIn,
     ModuleIn,
     ModuleOut,
+    ModuleRunActiveAgeResponse,
+    ModuleRunFailureRateResponse,
     ModuleRunOut,
     ModuleRunPerformanceResponse,
-    ModuleRunFailureRateResponse,
-    ModuleRunThroughputResponse,
-    ModuleRunActiveAgeResponse,
-    ModuleRunStatusUpdateIn,
-    ModuleRunTriggerIn,
     ModuleRunStatsResponse,
+    ModuleRunStatusUpdateIn,
     ModuleRunStuckCheckResponse,
+    ModuleRunThroughputResponse,
+    ModuleRunTriggerIn,
     NetPnlSummaryResponse,
     PaginatedAuditLogs,
     PaginatedBots,
     PaginatedModuleRuns,
     PaginatedModules,
-    PositionIn,
     PaginatedReconcileResults,
+    PositionIn,
     ReconcileIn,
+    ReconcileOut,
     ResourceIn,
     ResourceLatestResponse,
     ResourceWindowSummaryResponse,
-    IndexLatestItem,
-    ReconcileOut,
 )
 
 app = FastAPI(title="Profinaut Dashboard API", version="0.4.0")
@@ -80,14 +80,14 @@ def write_audit(db: Session, actor: str, action: str, target_type: str, target_i
             target_id=target_id,
             result=result,
             details=details,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
     )
 
 
 @app.get("/healthz", response_model=HealthResponse)
 def get_healthz() -> HealthResponse:
-    return HealthResponse(status="ok", timestamp=datetime.now(timezone.utc))
+    return HealthResponse(status="ok", timestamp=datetime.now(UTC))
 
 
 @app.get("/capabilities", response_model=CapabilitiesResponse)
@@ -96,7 +96,7 @@ def get_capabilities() -> CapabilitiesResponse:
         version=app.version,
         status="ok",
         features=["bots", "commands", "portfolio", "analytics"],
-        generated_at=datetime.now(timezone.utc),
+        generated_at=datetime.now(UTC),
     )
 
 
@@ -228,7 +228,7 @@ def get_latest_resource(
     db: Session = Depends(get_db),
 ) -> ResourceLatestResponse:
     del actor
-    generated_at = datetime.now(timezone.utc)
+    generated_at = datetime.now(UTC)
 
     cpu_query = select(MetricTsRecord).where(MetricTsRecord.metric_type == "resource_cpu_pct")
     mem_query = select(MetricTsRecord).where(MetricTsRecord.metric_type == "resource_memory_pct")
@@ -259,7 +259,7 @@ def get_resource_window_summary(
     db: Session = Depends(get_db),
 ) -> ResourceWindowSummaryResponse:
     del actor
-    generated_at = datetime.now(timezone.utc)
+    generated_at = datetime.now(UTC)
     cutoff = generated_at - timedelta(hours=window_hours)
 
     cpu_query = (
@@ -320,7 +320,7 @@ def get_latest_indices(
     db: Session = Depends(get_db),
 ) -> IndexLatestResponse:
     del actor
-    generated_at = datetime.now(timezone.utc)
+    generated_at = datetime.now(UTC)
 
     query = select(MetricTsRecord).where(MetricTsRecord.metric_type == "index")
     if index_name:
@@ -395,7 +395,7 @@ def ingest_position(payload: PositionIn, db: Session = Depends(get_db)) -> dict:
 @app.get("/portfolio/exposure", response_model=ExposureSummaryResponse)
 def get_portfolio_exposure(actor: str = Depends(require_admin_actor), db: Session = Depends(get_db)) -> ExposureSummaryResponse:
     del actor
-    generated_at = datetime.now(timezone.utc)
+    generated_at = datetime.now(UTC)
     rows = db.scalars(select(PositionCurrentRecord)).all()
 
     by_symbol_map: dict[str, dict[str, float]] = {}
@@ -448,7 +448,7 @@ def get_equity_drawdown(
     db: Session = Depends(get_db),
 ) -> EquityDrawdownResponse:
     del actor
-    generated_at = datetime.now(timezone.utc)
+    generated_at = datetime.now(UTC)
 
     query = (
         select(MetricTsRecord)
@@ -506,7 +506,7 @@ def get_execution_quality_summary(
     db: Session = Depends(get_db),
 ) -> ExecutionQualitySummaryResponse:
     del actor
-    generated_at = datetime.now(timezone.utc)
+    generated_at = datetime.now(UTC)
 
     query = select(ExecutionQualityTsRecord)
     if symbol:
@@ -543,7 +543,7 @@ def get_net_pnl_summary(
     db: Session = Depends(get_db),
 ) -> NetPnlSummaryResponse:
     del actor
-    generated_at = datetime.now(timezone.utc)
+    generated_at = datetime.now(UTC)
 
     def latest_metric(metric_type: str) -> float:
         query = select(MetricTsRecord.value).where(MetricTsRecord.metric_type == metric_type)
@@ -582,7 +582,7 @@ def list_bots(
     db: Session = Depends(get_db),
 ) -> PaginatedBots:
     del actor
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     total = db.scalar(select(func.count()).select_from(Bot)) or 0
     offset = (page - 1) * page_size
 
@@ -611,7 +611,7 @@ def list_bots(
     for r in rows:
         last_seen = r.last_seen
         if last_seen is not None and last_seen.tzinfo is None:
-            last_seen = last_seen.replace(tzinfo=timezone.utc)
+            last_seen = last_seen.replace(tzinfo=UTC)
 
         is_stale = bool(last_seen and (now - last_seen).total_seconds() > STALE_SECONDS)
 
@@ -713,7 +713,7 @@ def trigger_module_run(
         module_id=module_id,
         trigger_type=payload.trigger_type,
         status="QUEUED",
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
         ended_at=None,
         summary=payload.summary,
     )
@@ -749,7 +749,7 @@ def update_module_run_status(
     if payload.ended_at is not None:
         run.ended_at = payload.ended_at
     elif payload.status in {"SUCCEEDED", "FAILED", "CANCELED"}:
-        run.ended_at = datetime.now(timezone.utc)
+        run.ended_at = datetime.now(UTC)
 
     write_audit(
         db,
@@ -797,7 +797,7 @@ def create_command(payload: CommandIn, actor: str = Depends(require_admin_actor)
 
 @app.get("/instances/{instance_id}/commands/pending", response_model=list[CommandOut])
 def get_pending_commands(instance_id: str, db: Session = Depends(get_db)) -> list[CommandOut]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     rows = db.scalars(
         select(CommandRecord)
         .where(CommandRecord.instance_id == instance_id)
@@ -848,7 +848,7 @@ def check_stuck_module_runs(
     stale_after_seconds: int = Query(default=900, ge=60, le=86400),
     db: Session = Depends(get_db),
 ) -> ModuleRunStuckCheckResponse:
-    checked_at = datetime.now(timezone.utc)
+    checked_at = datetime.now(UTC)
     cutoff_ts = checked_at.timestamp() - stale_after_seconds
 
     running_rows = db.scalars(select(ModuleRun).where(ModuleRun.status.in_(["QUEUED", "RUNNING"]))).all()
@@ -919,7 +919,7 @@ def check_heartbeat_alerts(
     stale_after_seconds: int = Query(default=90, ge=30, le=3600),
     db: Session = Depends(get_db),
 ) -> HeartbeatAlertCheckResponse:
-    checked_at = datetime.now(timezone.utc)
+    checked_at = datetime.now(UTC)
     stale_cutoff = checked_at.timestamp() - stale_after_seconds
 
     status_rows = db.scalars(select(BotStatus)).all()
@@ -995,7 +995,7 @@ def post_reconcile(payload: ReconcileIn, actor: str = Depends(require_admin_acto
 
     notified = False
     if payload.status == "MISMATCH":
-        checked_at = datetime.now(timezone.utc)
+        checked_at = datetime.now(UTC)
         alert = AlertRecord(
             source="reconcile",
             severity="WARNING",
@@ -1091,7 +1091,7 @@ def cancel_module_run(
         raise HTTPException(status_code=409, detail="module run already terminal")
 
     run.status = "CANCELED"
-    run.ended_at = datetime.now(timezone.utc)
+    run.ended_at = datetime.now(UTC)
 
     write_audit(
         db,
@@ -1114,7 +1114,7 @@ def get_module_run_stats(
     db: Session = Depends(get_db),
 ) -> ModuleRunStatsResponse:
     del actor
-    generated_at = datetime.now(timezone.utc)
+    generated_at = datetime.now(UTC)
 
     query = select(ModuleRun)
     if module_id:
@@ -1142,7 +1142,7 @@ def get_module_run_performance(
     db: Session = Depends(get_db),
 ) -> ModuleRunPerformanceResponse:
     del actor
-    generated_at = datetime.now(timezone.utc)
+    generated_at = datetime.now(UTC)
 
     query = select(ModuleRun)
     if module_id:
@@ -1184,7 +1184,7 @@ def get_module_run_failure_rate(
     db: Session = Depends(get_db),
 ) -> ModuleRunFailureRateResponse:
     del actor
-    generated_at = datetime.now(timezone.utc)
+    generated_at = datetime.now(UTC)
 
     query = select(ModuleRun).where(ModuleRun.ended_at.is_not(None))
     if module_id:
@@ -1213,7 +1213,7 @@ def get_module_run_throughput(
     db: Session = Depends(get_db),
 ) -> ModuleRunThroughputResponse:
     del actor
-    generated_at = datetime.now(timezone.utc)
+    generated_at = datetime.now(UTC)
     cutoff = generated_at - timedelta(hours=window_hours)
 
     query = select(ModuleRun).where(ModuleRun.started_at >= cutoff)
@@ -1240,7 +1240,7 @@ def get_module_run_active_age(
     db: Session = Depends(get_db),
 ) -> ModuleRunActiveAgeResponse:
     del actor
-    generated_at = datetime.now(timezone.utc)
+    generated_at = datetime.now(UTC)
 
     query = select(ModuleRun).where(ModuleRun.status.in_(["QUEUED", "RUNNING"]))
     if module_id:
@@ -1259,7 +1259,7 @@ def get_module_run_active_age(
     for r in rows:
         started_at = r.started_at
         if started_at.tzinfo is None:
-            started_at = started_at.replace(tzinfo=timezone.utc)
+            started_at = started_at.replace(tzinfo=UTC)
         ages.append(max(0.0, (generated_at - started_at).total_seconds()))
     return ModuleRunActiveAgeResponse(
         generated_at=generated_at,

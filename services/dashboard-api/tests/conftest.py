@@ -21,14 +21,16 @@ _TestingSessionLocal = None
 @pytest.fixture()
 def client() -> Generator[TestClient, None, None]:
     global _test_engine, _TestingSessionLocal
-    
+
     _test_engine = create_engine(
         "sqlite+pysqlite:///:memory:",
         future=True,
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    _TestingSessionLocal = sessionmaker(bind=_test_engine, autoflush=False, autocommit=False, future=True)
+    _TestingSessionLocal = sessionmaker(
+        bind=_test_engine, autoflush=False, autocommit=False, future=True
+    )
     Base.metadata.create_all(bind=_test_engine)
 
     def override_get_db() -> Generator[Session, None, None]:
@@ -49,7 +51,7 @@ def db_session() -> Generator[Session, None, None]:
     """Provides a database session for direct database manipulation in tests."""
     if _TestingSessionLocal is None:
         raise RuntimeError("db_session fixture requires client fixture to be called first")
-    
+
     db = _TestingSessionLocal()
     try:
         yield db

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 
 def test_healthz(client):
@@ -21,7 +21,7 @@ def test_capabilities(client):
     assert payload["generated_at"]
 
 def test_heartbeat_upsert_and_bots_list(client):
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     heartbeat = {
         "instance_id": "inst-1",
         "bot_id": "bot-1",
@@ -35,11 +35,13 @@ def test_heartbeat_upsert_and_bots_list(client):
 
     assert client.post("/ingest/heartbeat", json=heartbeat).status_code == 202
     heartbeat["version"] = "1.0.1"
-    heartbeat["timestamp"] = (datetime.now(timezone.utc) + timedelta(seconds=2)).isoformat()
+    heartbeat["timestamp"] = (datetime.now(UTC) + timedelta(seconds=2)).isoformat()
     assert client.post("/ingest/heartbeat", json=heartbeat).status_code == 202
 
     assert client.get("/bots").status_code == 401
-    authorized = client.get("/bots?page=1&page_size=10", headers={"X-Admin-Token": "test-admin-token"})
+    authorized = client.get(
+        "/bots?page=1&page_size=10", headers={"X-Admin-Token": "test-admin-token"}
+    )
     assert authorized.status_code == 200
     data = authorized.json()
     assert data["total"] == 1
@@ -51,16 +53,18 @@ def test_heartbeat_upsert_and_bots_list(client):
 
 def test_bots_empty_list_returns_200_with_structure(client):
     """Verify /bots returns 200 with expected envelope structure even when empty."""
-    response = client.get("/bots?page=1&page_size=50", headers={"X-Admin-Token": "test-admin-token"})
+    response = client.get(
+        "/bots?page=1&page_size=50", headers={"X-Admin-Token": "test-admin-token"}
+    )
     assert response.status_code == 200
-    
+
     data = response.json()
     # Validate envelope structure
     assert "page" in data
     assert "page_size" in data
     assert "total" in data
     assert "items" in data
-    
+
     # Validate values
     assert data["page"] == 1
     assert data["page_size"] == 50
@@ -71,7 +75,7 @@ def test_bots_empty_list_returns_200_with_structure(client):
 def test_bots_last_seen_utc_iso_format(client):
     """Verify last_seen is UTC ISO format when present, null when absent."""
     # Create a bot with heartbeat
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     heartbeat = {
         "instance_id": "inst-utc-test",
         "bot_id": "bot-utc-test",
@@ -83,26 +87,28 @@ def test_bots_last_seen_utc_iso_format(client):
         "metadata": {},
     }
     assert client.post("/ingest/heartbeat", json=heartbeat).status_code == 202
-    
+
     # Query bots
-    response = client.get("/bots?page=1&page_size=10", headers={"X-Admin-Token": "test-admin-token"})
+    response = client.get(
+        "/bots?page=1&page_size=10", headers={"X-Admin-Token": "test-admin-token"}
+    )
     assert response.status_code == 200
-    
+
     data = response.json()
     assert data["total"] >= 1
-    
+
     # Find our bot
     bot = next((b for b in data["items"] if b["bot_id"] == "bot-utc-test"), None)
     assert bot is not None
-    
+
     # Validate last_seen is a string (ISO format)
     assert bot["last_seen"] is not None
     assert isinstance(bot["last_seen"], str)
-    
+
     # Parse and verify it's a valid ISO timestamp with timezone
     parsed_time = datetime.fromisoformat(bot["last_seen"].replace("Z", "+00:00"))
     assert parsed_time.tzinfo is not None, "last_seen must include timezone information"
-    
+
     # Verify the timestamp is close to when we sent it (within 5 seconds)
     time_diff = abs((parsed_time - now).total_seconds())
     assert time_diff < 5, f"last_seen timestamp differs by {time_diff} seconds"
@@ -111,7 +117,7 @@ def test_bots_last_seen_utc_iso_format(client):
 def test_bots_null_last_seen_for_bot_without_heartbeat(client, db_session):
     """Verify last_seen is null for bots that never sent heartbeat."""
     from app.models import Bot
-    
+
     # Directly insert a bot without creating an instance or bot_status
     bot = Bot(
         bot_id="bot-no-heartbeat",
@@ -120,17 +126,17 @@ def test_bots_null_last_seen_for_bot_without_heartbeat(client, db_session):
     )
     db_session.add(bot)
     db_session.commit()
-    
+
     # Query bots
     response = client.get("/bots?page=1&page_size=50", headers={"X-Admin-Token": "test-admin-token"})
     assert response.status_code == 200
-    
+
     data = response.json()
-    
+
     # Find our bot
     bot_data = next((b for b in data["items"] if b["bot_id"] == "bot-no-heartbeat"), None)
     assert bot_data is not None
-    
+
     # Verify last_seen is null
     assert bot_data["last_seen"] is None
     assert bot_data["instance_id"] is None
@@ -148,8 +154,8 @@ def test_module_crud_with_auth(client):
         "execution_mode": "MANUAL_AND_SCHEDULED",
         "schedule_cron": "*/5 * * * *",
         "config": {"symbols": ["BTCUSDT"]},
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
+        "updated_at": datetime.now(UTC).isoformat(),
     }
 
     assert client.post("/modules", json=module).status_code == 401
@@ -158,7 +164,7 @@ def test_module_crud_with_auth(client):
 
 
 def test_command_end_to_end_and_audit_persistence(client):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # create instance via heartbeat
     hb = {
@@ -194,7 +200,7 @@ def test_command_end_to_end_and_audit_persistence(client):
         "instance_id": "inst-cmd",
         "status": "COMPLETED",
         "reason": None,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
     ack_res = client.post(f"/commands/{cmd['command_id']}/ack", json=ack)
     assert ack_res.status_code == 202
@@ -211,7 +217,7 @@ def test_command_end_to_end_and_audit_persistence(client):
 
 
 def test_expired_command_not_delivered(client):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     hb = {
         "instance_id": "inst-expired",
         "bot_id": "bot-expired",
@@ -271,7 +277,7 @@ def test_heartbeat_loss_triggers_critical_alert_and_webhook(client, monkeypatch)
 
     monkeypatch.setattr("app.notifications.requests.post", fake_post)
 
-    old = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+    old = (datetime.now(UTC) - timedelta(minutes=5)).isoformat()
     hb = {
         "instance_id": "inst-stale",
         "bot_id": "bot-stale",
@@ -297,7 +303,7 @@ def test_heartbeat_loss_triggers_critical_alert_and_webhook(client, monkeypatch)
 
 
 def test_metrics_positions_and_portfolio_exposure(client):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     hb1 = {
         "instance_id": "inst-port-1",
         "bot_id": "bot-port-1",
@@ -387,7 +393,7 @@ def test_reconcile_persistence_and_mismatch_alert(client, monkeypatch):
     get_settings.cache_clear()
     monkeypatch.setattr("app.notifications.requests.post", fake_post)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     hb = {
         "instance_id": "inst-recon-1",
         "bot_id": "bot-recon-1",
@@ -422,7 +428,7 @@ def test_reconcile_persistence_and_mismatch_alert(client, monkeypatch):
 
 
 def test_net_pnl_formula_with_costs(client):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     hb = {
         "instance_id": "inst-net-1",
         "bot_id": "bot-net-1",
@@ -488,7 +494,7 @@ def test_net_pnl_formula_with_costs(client):
 
 
 def test_execution_quality_ingest_and_summary(client):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     hb = {
         "instance_id": "inst-eq-1",
         "bot_id": "bot-eq-1",
@@ -534,7 +540,7 @@ def test_execution_quality_ingest_and_summary(client):
 
 
 def test_module_run_trigger_and_status_update(client):
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     module = {
         "module_id": "44444444-4444-4444-4444-444444444444",
         "name": "alert-rules",
@@ -576,7 +582,7 @@ def test_module_run_trigger_and_status_update(client):
 
 
 def test_module_run_cancel_and_stats(client):
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     module = {
         "module_id": "55555555-5555-5555-5555-555555555555",
         "name": "indices-watch",
@@ -626,7 +632,7 @@ def test_module_run_stuck_check_creates_warning_alert(client, monkeypatch):
     get_settings.cache_clear()
     monkeypatch.setattr("app.notifications.requests.post", fake_post)
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     module_id = "66666666-6666-6666-6666-666666666666"
     module = {
         "module_id": module_id,
@@ -653,7 +659,7 @@ def test_module_run_stuck_check_creates_warning_alert(client, monkeypatch):
     class FutureDateTime:
         @staticmethod
         def now(tz=None):
-            return datetime.now(timezone.utc) + timedelta(hours=1)
+            return datetime.now(UTC) + timedelta(hours=1)
 
     monkeypatch.setattr("app.main.datetime", FutureDateTime)
 
@@ -671,7 +677,7 @@ def test_module_run_stuck_check_creates_warning_alert(client, monkeypatch):
 
 
 def test_equity_drawdown_summary(client):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     hb = {
         "instance_id": "inst-dd-1",
         "bot_id": "bot-dd-1",
@@ -710,7 +716,7 @@ def test_equity_drawdown_summary(client):
 
 
 def test_module_run_performance_summary(client):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     module_id = "mod-perf-1"
     create = client.post(
         "/modules",
@@ -763,7 +769,7 @@ def test_module_run_performance_summary(client):
 
 
 def test_module_run_failure_rate_summary(client):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     module_id = "mod-fail-1"
     create = client.post(
         "/modules",
@@ -814,7 +820,7 @@ def test_module_run_failure_rate_summary(client):
 
 
 def test_module_run_throughput_summary(client):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     module_id = "mod-throughput-1"
     create = client.post(
         "/modules",
@@ -853,7 +859,7 @@ def test_module_run_throughput_summary(client):
 
 
 def test_module_run_active_age_summary(client):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     module_id = "mod-active-age-1"
     create = client.post(
         "/modules",
@@ -889,7 +895,7 @@ def test_module_run_active_age_summary(client):
     upd = client.patch(
         f"/module-runs/{done_id}",
         headers={"X-Admin-Token": "test-admin-token"},
-        json={"status": "SUCCEEDED", "summary": {}, "ended_at": (datetime.now(timezone.utc) + timedelta(seconds=1)).isoformat()},
+        json={"status": "SUCCEEDED", "summary": {}, "ended_at": (datetime.now(UTC) + timedelta(seconds=1)).isoformat()},
     )
     assert upd.status_code == 200
 
@@ -905,7 +911,7 @@ def test_module_run_active_age_summary(client):
 
 
 def test_indices_ingest_and_latest_summary(client):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     hb = {
         "instance_id": "inst-idx-1",
         "bot_id": "bot-idx-1",
@@ -943,7 +949,7 @@ def test_indices_ingest_and_latest_summary(client):
 
 
 def test_resource_ingest_and_latest_summary(client):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     hb = {
         "instance_id": "inst-res-1",
         "bot_id": "bot-res-1",
@@ -975,7 +981,7 @@ def test_resource_ingest_and_latest_summary(client):
 
 
 def test_resource_window_summary(client):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     hb_1 = {
         "instance_id": "inst-resw-1",
