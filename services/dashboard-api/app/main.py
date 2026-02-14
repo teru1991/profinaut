@@ -1,6 +1,14 @@
 from datetime import UTC, datetime, timedelta
+import json
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -67,11 +75,69 @@ from .schemas import (
     ResourceWindowSummaryResponse,
 )
 
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.append(str(_REPO_ROOT))
+
+from libs.observability import audit_event, error_envelope, request_id_middleware
+
 app = FastAPI(title="Profinaut Dashboard API", version="0.4.0")
+app.add_middleware(request_id_middleware())
 STALE_SECONDS = 120
 
 
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    code = "HTTP_ERROR"
+    message = "Request failed"
+    details: dict[str, object] = {"status_code": exc.status_code}
+    if isinstance(exc.detail, dict):
+        code = str(exc.detail.get("code") or code)
+        message = str(exc.detail.get("message") or message)
+        details = dict(exc.detail.get("details") or details)
+        details.setdefault("status_code", exc.status_code)
+
+    audit_event(
+        service="dashboard-api",
+        event="http_error",
+        request_id=request_id,
+        code=code,
+        status_code=exc.status_code,
+        exception_type=type(exc).__name__,
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=error_envelope(code=code, message=message, details=details, request_id=request_id),
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    audit_event(
+        service="dashboard-api",
+        event="unhandled_exception",
+        request_id=request_id,
+        exception_type=type(exc).__name__,
+    )
+    return JSONResponse(
+        status_code=500,
+        content=error_envelope(code="INTERNAL_ERROR", message="Unexpected error", details={}, request_id=request_id),
+    )
+
+
 def write_audit(db: Session, actor: str, action: str, target_type: str, target_id: str, result: str, details: dict) -> None:
+    audit_event(
+        service="dashboard-api",
+        event="audit_log_write",
+        actor=actor,
+        action=action,
+        target_type=target_type,
+        target_id=target_id,
+        result=result,
+        details=details,
+    )
     db.add(
         AuditLog(
             actor=actor,
@@ -83,6 +149,96 @@ def write_audit(db: Session, actor: str, action: str, target_type: str, target_i
             timestamp=datetime.now(UTC),
         )
     )
+
+
+def _get_request_id(request: Request) -> str:
+    return str(getattr(request.state, "request_id", "unknown"))
+
+
+def _fetch_marketdata_ticker(*, symbol: str, exchange: str, request_id: str) -> tuple[dict, int]:
+    settings = get_settings()
+    query = urllib.parse.urlencode({"symbol": symbol, "exchange": exchange})
+    url = f"{settings.marketdata_base_url.rstrip('/')}/ticker/latest?{query}"
+    started = time.perf_counter()
+    req = urllib.request.Request(url, headers={"accept": "application/json"}, method="GET")
+
+    try:
+        with urllib.request.urlopen(req, timeout=settings.marketdata_timeout_seconds) as response:
+            latency_ms = int((time.perf_counter() - started) * 1000)
+            body = response.read().decode("utf-8")
+            payload = json.loads(body) if body else {}
+            return payload, latency_ms
+    except TimeoutError as exc:
+        latency_ms = int((time.perf_counter() - started) * 1000)
+        audit_event(
+            service="dashboard-api",
+            event="marketdata_proxy_failure",
+            request_id=request_id,
+            code="UPSTREAM_TIMEOUT",
+            upstream_latency_ms=latency_ms,
+        )
+        raise HTTPException(
+            status_code=504,
+            detail={
+                "code": "UPSTREAM_TIMEOUT",
+                "message": "MarketData upstream request timed out",
+                "details": {"upstream_latency_ms": latency_ms},
+            },
+        ) from exc
+    except urllib.error.HTTPError as exc:
+        latency_ms = int((time.perf_counter() - started) * 1000)
+        _ = exc.read()
+        message = "MarketData upstream returned an error"
+        details = {"upstream_status": exc.code, "upstream_latency_ms": latency_ms}
+
+        audit_event(
+            service="dashboard-api",
+            event="marketdata_proxy_failure",
+            request_id=request_id,
+            code="UPSTREAM_HTTP_ERROR",
+            upstream_latency_ms=latency_ms,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail={"code": "UPSTREAM_HTTP_ERROR", "message": message, "details": details},
+        ) from exc
+    except (urllib.error.URLError, ValueError) as exc:
+        latency_ms = int((time.perf_counter() - started) * 1000)
+        audit_event(
+            service="dashboard-api",
+            event="marketdata_proxy_failure",
+            request_id=request_id,
+            code="UPSTREAM_UNAVAILABLE",
+            upstream_latency_ms=latency_ms,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "code": "UPSTREAM_UNAVAILABLE",
+                "message": "MarketData upstream unavailable",
+                "details": {"upstream_latency_ms": latency_ms},
+            },
+        ) from exc
+
+
+@app.get("/api/markets/ticker/latest")
+def get_marketdata_ticker_latest(
+    request: Request,
+    actor: str = Depends(require_admin_actor),
+    symbol: str = Query(default="BTC_JPY"),
+    exchange: str = Query(default="gmo"),
+) -> dict:
+    request_id = _get_request_id(request)
+    del actor
+    payload, latency_ms = _fetch_marketdata_ticker(symbol=symbol, exchange=exchange, request_id=request_id)
+    audit_event(
+        service="dashboard-api",
+        event="marketdata_proxy_success",
+        request_id=request_id,
+        upstream_latency_ms=latency_ms,
+        degraded_reason=payload.get("degraded_reason") if isinstance(payload, dict) else None,
+    )
+    return {"request_id": request_id, "data": payload}
 
 
 @app.get("/healthz", response_model=HealthResponse)
