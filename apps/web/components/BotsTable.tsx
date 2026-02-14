@@ -134,7 +134,7 @@ export function BotsTable() {
                             </>
                           ) : null}
                         </div>
-                        {isDegraded && row.degraded_reason ? (
+                        {row.degraded_reason ? (
                           <div style={{ fontSize: "0.75rem", color: "#fca5a5" }}>
                             {row.degraded_reason}
                           </div>
