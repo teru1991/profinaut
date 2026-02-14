@@ -1,6 +1,9 @@
 from datetime import UTC, datetime, timedelta
+import sys
+from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -67,11 +70,55 @@ from .schemas import (
     ResourceWindowSummaryResponse,
 )
 
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.append(str(_REPO_ROOT))
+
+from libs.observability import audit_event, error_envelope, request_id_middleware
+
 app = FastAPI(title="Profinaut Dashboard API", version="0.4.0")
+app.add_middleware(request_id_middleware())
 STALE_SECONDS = 120
 
 
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    code = "HTTP_ERROR"
+    message = str(exc.detail)
+    details: dict[str, object] = {}
+    if isinstance(exc.detail, dict):
+        code = str(exc.detail.get("code") or code)
+        message = str(exc.detail.get("message") or message)
+        details = dict(exc.detail.get("details") or {})
+    audit_event(service="dashboard-api", event="http_error", request_id=request_id, code=code, message=message)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=error_envelope(code=code, message=message, details=details, request_id=request_id),
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    audit_event(service="dashboard-api", event="unhandled_exception", request_id=request_id, error=str(exc))
+    return JSONResponse(
+        status_code=500,
+        content=error_envelope(code="INTERNAL_ERROR", message="Unexpected error", details={}, request_id=request_id),
+    )
+
+
 def write_audit(db: Session, actor: str, action: str, target_type: str, target_id: str, result: str, details: dict) -> None:
+    audit_event(
+        service="dashboard-api",
+        event="audit_log_write",
+        actor=actor,
+        action=action,
+        target_type=target_type,
+        target_id=target_id,
+        result=result,
+        details=details,
+    )
     db.add(
         AuditLog(
             actor=actor,

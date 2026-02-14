@@ -70,20 +70,33 @@ def _mark_live_degraded(reason: str) -> None:
     )
 
 
+def _error_payload(code: str, message: str) -> dict[str, str]:
+    return {"error": code, "message": message}
+
+
 def _assert_live_ready() -> None:
     settings = get_settings()
     if not settings.execution_live_enabled:
-        raise HTTPException(status_code=403, detail="Live execution is disabled")
+        raise HTTPException(
+            status_code=403,
+            detail=_error_payload("LIVE_DISABLED", "Live execution is disabled by feature flag"),
+        )
     now = datetime.now(timezone.utc)
     if _live_backoff_until_utc is not None and now < _live_backoff_until_utc:
-        raise HTTPException(status_code=503, detail=f"Live execution degraded: {_degraded_reason}")
+        raise HTTPException(
+            status_code=503,
+            detail=_error_payload("LIVE_DEGRADED", f"Live execution degraded: {_degraded_reason}"),
+        )
 
 
 def _get_live_executor(settings: Settings) -> GmoLiveExecutor:
     api_key = os.getenv("GMO_API_KEY", "")
     api_secret = os.getenv("GMO_API_SECRET", "")
     if not settings.gmo_api_base_url or not api_key or not api_secret:
-        raise HTTPException(status_code=503, detail="GMO live execution is not configured")
+        raise HTTPException(
+            status_code=503,
+            detail=_error_payload("LIVE_NOT_CONFIGURED", "GMO live execution is not configured"),
+        )
     return GmoLiveExecutor(
         base_url=settings.gmo_api_base_url,
         timeout_seconds=settings.gmo_request_timeout_seconds,
@@ -155,6 +168,21 @@ def post_order_intent(intent: OrderIntent) -> Order:
         )
         raise HTTPException(status_code=400, detail="LIMIT orders must specify limit_price")
 
+    # Idempotency pre-check to avoid duplicate upstream live placement side effects.
+    existing_order = storage.get_order_by_idempotency_key(intent.idempotency_key)
+    if existing_order is not None:
+        logger.warning(
+            "Duplicate idempotency_key rejected",
+            extra=_log_context(
+                idempotency_key=intent.idempotency_key,
+                order_id=existing_order.order_id,
+                exchange=intent.exchange,
+                symbol=intent.symbol,
+                status="REJECTED",
+            ),
+        )
+        raise HTTPException(status_code=409, detail="Duplicate idempotency_key")
+
     # Create order (handles idempotency check)
     if intent.exchange == "gmo":
         _assert_live_ready()
@@ -177,18 +205,6 @@ def post_order_intent(intent: OrderIntent) -> Order:
         order = storage.create_order(intent)
 
     if order is None:
-        # Duplicate idempotency_key
-        existing_order = storage.get_order_by_idempotency_key(intent.idempotency_key)
-        logger.warning(
-            "Duplicate idempotency_key rejected",
-            extra=_log_context(
-                idempotency_key=intent.idempotency_key,
-                order_id=existing_order.order_id if existing_order else None,
-                exchange=intent.exchange,
-                symbol=intent.symbol,
-                status="REJECTED",
-            ),
-        )
         raise HTTPException(status_code=409, detail="Duplicate idempotency_key")
 
     # Log successful order creation

@@ -209,6 +209,7 @@ def test_gmo_live_requires_explicit_feature_flag(client, monkeypatch):
     }
     response = client.post("/execution/order-intents", json=order_intent)
     assert response.status_code == 403
+    assert response.json()["detail"]["error"] == "LIVE_DISABLED"
 
 
 def test_gmo_live_place_and_cancel_with_idempotency_mapping(client, monkeypatch):
@@ -284,4 +285,39 @@ def test_gmo_live_429_degrades_and_applies_backoff(client, monkeypatch):
         json={**order_intent, "idempotency_key": "gmo-rate-limit-2"},
     )
     assert second.status_code == 503
-    assert "degraded" in second.json()["detail"]
+    assert second.json()["detail"]["error"] == "LIVE_DEGRADED"
+
+
+def test_gmo_live_duplicate_idempotency_does_not_place_twice(client, monkeypatch):
+    from app.live import PlaceOrderResult
+
+    monkeypatch.setenv("EXECUTION_LIVE_ENABLED", "true")
+    monkeypatch.setenv("GMO_API_BASE_URL", "https://example.invalid")
+    monkeypatch.setenv("GMO_API_KEY", "k")
+    monkeypatch.setenv("GMO_API_SECRET", "s")
+    monkeypatch.setenv("ALLOWED_EXCHANGES", "binance,coinbase,gmo")
+
+    place_calls: list[str] = []
+
+    def _mock_place_order(self, **kwargs):
+        place_calls.append(kwargs["client_order_id"])
+        return PlaceOrderResult(order_id="gmo-order-dup")
+
+    monkeypatch.setattr("app.live.GmoLiveExecutor.place_order", _mock_place_order)
+
+    order_intent = {
+        "idempotency_key": "gmo-live-dup-key",
+        "exchange": "gmo",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "qty": 0.01,
+        "type": "MARKET",
+    }
+
+    first = client.post("/execution/order-intents", json=order_intent)
+    assert first.status_code == 201
+
+    second = client.post("/execution/order-intents", json=order_intent)
+    assert second.status_code == 409
+
+    assert len(place_calls) == 1
