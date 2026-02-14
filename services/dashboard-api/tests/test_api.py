@@ -49,6 +49,96 @@ def test_heartbeat_upsert_and_bots_list(client):
     assert data["items"][0]["degraded_reason"] is None
 
 
+def test_bots_empty_list_returns_200_with_structure(client):
+    """Verify /bots returns 200 with expected envelope structure even when empty."""
+    response = client.get("/bots?page=1&page_size=50", headers={"X-Admin-Token": "test-admin-token"})
+    assert response.status_code == 200
+    
+    data = response.json()
+    # Validate envelope structure
+    assert "page" in data
+    assert "page_size" in data
+    assert "total" in data
+    assert "items" in data
+    
+    # Validate values
+    assert data["page"] == 1
+    assert data["page_size"] == 50
+    assert data["total"] == 0
+    assert data["items"] == []
+
+
+def test_bots_last_seen_utc_iso_format(client):
+    """Verify last_seen is UTC ISO format when present, null when absent."""
+    # Create a bot with heartbeat
+    now = datetime.now(timezone.utc)
+    heartbeat = {
+        "instance_id": "inst-utc-test",
+        "bot_id": "bot-utc-test",
+        "runtime_mode": "PAPER",
+        "exchange": "BINANCE",
+        "symbol": "ETHUSDT",
+        "version": "1.0.0",
+        "timestamp": now.isoformat(),
+        "metadata": {},
+    }
+    assert client.post("/ingest/heartbeat", json=heartbeat).status_code == 202
+    
+    # Query bots
+    response = client.get("/bots?page=1&page_size=10", headers={"X-Admin-Token": "test-admin-token"})
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert data["total"] >= 1
+    
+    # Find our bot
+    bot = next((b for b in data["items"] if b["bot_id"] == "bot-utc-test"), None)
+    assert bot is not None
+    
+    # Validate last_seen is a string (ISO format)
+    assert bot["last_seen"] is not None
+    assert isinstance(bot["last_seen"], str)
+    
+    # Parse and verify it's a valid ISO timestamp with timezone
+    parsed_time = datetime.fromisoformat(bot["last_seen"].replace("Z", "+00:00"))
+    assert parsed_time.tzinfo is not None, "last_seen must include timezone information"
+    
+    # Verify the timestamp is close to when we sent it (within 5 seconds)
+    time_diff = abs((parsed_time - now).total_seconds())
+    assert time_diff < 5, f"last_seen timestamp differs by {time_diff} seconds"
+
+
+def test_bots_null_last_seen_for_bot_without_heartbeat(client, db_session):
+    """Verify last_seen is null for bots that never sent heartbeat."""
+    from app.models import Bot
+    
+    # Directly insert a bot without creating an instance or bot_status
+    bot = Bot(
+        bot_id="bot-no-heartbeat",
+        name="Never Sent Heartbeat",
+        strategy_name="test_strategy",
+    )
+    db_session.add(bot)
+    db_session.commit()
+    
+    # Query bots
+    response = client.get("/bots?page=1&page_size=50", headers={"X-Admin-Token": "test-admin-token"})
+    assert response.status_code == 200
+    
+    data = response.json()
+    
+    # Find our bot
+    bot_data = next((b for b in data["items"] if b["bot_id"] == "bot-no-heartbeat"), None)
+    assert bot_data is not None
+    
+    # Verify last_seen is null
+    assert bot_data["last_seen"] is None
+    assert bot_data["instance_id"] is None
+    assert bot_data["version"] is None
+    assert bot_data["state"] == "UNKNOWN"
+    assert bot_data["degraded"] is False  # No heartbeat = not degraded, just unknown
+
+
 def test_module_crud_with_auth(client):
     module = {
         "module_id": "11111111-1111-1111-1111-111111111111",

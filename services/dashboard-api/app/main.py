@@ -628,7 +628,7 @@ def list_bots(
                 "exchange": r.exchange,
                 "symbol": r.symbol,
                 "status": r.status,
-                "last_seen": r.last_seen,
+                "last_seen": last_seen,
                 "version": r.version,
             }
         )
