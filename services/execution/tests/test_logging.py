@@ -22,11 +22,15 @@ def test_logging_includes_required_fields(client, caplog):
         assert any("Order created successfully" in msg for msg in log_messages)
 
         received_record = next(
-            record for record in caplog.records if record.message == "Received order intent"
+            (record for record in caplog.records if record.message == "Received order intent"),
+            None,
         )
         created_record = next(
-            record for record in caplog.records if record.message == "Order created successfully"
+            (record for record in caplog.records if record.message == "Order created successfully"),
+            None,
         )
+        assert received_record is not None
+        assert created_record is not None
 
         assert received_record.idempotency_key == "logging-test-1"
         assert received_record.exchange == "binance"
@@ -64,10 +68,14 @@ def test_logging_duplicate_idempotency_key(client, caplog):
         assert response.status_code == 409
 
         duplicate_record = next(
-            record
-            for record in caplog.records
-            if record.message == "Duplicate idempotency_key rejected"
+            (
+                record
+                for record in caplog.records
+                if record.message == "Duplicate idempotency_key rejected"
+            ),
+            None,
         )
+        assert duplicate_record is not None
         assert duplicate_record.idempotency_key == "duplicate-logging-test"
         assert duplicate_record.exchange == "binance"
         assert duplicate_record.symbol == "BTC/USDT"
