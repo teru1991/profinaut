@@ -1,5 +1,6 @@
 from datetime import UTC, datetime, timedelta
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -72,6 +73,8 @@ from .schemas import (
     ReconcileOut,
     ResourceIn,
     ResourceLatestResponse,
+    StatusComponent,
+    StatusSummaryResponse,
     ResourceWindowSummaryResponse,
 )
 
@@ -245,6 +248,77 @@ def get_capabilities() -> CapabilitiesResponse:
         features=["bots", "commands", "portfolio", "analytics"],
         generated_at=datetime.now(UTC),
     )
+
+
+def _probe_status_component(*, name: str, url: str, timeout_seconds: float) -> StatusComponent:
+    started = time.perf_counter()
+    checked_at = datetime.now(UTC)
+    req = urllib.request.Request(url, headers={"accept": "application/json"}, method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout_seconds) as response:
+            body = response.read().decode("utf-8")
+            payload = json.loads(body) if body else {}
+            status = "OK"
+            degraded_reason = None
+            if isinstance(payload, dict) and str(payload.get("status")).lower() == "degraded":
+                status = "DEGRADED"
+                degraded_reason = str(payload.get("degraded_reason") or "upstream reported degraded status")
+            return StatusComponent(
+                name=name,
+                status=status,
+                degraded_reason=degraded_reason,
+                last_checked_at=checked_at,
+                latency_ms=int((time.perf_counter() - started) * 1000),
+            )
+    except TimeoutError:
+        reason = "request timed out"
+    except urllib.error.HTTPError as exc:
+        reason = f"upstream returned HTTP {exc.code}"
+    except (urllib.error.URLError, ValueError):
+        reason = "upstream unavailable"
+    except Exception:
+        reason = "unexpected upstream error"
+
+    return StatusComponent(
+        name=name,
+        status="DOWN",
+        degraded_reason=reason,
+        last_checked_at=checked_at,
+        latency_ms=int((time.perf_counter() - started) * 1000),
+    )
+
+
+@app.get("/api/status/summary", response_model=StatusSummaryResponse)
+def get_status_summary() -> StatusSummaryResponse:
+    settings = get_settings()
+    timeout_seconds = max(0.1, min(settings.marketdata_timeout_seconds, 2.0))
+    execution_base_url = os.getenv("EXECUTION_BASE_URL", "http://127.0.0.1:8001").rstrip("/")
+    marketdata_base_url = settings.marketdata_base_url.rstrip("/")
+    components = [
+        _probe_status_component(name="marketdata.healthz", url=f"{marketdata_base_url}/healthz", timeout_seconds=timeout_seconds),
+        _probe_status_component(
+            name="marketdata.capabilities",
+            url=f"{marketdata_base_url}/capabilities",
+            timeout_seconds=timeout_seconds,
+        ),
+        _probe_status_component(
+            name="execution-paper.healthz",
+            url=f"{execution_base_url}/healthz",
+            timeout_seconds=timeout_seconds,
+        ),
+        _probe_status_component(
+            name="execution-paper.capabilities",
+            url=f"{execution_base_url}/capabilities",
+            timeout_seconds=timeout_seconds,
+        ),
+    ]
+    if any(component.status == "DOWN" for component in components):
+        overall_status = "DOWN"
+    elif any(component.status == "DEGRADED" for component in components):
+        overall_status = "DEGRADED"
+    else:
+        overall_status = "OK"
+    return StatusSummaryResponse(overall_status=overall_status, components=components)
 
 
 @app.post("/ingest/heartbeat", status_code=202)
