@@ -20,6 +20,8 @@ type FetchState = {
   lastRefresh: Date | null;
 };
 
+const POLL_INTERVAL_MS = 30000;
+
 function formatTime(date: Date): string {
   return date.toLocaleTimeString();
 }
@@ -112,7 +114,7 @@ export function StatusRibbon() {
 
   useEffect(() => {
     fetchStatus();
-    const id = setInterval(fetchStatus, 30000);
+    const id = setInterval(fetchStatus, POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, [fetchStatus]);
 
@@ -140,10 +142,7 @@ export function StatusRibbon() {
           <span className="status-ribbon-text">Loading system status…</span>
         ) : state.error ? (
           <>
-            <span
-              className="badge"
-              style={{ backgroundColor: "#4c1d95", color: "#c4b5fd", fontSize: "11px" }}
-            >
+            <span className="badge status-ribbon-badge-unavailable">
               STATUS UNAVAILABLE
             </span>
             <span className="status-ribbon-text" style={{ opacity: 0.8 }}>

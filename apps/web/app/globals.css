@@ -135,3 +135,9 @@ a {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+.status-ribbon-badge-unavailable {
+  background-color: #4c1d95;
+  color: #c4b5fd;
+  font-size: 11px;
+}
