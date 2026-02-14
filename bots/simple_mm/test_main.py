@@ -1,10 +1,15 @@
 import json
+from datetime import datetime, timedelta, timezone
 
 from bots.simple_mm import main
 
 
 def test_should_block_new_order_safe_mode():
-    blocked, reason = main.should_block_new_order(False, {"degraded": False}, {"status": "ok"})
+    blocked, reason = main.should_block_new_order(
+        False,
+        {"degraded": False, "ts_utc": datetime.now(timezone.utc).isoformat()},
+        {"status": "ok"},
+    )
     assert blocked is False
     assert reason is None
 
@@ -21,7 +26,13 @@ def test_run_blocks_on_degraded_execution(monkeypatch, capsys):
     monkeypatch.setattr(
         main,
         "fetch_ticker",
-        lambda *_args: {"degraded": False, "last": 1, "exchange": "gmo", "symbol": "BTC_JPY"},
+        lambda *_args: {
+            "degraded": False,
+            "last": 1,
+            "exchange": "gmo",
+            "symbol": "BTC_JPY",
+            "ts_utc": datetime.now(timezone.utc).isoformat(),
+        },
     )
     monkeypatch.setattr(
         main,
@@ -81,11 +92,19 @@ def test_run_submits_order_and_logs_result(monkeypatch, capsys):
     monkeypatch.setenv("BOT_ID", "bot-y")
     monkeypatch.setenv("ORDER_EXCHANGE", "binance")
     monkeypatch.setenv("ORDER_SYMBOL", "BTC/USDT")
+    monkeypatch.setenv("ALLOWED_EXCHANGES", "gmo,binance")
+    monkeypatch.setenv("ALLOWED_SYMBOLS", "BTC_JPY,BTC/USDT")
 
     monkeypatch.setattr(
         main,
         "fetch_ticker",
-        lambda *_args: {"degraded": False, "last": 100.0, "exchange": "gmo", "symbol": "BTC_JPY"},
+        lambda *_args: {
+            "degraded": False,
+            "last": 100.0,
+            "exchange": "gmo",
+            "symbol": "BTC_JPY",
+            "ts_utc": datetime.now(timezone.utc).isoformat(),
+        },
     )
     monkeypatch.setattr(main, "fetch_controlplane_capabilities", lambda *_args: {"status": "ok"})
     monkeypatch.setattr(
@@ -125,6 +144,7 @@ def test_run_submits_order_and_logs_result(monkeypatch, capsys):
     assert payload["run_id"]
     assert payload["bot_id"] == "bot-y"
     assert payload["fills"] == []
+    assert payload["idempotency_key"].startswith("bot-y-")
 
 
 def test_run_blocks_when_controlplane_unreachable(monkeypatch, capsys):
@@ -181,3 +201,50 @@ def test_run_blocks_on_degraded_controlplane(monkeypatch, capsys):
     assert payload["reason"] == "CONTROLPLANE_MAINTENANCE"
     assert payload["state"] == "DEGRADED"
     assert payload["decision"] == "SKIP_ORDER"
+
+
+def test_run_blocks_unknown_exchange_or_symbol(monkeypatch, capsys):
+    monkeypatch.setenv("SAFE_MODE", "0")
+    monkeypatch.setenv("BOT_ID", "bot-unknown")
+    monkeypatch.setenv("ORDER_EXCHANGE", "unknown")
+
+    monkeypatch.setattr(
+        main,
+        "fetch_controlplane_capabilities",
+        lambda *_args: (_ for _ in ()).throw(AssertionError("no fetch")),
+    )
+    monkeypatch.setattr(main, "fetch_ticker", lambda *_args: (_ for _ in ()).throw(AssertionError("no fetch")))
+    monkeypatch.setattr(
+        main,
+        "fetch_execution_capabilities",
+        lambda *_args: (_ for _ in ()).throw(AssertionError("no fetch")),
+    )
+    monkeypatch.setattr(main, "submit_order_intent", lambda *_args: (_ for _ in ()).throw(AssertionError("no order")))
+
+    rc = main.run()
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert payload["event"] == "new_order_blocked"
+    assert payload["reason"] == "UNKNOWN_EXCHANGE_OR_SYMBOL"
+    assert payload["decision"] == "SKIP_ORDER"
+
+
+def test_run_blocks_stale_ticker(monkeypatch, capsys):
+    monkeypatch.setenv("SAFE_MODE", "0")
+    monkeypatch.setenv("BOT_ID", "bot-stale")
+    monkeypatch.setenv("MAX_TICKER_AGE_SECONDS", "30")
+    monkeypatch.setattr(main, "fetch_controlplane_capabilities", lambda *_args: {"status": "ok"})
+    stale_ts = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
+    monkeypatch.setattr(
+        main,
+        "fetch_ticker",
+        lambda *_args: {"degraded": False, "last": 1, "exchange": "gmo", "symbol": "BTC_JPY", "ts_utc": stale_ts},
+    )
+    monkeypatch.setattr(main, "fetch_execution_capabilities", lambda *_args: {"status": "ok"})
+    monkeypatch.setattr(main, "submit_order_intent", lambda *_args: (_ for _ in ()).throw(AssertionError("no order")))
+
+    rc = main.run()
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert payload["event"] == "new_order_blocked"
+    assert payload["reason"] == "TICKER_STALE"
