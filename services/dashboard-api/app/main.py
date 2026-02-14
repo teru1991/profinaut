@@ -29,6 +29,7 @@ from .schemas import (
     CommandAckOut,
     CommandIn,
     CommandOut,
+    CapabilitiesResponse,
     CostIn,
     ExecutionQualityIn,
     ExecutionQualitySummaryResponse,
@@ -67,6 +68,7 @@ from .schemas import (
 )
 
 app = FastAPI(title="Profinaut Dashboard API", version="0.4.0")
+STALE_SECONDS = 120
 
 
 def write_audit(db: Session, actor: str, action: str, target_type: str, target_id: str, result: str, details: dict) -> None:
@@ -86,6 +88,16 @@ def write_audit(db: Session, actor: str, action: str, target_type: str, target_i
 @app.get("/healthz", response_model=HealthResponse)
 def get_healthz() -> HealthResponse:
     return HealthResponse(status="ok", timestamp=datetime.now(timezone.utc))
+
+
+@app.get("/capabilities", response_model=CapabilitiesResponse)
+def get_capabilities() -> CapabilitiesResponse:
+    return CapabilitiesResponse(
+        version=app.version,
+        status="ok",
+        features=["bots", "commands", "portfolio", "analytics"],
+        generated_at=datetime.now(timezone.utc),
+    )
 
 
 @app.post("/ingest/heartbeat", status_code=202)
@@ -570,6 +582,7 @@ def list_bots(
     db: Session = Depends(get_db),
 ) -> PaginatedBots:
     del actor
+    now = datetime.now(timezone.utc)
     total = db.scalar(select(func.count()).select_from(Bot)) or 0
     offset = (page - 1) * page_size
 
@@ -594,21 +607,31 @@ def list_bots(
         .limit(page_size)
     ).all()
 
-    items = [
-        {
-            "bot_id": r.bot_id,
-            "name": r.name,
-            "strategy_name": r.strategy_name,
-            "instance_id": r.instance_id,
-            "runtime_mode": r.runtime_mode,
-            "exchange": r.exchange,
-            "symbol": r.symbol,
-            "status": r.status,
-            "last_seen": r.last_seen,
-            "version": r.version,
-        }
-        for r in rows
-    ]
+    items = []
+    for r in rows:
+        last_seen = r.last_seen
+        if last_seen is not None and last_seen.tzinfo is None:
+            last_seen = last_seen.replace(tzinfo=timezone.utc)
+
+        is_stale = bool(last_seen and (now - last_seen).total_seconds() > STALE_SECONDS)
+
+        items.append(
+            {
+                "state": r.status or "UNKNOWN",
+                "degraded": is_stale,
+                "degraded_reason": "STALE_HEARTBEAT" if is_stale else None,
+                "bot_id": r.bot_id,
+                "name": r.name,
+                "strategy_name": r.strategy_name,
+                "instance_id": r.instance_id,
+                "runtime_mode": r.runtime_mode,
+                "exchange": r.exchange,
+                "symbol": r.symbol,
+                "status": r.status,
+                "last_seen": r.last_seen,
+                "version": r.version,
+            }
+        )
 
     return PaginatedBots(page=page, page_size=page_size, total=total, items=items)
 
