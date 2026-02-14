@@ -1,6 +1,3 @@
-from app.storage import get_storage
-
-
 def test_healthz(client):
     """Test GET /healthz endpoint"""
     response = client.get("/healthz")
@@ -216,6 +213,7 @@ def test_gmo_live_requires_explicit_feature_flag(client, monkeypatch):
 
 def test_gmo_live_place_and_cancel_with_idempotency_mapping(client, monkeypatch):
     from app.live import PlaceOrderResult
+    from app.storage import get_storage
 
     monkeypatch.setenv("EXECUTION_LIVE_ENABLED", "true")
     monkeypatch.setenv("GMO_API_BASE_URL", "https://example.invalid")

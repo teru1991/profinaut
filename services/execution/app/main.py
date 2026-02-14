@@ -4,7 +4,7 @@ import os
 
 from fastapi import FastAPI, HTTPException
 
-from .config import get_settings
+from .config import Settings, get_settings
 from .live import GmoLiveExecutor, LiveRateLimitError, LiveTimeoutError
 from .schemas import CapabilitiesResponse, HealthResponse, Order, OrderIntent
 from .storage import get_storage
@@ -79,7 +79,7 @@ def _assert_live_ready() -> None:
         raise HTTPException(status_code=503, detail=f"Live execution degraded: {_degraded_reason}")
 
 
-def _get_live_executor(settings) -> GmoLiveExecutor:
+def _get_live_executor(settings: Settings) -> GmoLiveExecutor:
     api_key = os.getenv("GMO_API_KEY", "")
     api_secret = os.getenv("GMO_API_SECRET", "")
     if not settings.gmo_api_base_url or not api_key or not api_secret:
