@@ -288,4 +288,28 @@ def cancel_order(order_id: str) -> Order:
     canceled = storage.cancel_order(order_id)
     if canceled is None:
         raise HTTPException(status_code=404, detail="Order not found")
+    if canceled.status != "CANCELED":
+        raise HTTPException(status_code=409, detail=f"Order cannot be canceled from status {order.status}")
     return canceled
+
+
+@app.post("/execution/orders/{order_id}/fill", response_model=Order)
+def fill_order(order_id: str) -> Order:
+    storage = get_storage()
+    filled = storage.fill_order(order_id)
+    if filled is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if filled.status != "FILLED":
+        raise HTTPException(status_code=409, detail=f"Order cannot be filled from status {filled.status}")
+    return filled
+
+
+@app.post("/execution/orders/{order_id}/reject", response_model=Order)
+def reject_order(order_id: str) -> Order:
+    storage = get_storage()
+    rejected = storage.reject_order(order_id)
+    if rejected is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if rejected.status != "REJECTED":
+        raise HTTPException(status_code=409, detail=f"Order cannot be rejected from status {rejected.status}")
+    return rejected
