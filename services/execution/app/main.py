@@ -310,12 +310,9 @@ def fill_order(order_id: str) -> Order:
 @app.post("/execution/orders/{order_id}/reject", response_model=Order)
 def reject_order(order_id: str) -> Order:
     storage = get_storage()
-    order = storage.get_order(order_id)
-    if order is None:
-        raise HTTPException(status_code=404, detail="Order not found")
     rejected = storage.reject_order(order_id)
     if rejected is None:
         raise HTTPException(status_code=404, detail="Order not found")
     if rejected.status != "REJECTED":
-        raise HTTPException(status_code=409, detail=f"Order cannot be rejected from status {order.status}")
+        raise HTTPException(status_code=409, detail=f"Order cannot be rejected from status {rejected.status}")
     return rejected
