@@ -1,5 +1,10 @@
 from datetime import UTC, datetime, timedelta
+import json
 import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
@@ -130,6 +135,101 @@ def write_audit(db: Session, actor: str, action: str, target_type: str, target_i
             timestamp=datetime.now(UTC),
         )
     )
+
+
+def _get_request_id(request: Request) -> str:
+    return str(getattr(request.state, "request_id", "unknown"))
+
+
+def _fetch_marketdata_ticker(*, symbol: str, exchange: str, request_id: str) -> tuple[dict, int]:
+    settings = get_settings()
+    query = urllib.parse.urlencode({"symbol": symbol, "exchange": exchange})
+    url = f"{settings.marketdata_base_url.rstrip('/')}/ticker/latest?{query}"
+    started = time.perf_counter()
+    req = urllib.request.Request(url, headers={"accept": "application/json"}, method="GET")
+
+    try:
+        with urllib.request.urlopen(req, timeout=settings.marketdata_timeout_seconds) as response:
+            latency_ms = int((time.perf_counter() - started) * 1000)
+            body = response.read().decode("utf-8")
+            payload = json.loads(body) if body else {}
+            return payload, latency_ms
+    except TimeoutError as exc:
+        latency_ms = int((time.perf_counter() - started) * 1000)
+        audit_event(
+            service="dashboard-api",
+            event="marketdata_proxy_failure",
+            request_id=request_id,
+            code="UPSTREAM_TIMEOUT",
+            upstream_latency_ms=latency_ms,
+        )
+        raise HTTPException(
+            status_code=504,
+            detail={
+                "code": "UPSTREAM_TIMEOUT",
+                "message": "MarketData upstream request timed out",
+                "details": {"upstream_latency_ms": latency_ms},
+            },
+        ) from exc
+    except urllib.error.HTTPError as exc:
+        latency_ms = int((time.perf_counter() - started) * 1000)
+        raw_body = exc.read().decode("utf-8")
+        message = f"MarketData upstream returned HTTP {exc.code}"
+        details = {"upstream_status": exc.code, "upstream_latency_ms": latency_ms}
+        try:
+            parsed = json.loads(raw_body) if raw_body else {}
+            if isinstance(parsed, dict):
+                message = str(parsed.get("message") or message)
+                details["upstream_error"] = parsed.get("error")
+        except json.JSONDecodeError:
+            pass
+
+        audit_event(
+            service="dashboard-api",
+            event="marketdata_proxy_failure",
+            request_id=request_id,
+            code="UPSTREAM_HTTP_ERROR",
+            upstream_latency_ms=latency_ms,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail={"code": "UPSTREAM_HTTP_ERROR", "message": message, "details": details},
+        ) from exc
+    except (urllib.error.URLError, ValueError) as exc:
+        latency_ms = int((time.perf_counter() - started) * 1000)
+        audit_event(
+            service="dashboard-api",
+            event="marketdata_proxy_failure",
+            request_id=request_id,
+            code="UPSTREAM_UNAVAILABLE",
+            upstream_latency_ms=latency_ms,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "code": "UPSTREAM_UNAVAILABLE",
+                "message": "MarketData upstream unavailable",
+                "details": {"upstream_latency_ms": latency_ms},
+            },
+        ) from exc
+
+
+@app.get("/api/markets/ticker/latest")
+def get_marketdata_ticker_latest(
+    request: Request,
+    symbol: str = Query(default="BTC_JPY"),
+    exchange: str = Query(default="gmo"),
+) -> dict:
+    request_id = _get_request_id(request)
+    payload, latency_ms = _fetch_marketdata_ticker(symbol=symbol, exchange=exchange, request_id=request_id)
+    audit_event(
+        service="dashboard-api",
+        event="marketdata_proxy_success",
+        request_id=request_id,
+        upstream_latency_ms=latency_ms,
+        degraded_reason=payload.get("degraded_reason") if isinstance(payload, dict) else None,
+    )
+    return {"request_id": request_id, "data": payload}
 
 
 @app.get("/healthz", response_model=HealthResponse)
