@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const DASHBOARD_API_BASE_URL =
   process.env.DASHBOARD_API_BASE_URL ?? process.env.DASHBOARD_API_URL ?? "http://localhost:8000";
-const DASHBOARD_ADMIN_TOKEN = process.env.DASHBOARD_ADMIN_TOKEN ?? process.env.ADMIN_TOKEN ?? "test-admin-token";
+const DASHBOARD_ADMIN_TOKEN = process.env.DASHBOARD_ADMIN_TOKEN ?? process.env.ADMIN_TOKEN;
 
 function normalizeBaseUrl(url: string): string {
   return url.replace(/\/+$/, "");
@@ -16,6 +16,16 @@ function toErrorMessage(error: unknown): string {
 }
 
 export async function GET(request: NextRequest) {
+  if (!DASHBOARD_ADMIN_TOKEN) {
+    return NextResponse.json(
+      {
+        error: "misconfiguration",
+        message: "missing dashboard admin token"
+      },
+      { status: 500, headers: { "cache-control": "no-store" } }
+    );
+  }
+
   const upstreamBaseUrl = normalizeBaseUrl(DASHBOARD_API_BASE_URL);
   const search = new URL(request.url).searchParams.toString();
   const upstreamUrl = `${upstreamBaseUrl}/api/markets/ticker/latest${search ? `?${search}` : ""}`;

@@ -61,7 +61,8 @@ export default function MarketsPage() {
     async function load() {
       setLoading(true);
       try {
-        const response = await fetch(`/api/markets/ticker/latest?symbol=${DEFAULT_SYMBOL}`, {
+        const search = new URLSearchParams({ symbol: DEFAULT_SYMBOL });
+        const response = await fetch(`/api/markets/ticker/latest?${search.toString()}`, {
           cache: "no-store"
         });
 
@@ -125,7 +126,9 @@ export default function MarketsPage() {
               </span>
             ) : null}
           </div>
-          {data.degraded_reason ? <div style={{ fontSize: "0.875rem", color: "#fca5a5" }}>{data.degraded_reason}</div> : null}
+          {data.degraded_reason ? (
+            <div style={{ fontSize: "0.875rem", color: "#fca5a5" }}>Degraded reason: {data.degraded_reason}</div>
+          ) : null}
           <table className="table">
             <thead>
               <tr>
