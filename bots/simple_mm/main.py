@@ -75,6 +75,13 @@ def fetch_execution_capabilities(execution_base_url: str) -> dict:
     return payload
 
 
+def fetch_controlplane_capabilities(controlplane_base_url: str) -> dict:
+    status, payload = http_json("GET", f"{controlplane_base_url}/capabilities")
+    if status != 200:
+        raise BotError(f"unexpected controlplane capabilities status: {status}")
+    return payload
+
+
 def submit_order_intent(execution_base_url: str, intent: dict) -> dict:
     status, payload = http_json("POST", f"{execution_base_url}/execution/order-intents", body=intent)
     if status != 201:
@@ -98,6 +105,7 @@ def run() -> int:
     safe_mode = env_bool("SAFE_MODE", default=False)
 
     marketdata_base_url = os.getenv("MARKETDATA_BASE_URL", "http://127.0.0.1:8081")
+    controlplane_base_url = os.getenv("CONTROLPLANE_BASE_URL", "http://127.0.0.1:8000")
     execution_base_url = os.getenv("EXECUTION_BASE_URL", "http://127.0.0.1:8001")
 
     market_exchange = os.getenv("MARKETDATA_EXCHANGE", "gmo")
@@ -108,22 +116,72 @@ def run() -> int:
     order_side = os.getenv("ORDER_SIDE", "BUY")
     order_qty = float(os.getenv("ORDER_QTY", "0.001"))
 
-    log_event("INFO", "bot_start", run_id, bot_id, safe_mode=safe_mode)
+    log_event("INFO", "bot_start", run_id, bot_id, safe_mode=safe_mode, state="STARTING", decision="BOOT")
 
     if safe_mode:
-        log_event("WARN", "new_order_blocked", run_id, bot_id, reason="SAFE_MODE")
+        log_event(
+            "WARN",
+            "new_order_blocked",
+            run_id,
+            bot_id,
+            reason="SAFE_MODE",
+            state="SAFE_MODE",
+            decision="SKIP_ORDER",
+        )
         return 0
 
     try:
+        try:
+            controlplane = fetch_controlplane_capabilities(controlplane_base_url)
+            log_event(
+                "INFO",
+                "controlplane_capabilities",
+                run_id,
+                bot_id,
+                controlplane=controlplane,
+                state="RUNNING",
+            )
+        except BotError:
+            log_event(
+                "WARN",
+                "new_order_blocked",
+                run_id,
+                bot_id,
+                reason="CONTROLPLANE_UNREACHABLE",
+                state="DEGRADED",
+                decision="SKIP_ORDER",
+            )
+            return 0
+
+        if controlplane.get("status") == "degraded":
+            log_event(
+                "WARN",
+                "new_order_blocked",
+                run_id,
+                bot_id,
+                reason=str(controlplane.get("degraded_reason") or "CONTROLPLANE_DEGRADED"),
+                state="DEGRADED",
+                decision="SKIP_ORDER",
+            )
+            return 0
+
         ticker = fetch_ticker(marketdata_base_url, market_exchange, market_symbol)
-        log_event("INFO", "ticker_fetched", run_id, bot_id, ticker=ticker)
+        log_event("INFO", "ticker_fetched", run_id, bot_id, ticker=ticker, state="RUNNING")
 
         capabilities = fetch_execution_capabilities(execution_base_url)
-        log_event("INFO", "execution_capabilities", run_id, bot_id, capabilities=capabilities)
+        log_event("INFO", "execution_capabilities", run_id, bot_id, capabilities=capabilities, state="RUNNING")
 
         blocked, reason = should_block_new_order(safe_mode, ticker, capabilities)
         if blocked:
-            log_event("WARN", "new_order_blocked", run_id, bot_id, reason=reason)
+            log_event(
+                "WARN",
+                "new_order_blocked",
+                run_id,
+                bot_id,
+                reason=reason,
+                state="DEGRADED",
+                decision="SKIP_ORDER",
+            )
             return 0
 
         intent = {
@@ -141,10 +199,20 @@ def run() -> int:
         if float(order.get("filled_qty", 0.0)) > 0:
             fills.append({"qty": order.get("filled_qty")})
 
-        log_event("INFO", "order_result", run_id, bot_id, order=order, fills=fills)
+        log_event(
+            "INFO",
+            "order_result",
+            run_id,
+            bot_id,
+            order=order,
+            order_id=order.get("order_id"),
+            fills=fills,
+            state="RUNNING",
+            decision="PLACE_ORDER",
+        )
         return 0
     except (BotError, ValueError) as exc:
-        log_event("ERROR", "bot_error", run_id, bot_id, error=str(exc))
+        log_event("ERROR", "bot_error", run_id, bot_id, error=str(exc), state="ERROR", decision="SKIP_ORDER")
         return 1
 
 
