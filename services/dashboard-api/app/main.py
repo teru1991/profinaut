@@ -92,13 +92,22 @@ STALE_SECONDS = 120
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     request_id = getattr(request.state, "request_id", "unknown")
     code = "HTTP_ERROR"
-    message = str(exc.detail)
-    details: dict[str, object] = {}
+    message = "Request failed"
+    details: dict[str, object] = {"status_code": exc.status_code}
     if isinstance(exc.detail, dict):
         code = str(exc.detail.get("code") or code)
         message = str(exc.detail.get("message") or message)
-        details = dict(exc.detail.get("details") or {})
-    audit_event(service="dashboard-api", event="http_error", request_id=request_id, code=code, message=message)
+        details = dict(exc.detail.get("details") or details)
+        details.setdefault("status_code", exc.status_code)
+
+    audit_event(
+        service="dashboard-api",
+        event="http_error",
+        request_id=request_id,
+        code=code,
+        status_code=exc.status_code,
+        exception_type=type(exc).__name__,
+    )
     return JSONResponse(
         status_code=exc.status_code,
         content=error_envelope(code=code, message=message, details=details, request_id=request_id),
@@ -108,7 +117,12 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     request_id = getattr(request.state, "request_id", "unknown")
-    audit_event(service="dashboard-api", event="unhandled_exception", request_id=request_id, error=str(exc))
+    audit_event(
+        service="dashboard-api",
+        event="unhandled_exception",
+        request_id=request_id,
+        exception_type=type(exc).__name__,
+    )
     return JSONResponse(
         status_code=500,
         content=error_envelope(code="INTERNAL_ERROR", message="Unexpected error", details={}, request_id=request_id),
@@ -175,16 +189,9 @@ def _fetch_marketdata_ticker(*, symbol: str, exchange: str, request_id: str) -> 
         ) from exc
     except urllib.error.HTTPError as exc:
         latency_ms = int((time.perf_counter() - started) * 1000)
-        raw_body = exc.read().decode("utf-8")
-        message = f"MarketData upstream returned HTTP {exc.code}"
+        _ = exc.read()
+        message = "MarketData upstream returned an error"
         details = {"upstream_status": exc.code, "upstream_latency_ms": latency_ms}
-        try:
-            parsed = json.loads(raw_body) if raw_body else {}
-            if isinstance(parsed, dict):
-                message = str(parsed.get("message") or message)
-                details["upstream_error"] = parsed.get("error")
-        except json.JSONDecodeError:
-            pass
 
         audit_event(
             service="dashboard-api",
@@ -219,10 +226,12 @@ def _fetch_marketdata_ticker(*, symbol: str, exchange: str, request_id: str) -> 
 @app.get("/api/markets/ticker/latest")
 def get_marketdata_ticker_latest(
     request: Request,
+    actor: str = Depends(require_admin_actor),
     symbol: str = Query(default="BTC_JPY"),
     exchange: str = Query(default="gmo"),
 ) -> dict:
     request_id = _get_request_id(request)
+    del actor
     payload, latency_ms = _fetch_marketdata_ticker(symbol=symbol, exchange=exchange, request_id=request_id)
     audit_event(
         service="dashboard-api",

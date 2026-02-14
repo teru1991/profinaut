@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Ticker = {
   exchange?: string;
@@ -14,6 +14,7 @@ type Ticker = {
 };
 
 const EXCHANGES = ["gmo", "binance"] as const;
+const POLL_INTERVAL_MS = 5000;
 
 function readSelectionFromUrl(): { exchange: string; symbol: string } {
   if (typeof window === "undefined") {
@@ -38,11 +39,21 @@ export default function MarketsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const activeControllerRef = useRef<AbortController | null>(null);
+  const inFlightRef = useRef(false);
+
   useEffect(() => {
     let mounted = true;
-    const controller = new AbortController();
 
     async function load() {
+      if (inFlightRef.current && activeControllerRef.current) {
+        activeControllerRef.current.abort();
+      }
+
+      const controller = new AbortController();
+      activeControllerRef.current = controller;
+      inFlightRef.current = true;
+
       setLoading(true);
       try {
         const response = await fetch(
@@ -52,10 +63,12 @@ export default function MarketsPage() {
         const contentType = response.headers.get("content-type") ?? "";
         const payload = contentType.includes("application/json") ? await response.json() : null;
 
-        if (!mounted) return;
+        if (!mounted || activeControllerRef.current !== controller) {
+          return;
+        }
 
         if (!response.ok) {
-          setError(payload?.message ?? payload?.error ?? `ticker fetch failed (${response.status})`);
+          setError(payload?.error?.message ?? payload?.message ?? payload?.error ?? `ticker fetch failed (${response.status})`);
           setData(null);
           return;
         }
@@ -63,19 +76,38 @@ export default function MarketsPage() {
         setData(payload as Ticker);
         setError(null);
       } catch (e) {
-        if (!mounted) return;
-        if (e instanceof Error && e.name === "AbortError") return;
+        if (!mounted || activeControllerRef.current !== controller) {
+          return;
+        }
+        if (e instanceof Error && e.name === "AbortError") {
+          return;
+        }
         setError(e instanceof Error ? e.message : "network error");
         setData(null);
       } finally {
-        if (mounted) setLoading(false);
+        if (activeControllerRef.current === controller) {
+          inFlightRef.current = false;
+          activeControllerRef.current = null;
+        }
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
 
     void load();
+    const timer = setInterval(() => {
+      void load();
+    }, POLL_INTERVAL_MS);
+
     return () => {
       mounted = false;
-      controller.abort();
+      clearInterval(timer);
+      if (activeControllerRef.current) {
+        activeControllerRef.current.abort();
+      }
+      inFlightRef.current = false;
+      activeControllerRef.current = null;
     };
   }, [activeExchange, activeSymbol]);
 

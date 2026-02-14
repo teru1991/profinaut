@@ -1079,7 +1079,7 @@ def test_marketdata_proxy_success_with_request_id(client, monkeypatch):
 
     monkeypatch.setattr("app.main.urllib.request.urlopen", _fake_urlopen)
 
-    response = client.get("/api/markets/ticker/latest", headers={"x-request-id": "req-md-success"})
+    response = client.get("/api/markets/ticker/latest", headers={"x-request-id": "req-md-success", "X-Admin-Token": "test-admin-token"})
     assert response.status_code == 200
     body = response.json()
     assert body["request_id"] == "req-md-success"
@@ -1094,7 +1094,7 @@ def test_marketdata_proxy_timeout_returns_standard_envelope(client, monkeypatch)
     monkeypatch.setenv("MARKETDATA_BASE_URL", "http://marketdata.local")
     monkeypatch.setattr("app.main.urllib.request.urlopen", lambda *args, **kwargs: (_ for _ in ()).throw(TimeoutError("timeout")))
 
-    response = client.get("/api/markets/ticker/latest", headers={"x-request-id": "req-md-timeout"})
+    response = client.get("/api/markets/ticker/latest", headers={"x-request-id": "req-md-timeout", "X-Admin-Token": "test-admin-token"})
     assert response.status_code == 504
     body = response.json()
     assert body["code"] == "UPSTREAM_TIMEOUT"
@@ -1114,8 +1114,13 @@ def test_marketdata_proxy_upstream_down_returns_standard_envelope(client, monkey
         lambda *args, **kwargs: (_ for _ in ()).throw(urllib.error.URLError("down")),
     )
 
-    response = client.get("/api/markets/ticker/latest", headers={"x-request-id": "req-md-down"})
+    response = client.get("/api/markets/ticker/latest", headers={"x-request-id": "req-md-down", "X-Admin-Token": "test-admin-token"})
     assert response.status_code == 502
     body = response.json()
     assert body["code"] == "UPSTREAM_UNAVAILABLE"
     assert body["request_id"] == "req-md-down"
+
+
+def test_marketdata_proxy_requires_admin_auth(client):
+    response = client.get("/api/markets/ticker/latest")
+    assert response.status_code == 401

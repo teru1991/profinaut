@@ -139,7 +139,7 @@ class MarketDataPoller:
     async def run_forever(self) -> None:
         while True:
             try:
-                snapshot = self._fetch_gmo_ticker()
+                snapshot = await asyncio.to_thread(self._fetch_gmo_ticker)
                 async with self._lock:
                     self._record_success(snapshot)
                 await asyncio.sleep(self._config.interval_seconds)
