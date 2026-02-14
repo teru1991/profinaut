@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     discord_webhook_url: str | None = None
     marketdata_base_url: str = "http://127.0.0.1:8081"
     marketdata_timeout_seconds: float = 2.0
+    execution_base_url: str = "http://127.0.0.1:8001"
+    status_summary_timeout_seconds: float = 2.0
 
 
 @lru_cache
