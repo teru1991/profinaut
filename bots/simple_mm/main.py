@@ -230,7 +230,6 @@ def run() -> int:
             error=f"Unsupported EXECUTION_MODE '{execution_mode}'",
             state="ERROR",
             decision="SKIP_ORDER",
-            idempotency_key=idempotency_key,
         )
         return 1
 
@@ -256,6 +255,7 @@ def run() -> int:
                     run_id,
                     bot_id,
                     controlplane=controlplane,
+                    deadman_safe_mode=deadman_safe_mode,
                     state="RUNNING",
                 )
             except BotError:
@@ -267,9 +267,20 @@ def run() -> int:
                     bot_id,
                     reason=reason or "CONTROLPLANE_CHECK_FAILED",
                     deadman_safe_mode=deadman_safe_mode,
-                    state="DEGRADED",
+                    state="SAFE_MODE" if deadman_safe_mode else "DEGRADED",
                     decision="SKIP_ORDER",
                 )
+                if deadman_safe_mode:
+                    log_event(
+                        "WARN",
+                        "new_order_blocked",
+                        run_id,
+                        bot_id,
+                        reason="SAFE_MODE",
+                        block_source="DEADMAN_SWITCH",
+                        state="SAFE_MODE",
+                        decision="SKIP_ORDER",
+                    )
                 if iteration < max_loops - 1:
                     time.sleep(loop_interval_seconds)
                 continue
@@ -281,6 +292,7 @@ def run() -> int:
                     run_id,
                     bot_id,
                     reason=str(controlplane.get("degraded_reason") or "CONTROLPLANE_DEGRADED"),
+                    block_source="CONTROLPLANE_STATUS",
                     state="DEGRADED",
                     decision="SKIP_ORDER",
                 )
@@ -303,13 +315,16 @@ def run() -> int:
                 capabilities=capabilities,
             )
             if blocked:
+                block_state = "SAFE_MODE" if reason == "SAFE_MODE" else "DEGRADED"
+                block_source = "DEADMAN_SWITCH" if reason == "SAFE_MODE" else "SERVICE_GATING"
                 log_event(
                     "WARN",
                     "new_order_blocked",
                     run_id,
                     bot_id,
                     reason=reason,
-                    state="SAFE_MODE" if reason == "SAFE_MODE" else "DEGRADED",
+                    block_source=block_source,
+                    state=block_state,
                     decision="SKIP_ORDER",
                 )
                 if iteration < max_loops - 1:
