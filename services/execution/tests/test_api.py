@@ -1,6 +1,3 @@
-from datetime import datetime
-
-
 def test_healthz(client):
     """Test GET /healthz endpoint"""
     response = client.get("/healthz")
