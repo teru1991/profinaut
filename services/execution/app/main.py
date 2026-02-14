@@ -1,9 +1,11 @@
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+import os
 
 from fastapi import FastAPI, HTTPException
 
 from .config import get_settings
+from .live import GmoLiveExecutor, LiveRateLimitError, LiveTimeoutError
 from .schemas import CapabilitiesResponse, HealthResponse, Order, OrderIntent
 from .storage import get_storage
 
@@ -15,6 +17,8 @@ logging.basicConfig(
 logger = logging.getLogger("execution")
 
 app = FastAPI(title="Profinaut Execution Service", version="0.1.0")
+_live_backoff_until_utc: datetime | None = None
+_degraded_reason: str | None = None
 
 
 def _log_context(
@@ -42,13 +46,49 @@ def get_healthz() -> HealthResponse:
 @app.get("/capabilities", response_model=CapabilitiesResponse)
 def get_capabilities() -> CapabilitiesResponse:
     settings = get_settings()
+    now = datetime.now(timezone.utc)
+    is_degraded = _live_backoff_until_utc is not None and now < _live_backoff_until_utc
+    features = ["paper_execution"]
+    if settings.execution_live_enabled:
+        features.append("live_execution")
     return CapabilitiesResponse(
         service="execution",
         version=settings.service_version,
-        status="ok",
-        features=["paper_execution"],
-        degraded_reason=None,
-        generated_at=datetime.now(timezone.utc),
+        status="degraded" if is_degraded else "ok",
+        features=features,
+        degraded_reason=_degraded_reason if is_degraded else None,
+        generated_at=now,
+    )
+
+
+def _mark_live_degraded(reason: str) -> None:
+    global _live_backoff_until_utc, _degraded_reason
+    settings = get_settings()
+    _degraded_reason = reason
+    _live_backoff_until_utc = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(
+        seconds=settings.live_backoff_seconds
+    )
+
+
+def _assert_live_ready() -> None:
+    settings = get_settings()
+    if not settings.execution_live_enabled:
+        raise HTTPException(status_code=403, detail="Live execution is disabled")
+    now = datetime.now(timezone.utc)
+    if _live_backoff_until_utc is not None and now < _live_backoff_until_utc:
+        raise HTTPException(status_code=503, detail=f"Live execution degraded: {_degraded_reason}")
+
+
+def _get_live_executor(settings) -> GmoLiveExecutor:
+    api_key = os.getenv("GMO_API_KEY", "")
+    api_secret = os.getenv("GMO_API_SECRET", "")
+    if not settings.gmo_api_base_url or not api_key or not api_secret:
+        raise HTTPException(status_code=503, detail="GMO live execution is not configured")
+    return GmoLiveExecutor(
+        base_url=settings.gmo_api_base_url,
+        timeout_seconds=settings.gmo_request_timeout_seconds,
+        api_key=api_key,
+        api_secret=api_secret,
     )
 
 
@@ -116,7 +156,25 @@ def post_order_intent(intent: OrderIntent) -> Order:
         raise HTTPException(status_code=400, detail="LIMIT orders must specify limit_price")
 
     # Create order (handles idempotency check)
-    order = storage.create_order(intent)
+    if intent.exchange == "gmo":
+        _assert_live_ready()
+        live = _get_live_executor(settings)
+        client_order_id = GmoLiveExecutor.build_client_order_id(intent.idempotency_key)
+        try:
+            placed = live.place_order(
+                symbol=intent.symbol,
+                side=intent.side,
+                qty=intent.qty,
+                order_type=intent.type,
+                limit_price=intent.limit_price,
+                client_order_id=client_order_id,
+            )
+        except (LiveRateLimitError, LiveTimeoutError) as exc:
+            _mark_live_degraded(str(exc))
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        order = storage.create_order(intent, order_id=placed.order_id, client_order_id=client_order_id)
+    else:
+        order = storage.create_order(intent)
 
     if order is None:
         # Duplicate idempotency_key
@@ -146,3 +204,29 @@ def post_order_intent(intent: OrderIntent) -> Order:
     )
 
     return order
+
+
+@app.post("/execution/orders/{order_id}/cancel", response_model=Order)
+def cancel_order(order_id: str) -> Order:
+    settings = get_settings()
+    storage = get_storage()
+    order = storage.get_order(order_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    if order.exchange == "gmo":
+        _assert_live_ready()
+        live = _get_live_executor(settings)
+        client_order_id = storage.get_client_order_id_by_order_id(order_id)
+        if client_order_id is None:
+            raise HTTPException(status_code=409, detail="Missing client_order_id mapping")
+        try:
+            live.cancel_order(order_id=order_id, client_order_id=client_order_id)
+        except (LiveRateLimitError, LiveTimeoutError) as exc:
+            _mark_live_degraded(str(exc))
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    canceled = storage.cancel_order(order_id)
+    if canceled is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return canceled

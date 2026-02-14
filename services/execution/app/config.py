@@ -16,6 +16,13 @@ class Settings(BaseSettings):
     
     # Exchange allowlist (comma-separated)
     allowed_exchanges: str = Field(default="", description="Comma-separated list of allowed exchanges")
+    execution_live_enabled: bool = Field(
+        default=False,
+        description="Enable live execution paths (safe default: disabled)",
+    )
+    gmo_api_base_url: str = Field(default="", description="GMO API base URL for live execution")
+    gmo_request_timeout_seconds: float = Field(default=5.0, description="GMO request timeout")
+    live_backoff_seconds: int = Field(default=30, description="Backoff duration after 429/timeout")
 
     def get_allowed_symbols(self) -> set[str]:
         """Return set of allowed symbols, empty set means reject all"""
