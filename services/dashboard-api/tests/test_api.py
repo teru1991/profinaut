@@ -1052,3 +1052,70 @@ def test_resource_window_summary(client):
     assert body_filtered["max_cpu_pct"] == 30.0
     assert body_filtered["avg_memory_pct"] == 45.0
     assert body_filtered["max_memory_pct"] == 50.0
+
+
+def test_marketdata_proxy_success_with_request_id(client, monkeypatch):
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    monkeypatch.setenv("MARKETDATA_BASE_URL", "http://marketdata.local")
+
+    class _FakeResponse:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            return b'{"symbol":"BTC_JPY","bid":1,"ask":2,"last":1.5,"stale":false,"degraded_reason":null}'
+
+    def _fake_urlopen(req, timeout):
+        assert req.full_url.startswith("http://marketdata.local/ticker/latest?")
+        assert timeout == 2.0
+        return _FakeResponse()
+
+    monkeypatch.setattr("app.main.urllib.request.urlopen", _fake_urlopen)
+
+    response = client.get("/api/markets/ticker/latest", headers={"x-request-id": "req-md-success"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["request_id"] == "req-md-success"
+    assert body["data"]["symbol"] == "BTC_JPY"
+    assert response.headers["x-request-id"] == "req-md-success"
+
+
+def test_marketdata_proxy_timeout_returns_standard_envelope(client, monkeypatch):
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    monkeypatch.setenv("MARKETDATA_BASE_URL", "http://marketdata.local")
+    monkeypatch.setattr("app.main.urllib.request.urlopen", lambda *args, **kwargs: (_ for _ in ()).throw(TimeoutError("timeout")))
+
+    response = client.get("/api/markets/ticker/latest", headers={"x-request-id": "req-md-timeout"})
+    assert response.status_code == 504
+    body = response.json()
+    assert body["code"] == "UPSTREAM_TIMEOUT"
+    assert body["request_id"] == "req-md-timeout"
+    assert "upstream_latency_ms" in body["details"]
+
+
+def test_marketdata_proxy_upstream_down_returns_standard_envelope(client, monkeypatch):
+    import urllib.error
+
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    monkeypatch.setenv("MARKETDATA_BASE_URL", "http://marketdata.local")
+    monkeypatch.setattr(
+        "app.main.urllib.request.urlopen",
+        lambda *args, **kwargs: (_ for _ in ()).throw(urllib.error.URLError("down")),
+    )
+
+    response = client.get("/api/markets/ticker/latest", headers={"x-request-id": "req-md-down"})
+    assert response.status_code == 502
+    body = response.json()
+    assert body["code"] == "UPSTREAM_UNAVAILABLE"
+    assert body["request_id"] == "req-md-down"
