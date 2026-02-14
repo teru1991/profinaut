@@ -7,5 +7,5 @@
 - One-command run:
 
 ```bash
-python /home/runner/work/profinaut/profinaut/bots/simple_mm/main.py
+python bots/simple_mm/main.py
 ```

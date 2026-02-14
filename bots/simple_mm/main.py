@@ -139,7 +139,7 @@ def run() -> int:
 
         fills = []
         if float(order.get("filled_qty", 0.0)) > 0:
-            fills.append({"qty": order.get("filled_qty"), "price": ticker.get("last")})
+            fills.append({"qty": order.get("filled_qty")})
 
         log_event("INFO", "order_result", run_id, bot_id, order=order, fills=fills)
         return 0
