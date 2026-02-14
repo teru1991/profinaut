@@ -11,6 +11,9 @@ type BotRow = {
   exchange: string | null;
   symbol: string | null;
   status: string | null;
+  state?: string;
+  degraded?: boolean;
+  degraded_reason?: string | null;
   last_seen: string | null;
   version: string | null;
 };
@@ -59,7 +62,7 @@ export function BotsTable() {
         <thead>
           <tr>
             <th>Bot</th>
-            <th>Status</th>
+            <th>State</th>
             <th>Last Seen (UTC)</th>
             <th>Version</th>
             <th>Runtime</th>
@@ -73,19 +76,34 @@ export function BotsTable() {
               <td colSpan={7}>No bots yet. Start an agent heartbeat to populate this view.</td>
             </tr>
           ) : (
-            rows.map((row) => (
-              <tr key={`${row.bot_id}-${row.instance_id ?? "none"}`}>
-                <td>{row.name}</td>
-                <td>
-                  <span className="badge">{row.status ?? "UNKNOWN"}</span>
-                </td>
-                <td>{row.last_seen ?? "-"}</td>
-                <td>{row.version ?? "-"}</td>
-                <td>{row.runtime_mode ?? "-"}</td>
-                <td>{row.exchange ?? "-"}</td>
-                <td>{row.symbol ?? "-"}</td>
-              </tr>
-            ))
+            rows.map((row) => {
+              const state = row.state ?? row.status ?? "UNKNOWN";
+              const isDegraded = row.degraded === true;
+              return (
+                <tr key={`${row.bot_id}-${row.instance_id ?? "none"}`}>
+                  <td>{row.name}</td>
+                  <td>
+                    <span className="badge">{state}</span>
+                    {isDegraded ? (
+                      <>
+                        {" "}
+                        <span className="badge" style={{ backgroundColor: "#991b1b", color: "#fecaca" }}>
+                          DEGRADED
+                        </span>
+                      </>
+                    ) : null}
+                    {row.degraded_reason ? (
+                      <div style={{ fontSize: "0.75rem", opacity: 0.8 }}>{row.degraded_reason}</div>
+                    ) : null}
+                  </td>
+                  <td>{row.last_seen ?? "-"}</td>
+                  <td>{row.version ?? "-"}</td>
+                  <td>{row.runtime_mode ?? "-"}</td>
+                  <td>{row.exchange ?? "-"}</td>
+                  <td>{row.symbol ?? "-"}</td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>
