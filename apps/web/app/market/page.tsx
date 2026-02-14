@@ -1,9 +1,5 @@
-import { TickerCard } from "./TickerCard";
+import { redirect } from "next/navigation";
 
 export default function MarketPage() {
-  return (
-    <main>
-      <TickerCard />
-    </main>
-  );
+  redirect("/markets");
 }
