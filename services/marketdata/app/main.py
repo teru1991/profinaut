@@ -288,8 +288,10 @@ async def get_capabilities() -> dict[str, Any]:
     """Return service capabilities and health status."""
     async with _poller._lock:
         degraded_reason = _poller._degraded_reason
-        if _poller._is_stale_due_to_age():
-            degraded_reason = "STALE_TICKER"
+        if _poller._snapshot is not None and _poller._last_success_monotonic is not None:
+            last_success_age = time.monotonic() - _poller._last_success_monotonic
+            if last_success_age > _poller._config.stale_threshold_seconds:
+                degraded_reason = "STALE_TICKER"
         degraded = degraded_reason is not None
 
     return {

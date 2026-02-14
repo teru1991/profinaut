@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type TickerPayload = {
+  exchange?: string;
   symbol?: string;
   bid?: number;
   ask?: number;
@@ -23,24 +24,39 @@ type ProxyResponse = {
 
 const POLL_INTERVAL_MS = 5000;
 
-export function MarketsTickerCard({ symbol = "BTC_JPY" }: { symbol?: string }) {
+export function MarketsTickerCard({ exchange = "gmo", symbol = "BTC_JPY" }: { exchange?: string; symbol?: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
   const [ticker, setTicker] = useState<TickerPayload | null>(null);
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
 
+  const activeControllerRef = useRef<AbortController | null>(null);
+  const inFlightRef = useRef(false);
+
   useEffect(() => {
     let mounted = true;
 
     async function loadTicker() {
+      if (inFlightRef.current) {
+        return;
+      }
+
+      inFlightRef.current = true;
+      const controller = new AbortController();
+      activeControllerRef.current = controller;
+
       try {
-        const response = await fetch(`/api/markets/ticker/latest?symbol=${encodeURIComponent(symbol)}`, {
-          cache: "no-store"
-        });
+        const response = await fetch(
+          `/api/markets/ticker/latest?exchange=${encodeURIComponent(exchange)}&symbol=${encodeURIComponent(symbol)}`,
+          {
+            cache: "no-store",
+            signal: controller.signal
+          }
+        );
         const payload = (await response.json()) as ProxyResponse;
 
-        if (!mounted) {
+        if (!mounted || activeControllerRef.current !== controller) {
           return;
         }
 
@@ -63,26 +79,46 @@ export function MarketsTickerCard({ symbol = "BTC_JPY" }: { symbol?: string }) {
         setTicker(payload.data);
         setFetchedAt(new Date().toISOString());
       } catch (e) {
-        if (!mounted) {
+        if (!mounted || activeControllerRef.current !== controller) {
+          return;
+        }
+        if (e instanceof Error && e.name === "AbortError") {
           return;
         }
         const msg = e instanceof Error ? e.message : "Failed to fetch ticker.";
         setError(msg);
         setTicker(null);
       } finally {
+        if (activeControllerRef.current === controller) {
+          activeControllerRef.current = null;
+        }
+        inFlightRef.current = false;
         if (mounted) {
           setLoading(false);
         }
       }
     }
 
+    setLoading(true);
+    setTicker(null);
+    setError(null);
+    setRequestId(null);
     void loadTicker();
-    const timer = setInterval(() => void loadTicker(), POLL_INTERVAL_MS);
+
+    const timer = setInterval(() => {
+      void loadTicker();
+    }, POLL_INTERVAL_MS);
+
     return () => {
       mounted = false;
       clearInterval(timer);
+      if (activeControllerRef.current) {
+        activeControllerRef.current.abort();
+      }
+      activeControllerRef.current = null;
+      inFlightRef.current = false;
     };
-  }, [symbol]);
+  }, [exchange, symbol]);
 
   const degradedReason = useMemo(() => {
     if (!ticker) return null;
@@ -111,7 +147,7 @@ export function MarketsTickerCard({ symbol = "BTC_JPY" }: { symbol?: string }) {
       {ticker ? (
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span className="badge">{ticker.symbol ?? symbol}</span>
+            <span className="badge">{ticker.exchange ?? exchange}:{ticker.symbol ?? symbol}</span>
             {degradedReason ? (
               <span className="badge" style={{ background: "#7f1d1d" }}>
                 DEGRADED
