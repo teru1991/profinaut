@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type TickerLatest = {
   exchange?: string;
@@ -38,12 +38,31 @@ export function TickerCard() {
   const [data, setData] = useState<TickerLatest | null>(null);
   const [error, setError] = useState<ErrorState>(null);
 
+  const inFlightRef = useRef(false);
+  const activeControllerRef = useRef<AbortController | null>(null);
+
   useEffect(() => {
+    let mounted = true;
+
     async function load() {
+      // Ensure only one in-flight request: abort previous cycle request first.
+      if (inFlightRef.current && activeControllerRef.current) {
+        activeControllerRef.current.abort();
+      }
+
+      const controller = new AbortController();
+      activeControllerRef.current = controller;
+      inFlightRef.current = true;
+
       try {
         const response = await fetch(`/api/ticker?exchange=${DEFAULT_EXCHANGE}&symbol=${DEFAULT_SYMBOL}`, {
-          cache: "no-store"
+          cache: "no-store",
+          signal: controller.signal
         });
+
+        if (!mounted || activeControllerRef.current !== controller) {
+          return;
+        }
 
         if (!response.ok) {
           setError({
@@ -55,20 +74,48 @@ export function TickerCard() {
         }
 
         const payload: TickerLatest = await response.json();
+        if (!mounted || activeControllerRef.current !== controller) {
+          return;
+        }
+
         setData(payload);
         setError(null);
       } catch (e) {
+        if (!mounted || activeControllerRef.current !== controller) {
+          return;
+        }
+
+        if (e instanceof Error && e.name === "AbortError") {
+          return;
+        }
+
         setError({
           status: 0,
           message: e instanceof Error ? e.message : "network error"
         });
         setData(null);
+      } finally {
+        if (activeControllerRef.current === controller) {
+          inFlightRef.current = false;
+          activeControllerRef.current = null;
+        }
       }
     }
 
-    load();
-    const timer = setInterval(load, 5000);
-    return () => clearInterval(timer);
+    void load();
+    const timer = setInterval(() => {
+      void load();
+    }, 5000);
+
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+      if (activeControllerRef.current) {
+        activeControllerRef.current.abort();
+      }
+      inFlightRef.current = false;
+      activeControllerRef.current = null;
+    };
   }, []);
 
   return (
