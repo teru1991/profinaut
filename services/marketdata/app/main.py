@@ -58,15 +58,25 @@ class MarketDataPoller:
     def _transition(self, new_state: str, reason: str | None = None) -> None:
         if self._state == new_state:
             return
-        payload = {
-            "event": "marketdata_state_transition",
-            "from_state": self._state,
-            "to_state": new_state,
-            "reason": reason,
-            "ts_utc": datetime.now(UTC).isoformat(),
-        }
-        logger.info(json.dumps(payload, ensure_ascii=False))
+        logger.info(
+            json.dumps(
+                {
+                    "event": "marketdata_state_transition",
+                    "from_state": self._state,
+                    "to_state": new_state,
+                    "reason": reason,
+                    "ts_utc": datetime.now(UTC).isoformat(),
+                },
+                ensure_ascii=False,
+            )
+        )
         self._state = new_state
+
+    def _apply_reason_state(self, degraded_reason: str | None) -> None:
+        if degraded_reason is None:
+            self._transition("healthy")
+        else:
+            self._transition("degraded", reason=degraded_reason)
 
     def _record_success(self, snapshot: TickerSnapshot) -> None:
         self._snapshot = snapshot
@@ -74,12 +84,12 @@ class MarketDataPoller:
         self._consecutive_failures = 0
         self._current_backoff = self._config.backoff_initial_seconds
         self._degraded_reason = None
-        self._transition("healthy")
+        self._apply_reason_state(self._degraded_reason)
 
     def _record_failure(self, exc: Exception) -> float:
         self._consecutive_failures += 1
         self._degraded_reason = "UPSTREAM_ERROR"
-        self._transition("degraded", reason="UPSTREAM_ERROR")
+        self._apply_reason_state(self._degraded_reason)
         sleep_for = self._current_backoff
         self._current_backoff = min(self._current_backoff * 2, self._config.backoff_max_seconds)
         logger.warning(
@@ -140,29 +150,25 @@ class MarketDataPoller:
     async def latest_payload(self) -> dict[str, Any]:
         async with self._lock:
             snapshot = self._snapshot
-            now_monotonic = time.monotonic()
-            stale = True
-            degraded_reason = self._degraded_reason
+            if snapshot is None:
+                raise HTTPException(status_code=503, detail="Ticker not ready")
 
+            degraded_reason = self._degraded_reason
+            stale = True
             if self._last_success_monotonic is not None:
-                age = now_monotonic - self._last_success_monotonic
-                stale = age > self._config.stale_threshold_seconds
-            else:
-                age = float("inf")
+                last_success_age = time.monotonic() - self._last_success_monotonic
+                stale = last_success_age > self._config.stale_threshold_seconds
 
             if stale:
                 degraded_reason = "STALE_TICKER"
 
-            degraded = degraded_reason is not None
+            self._apply_reason_state(degraded_reason)
 
             quality_status = "OK"
             if degraded_reason == "STALE_TICKER":
                 quality_status = "STALE"
-            elif degraded:
+            elif degraded_reason is not None:
                 quality_status = "DEGRADED"
-
-            if snapshot is None:
-                raise HTTPException(status_code=503, detail="Ticker not ready")
 
             return {
                 "symbol": snapshot.symbol,
@@ -174,7 +180,6 @@ class MarketDataPoller:
                 "source": snapshot.source,
                 "quality": {"status": quality_status},
                 "stale": stale,
-                "degraded": degraded,
                 "degraded_reason": degraded_reason,
             }
 
