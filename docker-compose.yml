@@ -41,6 +41,45 @@ services:
       postgres:
         condition: service_healthy
 
+  execution:
+    image: python:3.12-slim
+    container_name: profinaut-execution
+    working_dir: /workspace
+    command: [
+      "sh",
+      "-c",
+      "pip install -r requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8001"
+    ]
+    environment:
+      EXECUTION_LIVE_ENABLED: ${EXECUTION_LIVE_ENABLED:-false}
+      ALLOWED_SYMBOLS: ${ALLOWED_SYMBOLS:-BTC/USDT,BTC_JPY}
+      ALLOWED_EXCHANGES: ${ALLOWED_EXCHANGES:-binance,gmo}
+      GMO_API_BASE_URL: ${GMO_API_BASE_URL:-}
+      GMO_API_KEY: ${GMO_API_KEY:-}
+      GMO_API_SECRET: ${GMO_API_SECRET:-}
+    ports:
+      - "${EXECUTION_PORT:-8001}:8001"
+    volumes:
+      - ./services/execution:/workspace
+
+  marketdata:
+    image: python:3.12-slim
+    container_name: profinaut-marketdata
+    working_dir: /workspace
+    command: [
+      "sh",
+      "-c",
+      "pip install -r requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8002"
+    ]
+    environment:
+      GMO_MARKETDATA_BASE_URL: ${GMO_MARKETDATA_BASE_URL:-https://api.coin.z.com/public/v1}
+      MARKETDATA_SYMBOL: ${MARKETDATA_SYMBOL:-BTC_JPY}
+      MARKETDATA_POLL_INTERVAL_SECONDS: ${MARKETDATA_POLL_INTERVAL_SECONDS:-2}
+    ports:
+      - "${MARKETDATA_PORT:-8002}:8002"
+    volumes:
+      - ./services/marketdata:/workspace
+
   web:
     image: node:20-alpine
     container_name: profinaut-web

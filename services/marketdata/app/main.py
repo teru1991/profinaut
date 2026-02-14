@@ -242,6 +242,23 @@ def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/capabilities")
+async def get_capabilities() -> dict[str, Any]:
+    """Return service capabilities and health status."""
+    async with _poller._lock:
+        degraded = _poller._degraded_reason is not None
+        degraded_reason = _poller._degraded_reason
+
+    return {
+        "service": "marketdata",
+        "version": "0.1.0",
+        "status": "degraded" if degraded else "ok",
+        "features": ["ticker_latest", "gmo_poller"],
+        "degraded_reason": degraded_reason,
+        "generated_at": datetime.now(UTC).isoformat(),
+    }
+
+
 @app.get("/ticker/latest")
 async def ticker_latest() -> dict[str, Any]:
     return await _poller.latest_payload()

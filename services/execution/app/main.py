@@ -1,13 +1,23 @@
 import logging
 from datetime import datetime, timedelta, timezone
 import os
+import sys
+from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 
 from .config import Settings, get_settings
 from .live import GmoLiveExecutor, LiveRateLimitError, LiveTimeoutError
 from .schemas import CapabilitiesResponse, HealthResponse, Order, OrderIntent
 from .storage import get_storage
+
+# Add libs to path for observability module
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.append(str(_REPO_ROOT))
+
+from libs.observability import audit_event, error_envelope, request_id_middleware
 
 # Configure logging
 logging.basicConfig(
@@ -17,8 +27,41 @@ logging.basicConfig(
 logger = logging.getLogger("execution")
 
 app = FastAPI(title="Profinaut Execution Service", version="0.1.0")
+app.add_middleware(request_id_middleware())
+
 _live_backoff_until_utc: datetime | None = None
 _degraded_reason: str | None = None
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    code = "HTTP_ERROR"
+    message = str(exc.detail)
+    details: dict[str, object] = {}
+
+    if isinstance(exc.detail, dict):
+        code = str(exc.detail.get("error") or code)
+        message = str(exc.detail.get("message") or message)
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=error_envelope(code=code, message=message, details=details, request_id=request_id),
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    return JSONResponse(
+        status_code=500,
+        content=error_envelope(
+            code="INTERNAL_ERROR",
+            message="Unexpected error",
+            details={},
+            request_id=request_id,
+        ),
+    )
 
 
 def _log_context(
