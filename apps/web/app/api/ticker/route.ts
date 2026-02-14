@@ -21,8 +21,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const response = await fetch(upstreamUrl, { cache: "no-store" });
-    const text = await response.text();
-    return new NextResponse(text, {
+    return new NextResponse(response.body, {
       status: response.status,
       headers: {
         "cache-control": "no-store",
