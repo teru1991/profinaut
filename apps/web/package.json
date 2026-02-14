@@ -16,6 +16,10 @@
     "typescript": "5.9.2",
     "@types/node": "22.13.10",
     "@types/react": "18.3.18",
-    "@types/react-dom": "18.3.5"
+    "@types/react-dom": "18.3.5",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "14.2.32",
+    "@tailwindcss/forms": "^0.5.0"
   }
+
 }
