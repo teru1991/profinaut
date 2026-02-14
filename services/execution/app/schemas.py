@@ -1,15 +1,19 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class HealthResponse(BaseModel):
+class StrictBaseModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class HealthResponse(StrictBaseModel):
     status: str
     timestamp: datetime
 
 
-class CapabilitiesResponse(BaseModel):
+class CapabilitiesResponse(StrictBaseModel):
     service: str = "execution"
     version: str
     status: Literal["ok", "degraded"] = "ok"
@@ -18,7 +22,7 @@ class CapabilitiesResponse(BaseModel):
     generated_at: datetime
 
 
-class OrderIntent(BaseModel):
+class OrderIntent(StrictBaseModel):
     idempotency_key: str = Field(..., min_length=1)
     exchange: str = Field(..., min_length=1)
     symbol: str = Field(..., min_length=1)
@@ -29,7 +33,7 @@ class OrderIntent(BaseModel):
     client_ts_utc: datetime | None = None
 
 
-class Order(BaseModel):
+class Order(StrictBaseModel):
     order_id: str = Field(..., min_length=1)
     status: Literal["NEW", "PARTIALLY_FILLED", "FILLED", "CANCELED", "REJECTED", "EXPIRED"]
     accepted_ts_utc: datetime

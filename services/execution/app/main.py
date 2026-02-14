@@ -17,6 +17,23 @@ logger = logging.getLogger("execution")
 app = FastAPI(title="Profinaut Execution Service", version="0.1.0")
 
 
+def _log_context(
+    *,
+    idempotency_key: str,
+    exchange: str,
+    symbol: str,
+    status: str,
+    order_id: str | None = None,
+) -> dict[str, str | None]:
+    return {
+        "idempotency_key": idempotency_key,
+        "order_id": order_id,
+        "exchange": exchange,
+        "symbol": symbol,
+        "status": status,
+    }
+
+
 @app.get("/healthz", response_model=HealthResponse)
 def get_healthz() -> HealthResponse:
     return HealthResponse(status="ok", timestamp=datetime.now(timezone.utc))
@@ -43,14 +60,12 @@ def post_order_intent(intent: OrderIntent) -> Order:
     # Log the request with all required fields
     logger.info(
         "Received order intent",
-        extra={
-            "idempotency_key": intent.idempotency_key,
-            "exchange": intent.exchange,
-            "symbol": intent.symbol,
-            "side": intent.side,
-            "qty": intent.qty,
-            "type": intent.type,
-        },
+        extra=_log_context(
+            idempotency_key=intent.idempotency_key,
+            exchange=intent.exchange,
+            symbol=intent.symbol,
+            status="RECEIVED",
+        ),
     )
 
     # Check if symbol is allowed (safe default: reject unknown symbols)
@@ -58,11 +73,12 @@ def post_order_intent(intent: OrderIntent) -> Order:
     if not allowed_symbols or intent.symbol not in allowed_symbols:
         logger.warning(
             "Symbol not in allowlist - rejecting order",
-            extra={
-                "idempotency_key": intent.idempotency_key,
-                "exchange": intent.exchange,
-                "symbol": intent.symbol,
-            },
+            extra=_log_context(
+                idempotency_key=intent.idempotency_key,
+                exchange=intent.exchange,
+                symbol=intent.symbol,
+                status="REJECTED",
+            ),
         )
         raise HTTPException(
             status_code=400,
@@ -74,11 +90,12 @@ def post_order_intent(intent: OrderIntent) -> Order:
     if not allowed_exchanges or intent.exchange not in allowed_exchanges:
         logger.warning(
             "Exchange not in allowlist - rejecting order",
-            extra={
-                "idempotency_key": intent.idempotency_key,
-                "exchange": intent.exchange,
-                "symbol": intent.symbol,
-            },
+            extra=_log_context(
+                idempotency_key=intent.idempotency_key,
+                exchange=intent.exchange,
+                symbol=intent.symbol,
+                status="REJECTED",
+            ),
         )
         raise HTTPException(
             status_code=400,
@@ -89,11 +106,12 @@ def post_order_intent(intent: OrderIntent) -> Order:
     if intent.type == "LIMIT" and intent.limit_price is None:
         logger.warning(
             "LIMIT order missing limit_price",
-            extra={
-                "idempotency_key": intent.idempotency_key,
-                "exchange": intent.exchange,
-                "symbol": intent.symbol,
-            },
+            extra=_log_context(
+                idempotency_key=intent.idempotency_key,
+                exchange=intent.exchange,
+                symbol=intent.symbol,
+                status="REJECTED",
+            ),
         )
         raise HTTPException(status_code=400, detail="LIMIT orders must specify limit_price")
 
@@ -102,28 +120,29 @@ def post_order_intent(intent: OrderIntent) -> Order:
 
     if order is None:
         # Duplicate idempotency_key
+        existing_order = storage.get_order_by_idempotency_key(intent.idempotency_key)
         logger.warning(
             "Duplicate idempotency_key rejected",
-            extra={
-                "idempotency_key": intent.idempotency_key,
-                "exchange": intent.exchange,
-                "symbol": intent.symbol,
-            },
+            extra=_log_context(
+                idempotency_key=intent.idempotency_key,
+                order_id=existing_order.order_id if existing_order else None,
+                exchange=intent.exchange,
+                symbol=intent.symbol,
+                status="REJECTED",
+            ),
         )
         raise HTTPException(status_code=409, detail="Duplicate idempotency_key")
 
     # Log successful order creation
     logger.info(
         "Order created successfully",
-        extra={
-            "idempotency_key": intent.idempotency_key,
-            "order_id": order.order_id,
-            "exchange": order.exchange,
-            "symbol": order.symbol,
-            "side": order.side,
-            "qty": order.qty,
-            "status": order.status,
-        },
+        extra=_log_context(
+            idempotency_key=intent.idempotency_key,
+            order_id=order.order_id,
+            exchange=order.exchange,
+            symbol=order.symbol,
+            status=order.status,
+        ),
     )
 
     return order
