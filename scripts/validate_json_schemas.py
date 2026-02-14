@@ -9,7 +9,7 @@ from jsonschema import Draft202012Validator
 
 def validate_schema_files(schema_dir: Path) -> int:
     errors = 0
-    for schema_file in sorted(schema_dir.glob("*.schema.json")):
+    for schema_file in sorted(schema_dir.glob("**/*.schema.json")):
         with schema_file.open("r", encoding="utf-8") as handle:
             schema = json.load(handle)
         try:

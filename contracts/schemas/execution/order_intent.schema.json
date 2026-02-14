@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/execution/order_intent.schema.json",
+  "title": "OrderIntent",
+  "description": "Intent to place an order in paper or live execution modes",
+  "type": "object",
+  "required": [
+    "idempotency_key",
+    "exchange",
+    "symbol",
+    "side",
+    "qty",
+    "type"
+  ],
+  "properties": {
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique key for idempotent order submission"
+    },
+    "exchange": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Exchange identifier (e.g., binance, coinbase)"
+    },
+    "symbol": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Trading symbol (e.g., BTC/USDT)"
+    },
+    "side": {
+      "type": "string",
+      "enum": ["BUY", "SELL"],
+      "description": "Order side"
+    },
+    "qty": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Order quantity"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["MARKET", "LIMIT"],
+      "description": "Order type"
+    },
+    "limit_price": {
+      "type": ["number", "null"],
+      "exclusiveMinimum": 0,
+      "default": null,
+      "description": "Limit price (must be provided for LIMIT orders, null for MARKET orders)"
+    },
+    "client_ts_utc": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "default": null,
+      "description": "Client-side timestamp when intent was created"
+    }
+  },
+  "additionalProperties": false
+}

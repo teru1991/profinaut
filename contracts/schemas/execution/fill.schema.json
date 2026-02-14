@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/execution/fill.schema.json",
+  "title": "Fill",
+  "description": "Trade fill event (partial or complete)",
+  "type": "object",
+  "required": [
+    "fill_id",
+    "order_id",
+    "price",
+    "qty",
+    "fee",
+    "ts_utc"
+  ],
+  "properties": {
+    "fill_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique fill identifier (exchange trade ID)"
+    },
+    "order_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Order ID this fill belongs to"
+    },
+    "price": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Fill price"
+    },
+    "qty": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Fill quantity"
+    },
+    "fee": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Fee charged for this fill"
+    },
+    "ts_utc": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fill timestamp (UTC)"
+    }
+  },
+  "additionalProperties": false
+}
