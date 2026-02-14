@@ -77,3 +77,67 @@ a {
   background: #1f2937;
   font-size: 12px;
 }
+
+/* Status Ribbon */
+.status-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 20px;
+  border-bottom: 1px solid #1f2937;
+  font-size: 13px;
+  min-height: 36px;
+}
+
+.status-ribbon-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.status-ribbon-text {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-ribbon-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.status-ribbon-time {
+  font-size: 11px;
+  opacity: 0.5;
+}
+
+.status-ribbon-refresh {
+  background: none;
+  border: 1px solid #374151;
+  color: #e6edf3;
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.status-ribbon-refresh:hover {
+  background: #1f2937;
+}
+
+.status-ribbon-refresh:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.status-ribbon-badge-unavailable {
+  background-color: #4c1d95;
+  color: #c4b5fd;
+  font-size: 11px;
+}

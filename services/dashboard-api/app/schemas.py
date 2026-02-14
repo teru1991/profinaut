@@ -17,6 +17,19 @@ class CapabilitiesResponse(BaseModel):
     generated_at: datetime
 
 
+class StatusComponent(BaseModel):
+    name: str
+    status: Literal["OK", "DEGRADED", "DOWN"]
+    degraded_reason: str | None = None
+    last_checked_at: datetime
+    latency_ms: int | None = None
+
+
+class StatusSummaryResponse(BaseModel):
+    overall_status: Literal["OK", "DEGRADED", "DOWN"]
+    components: list[StatusComponent]
+
+
 class HeartbeatIn(BaseModel):
     instance_id: str
     bot_id: str
