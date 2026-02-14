@@ -1,10 +1,7 @@
 import logging
 
-import pytest
-
-
 def test_logging_includes_required_fields(client, caplog):
-    """Test that logs include idempotency_key, order_id, exchange, symbol"""
+    """Test logs include idempotency_key, order_id, exchange, symbol, status"""
     with caplog.at_level(logging.INFO):
         order_intent = {
             "idempotency_key": "logging-test-1",
@@ -24,14 +21,28 @@ def test_logging_includes_required_fields(client, caplog):
         assert any("Received order intent" in msg for msg in log_messages)
         assert any("Order created successfully" in msg for msg in log_messages)
 
-        # Check that required fields are in log records
-        for record in caplog.records:
-            if hasattr(record, "idempotency_key"):
-                assert record.idempotency_key == "logging-test-1"
-            if hasattr(record, "exchange"):
-                assert record.exchange == "binance"
-            if hasattr(record, "symbol"):
-                assert record.symbol == "BTC/USDT"
+        received_record = next(
+            (record for record in caplog.records if record.message == "Received order intent"),
+            None,
+        )
+        created_record = next(
+            (record for record in caplog.records if record.message == "Order created successfully"),
+            None,
+        )
+        assert received_record is not None
+        assert created_record is not None
+
+        assert received_record.idempotency_key == "logging-test-1"
+        assert received_record.exchange == "binance"
+        assert received_record.symbol == "BTC/USDT"
+        assert received_record.order_id is None
+        assert received_record.status == "RECEIVED"
+
+        assert created_record.idempotency_key == "logging-test-1"
+        assert created_record.exchange == "binance"
+        assert created_record.symbol == "BTC/USDT"
+        assert created_record.order_id == order["order_id"]
+        assert created_record.status == "NEW"
 
 
 def test_logging_duplicate_idempotency_key(client, caplog):
@@ -56,9 +67,20 @@ def test_logging_duplicate_idempotency_key(client, caplog):
         response = client.post("/execution/order-intents", json=order_intent)
         assert response.status_code == 409
 
-        # Check warning log
-        log_messages = [record.message for record in caplog.records]
-        assert any("Duplicate idempotency_key rejected" in msg for msg in log_messages)
+        duplicate_record = next(
+            (
+                record
+                for record in caplog.records
+                if record.message == "Duplicate idempotency_key rejected"
+            ),
+            None,
+        )
+        assert duplicate_record is not None
+        assert duplicate_record.idempotency_key == "duplicate-logging-test"
+        assert duplicate_record.exchange == "binance"
+        assert duplicate_record.symbol == "BTC/USDT"
+        assert duplicate_record.order_id is not None
+        assert duplicate_record.status == "REJECTED"
 
 
 def test_logging_unknown_symbol_rejection(client, caplog):

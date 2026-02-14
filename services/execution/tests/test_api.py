@@ -179,3 +179,19 @@ def test_post_order_intent_missing_required_field(client):
 
     response = client.post("/execution/order-intents", json=order_intent)
     assert response.status_code == 422  # Pydantic validation error
+
+
+def test_post_order_intent_rejects_unknown_field(client):
+    """Test unknown fields are rejected to match OpenAPI schema"""
+    order_intent = {
+        "idempotency_key": "test-unknown-field",
+        "exchange": "binance",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "qty": 0.01,
+        "type": "MARKET",
+        "unexpected": "value",
+    }
+
+    response = client.post("/execution/order-intents", json=order_intent)
+    assert response.status_code == 422
