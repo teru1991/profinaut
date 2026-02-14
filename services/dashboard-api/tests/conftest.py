@@ -13,20 +13,28 @@ os.environ["DATABASE_URL"] = "sqlite+pysqlite:///:memory:"
 from app.database import Base, get_db  # noqa: E402
 from app.main import app  # noqa: E402
 
+# Global engine and session for tests
+_test_engine = None
+_TestingSessionLocal = None
+
 
 @pytest.fixture()
 def client() -> Generator[TestClient, None, None]:
-    engine = create_engine(
+    global _test_engine, _TestingSessionLocal
+
+    _test_engine = create_engine(
         "sqlite+pysqlite:///:memory:",
         future=True,
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
-    Base.metadata.create_all(bind=engine)
+    _TestingSessionLocal = sessionmaker(
+        bind=_test_engine, autoflush=False, autocommit=False, future=True
+    )
+    Base.metadata.create_all(bind=_test_engine)
 
     def override_get_db() -> Generator[Session, None, None]:
-        db = TestingSessionLocal()
+        db = _TestingSessionLocal()
         try:
             yield db
         finally:
@@ -36,3 +44,16 @@ def client() -> Generator[TestClient, None, None]:
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest.fixture()
+def db_session() -> Generator[Session, None, None]:
+    """Provides a database session for direct database manipulation in tests."""
+    if _TestingSessionLocal is None:
+        raise RuntimeError("db_session fixture requires client fixture to be called first")
+
+    db = _TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
