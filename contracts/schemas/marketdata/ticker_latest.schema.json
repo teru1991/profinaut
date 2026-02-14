@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/marketdata/ticker_latest.schema.json",
+  "title": "MarketDataTickerLatest",
+  "description": "Canonical latest ticker payload for market data providers. Additive-safe schema for best-bid/ask and quality signaling.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "symbol",
+    "ts",
+    "bid",
+    "ask",
+    "last",
+    "source",
+    "stale"
+  ],
+  "properties": {
+    "symbol": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Venue symbol identifier (e.g., BTC_JPY, BTC/USDT)."
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Event timestamp in UTC (RFC3339)."
+    },
+    "bid": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Best bid price."
+    },
+    "ask": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Best ask price."
+    },
+    "last": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Last traded price."
+    },
+    "mid": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Optional midpoint price (typically (bid + ask) / 2)."
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Upstream provider/source identifier for this ticker sample."
+    },
+    "quality": {
+      "type": "object",
+      "description": "Optional quality summary and diagnostics for the ticker sample.",
+      "additionalProperties": false,
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "OK",
+            "DEGRADED",
+            "STALE",
+            "UNKNOWN"
+          ],
+          "description": "Provider quality classification for this sample."
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Optional normalized confidence score in [0,1]."
+        },
+        "crossed_book": {
+          "type": "boolean",
+          "description": "True if bid >= ask was observed for this sample."
+        }
+      }
+    },
+    "stale": {
+      "type": "boolean",
+      "description": "True if sample age exceeds freshness threshold."
+    },
+    "degraded_reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional non-sensitive degradation reason code/message when quality is degraded."
+    }
+  }
+}
