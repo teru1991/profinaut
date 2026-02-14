@@ -47,7 +47,7 @@
       "type": ["number", "null"],
       "exclusiveMinimum": 0,
       "default": null,
-      "description": "Limit price (required for LIMIT orders)"
+      "description": "Limit price (must be provided for LIMIT orders, null for MARKET orders)"
     },
     "client_ts_utc": {
       "type": ["string", "null"],
