@@ -8,6 +8,18 @@ def test_healthz(client):
     assert payload["status"] == "ok"
 
 
+
+
+def test_capabilities(client):
+    response = client.get("/capabilities")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["service"] == "dashboard-api"
+    assert payload["version"]
+    assert payload["status"] in {"ok", "degraded"}
+    assert isinstance(payload["features"], list)
+    assert payload["generated_at"]
+
 def test_heartbeat_upsert_and_bots_list(client):
     now = datetime.now(timezone.utc).isoformat()
     heartbeat = {
@@ -32,6 +44,9 @@ def test_heartbeat_upsert_and_bots_list(client):
     data = authorized.json()
     assert data["total"] == 1
     assert data["items"][0]["version"] == "1.0.1"
+    assert data["items"][0]["state"] == "RUNNING"
+    assert data["items"][0]["degraded"] is False
+    assert data["items"][0]["degraded_reason"] is None
 
 
 def test_module_crud_with_auth(client):

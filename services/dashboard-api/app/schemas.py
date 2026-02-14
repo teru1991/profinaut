@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -6,6 +7,14 @@ from pydantic import BaseModel, ConfigDict, Field
 class HealthResponse(BaseModel):
     status: str
     timestamp: datetime
+
+
+class CapabilitiesResponse(BaseModel):
+    service: str = "dashboard-api"
+    version: str
+    status: Literal["ok", "degraded"] = "ok"
+    features: list[str]
+    generated_at: datetime
 
 
 class HeartbeatIn(BaseModel):
@@ -28,6 +37,9 @@ class BotOut(BaseModel):
     exchange: str | None = None
     symbol: str | None = None
     status: str | None = None
+    state: str = "UNKNOWN"
+    degraded: bool = False
+    degraded_reason: str | None = None
     last_seen: datetime | None = None
     version: str | None = None
 
