@@ -232,24 +232,6 @@ def run() -> int:
             decision="SKIP_ORDER",
             idempotency_key=idempotency_key,
         )
-        return 0
-
-    if (
-        market_exchange not in allowed_exchanges
-        or order_exchange not in allowed_exchanges
-        or market_symbol not in allowed_symbols
-        or order_symbol not in allowed_symbols
-    ):
-        log_event(
-            "WARN",
-            "new_order_blocked",
-            run_id,
-            bot_id,
-            reason="UNKNOWN_EXCHANGE_OR_SYMBOL",
-            state="SAFE",
-            decision="SKIP_ORDER",
-            idempotency_key=idempotency_key,
-        )
         return 1
 
     try:
@@ -366,16 +348,7 @@ def run() -> int:
 
         return 0
     except (BotError, ValueError) as exc:
-        log_event(
-            "ERROR",
-            "bot_error",
-            run_id,
-            bot_id,
-            error=str(exc),
-            state="ERROR",
-            decision="SKIP_ORDER",
-            idempotency_key=idempotency_key,
-        )
+        log_event("ERROR", "bot_error", run_id, bot_id, error=str(exc), state="ERROR", decision="SKIP_ORDER")
         return 1
 
 
