@@ -11,9 +11,18 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from datetime import UTC, datetime
+import sys
+from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.append(str(_REPO_ROOT))
+
+from libs.observability import audit_event, error_envelope, request_id_middleware
 
 logger = logging.getLogger("marketdata")
 if not logger.handlers:
@@ -21,6 +30,7 @@ if not logger.handlers:
     handler.setFormatter(logging.Formatter("%(message)s"))
     logger.addHandler(handler)
 logger.setLevel(logging.INFO)
+SERVICE_NAME = "marketdata"
 
 
 @dataclass
@@ -58,17 +68,12 @@ class MarketDataPoller:
     def _transition(self, new_state: str, reason: str | None = None) -> None:
         if self._state == new_state:
             return
-        logger.info(
-            json.dumps(
-                {
-                    "event": "marketdata_state_transition",
-                    "from_state": self._state,
-                    "to_state": new_state,
-                    "reason": reason,
-                    "ts_utc": datetime.now(UTC).isoformat(),
-                },
-                ensure_ascii=False,
-            )
+        audit_event(
+            service=SERVICE_NAME,
+            event="marketdata_state_transition",
+            from_state=self._state,
+            to_state=new_state,
+            degraded_reason=reason,
         )
         self._state = new_state
 
@@ -92,17 +97,13 @@ class MarketDataPoller:
         self._apply_reason_state(self._degraded_reason)
         sleep_for = self._current_backoff
         self._current_backoff = min(self._current_backoff * 2, self._config.backoff_max_seconds)
-        logger.warning(
-            json.dumps(
-                {
-                    "event": "gmo_poll_failure",
-                    "error": str(exc),
-                    "consecutive_failures": self._consecutive_failures,
-                    "backoff_seconds": sleep_for,
-                    "ts_utc": datetime.now(UTC).isoformat(),
-                },
-                ensure_ascii=False,
-            )
+        audit_event(
+            service=SERVICE_NAME,
+            event="gmo_poll_failure",
+            degraded_reason=self._degraded_reason,
+            error=str(exc),
+            consecutive_failures=self._consecutive_failures,
+            backoff_seconds=sleep_for,
         )
         return sleep_for
 
@@ -151,7 +152,7 @@ class MarketDataPoller:
         async with self._lock:
             snapshot = self._snapshot
             if snapshot is None:
-                raise HTTPException(status_code=503, detail="Ticker not ready")
+                raise HTTPException(status_code=503, detail={"code": "TICKER_NOT_READY", "message": "Ticker not ready", "details": {}})
 
             degraded_reason = self._degraded_reason
             stale = True
@@ -184,9 +185,43 @@ class MarketDataPoller:
             }
 
 
+
+
 app = FastAPI(title="profinaut-marketdata", version="0.1.0")
+app.add_middleware(request_id_middleware())
 _poller = MarketDataPoller(PollerConfig())
 
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    code = "HTTP_ERROR"
+    message = str(exc.detail)
+    details: dict[str, object] = {}
+    if isinstance(exc.detail, dict):
+        code = str(exc.detail.get("code") or code)
+        message = str(exc.detail.get("message") or message)
+        details = dict(exc.detail.get("details") or {})
+    audit_event(service=SERVICE_NAME, event="http_error", request_id=request_id, code=code, message=message)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=error_envelope(code=code, message=message, details=details, request_id=request_id),
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    audit_event(service=SERVICE_NAME, event="unhandled_exception", request_id=request_id, error=str(exc))
+    return JSONResponse(
+        status_code=500,
+        content=error_envelope(
+            code="INTERNAL_ERROR",
+            message="Unexpected error",
+            details={},
+            request_id=request_id,
+        ),
+    )
 
 @app.on_event("startup")
 async def startup() -> None:

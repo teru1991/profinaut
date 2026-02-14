@@ -2,7 +2,9 @@ import asyncio
 import json
 import logging
 
-from services.marketdata.app.main import MarketDataPoller, PollerConfig, TickerSnapshot
+from fastapi.testclient import TestClient
+
+from services.marketdata.app.main import app, MarketDataPoller, PollerConfig, TickerSnapshot
 
 
 def run(coro):
@@ -88,7 +90,7 @@ def test_degraded_clears_when_fresh_data_returns() -> None:
 
 def test_logs_state_transitions_on_failure_and_recovery(caplog) -> None:
     poller = make_poller()
-    caplog.set_level(logging.INFO, logger="marketdata")
+    caplog.set_level(logging.INFO, logger="observability")
 
     poller._record_failure(RuntimeError("network"))
     poller._record_success(
@@ -113,3 +115,14 @@ def test_logs_state_transitions_on_failure_and_recovery(caplog) -> None:
 
     assert ("healthy", "degraded") in transition_events
     assert ("degraded", "healthy") in transition_events
+
+
+def test_error_envelope_includes_request_id_header() -> None:
+    with TestClient(app) as client:
+        response = client.get("/ticker/latest", headers={"x-request-id": "req-123"})
+
+    assert response.status_code == 503
+    body = response.json()
+    assert body["code"] == "TICKER_NOT_READY"
+    assert body["request_id"] == "req-123"
+    assert response.headers.get("x-request-id") == "req-123"
