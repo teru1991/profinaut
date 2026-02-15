@@ -24,12 +24,7 @@ type ProxyResponse = {
 
 const POLL_INTERVAL_MS = 5000;
 
-type MarketsTickerCardProps = {
-  exchange?: string;
-  symbol?: string;
-};
-
-export function MarketsTickerCard({ exchange = "gmo", symbol = "BTC_JPY" }: MarketsTickerCardProps) {
+export function MarketsTickerCard({ exchange = "gmo", symbol = "BTC_JPY" }: { exchange?: string; symbol?: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);

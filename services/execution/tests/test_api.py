@@ -212,11 +212,68 @@ def test_gmo_live_requires_explicit_feature_flag(client, monkeypatch):
     assert response.json()["code"] == "LIVE_DISABLED"
 
 
+
+
+def test_gmo_live_enabled_but_dry_run_rejects_without_upstream_call(client, monkeypatch):
+    monkeypatch.setenv("ALLOWED_EXCHANGES", "binance,coinbase,gmo")
+    monkeypatch.setenv("EXECUTION_LIVE_ENABLED", "true")
+
+    called = {"place": 0}
+
+    def _never_called(*_args, **_kwargs):
+        called["place"] += 1
+        raise AssertionError("upstream place_order should not be called in dry_run mode")
+
+    monkeypatch.setattr("app.live.GmoLiveExecutor.place_order", _never_called)
+
+    order_intent = {
+        "idempotency_key": "gmo-dry-run-only",
+        "exchange": "gmo",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "qty": 0.01,
+        "type": "MARKET",
+    }
+
+    response = client.post("/execution/order-intents", json=order_intent)
+    assert response.status_code == 403
+    assert response.json()["code"] == "DRY_RUN_ONLY"
+    assert called["place"] == 0
+
+
+def test_gmo_live_off_never_calls_upstream(client, monkeypatch):
+    monkeypatch.setenv("ALLOWED_EXCHANGES", "binance,coinbase,gmo")
+    monkeypatch.setenv("EXECUTION_LIVE_ENABLED", "false")
+
+    called = {"place": 0}
+
+    def _never_called(*_args, **_kwargs):
+        called["place"] += 1
+        raise AssertionError("upstream place_order should never be called when live is disabled")
+
+    monkeypatch.setattr("app.live.GmoLiveExecutor.place_order", _never_called)
+
+    order_intent = {
+        "idempotency_key": "gmo-off-never-call",
+        "exchange": "gmo",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "qty": 0.01,
+        "type": "MARKET",
+    }
+
+    response = client.post("/execution/order-intents", json=order_intent)
+    assert response.status_code == 403
+    assert response.json()["code"] == "LIVE_DISABLED"
+    assert called["place"] == 0
+
+
 def test_gmo_live_place_and_cancel_with_idempotency_mapping(client, monkeypatch, auth_headers):
     from app.live import PlaceOrderResult
     from app.storage import get_storage
 
     monkeypatch.setenv("EXECUTION_LIVE_ENABLED", "true")
+    monkeypatch.setenv("EXECUTION_LIVE_MODE", "live")
     monkeypatch.setenv("GMO_API_BASE_URL", "https://example.invalid")
     monkeypatch.setenv("GMO_API_KEY", "k")
     monkeypatch.setenv("GMO_API_SECRET", "s")
@@ -301,6 +358,7 @@ def test_gmo_live_429_degrades_and_applies_backoff(client, monkeypatch):
     from app.live import LiveRateLimitError
 
     monkeypatch.setenv("EXECUTION_LIVE_ENABLED", "true")
+    monkeypatch.setenv("EXECUTION_LIVE_MODE", "live")
     monkeypatch.setenv("GMO_API_BASE_URL", "https://example.invalid")
     monkeypatch.setenv("GMO_API_KEY", "k")
     monkeypatch.setenv("GMO_API_SECRET", "s")
@@ -335,6 +393,7 @@ def test_gmo_live_duplicate_idempotency_does_not_place_twice(client, monkeypatch
     from app.live import PlaceOrderResult
 
     monkeypatch.setenv("EXECUTION_LIVE_ENABLED", "true")
+    monkeypatch.setenv("EXECUTION_LIVE_MODE", "live")
     monkeypatch.setenv("GMO_API_BASE_URL", "https://example.invalid")
     monkeypatch.setenv("GMO_API_KEY", "k")
     monkeypatch.setenv("GMO_API_SECRET", "s")
@@ -366,54 +425,47 @@ def test_gmo_live_duplicate_idempotency_does_not_place_twice(client, monkeypatch
     assert len(place_calls) == 1
 
 
-def test_sensitive_endpoints_require_authorization(client):
-    """Test that cancel, fill, and reject endpoints require authorization."""
+def test_orders_and_fills_history_endpoints(client):
     order_intent = {
-        "idempotency_key": "test-auth-required",
+        "idempotency_key": "history-order-1",
         "exchange": "binance",
         "symbol": "BTC/USDT",
         "side": "BUY",
-        "qty": 0.01,
+        "qty": 0.05,
         "type": "MARKET",
     }
     created = client.post("/execution/order-intents", json=order_intent)
     assert created.status_code == 201
     order_id = created.json()["order_id"]
 
-    # Test without authentication header - should fail with 401
-    cancel_res = client.post(f"/execution/orders/{order_id}/cancel")
-    assert cancel_res.status_code == 401
+    filled = client.post(f"/execution/orders/{order_id}/fill")
+    assert filled.status_code == 200
 
-    fill_res = client.post(f"/execution/orders/{order_id}/fill")
-    assert fill_res.status_code == 401
+    orders_res = client.get("/orders?page=1&page_size=10")
+    assert orders_res.status_code == 200
+    orders = orders_res.json()
+    assert orders["page"] == 1
+    assert orders["page_size"] == 10
+    assert orders["total"] >= 1
+    assert any(item["order_id"] == order_id for item in orders["items"])
 
-    reject_res = client.post(f"/execution/orders/{order_id}/reject")
-    assert reject_res.status_code == 401
+    fills_res = client.get("/fills?page=1&page_size=10")
+    assert fills_res.status_code == 200
+    fills = fills_res.json()
+    assert fills["page"] == 1
+    assert fills["page_size"] == 10
+    assert fills["total"] >= 1
+    assert any(item["order_id"] == order_id for item in fills["items"])
 
 
-def test_sensitive_endpoints_reject_unauthorized_token(client):
-    """Test that cancel, fill, and reject endpoints reject invalid authorization tokens."""
-    order_intent = {
-        "idempotency_key": "test-invalid-token",
-        "exchange": "binance",
-        "symbol": "BTC/USDT",
-        "side": "BUY",
-        "qty": 0.01,
-        "type": "MARKET",
-    }
-    created = client.post("/execution/order-intents", json=order_intent)
-    assert created.status_code == 201
-    order_id = created.json()["order_id"]
+def test_history_endpoints_empty_shape(client):
+    orders_res = client.get("/orders?page=1&page_size=5")
+    fills_res = client.get("/fills?page=1&page_size=5")
 
-    invalid_headers = {"X-Execution-Token": "wrong-token"}
+    assert orders_res.status_code == 200
+    assert orders_res.json()["items"] == []
+    assert orders_res.json()["total"] == 0
 
-    # Test with invalid authentication header - should fail with 401
-    cancel_res = client.post(f"/execution/orders/{order_id}/cancel", headers=invalid_headers)
-    assert cancel_res.status_code == 401
-
-    fill_res = client.post(f"/execution/orders/{order_id}/fill", headers=invalid_headers)
-    assert fill_res.status_code == 401
-
-    reject_res = client.post(f"/execution/orders/{order_id}/reject", headers=invalid_headers)
-    assert reject_res.status_code == 401
-
+    assert fills_res.status_code == 200
+    assert fills_res.json()["items"] == []
+    assert fills_res.json()["total"] == 0

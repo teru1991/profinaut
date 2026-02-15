@@ -17,9 +17,10 @@ from app.storage import OrderStorage  # noqa: E402
 
 
 @pytest.fixture()
-def client() -> Generator[TestClient, None, None]:
+def client(tmp_path) -> Generator[TestClient, None, None]:
     # Reset storage before each test
-    app_storage._storage = OrderStorage()
+    os.environ["EXECUTION_STORAGE_DB_PATH"] = str(tmp_path / "execution-test.sqlite")
+    app_storage._storage = OrderStorage(db_path=os.environ["EXECUTION_STORAGE_DB_PATH"])
     app_config._settings = None
     app_main._degraded_reason = None
     app_main._live_backoff_until_utc = None
