@@ -192,8 +192,8 @@ export default function CommandsPage() {
 
       return { ok: res.ok, status: res.status, payload };
     } catch (e) {
-      setError(e instanceof Error ? e.message : `Failed to issue ${type}`);
-      return { ok: false, status: 0, payload: { message: `Failed to issue ${type}` } };
+      const message = e instanceof Error ? e.message : `Failed to issue ${type}`;
+      return { ok: false, status: 0, payload: { message } };
     } finally {
       setSubmitting(false);
     }
