@@ -163,103 +163,95 @@ def test_module_crud_with_auth(client):
     assert client.get("/modules", headers={"X-Admin-Token": "test-admin-token"}).json()["total"] == 1
 
 
-def test_command_end_to_end_and_audit_persistence(client):
-    now = datetime.now(UTC)
+def test_commands_create_list_ack_and_filter(client):
+    create_res = client.post(
+        "/commands",
+        json={
+            "type": "PAUSE",
+            "target_bot_id": "bot-cmd",
+            "payload": {"scope": "trading"},
+        },
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert create_res.status_code == 201
+    created = create_res.json()
+    assert created["id"]
+    assert created["type"] == "PAUSE"
+    assert created["target_bot_id"] == "bot-cmd"
+    assert created["status"] == "pending"
 
-    # create instance via heartbeat
-    hb = {
-        "instance_id": "inst-cmd",
-        "bot_id": "bot-cmd",
-        "runtime_mode": "PAPER",
-        "exchange": "BINANCE",
-        "symbol": "ETHUSDT",
-        "version": "1.0.0",
-        "timestamp": now.isoformat(),
-        "metadata": {},
-    }
-    assert client.post("/ingest/heartbeat", json=hb).status_code == 202
+    list_all = client.get("/commands")
+    assert list_all.status_code == 200
+    assert len(list_all.json()) >= 1
 
-    cmd = {
-        "command_id": "22222222-2222-2222-2222-222222222222",
-        "instance_id": "inst-cmd",
-        "command_type": "SAFE_MODE",
-        "issued_at": now.isoformat(),
-        "expires_at": (now + timedelta(minutes=1)).isoformat(),
-        "payload": {},
-    }
+    list_pending_for_bot = client.get("/commands", params={"target_bot_id": "bot-cmd", "status": "pending"})
+    assert list_pending_for_bot.status_code == 200
+    assert len(list_pending_for_bot.json()) == 1
 
-    create_res = client.post("/commands", json=cmd, headers={"X-Admin-Token": "test-admin-token"})
-    assert create_res.status_code == 202
+    ack_res = client.post(
+        f"/commands/{created['id']}/ack",
+        json={"ok": True, "reason": None, "ts": datetime.now(UTC).isoformat()},
+    )
+    assert ack_res.status_code == 200
+    ack_body = ack_res.json()
+    assert ack_body["command_id"] == created["id"]
+    assert ack_body["status"] == "applied"
+    assert ack_body["ack"]["ok"] is True
 
-    pending = client.get("/instances/inst-cmd/commands/pending")
-    assert pending.status_code == 200
-    assert len(pending.json()) == 1
-
-    ack = {
-        "command_id": cmd["command_id"],
-        "instance_id": "inst-cmd",
-        "status": "COMPLETED",
-        "reason": None,
-        "timestamp": datetime.now(UTC).isoformat(),
-    }
-    ack_res = client.post(f"/commands/{cmd['command_id']}/ack", json=ack)
-    assert ack_res.status_code == 202
-
-    pending_after = client.get("/instances/inst-cmd/commands/pending")
-    assert pending_after.status_code == 200
-    assert len(pending_after.json()) == 0
-
-    audit = client.get("/audit/logs", headers={"X-Admin-Token": "test-admin-token"})
-    assert audit.status_code == 200
-    actions = [item["action"] for item in audit.json()["items"]]
-    assert "COMMAND_CREATE" in actions
-    assert "COMMAND_ACK" in actions
+    list_applied_for_bot = client.get("/commands", params={"target_bot_id": "bot-cmd", "status": "applied"})
+    assert list_applied_for_bot.status_code == 200
+    assert len(list_applied_for_bot.json()) == 1
+    assert list_applied_for_bot.json()[0]["ack"]["ok"] is True
 
 
-def test_expired_command_not_delivered(client):
-    now = datetime.now(UTC)
-    hb = {
-        "instance_id": "inst-expired",
-        "bot_id": "bot-expired",
-        "runtime_mode": "PAPER",
-        "exchange": "BINANCE",
-        "symbol": "BTCUSDT",
-        "version": "1.0.0",
-        "timestamp": now.isoformat(),
-        "metadata": {},
-    }
-    assert client.post("/ingest/heartbeat", json=hb).status_code == 202
+def test_commands_invalid_inputs_and_structured_errors(client):
+    create_unauth = client.post("/commands", json={"type": "PAUSE", "target_bot_id": "bot-x", "payload": {}})
+    assert create_unauth.status_code == 401
 
-    expired = {
-        "command_id": "33333333-3333-3333-3333-333333333333",
-        "instance_id": "inst-expired",
-        "command_type": "STOP",
-        "issued_at": now.isoformat(),
-        "expires_at": (now + timedelta(seconds=5)).isoformat(),
-        "payload": {},
-    }
+    invalid_status = client.get("/commands", params={"status": "bad"})
+    assert invalid_status.status_code == 400
+    body = invalid_status.json()
+    assert body["code"] == "INVALID_STATUS"
+    assert body["message"]
 
-    assert client.post("/commands", json=expired, headers={"X-Admin-Token": "test-admin-token"}).status_code == 202
+    missing_command = client.post(
+        "/commands/does-not-exist/ack",
+        json={"ok": False, "reason": "missing", "ts": datetime.now(UTC).isoformat()},
+    )
+    assert missing_command.status_code == 404
+    missing_body = missing_command.json()
+    assert missing_body["code"] == "COMMAND_NOT_FOUND"
 
-    # simulate late poll past TTL
-    late = client.get("/instances/inst-expired/commands/pending")
-    assert late.status_code == 200
-    assert len(late.json()) == 1
 
-    # ack as rejected expired from agent
-    ack = {
-        "command_id": expired["command_id"],
-        "instance_id": "inst-expired",
-        "status": "REJECTED_EXPIRED",
-        "reason": "Command TTL expired",
-        "timestamp": (now + timedelta(minutes=2)).isoformat(),
-    }
-    assert client.post(f"/commands/{expired['command_id']}/ack", json=ack).status_code == 202
+def test_pending_commands_endpoint_filters_by_target_bot_id(client):
+    cmd1 = client.post(
+        "/commands",
+        json={"type": "PAUSE", "target_bot_id": "bot-1", "payload": {}},
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert cmd1.status_code == 201
 
-    no_more = client.get("/instances/inst-expired/commands/pending")
-    assert no_more.status_code == 200
-    assert len(no_more.json()) == 0
+    cmd2 = client.post(
+        "/commands",
+        json={"type": "PAUSE", "target_bot_id": "bot-2", "payload": {}},
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert cmd2.status_code == 201
 
+    pending_bot1 = client.get("/instances/bot-1/commands/pending")
+    assert pending_bot1.status_code == 200
+    assert len(pending_bot1.json()) == 1
+    assert pending_bot1.json()[0]["target_bot_id"] == "bot-1"
+
+    ack = client.post(
+        f"/commands/{cmd1.json()['id']}/ack",
+        json={"ok": True, "reason": None, "ts": datetime.now(UTC).isoformat()},
+    )
+    assert ack.status_code == 200
+
+    pending_bot1_after = client.get("/instances/bot-1/commands/pending")
+    assert pending_bot1_after.status_code == 200
+    assert pending_bot1_after.json() == []
 
 def test_heartbeat_loss_triggers_critical_alert_and_webhook(client, monkeypatch):
     sent = {"count": 0}

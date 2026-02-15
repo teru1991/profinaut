@@ -177,33 +177,39 @@ class ModuleRunActiveAgeResponse(BaseModel):
     avg_active_seconds: float
 
 class CommandIn(BaseModel):
-    command_id: str
-    instance_id: str
-    command_type: str
-    issued_at: datetime
-    expires_at: datetime
+    type: str = Field(..., min_length=1, max_length=32)
+    target_bot_id: str = Field(..., min_length=1, max_length=64)
     payload: dict = Field(default_factory=dict)
+    created_at: datetime | None = None
 
 
-class CommandOut(CommandIn):
-    status: str
-    created_by: str
+class AckOut(BaseModel):
+    command_id: str
+    ok: bool
+    reason: str | None = None
+    ts: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+
+class CommandOut(BaseModel):
+    id: str
+    type: str
+    target_bot_id: str
+    payload: dict
+    status: Literal["pending", "applied", "nack"]
+    created_at: datetime
+    ack: AckOut | None = None
 
 
 class CommandAckIn(BaseModel):
-    command_id: str
-    instance_id: str
-    status: str
+    ok: bool
     reason: str | None = None
-    timestamp: datetime
+    ts: datetime
 
 
-class CommandAckOut(CommandAckIn):
-    ack_id: str
-
-    model_config = ConfigDict(from_attributes=True)
+class CommandAckOut(BaseModel):
+    command_id: str
+    status: Literal["pending", "applied", "nack"]
+    ack: AckOut
 
 
 class AlertOut(BaseModel):

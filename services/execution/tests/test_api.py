@@ -37,7 +37,7 @@ def test_post_order_intent_success(client):
     order = response.json()
     assert "order_id" in order
     assert order["order_id"].startswith("paper-")
-    assert order["status"] == "NEW"
+    assert order["status"] == "ACCEPTED"
     assert order["exchange"] == "binance"
     assert order["symbol"] == "BTC/USDT"
     assert order["side"] == "BUY"
@@ -63,7 +63,7 @@ def test_post_order_intent_limit_order(client):
 
     order = response.json()
     assert order["order_id"].startswith("paper-")
-    assert order["status"] == "NEW"
+    assert order["status"] == "ACCEPTED"
 
 
 def test_post_order_intent_duplicate_idempotency_key(client):
@@ -84,7 +84,7 @@ def test_post_order_intent_duplicate_idempotency_key(client):
     # Second request with same idempotency_key should return 409
     response2 = client.post("/execution/order-intents", json=order_intent)
     assert response2.status_code == 409
-    assert "Duplicate idempotency_key" in response2.json()["detail"]
+    assert "Duplicate idempotency_key" in response2.json()["message"]
 
 
 def test_post_order_intent_unknown_symbol_rejected(client):
@@ -100,7 +100,7 @@ def test_post_order_intent_unknown_symbol_rejected(client):
 
     response = client.post("/execution/order-intents", json=order_intent)
     assert response.status_code == 400
-    assert "not allowed" in response.json()["detail"]
+    assert "not allowed" in response.json()["message"]
 
 
 def test_post_order_intent_unknown_exchange_rejected(client):
@@ -116,7 +116,7 @@ def test_post_order_intent_unknown_exchange_rejected(client):
 
     response = client.post("/execution/order-intents", json=order_intent)
     assert response.status_code == 400
-    assert "not allowed" in response.json()["detail"]
+    assert "not allowed" in response.json()["message"]
 
 
 def test_post_order_intent_limit_without_price(client):
@@ -133,7 +133,7 @@ def test_post_order_intent_limit_without_price(client):
 
     response = client.post("/execution/order-intents", json=order_intent)
     assert response.status_code == 400
-    assert "limit_price" in response.json()["detail"]
+    assert "limit_price" in response.json()["message"]
 
 
 def test_post_order_intent_invalid_side(client):
@@ -209,7 +209,7 @@ def test_gmo_live_requires_explicit_feature_flag(client, monkeypatch):
     }
     response = client.post("/execution/order-intents", json=order_intent)
     assert response.status_code == 403
-    assert response.json()["detail"]["error"] == "LIVE_DISABLED"
+    assert response.json()["code"] == "LIVE_DISABLED"
 
 
 def test_gmo_live_place_and_cancel_with_idempotency_mapping(client, monkeypatch):
@@ -254,6 +254,49 @@ def test_gmo_live_place_and_cancel_with_idempotency_mapping(client, monkeypatch)
     assert cancel_res.json()["status"] == "CANCELED"
 
 
+def test_paper_order_lifecycle_fill_and_terminal_guards(client):
+    order_intent = {
+        "idempotency_key": "paper-lifecycle-fill",
+        "exchange": "binance",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "qty": 0.02,
+        "type": "MARKET",
+    }
+    created = client.post("/execution/order-intents", json=order_intent)
+    assert created.status_code == 201
+    order_id = created.json()["order_id"]
+
+    fill_res = client.post(f"/execution/orders/{order_id}/fill")
+    assert fill_res.status_code == 200
+    assert fill_res.json()["status"] == "FILLED"
+    assert fill_res.json()["filled_qty"] == 0.02
+
+    cancel_after_fill = client.post(f"/execution/orders/{order_id}/cancel")
+    assert cancel_after_fill.status_code == 409
+
+
+def test_paper_order_lifecycle_reject_and_terminal_guards(client):
+    order_intent = {
+        "idempotency_key": "paper-lifecycle-reject",
+        "exchange": "binance",
+        "symbol": "ETH/USDT",
+        "side": "SELL",
+        "qty": 1.5,
+        "type": "MARKET",
+    }
+    created = client.post("/execution/order-intents", json=order_intent)
+    assert created.status_code == 201
+    order_id = created.json()["order_id"]
+
+    reject_res = client.post(f"/execution/orders/{order_id}/reject")
+    assert reject_res.status_code == 200
+    assert reject_res.json()["status"] == "REJECTED"
+
+    fill_after_reject = client.post(f"/execution/orders/{order_id}/fill")
+    assert fill_after_reject.status_code == 409
+
+
 def test_gmo_live_429_degrades_and_applies_backoff(client, monkeypatch):
     from app.live import LiveRateLimitError
 
@@ -285,7 +328,7 @@ def test_gmo_live_429_degrades_and_applies_backoff(client, monkeypatch):
         json={**order_intent, "idempotency_key": "gmo-rate-limit-2"},
     )
     assert second.status_code == 503
-    assert second.json()["detail"]["error"] == "LIVE_DEGRADED"
+    assert second.json()["code"] == "LIVE_DEGRADED"
 
 
 def test_gmo_live_duplicate_idempotency_does_not_place_twice(client, monkeypatch):
