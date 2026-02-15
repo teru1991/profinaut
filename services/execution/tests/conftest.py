@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 # Set environment variables before importing app
 os.environ["ALLOWED_SYMBOLS"] = "BTC/USDT,ETH/USDT"
 os.environ["ALLOWED_EXCHANGES"] = "binance,coinbase"
+os.environ["EXECUTION_API_TOKEN"] = "test-token-12345"
 
 import app.config as app_config  # noqa: E402
 import app.main as app_main  # noqa: E402
@@ -25,3 +26,9 @@ def client() -> Generator[TestClient, None, None]:
 
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture()
+def auth_headers() -> dict[str, str]:
+    """Return authentication headers for protected endpoints."""
+    return {"X-Execution-Token": "test-token-12345"}
