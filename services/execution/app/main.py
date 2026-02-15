@@ -4,9 +4,10 @@ import os
 import sys
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
+from .auth import require_execution_token
 from .config import Settings, get_settings
 from .live import GmoLiveExecutor, LiveRateLimitError, LiveTimeoutError
 from .schemas import CapabilitiesResponse, HealthResponse, Order, OrderIntent
@@ -266,7 +267,7 @@ def post_order_intent(intent: OrderIntent) -> Order:
 
 
 @app.post("/execution/orders/{order_id}/cancel", response_model=Order)
-def cancel_order(order_id: str) -> Order:
+def cancel_order(order_id: str, _actor: str = Depends(require_execution_token)) -> Order:
     settings = get_settings()
     storage = get_storage()
     order = storage.get_order(order_id)
