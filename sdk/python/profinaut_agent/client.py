@@ -25,6 +25,14 @@ class ControlPlaneClient:
         )
         response.raise_for_status()
 
+    def place_order(self, order: dict[str, Any]) -> None:
+        response = requests.post(
+            f"{self.base_url}/orders/place",
+            json=order,
+            timeout=self.timeout_seconds,
+        )
+        response.raise_for_status()
+
 
 def build_heartbeat(instance_id: str, bot_id: str, runtime_mode: str, exchange: str, symbol: str, version: str) -> dict[str, Any]:
     return {
