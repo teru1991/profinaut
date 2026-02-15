@@ -164,7 +164,7 @@
 1. **M1 Safety Foundation 完了を最優先**
    - UGF-0-002/0-004/0-005/0-010 と UGF-D-003/004/005 を同時に締める。
 2. **M2 Operability の可観測性統一**
-   - UGF-0-012/0-013/0-014 と UGF-B-009/UGF-C-010 の整合を取り、degraded理由をUI/APIで同一表現にする。
+   - UGF-0-012/0-013/0-014 と UGF-B-009/UGF-C-010 の整合を取り、`degraded`理由をUI/APIで同一表現にする。
 3. **M3 Reproducible Core で再現性を担保**
    - UGF-0-015/0-016/0-021/0-022 + UGF-E-003 + UGF-I-004 を一連で実装・検証。
 
