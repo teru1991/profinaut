@@ -303,7 +303,7 @@ def fill_order(order_id: str) -> Order:
     if filled is None:
         raise HTTPException(status_code=404, detail="Order not found")
     if filled.status != "FILLED":
-        raise HTTPException(status_code=409, detail=f"Order cannot be filled from status {order.status}")
+        raise HTTPException(status_code=409, detail=f"Order cannot be filled from status {filled.status}")
     return filled
 
 
