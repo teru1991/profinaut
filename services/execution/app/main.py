@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from .auth import require_execution_token
 from .config import Settings, get_settings
 from .live import GmoLiveExecutor, LiveRateLimitError, LiveTimeoutError
+from .policy_gate import PolicyAction, PolicyGateInput, PolicyGateResult, evaluate_policy_gate
 from .schemas import CapabilitiesResponse, FillsHistoryResponse, HealthResponse, OrdersHistoryResponse, Order, OrderIntent
 from .storage import get_storage
 
@@ -88,13 +89,43 @@ def _allowed_actions_for_mode(mode: str) -> list[str]:
     return ["NEW_ORDER", "CANCEL"]
 
 
-def _assert_new_order_allowed() -> None:
-    mode, reason = _resolve_safe_mode()
-    if mode in {"SAFE_MODE", "HALTED"}:
-        raise HTTPException(
-            status_code=403,
-            detail=_error_payload("SAFE_MODE_BLOCKED", f"New order placement is blocked while mode={mode}. {reason}"),
+def _policy_error_message(result: PolicyGateResult, safe_mode: str, degraded_reason: str | None) -> str:
+    if result.reason_code == "SAFE_MODE_BLOCKED":
+        return f"New order placement is blocked while mode={safe_mode}. {degraded_reason or 'Execution is in safety mode.'}"
+    if result.reason_code == "LIVE_DISABLED":
+        return "Live execution is disabled by feature flag"
+    if result.reason_code == "DRY_RUN_ONLY":
+        return "Live execution is in dry-run mode. Set EXECUTION_LIVE_MODE=live to enable upstream calls."
+    if result.reason_code == "LIVE_DEGRADED":
+        return f"Live execution degraded: {_degraded_reason}"
+    return f"Execution blocked by policy gate ({result.reason_code})"
+
+
+def _enforce_policy_gate(*, action: PolicyAction, exchange: str) -> PolicyGateResult:
+    settings = get_settings()
+    safe_mode, degraded_reason = _resolve_safe_mode()
+    result = evaluate_policy_gate(
+        PolicyGateInput(
+            action=action,
+            exchange=exchange,
+            safe_mode=safe_mode,
+            live_enabled=settings.execution_live_enabled,
+            live_mode=settings.execution_live_mode,
+            live_backoff_until_utc=_live_backoff_until_utc,
+            degraded_reason=degraded_reason,
         )
+    )
+
+    if result.decision == "ALLOW":
+        return result
+
+    status_code = 403
+    if result.decision == "THROTTLE":
+        status_code = 503
+    raise HTTPException(
+        status_code=status_code,
+        detail=_error_payload(result.reason_code, _policy_error_message(result, safe_mode, degraded_reason)),
+    )
 
 
 def _log_context(
@@ -154,26 +185,6 @@ def _error_payload(code: str, message: str) -> dict[str, str]:
     return {"error": code, "message": message}
 
 
-def _assert_live_ready() -> None:
-    settings = get_settings()
-    if not settings.execution_live_enabled:
-        raise HTTPException(
-            status_code=403,
-            detail=_error_payload("LIVE_DISABLED", "Live execution is disabled by feature flag"),
-        )
-    if not settings.is_live_mode():
-        raise HTTPException(
-            status_code=403,
-            detail=_error_payload("DRY_RUN_ONLY", "Live execution is in dry-run mode. Set EXECUTION_LIVE_MODE=live to enable upstream calls."),
-        )
-    now = datetime.now(timezone.utc)
-    if _live_backoff_until_utc is not None and now < _live_backoff_until_utc:
-        raise HTTPException(
-            status_code=503,
-            detail=_error_payload("LIVE_DEGRADED", f"Live execution degraded: {_degraded_reason}"),
-        )
-
-
 def _get_live_executor(settings: Settings) -> GmoLiveExecutor:
     api_key = os.getenv("GMO_API_KEY", "")
     api_secret = os.getenv("GMO_API_SECRET", "")
@@ -206,7 +217,7 @@ def post_order_intent(intent: OrderIntent) -> Order:
         ),
     )
 
-    _assert_new_order_allowed()
+    _enforce_policy_gate(action="ORDER_INTENT", exchange=intent.exchange)
 
     # Check if symbol is allowed (safe default: reject unknown symbols)
     allowed_symbols = settings.get_allowed_symbols()
@@ -272,7 +283,6 @@ def post_order_intent(intent: OrderIntent) -> Order:
 
     # Create order (handles idempotency check)
     if intent.exchange == "gmo":
-        _assert_live_ready()
         live = _get_live_executor(settings)
         client_order_id = GmoLiveExecutor.build_client_order_id(intent.idempotency_key)
         try:
@@ -332,7 +342,7 @@ def cancel_order(order_id: str, _actor: str = Depends(require_execution_token)) 
         raise HTTPException(status_code=404, detail="Order not found")
 
     if order.exchange == "gmo":
-        _assert_live_ready()
+        _enforce_policy_gate(action="CANCEL", exchange=order.exchange)
         live = _get_live_executor(settings)
         client_order_id = storage.get_client_order_id_by_order_id(order_id)
         if client_order_id is None:

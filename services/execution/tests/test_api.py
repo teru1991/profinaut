@@ -501,3 +501,35 @@ def test_history_endpoints_empty_shape(client):
     assert fills_res.status_code == 200
     assert fills_res.json()["items"] == []
     assert fills_res.json()["total"] == 0
+
+
+def test_gmo_cancel_blocked_by_policy_gate_never_calls_upstream(client, monkeypatch, auth_headers):
+    from app.schemas import OrderIntent
+    from app.storage import get_storage
+
+    monkeypatch.setenv("EXECUTION_LIVE_ENABLED", "false")
+
+    called = {"cancel": 0}
+
+    def _never_called(*_args, **_kwargs):
+        called["cancel"] += 1
+        raise AssertionError("upstream cancel_order should not be called when live is disabled")
+
+    monkeypatch.setattr("app.live.GmoLiveExecutor.cancel_order", _never_called)
+
+    storage = get_storage()
+    intent = OrderIntent(
+        idempotency_key="gmo-cancel-gated",
+        exchange="gmo",
+        symbol="BTC/USDT",
+        side="BUY",
+        qty=0.01,
+        type="MARKET",
+    )
+    created = storage.create_order(intent, order_id="gmo-cancel-1", client_order_id="pfn-cancel-1")
+    assert created is not None
+
+    response = client.post("/execution/orders/gmo-cancel-1/cancel", headers=auth_headers)
+    assert response.status_code == 403
+    assert response.json()["code"] == "LIVE_DISABLED"
+    assert called["cancel"] == 0
