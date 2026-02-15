@@ -83,6 +83,13 @@ class MarketDataPoller:
         else:
             self._transition("degraded", reason=degraded_reason)
 
+    def _is_stale_due_to_age(self) -> bool:
+        """Check if the last successful data fetch is stale based on age threshold."""
+        if self._last_success_monotonic is None:
+            return True
+        last_success_age = time.monotonic() - self._last_success_monotonic
+        return last_success_age > self._config.stale_threshold_seconds
+
     def _record_success(self, snapshot: TickerSnapshot) -> None:
         self._snapshot = snapshot
         self._last_success_monotonic = time.monotonic()
@@ -196,10 +203,7 @@ class MarketDataPoller:
                 )
 
             degraded_reason = self._degraded_reason
-            stale = True
-            if self._last_success_monotonic is not None:
-                last_success_age = time.monotonic() - self._last_success_monotonic
-                stale = last_success_age > self._config.stale_threshold_seconds
+            stale = self._is_stale_due_to_age()
 
             if stale:
                 degraded_reason = "STALE_TICKER"

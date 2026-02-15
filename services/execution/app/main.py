@@ -4,9 +4,10 @@ import os
 import sys
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
+from .auth import require_execution_token
 from .config import Settings, get_settings
 from .live import GmoLiveExecutor, LiveRateLimitError, LiveTimeoutError
 from .schemas import CapabilitiesResponse, HealthResponse, Order, OrderIntent
@@ -266,7 +267,7 @@ def post_order_intent(intent: OrderIntent) -> Order:
 
 
 @app.post("/execution/orders/{order_id}/cancel", response_model=Order)
-def cancel_order(order_id: str) -> Order:
+def cancel_order(order_id: str, _actor: str = Depends(require_execution_token)) -> Order:
     settings = get_settings()
     storage = get_storage()
     order = storage.get_order(order_id)
@@ -289,12 +290,12 @@ def cancel_order(order_id: str) -> Order:
     if canceled is None:
         raise HTTPException(status_code=404, detail="Order not found")
     if canceled.status != "CANCELED":
-        raise HTTPException(status_code=409, detail=f"Order cannot be canceled from status {order.status}")
+        raise HTTPException(status_code=409, detail=f"Order cannot be canceled from status {canceled.status}")
     return canceled
 
 
 @app.post("/execution/orders/{order_id}/fill", response_model=Order)
-def fill_order(order_id: str) -> Order:
+def fill_order(order_id: str, _actor: str = Depends(require_execution_token)) -> Order:
     storage = get_storage()
     filled = storage.fill_order(order_id)
     if filled is None:
@@ -305,7 +306,7 @@ def fill_order(order_id: str) -> Order:
 
 
 @app.post("/execution/orders/{order_id}/reject", response_model=Order)
-def reject_order(order_id: str) -> Order:
+def reject_order(order_id: str, _actor: str = Depends(require_execution_token)) -> Order:
     storage = get_storage()
     rejected = storage.reject_order(order_id)
     if rejected is None:
