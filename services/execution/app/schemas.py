@@ -35,7 +35,7 @@ class OrderIntent(StrictBaseModel):
 
 class Order(StrictBaseModel):
     order_id: str = Field(..., min_length=1)
-    status: Literal["NEW", "PARTIALLY_FILLED", "FILLED", "CANCELED", "REJECTED", "EXPIRED"]
+    status: Literal["ACCEPTED", "FILLED", "CANCELED", "REJECTED"]
     accepted_ts_utc: datetime
     exchange: str = Field(..., min_length=1)
     symbol: str = Field(..., min_length=1)

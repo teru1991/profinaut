@@ -35,7 +35,7 @@ class OrderStorage:
             order_id = order_id or f"paper-{uuid.uuid4()}"
             order = Order(
                 order_id=order_id,
-                status="NEW",
+                status="ACCEPTED",
                 accepted_ts_utc=datetime.now(timezone.utc),
                 exchange=intent.exchange,
                 symbol=intent.symbol,
@@ -79,7 +79,31 @@ class OrderStorage:
             order = self._orders.get(order_id)
             if order is None:
                 return None
+            if order.status in {"FILLED", "REJECTED"}:
+                return order
             updated = order.model_copy(update={"status": "CANCELED"})
+            self._orders[order_id] = updated
+            return updated
+
+    def fill_order(self, order_id: str) -> Order | None:
+        with self._lock:
+            order = self._orders.get(order_id)
+            if order is None:
+                return None
+            if order.status in {"CANCELED", "REJECTED"}:
+                return order
+            updated = order.model_copy(update={"status": "FILLED", "filled_qty": order.qty})
+            self._orders[order_id] = updated
+            return updated
+
+    def reject_order(self, order_id: str) -> Order | None:
+        with self._lock:
+            order = self._orders.get(order_id)
+            if order is None:
+                return None
+            if order.status in {"FILLED", "CANCELED"}:
+                return order
+            updated = order.model_copy(update={"status": "REJECTED"})
             self._orders[order_id] = updated
             return updated
 
