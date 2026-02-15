@@ -73,7 +73,7 @@ function parseCapabilities(payload: unknown): CommandSafetyPolicy {
     "unknown";
 
   return {
-    dangerousActionsEnabled: enabled === null ? !disabledByFeature : enabled,
+    dangerousActionsEnabled: enabled === null ? false : enabled,
     environmentLabel: environmentCandidate
   };
 }
