@@ -23,13 +23,14 @@ def main() -> None:
         symbol=get_env("SYMBOL", "BTCUSDT"),
         version=get_env("AGENT_VERSION", "0.1.0"),
         heartbeat_interval_seconds=int(get_env("HEARTBEAT_INTERVAL_SECONDS", "30")),
-        deadman_timeout_seconds=int(get_env("DEADMAN_TIMEOUT_SECONDS", "90")),
-        deadman_action=get_env("DEADMAN_ACTION", "SAFE_MODE"),
+        deadman_stale_seconds=int(get_env("DEADMAN_STALE_SECONDS", "90")),
+        deadman_action=get_env("DEADMAN_ACTION", "FLATTEN"),
     )
 
     pull_url = config.command_pull_url or f"{config.control_plane_url.rstrip("/")}/instances/{config.instance_id}/commands/pending"
     source = HttpCommandSource(pull_url) if pull_url else FileCommandSource(config.command_file or "sdk/python/commands.json")
-    client = ControlPlaneClient(config.control_plane_url)
+    timeout_seconds = float(get_env("CONTROL_PLANE_TIMEOUT_SECONDS", "5"))
+    client = ControlPlaneClient(config.control_plane_url, timeout_seconds=timeout_seconds)
 
     runtime = AgentRuntime(config=config, source=source, client=client)
     runtime.run_forever()
