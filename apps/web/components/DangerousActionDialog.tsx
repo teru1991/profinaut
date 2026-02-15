@@ -49,19 +49,22 @@ function parseChallenge(payload: unknown): ConfirmationChallenge | null {
   const record = asRecord(payload);
   if (!record) return null;
 
+  const confirmation = asRecord(record.confirmation);
+  const challenge = asRecord(record.challenge);
+
   const candidates = [
     record.confirm_token,
-    asRecord(record.confirmation)?.token,
-    asRecord(record.challenge)?.confirm_token,
-    asRecord(record.challenge)?.token
+    confirmation?.token,
+    challenge?.confirm_token,
+    challenge?.token
   ];
   const token = candidates.find((value) => typeof value === "string" && value.length > 0);
 
   const expiresCandidates = [
     record.confirm_expires_at,
     record.expires_at,
-    asRecord(record.confirmation)?.expires_at,
-    asRecord(record.challenge)?.expires_at
+    confirmation?.expires_at,
+    challenge?.expires_at
   ];
   const expiresRaw = expiresCandidates.find((value) => typeof value === "string" && value.length > 0);
   const expiresAtMs = typeof expiresRaw === "string" ? Date.parse(expiresRaw) : Number.NaN;
