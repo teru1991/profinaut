@@ -289,7 +289,7 @@ def cancel_order(order_id: str) -> Order:
     if canceled is None:
         raise HTTPException(status_code=404, detail="Order not found")
     if canceled.status != "CANCELED":
-        raise HTTPException(status_code=409, detail=f"Order cannot be canceled from status {order.status}")
+        raise HTTPException(status_code=409, detail=f"Order cannot be canceled from status {canceled.status}")
     return canceled
 
 
