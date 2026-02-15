@@ -65,6 +65,38 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     )
 
 
+
+
+def _resolve_safe_mode() -> tuple[str, str | None]:
+    settings = get_settings()
+    configured_mode = settings.get_safe_mode()
+    now = datetime.now(timezone.utc)
+    is_live_degraded = _live_backoff_until_utc is not None and now < _live_backoff_until_utc
+
+    if configured_mode in {"SAFE_MODE", "HALTED"}:
+        reason = settings.execution_degraded_reason or f"Execution mode is {configured_mode}"
+        return configured_mode, reason
+    if configured_mode == "DEGRADED" or is_live_degraded:
+        reason = _degraded_reason or settings.execution_degraded_reason or "Execution service degraded"
+        return "DEGRADED", reason
+    return "NORMAL", None
+
+
+def _allowed_actions_for_mode(mode: str) -> list[str]:
+    if mode in {"SAFE_MODE", "HALTED", "DEGRADED"}:
+        return ["CANCEL"]
+    return ["NEW_ORDER", "CANCEL"]
+
+
+def _assert_new_order_allowed() -> None:
+    mode, reason = _resolve_safe_mode()
+    if mode in {"SAFE_MODE", "HALTED"}:
+        raise HTTPException(
+            status_code=403,
+            detail=_error_payload("SAFE_MODE_BLOCKED", f"New order placement is blocked while mode={mode}. {reason}"),
+        )
+
+
 def _log_context(
     *,
     idempotency_key: str,
@@ -91,7 +123,7 @@ def get_healthz() -> HealthResponse:
 def get_capabilities() -> CapabilitiesResponse:
     settings = get_settings()
     now = datetime.now(timezone.utc)
-    is_degraded = _live_backoff_until_utc is not None and now < _live_backoff_until_utc
+    safe_mode, degraded_reason = _resolve_safe_mode()
     features = ["paper_execution"]
     if settings.execution_live_enabled:
         features.append("live_execution")
@@ -100,9 +132,11 @@ def get_capabilities() -> CapabilitiesResponse:
     return CapabilitiesResponse(
         service="execution",
         version=settings.service_version,
-        status="degraded" if is_degraded else "ok",
+        status="degraded" if safe_mode == "DEGRADED" else "ok",
+        safe_mode=safe_mode,
+        allowed_actions=_allowed_actions_for_mode(safe_mode),
         features=features,
-        degraded_reason=_degraded_reason if is_degraded else None,
+        degraded_reason=degraded_reason,
         generated_at=now,
     )
 
@@ -171,6 +205,8 @@ def post_order_intent(intent: OrderIntent) -> Order:
             status="RECEIVED",
         ),
     )
+
+    _assert_new_order_allowed()
 
     # Check if symbol is allowed (safe default: reject unknown symbols)
     allowed_symbols = settings.get_allowed_symbols()

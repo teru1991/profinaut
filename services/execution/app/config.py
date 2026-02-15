@@ -1,4 +1,5 @@
 import os
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -26,6 +27,15 @@ class Settings(BaseSettings):
         description="Live mode: 'dry_run' (default) or 'live'",
     )
 
+    execution_safe_mode: str = Field(
+        default="SAFE_MODE",
+        description="Execution safety mode: NORMAL|DEGRADED|SAFE_MODE|HALTED (safe-by-default)",
+    )
+    execution_degraded_reason: str = Field(
+        default="",
+        description="Optional operator-provided reason used when mode is DEGRADED/SAFE_MODE/HALTED",
+    )
+
     gmo_api_base_url: str = Field(default="", description="GMO API base URL for live execution")
     gmo_request_timeout_seconds: float = Field(default=5.0, description="GMO request timeout")
     live_backoff_seconds: int = Field(default=30, description="Backoff duration after 429/timeout")
@@ -47,6 +57,12 @@ class Settings(BaseSettings):
 
     def is_live_mode(self) -> bool:
         return self.execution_live_mode.strip().lower() == "live"
+
+    def get_safe_mode(self) -> Literal["NORMAL", "DEGRADED", "SAFE_MODE", "HALTED"]:
+        normalized = self.execution_safe_mode.strip().upper()
+        if normalized in {"NORMAL", "DEGRADED", "SAFE_MODE", "HALTED"}:
+            return normalized
+        return "SAFE_MODE"
 
 
 _settings: Settings | None = None
