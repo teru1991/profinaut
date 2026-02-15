@@ -212,7 +212,7 @@ def test_gmo_live_requires_explicit_feature_flag(client, monkeypatch):
     assert response.json()["code"] == "LIVE_DISABLED"
 
 
-def test_gmo_live_place_and_cancel_with_idempotency_mapping(client, monkeypatch):
+def test_gmo_live_place_and_cancel_with_idempotency_mapping(client, monkeypatch, auth_headers):
     from app.live import PlaceOrderResult
     from app.storage import get_storage
 
@@ -249,12 +249,12 @@ def test_gmo_live_place_and_cancel_with_idempotency_mapping(client, monkeypatch)
     storage = get_storage()
     assert storage.get_client_order_id_by_idempotency_key("gmo-live-enabled") is not None
 
-    cancel_res = client.post("/execution/orders/gmo-order-1/cancel")
+    cancel_res = client.post("/execution/orders/gmo-order-1/cancel", headers=auth_headers)
     assert cancel_res.status_code == 200
     assert cancel_res.json()["status"] == "CANCELED"
 
 
-def test_paper_order_lifecycle_fill_and_terminal_guards(client):
+def test_paper_order_lifecycle_fill_and_terminal_guards(client, auth_headers):
     order_intent = {
         "idempotency_key": "paper-lifecycle-fill",
         "exchange": "binance",
@@ -267,16 +267,16 @@ def test_paper_order_lifecycle_fill_and_terminal_guards(client):
     assert created.status_code == 201
     order_id = created.json()["order_id"]
 
-    fill_res = client.post(f"/execution/orders/{order_id}/fill")
+    fill_res = client.post(f"/execution/orders/{order_id}/fill", headers=auth_headers)
     assert fill_res.status_code == 200
     assert fill_res.json()["status"] == "FILLED"
     assert fill_res.json()["filled_qty"] == 0.02
 
-    cancel_after_fill = client.post(f"/execution/orders/{order_id}/cancel")
+    cancel_after_fill = client.post(f"/execution/orders/{order_id}/cancel", headers=auth_headers)
     assert cancel_after_fill.status_code == 409
 
 
-def test_paper_order_lifecycle_reject_and_terminal_guards(client):
+def test_paper_order_lifecycle_reject_and_terminal_guards(client, auth_headers):
     order_intent = {
         "idempotency_key": "paper-lifecycle-reject",
         "exchange": "binance",
@@ -289,11 +289,11 @@ def test_paper_order_lifecycle_reject_and_terminal_guards(client):
     assert created.status_code == 201
     order_id = created.json()["order_id"]
 
-    reject_res = client.post(f"/execution/orders/{order_id}/reject")
+    reject_res = client.post(f"/execution/orders/{order_id}/reject", headers=auth_headers)
     assert reject_res.status_code == 200
     assert reject_res.json()["status"] == "REJECTED"
 
-    fill_after_reject = client.post(f"/execution/orders/{order_id}/fill")
+    fill_after_reject = client.post(f"/execution/orders/{order_id}/fill", headers=auth_headers)
     assert fill_after_reject.status_code == 409
 
 
@@ -364,3 +364,56 @@ def test_gmo_live_duplicate_idempotency_does_not_place_twice(client, monkeypatch
     assert second.status_code == 409
 
     assert len(place_calls) == 1
+
+
+def test_sensitive_endpoints_require_authentication(client):
+    """Test that cancel, fill, and reject endpoints require authentication."""
+    order_intent = {
+        "idempotency_key": "test-auth-required",
+        "exchange": "binance",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "qty": 0.01,
+        "type": "MARKET",
+    }
+    created = client.post("/execution/order-intents", json=order_intent)
+    assert created.status_code == 201
+    order_id = created.json()["order_id"]
+
+    # Test without authentication header - should fail with 401
+    cancel_res = client.post(f"/execution/orders/{order_id}/cancel")
+    assert cancel_res.status_code == 401
+
+    fill_res = client.post(f"/execution/orders/{order_id}/fill")
+    assert fill_res.status_code == 401
+
+    reject_res = client.post(f"/execution/orders/{order_id}/reject")
+    assert reject_res.status_code == 401
+
+
+def test_sensitive_endpoints_reject_invalid_token(client):
+    """Test that cancel, fill, and reject endpoints reject invalid tokens."""
+    order_intent = {
+        "idempotency_key": "test-invalid-token",
+        "exchange": "binance",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "qty": 0.01,
+        "type": "MARKET",
+    }
+    created = client.post("/execution/order-intents", json=order_intent)
+    assert created.status_code == 201
+    order_id = created.json()["order_id"]
+
+    invalid_headers = {"X-Execution-Token": "wrong-token"}
+
+    # Test with invalid authentication header - should fail with 401
+    cancel_res = client.post(f"/execution/orders/{order_id}/cancel", headers=invalid_headers)
+    assert cancel_res.status_code == 401
+
+    fill_res = client.post(f"/execution/orders/{order_id}/fill", headers=invalid_headers)
+    assert fill_res.status_code == 401
+
+    reject_res = client.post(f"/execution/orders/{order_id}/reject", headers=invalid_headers)
+    assert reject_res.status_code == 401
+

@@ -4,7 +4,7 @@ import logging
 
 from fastapi.testclient import TestClient
 
-from services.marketdata.app.main import _poller, app, MarketDataPoller, PollerConfig, TickerSnapshot
+from app.main import _poller, app, MarketDataPoller, PollerConfig, TickerSnapshot
 
 
 def run(coro):
