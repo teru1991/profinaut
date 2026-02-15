@@ -1,0 +1,56 @@
+name: Security Supply Chain Guardrails
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  supply-chain-guardrails:
+    name: SBOM + Vulnerability Scan + Artifact Guard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate SBOM (CycloneDX JSON)
+        uses: anchore/sbom-action@v0
+        with:
+          format: cyclonedx-json
+          output-file: sbom.cyclonedx.json
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyclonedx-sbom
+          path: sbom.cyclonedx.json
+
+      - name: Run vulnerability scan (Trivy filesystem scan)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+
+      - name: Compute changed files in PR
+        if: github.event_name == 'pull_request'
+        id: changed_files
+        run: |
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          echo "Comparing base ${BASE_SHA} to head ${HEAD_SHA}"
+          git diff --name-only "${BASE_SHA}" "${HEAD_SHA}" > changed_files.txt
+          echo "changed_file_count=$(wc -l < changed_files.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Enforce generated artifact commit guard
+        if: github.event_name == 'pull_request'
+        run: scripts/security/artifact_guard.sh < changed_files.txt
