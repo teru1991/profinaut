@@ -15,6 +15,9 @@ class CapabilitiesResponse(BaseModel):
     status: Literal["ok", "degraded"] = "ok"
     features: list[str]
     command_safety_enforce_reason: bool = False
+    dangerous_ops_confirmation: dict[str, bool | int] = Field(
+        default_factory=lambda: {"enabled": False, "ttl_seconds": 30}
+    )
     generated_at: datetime
 
 
@@ -184,6 +187,7 @@ class CommandIn(BaseModel):
     reason: str | None = None
     expires_at: str | None = None
     created_at: datetime | None = None
+    confirm_token: str | None = None
 
 
 class AckOut(BaseModel):
