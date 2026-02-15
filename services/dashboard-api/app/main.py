@@ -1092,16 +1092,60 @@ def get_pending_commands(instance_id: str, db: Session = Depends(get_db)) -> lis
         .where(CommandRecord.status == "PENDING")
         .order_by(CommandRecord.created_at)
     ).all()
-    return [_serialize_command(db, row) for row in rows]
+    rows = db.scalars(
+        select(CommandRecord)
+        .where(CommandRecord.target_bot_id == instance_id)
+        .where(CommandRecord.status == "PENDING")
+        .order_by(CommandRecord.created_at)
+    ).all()
+
+    if not rows:
+        return []
+
+    command_ids = [row.command_id for row in rows]
+
+    # Fetch the latest CommandAckRecord for each command_id in a single query
+    # This uses a subquery to find the maximum timestamp for each command_id
+    subquery = (
+        select(
+            CommandAckRecord.command_id,
+            func.max(CommandAckRecord.timestamp).label("max_timestamp")
+        )
+        .where(CommandAckRecord.command_id.in_(command_ids))
+        .group_by(CommandAckRecord.command_id)
+        .subquery()
+    )
+
+    latest_acks = db.scalars(
+        select(CommandAckRecord)
+        .join(
+            subquery,
+            (CommandAckRecord.command_id == subquery.c.command_id) &
+            (CommandAckRecord.timestamp == subquery.c.max_timestamp)
+        )
+    ).all()
+
+    acks_map = {ack.command_id: ack for ack in latest_acks}
+
+    return [_serialize_command(db, row, acks_map.get(row.command_id)) for row in rows]
 
 
 @app.post("/commands/{command_id}/ack", response_model=CommandAckOut, status_code=200)
-def ack_command(command_id: str, payload: CommandAckIn, db: Session = Depends(get_db)) -> CommandAckOut:
     command = db.get(CommandRecord, command_id)
     if command is None:
         raise HTTPException(
             status_code=404,
             detail={"code": "COMMAND_NOT_FOUND", "message": "command not found", "details": {"command_id": command_id}},
+        )
+
+    if command.status != "PENDING":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "COMMAND_NOT_PENDING",
+                "message": f"Command is not pending, but in status '{command.status}'",
+                "details": {"command_id": command_id, "status": command.status},
+            },
         )
 
     ack = CommandAckRecord(

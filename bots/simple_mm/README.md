@@ -29,7 +29,8 @@ When either condition is true, this bot **never** submits a new order intent:
 - `BOT_ID` (default: `simple-mm`)
 - `SAFE_MODE` (`0/1`, default: `0`)
 - `MARKETDATA_BASE_URL` (default: `http://127.0.0.1:8081`)
-- `CONTROLPLANE_BASE_URL` (default: `http://127.0.0.1:8000`)
+- `CONTROL_PLANE_BASE_URL` (preferred; default: `http://127.0.0.1:8000`)
+- `CONTROLPLANE_BASE_URL` (legacy fallback)
 - `EXECUTION_BASE_URL` (default: `http://127.0.0.1:8001`)
 - `MARKETDATA_EXCHANGE` (default: `gmo`)
 - `MARKETDATA_SYMBOL` (default: `BTC_JPY`)
@@ -37,5 +38,22 @@ When either condition is true, this bot **never** submits a new order intent:
 - `ORDER_SYMBOL` (default: same as `MARKETDATA_SYMBOL`)
 - `ORDER_SIDE` (default: `BUY`)
 - `ORDER_QTY` (default: `0.001`)
+- `COMMAND_POLL_INTERVAL_SEC` (default: `2`)
 
 Logs are JSON lines and include `run_id`, `bot_id`, `state`, `decision` (and `order_id` on `order_result`).
+
+
+## Command polling
+
+The bot polls control-plane commands via:
+
+- `GET /commands?target_bot_id=<BOT_ID>&status=pending`
+
+Supported commands:
+
+- `PAUSE`: stop placing new orders (logs `reason=PAUSED`)
+- `RESUME`: resume order placement when not blocked by SAFE_MODE/degraded gates
+
+Each processed command is acked back to control plane:
+
+- `POST /commands/{id}/ack` with `{ ok, reason, ts }`

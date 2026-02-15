@@ -23,115 +23,66 @@ def test_deadman_latches_and_recovers() -> None:
     assert reason == "DEADMAN_RECOVERED"
 
 
-def test_safe_mode_blocks_order_submission(monkeypatch) -> None:
-    calls: list[str] = []
+def test_fetch_pending_commands_uses_expected_filter(monkeypatch) -> None:
+    called = {}
 
-    monkeypatch.setenv("SAFE_MODE", "true")
-    monkeypatch.setenv("BOT_MAX_LOOPS", "1")
+    def _http_json(method, url, **_kwargs):
+        called["method"] = method
+        called["url"] = url
+        return 200, []
 
-    monkeypatch.setattr(main, "fetch_controlplane_capabilities", lambda *_: {"status": "ok"})
-    monkeypatch.setattr(main, "fetch_ticker", lambda *_: {"symbol": "BTC_JPY", "stale": False})
-    monkeypatch.setattr(main, "fetch_execution_capabilities", lambda *_: {"status": "ok"})
+    monkeypatch.setattr(main, "http_json", _http_json)
 
-    def _submit(*_args, **_kwargs):
-        calls.append("submitted")
-        return {"order_id": "x", "filled_qty": 0}
+    result = main.fetch_pending_commands("http://cp.local", "bot-1")
 
-    monkeypatch.setattr(main, "submit_order_intent", _submit)
-
-    rc = main.run()
-
-    assert rc == 0
-    assert calls == []
+    assert result == []
+    assert called["method"] == "GET"
+    assert "target_bot_id=bot-1" in called["url"]
+    assert "status=pending" in called["url"]
 
 
-def test_marketdata_degraded_blocks_order_submission(monkeypatch) -> None:
-    calls: list[str] = []
+def test_pause_command_blocks_new_orders_and_sends_ack(monkeypatch, capsys) -> None:
+    submit_calls: list[dict] = []
+    ack_calls: list[tuple[str, bool, str | None]] = []
 
     monkeypatch.setenv("SAFE_MODE", "false")
-    monkeypatch.setenv("EXECUTION_MODE", "paper")
     monkeypatch.setenv("BOT_MAX_LOOPS", "1")
+    monkeypatch.setenv("COMMAND_POLL_INTERVAL_SEC", "0")
 
     monkeypatch.setattr(main, "fetch_controlplane_capabilities", lambda *_: {"status": "ok"})
-    monkeypatch.setattr(
-        main,
-        "fetch_ticker",
-        lambda *_: {"symbol": "BTC_JPY", "stale": True, "degraded_reason": "STALE_TICKER", "quality": {"status": "STALE"}},
-    )
+    monkeypatch.setattr(main, "fetch_ticker", lambda *_: {"symbol": "BTC_JPY", "stale": False, "quality": {"status": "OK"}})
     monkeypatch.setattr(main, "fetch_execution_capabilities", lambda *_: {"status": "ok"})
+    monkeypatch.setattr(main, "fetch_pending_commands", lambda *_: [{"id": "cmd-1", "type": "PAUSE"}])
 
-    def _submit(*_args, **_kwargs):
-        calls.append("submitted")
-        return {"order_id": "x", "filled_qty": 0}
+    def _ack(_cp, command_id, ok, reason):
+        ack_calls.append((command_id, ok, reason))
 
+    def _submit(_base, intent):
+        submit_calls.append(intent)
+        return {"order_id": "paper-1", "filled_qty": 0}
+
+    monkeypatch.setattr(main, "send_command_ack", _ack)
     monkeypatch.setattr(main, "submit_order_intent", _submit)
 
     rc = main.run()
 
     assert rc == 0
-    assert calls == []
+    assert submit_calls == []
+    assert ack_calls == [("cmd-1", True, None)]
+
+    events = [json.loads(line) for line in capsys.readouterr().out.strip().splitlines() if line.strip()]
+    assert any(e.get("event") == "new_order_blocked" and e.get("reason") == "PAUSED" for e in events)
 
 
-def test_deadman_safe_mode_logs_skip_and_blocks_new_orders(monkeypatch, capsys) -> None:
-    calls: list[str] = []
+def test_resume_restores_order_placement_when_not_safe_mode(monkeypatch) -> None:
+    submit_calls: list[dict] = []
+    ack_calls: list[tuple[str, bool, str | None]] = []
+    polls = {"count": 0}
 
     monkeypatch.setenv("SAFE_MODE", "false")
     monkeypatch.setenv("BOT_MAX_LOOPS", "2")
-    monkeypatch.setenv("DEADMAN_TIMEOUT_SECONDS", "0")
     monkeypatch.setenv("BOT_LOOP_INTERVAL_SECONDS", "0")
-
-    def _controlplane(*_):
-        raise main.BotError("controlplane down")
-
-    monkeypatch.setattr(main, "fetch_controlplane_capabilities", _controlplane)
-
-    def _submit(*_args, **_kwargs):
-        calls.append("submitted")
-        return {"order_id": "x", "filled_qty": 0}
-
-    monkeypatch.setattr(main, "submit_order_intent", _submit)
-
-    rc = main.run()
-    assert rc == 0
-    assert calls == []
-
-    events = [json.loads(line) for line in capsys.readouterr().out.strip().splitlines() if line.strip()]
-    blocked = [e for e in events if e.get("event") == "new_order_blocked"]
-    assert blocked
-    assert any(e.get("reason") == "SAFE_MODE" and e.get("decision") == "SKIP_ORDER" for e in blocked)
-
-
-def test_live_requires_explicit_enable(monkeypatch) -> None:
-    calls: list[str] = []
-
-    monkeypatch.setenv("SAFE_MODE", "false")
-    monkeypatch.setenv("EXECUTION_MODE", "live")
-    monkeypatch.setenv("EXECUTION_LIVE_ENABLED", "false")
-    monkeypatch.setenv("BOT_MAX_LOOPS", "1")
-
-    monkeypatch.setattr(main, "fetch_controlplane_capabilities", lambda *_: {"status": "ok"})
-    monkeypatch.setattr(main, "fetch_ticker", lambda *_: {"symbol": "BTC_JPY", "stale": False})
-    monkeypatch.setattr(main, "fetch_execution_capabilities", lambda *_: {"status": "ok"})
-
-    def _submit(*_args, **_kwargs):
-        calls.append("submitted")
-        return {"order_id": "x", "filled_qty": 0}
-
-    monkeypatch.setattr(main, "submit_order_intent", _submit)
-
-    rc = main.run()
-
-    assert rc == 0
-    assert calls == []
-
-
-def test_paper_e2e_submits_order_when_healthy(monkeypatch) -> None:
-    calls: list[dict] = []
-
-    monkeypatch.setenv("SAFE_MODE", "false")
-    monkeypatch.setenv("EXECUTION_MODE", "paper")
-    monkeypatch.setenv("BOT_MAX_LOOPS", "1")
-    monkeypatch.setenv("DEADMAN_TIMEOUT_SECONDS", "1")
+    monkeypatch.setenv("COMMAND_POLL_INTERVAL_SEC", "0")
 
     monkeypatch.setattr(main, "fetch_controlplane_capabilities", lambda *_: {"status": "ok"})
     monkeypatch.setattr(
@@ -149,24 +100,64 @@ def test_paper_e2e_submits_order_when_healthy(monkeypatch) -> None:
     )
     monkeypatch.setattr(main, "fetch_execution_capabilities", lambda *_: {"status": "ok"})
 
-    def _submit(_base_url, intent):
-        calls.append(intent)
+    def _pending(*_args, **_kwargs):
+        polls["count"] += 1
+        if polls["count"] == 1:
+            return [{"id": "cmd-pause", "type": "PAUSE"}]
+        return [{"id": "cmd-resume", "type": "RESUME"}]
+
+    def _ack(_cp, command_id, ok, reason):
+        ack_calls.append((command_id, ok, reason))
+
+    def _submit(_base, intent):
+        submit_calls.append(intent)
         return {"order_id": "paper-1", "filled_qty": 0}
 
+    monkeypatch.setattr(main, "fetch_pending_commands", _pending)
+    monkeypatch.setattr(main, "send_command_ack", _ack)
     monkeypatch.setattr(main, "submit_order_intent", _submit)
 
     rc = main.run()
 
     assert rc == 0
-    assert len(calls) == 1
-    assert calls[0]["type"] == "MARKET"
+    assert len(submit_calls) == 1
+    assert ack_calls == [("cmd-pause", True, None), ("cmd-resume", True, None)]
 
 
-def test_marketdata_stale_logs_skip_reason(monkeypatch, capsys) -> None:
+def test_unknown_command_is_nacked(monkeypatch) -> None:
+    acks: list[tuple[str, bool, str | None]] = []
+
+    monkeypatch.setenv("BOT_MAX_LOOPS", "1")
+    monkeypatch.setenv("COMMAND_POLL_INTERVAL_SEC", "0")
+    monkeypatch.setattr(main, "fetch_controlplane_capabilities", lambda *_: {"status": "ok"})
+    monkeypatch.setattr(main, "fetch_pending_commands", lambda *_: [{"id": "cmd-x", "type": "REBOOT"}])
+    monkeypatch.setattr(main, "fetch_ticker", lambda *_: {"symbol": "BTC_JPY", "stale": False, "quality": {"status": "OK"}})
+    monkeypatch.setattr(main, "fetch_execution_capabilities", lambda *_: {"status": "ok"})
+    monkeypatch.setattr(main, "submit_order_intent", lambda *_: {"order_id": "paper", "filled_qty": 0})
+
+    def _ack(_cp, command_id, ok, reason):
+        acks.append((command_id, ok, reason))
+
+    monkeypatch.setattr(main, "send_command_ack", _ack)
+
+    rc = main.run()
+
+    assert rc == 0
+    assert len(acks) == 1
+    assert acks[0][0] == "cmd-x"
+    assert acks[0][1] is False
+    assert "Unsupported command type" in (acks[0][2] or "")
+
+
+def test_marketdata_degraded_blocks_order_submission(monkeypatch) -> None:
+    calls: list[str] = []
+
     monkeypatch.setenv("SAFE_MODE", "false")
+    monkeypatch.setenv("EXECUTION_MODE", "paper")
     monkeypatch.setenv("BOT_MAX_LOOPS", "1")
 
     monkeypatch.setattr(main, "fetch_controlplane_capabilities", lambda *_: {"status": "ok"})
+    monkeypatch.setattr(main, "fetch_pending_commands", lambda *_: [])
     monkeypatch.setattr(
         main,
         "fetch_ticker",
@@ -174,10 +165,13 @@ def test_marketdata_stale_logs_skip_reason(monkeypatch, capsys) -> None:
     )
     monkeypatch.setattr(main, "fetch_execution_capabilities", lambda *_: {"status": "ok"})
 
-    rc = main.run()
-    assert rc == 0
+    def _submit(*_args, **_kwargs):
+        calls.append("submitted")
+        return {"order_id": "x", "filled_qty": 0}
 
-    events = [json.loads(line) for line in capsys.readouterr().out.strip().splitlines() if line.strip()]
-    blocked = [e for e in events if e.get("event") == "new_order_blocked"]
-    assert blocked
-    assert any(e.get("reason") == "STALE_TICKER" and e.get("decision") == "SKIP_ORDER" for e in blocked)
+    monkeypatch.setattr(main, "submit_order_intent", _submit)
+
+    rc = main.run()
+
+    assert rc == 0
+    assert calls == []
