@@ -18,7 +18,20 @@ def test_capabilities(client):
     assert payload["version"]
     assert payload["status"] in {"ok", "degraded"}
     assert isinstance(payload["features"], list)
+    assert payload["command_safety_enforce_reason"] is False
     assert payload["generated_at"]
+
+
+def test_capabilities_exposes_command_safety_flag(client, monkeypatch):
+    monkeypatch.setenv("COMMAND_SAFETY_ENFORCE_REASON", "true")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    response = client.get("/capabilities")
+    assert response.status_code == 200
+    assert response.json()["command_safety_enforce_reason"] is True
+    get_settings.cache_clear()
+
 
 def test_heartbeat_upsert_and_bots_list(client):
     now = datetime.now(UTC).isoformat()
@@ -221,6 +234,62 @@ def test_commands_invalid_inputs_and_structured_errors(client):
     assert missing_command.status_code == 404
     missing_body = missing_command.json()
     assert missing_body["code"] == "COMMAND_NOT_FOUND"
+
+
+def test_strong_command_without_reason_is_allowed_when_flag_off(client):
+    res = client.post(
+        "/commands",
+        json={"type": "HALT", "target_bot_id": "bot-cmd", "payload": {}},
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert res.status_code == 201
+
+
+def test_strong_command_requires_reason_and_expires_when_flag_on(client, monkeypatch):
+    monkeypatch.setenv("COMMAND_SAFETY_ENFORCE_REASON", "true")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    res = client.post(
+        "/commands",
+        json={"type": "HALT", "target_bot_id": "bot-cmd", "payload": {}},
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert res.status_code == 400
+    body = res.json()
+    assert body["code"] == "COMMAND_SAFETY_VALIDATION_FAILED"
+    assert "COMMAND_REASON_REQUIRED" in body["details"]["error_codes"]
+    assert "COMMAND_EXPIRES_AT_REQUIRED" in body["details"]["error_codes"]
+
+    # ensure command was not enqueued
+    list_res = client.get("/commands", params={"target_bot_id": "bot-cmd"})
+    assert list_res.status_code == 200
+    assert list_res.json() == []
+    get_settings.cache_clear()
+
+
+def test_strong_command_with_reason_and_future_expires_is_accepted_when_flag_on(client, monkeypatch):
+    monkeypatch.setenv("COMMAND_SAFETY_ENFORCE_REASON", "true")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    expires_at = (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
+    res = client.post(
+        "/commands",
+        json={
+            "type": "KILL_SWITCH",
+            "target_bot_id": "bot-cmd",
+            "payload": {},
+            "reason": "incident response",
+            "expires_at": expires_at,
+        },
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert res.status_code == 201
+    body = res.json()
+    assert body["reason"] == "incident response"
+    assert body["expires_at"]
+    get_settings.cache_clear()
 
 
 def test_pending_commands_endpoint_filters_by_target_bot_id(client):

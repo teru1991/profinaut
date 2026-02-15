@@ -14,6 +14,7 @@ class CapabilitiesResponse(BaseModel):
     version: str
     status: Literal["ok", "degraded"] = "ok"
     features: list[str]
+    command_safety_enforce_reason: bool = False
     generated_at: datetime
 
 
@@ -180,6 +181,8 @@ class CommandIn(BaseModel):
     type: str = Field(..., min_length=1, max_length=32)
     target_bot_id: str = Field(..., min_length=1, max_length=64)
     payload: dict = Field(default_factory=dict)
+    reason: str | None = None
+    expires_at: str | None = None
     created_at: datetime | None = None
 
 
@@ -195,6 +198,8 @@ class CommandOut(BaseModel):
     type: str
     target_bot_id: str
     payload: dict
+    reason: str | None = None
+    expires_at: datetime | None = None
     status: Literal["pending", "applied", "nack"]
     created_at: datetime
     ack: AckOut | None = None

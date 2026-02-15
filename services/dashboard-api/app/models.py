@@ -90,6 +90,8 @@ class CommandRecord(Base):
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="PENDING", index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class CommandAckRecord(Base):
