@@ -1,3 +1,0 @@
-contracts
-dashboard_api
-worker
