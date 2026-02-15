@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/dangerous_confirmation_challenge.json",
+  "title": "DangerousConfirmationChallenge",
+  "type": "object",
+  "required": [
+    "confirm_token",
+    "expires_at"
+  ],
+  "properties": {
+    "confirm_token": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "intent_hash": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

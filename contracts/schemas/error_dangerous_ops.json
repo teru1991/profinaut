@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/error_dangerous_ops.json",
+  "title": "DangerousOpsErrorEnvelope",
+  "type": "object",
+  "required": [
+    "error"
+  ],
+  "properties": {
+    "error": {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "REASON_REQUIRED",
+            "CONFIRMATION_REQUIRED",
+            "CONFIRMATION_EXPIRED",
+            "CONFIRMATION_MISMATCH",
+            "DANGEROUS_OPS_DISABLED"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "details": {
+          "oneOf": [
+            {
+              "$ref": "./dangerous_confirmation_challenge.json"
+            },
+            {
+              "type": "object",
+              "additionalProperties": true
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
