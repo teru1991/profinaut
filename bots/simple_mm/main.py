@@ -185,8 +185,8 @@ def process_commands(controlplane_base_url: str, bot_id: str, run_id: str, pause
             )
             continue
 
-        if command_type in ("PAUSE", "RESUME"):
-            paused = (command_type == "PAUSE")
+        if command_type == "PAUSE":
+            paused = True
             send_command_ack(controlplane_base_url, command_id, ok=True, reason=None)
             log_event(
                 "INFO",
@@ -196,8 +196,22 @@ def process_commands(controlplane_base_url: str, bot_id: str, run_id: str, pause
                 command_id=command_id,
                 command_type=command_type,
                 paused=paused,
-                state="PAUSED" if paused else "RUNNING",
-                decision="SKIP_ORDER" if paused else "CHECK",
+                state="PAUSED",
+                decision="SKIP_ORDER",
+            )
+        elif command_type == "RESUME":
+            paused = False
+            send_command_ack(controlplane_base_url, command_id, ok=True, reason=None)
+            log_event(
+                "INFO",
+                "command_applied",
+                run_id,
+                bot_id,
+                command_id=command_id,
+                command_type=command_type,
+                paused=paused,
+                state="RUNNING",
+                decision="CHECK",
             )
         else:
             reason = f"Unsupported command type '{command_type or 'UNKNOWN'}'"
