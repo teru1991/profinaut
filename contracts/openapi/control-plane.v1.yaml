@@ -606,15 +606,15 @@ paths:
                 $ref: ../schemas/command.schema.json
 
 
-  /instances/{instance_id}/commands/pending:
+  /instances/{bot_id}/commands/pending:
     get:
       tags: [commands]
-      summary: Fetch pending commands for an instance
+      summary: Fetch pending commands for a bot
       operationId: listPendingCommands
       security: []
       parameters:
         - in: path
-          name: instance_id
+          name: bot_id
           required: true
           schema:
             type: string

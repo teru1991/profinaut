@@ -42,7 +42,7 @@ def test_logging_includes_required_fields(client, caplog):
         assert created_record.exchange == "binance"
         assert created_record.symbol == "BTC/USDT"
         assert created_record.order_id == order["order_id"]
-        assert created_record.status == "NEW"
+        assert created_record.status == "ACCEPTED"
 
 
 def test_logging_duplicate_idempotency_key(client, caplog):
