@@ -147,7 +147,7 @@ export default function CommandsPage() {
       try {
         const res = await fetch("/api/capabilities", { cache: "no-store" });
         if (!res.ok) {
-          setSafetyPolicy({ dangerousActionsEnabled: true, environmentLabel: "unknown" });
+          setSafetyPolicy({ dangerousActionsEnabled: false, environmentLabel: "unknown" });
           return;
         }
         const payload = await res.json();
