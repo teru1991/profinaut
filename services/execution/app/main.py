@@ -317,5 +317,5 @@ def reject_order(order_id: str) -> Order:
     if rejected is None:
         raise HTTPException(status_code=404, detail="Order not found")
     if rejected.status != "REJECTED":
-        raise HTTPException(status_code=409, detail=f"Order cannot be rejected from status {order.status}")
+        raise HTTPException(status_code=409, detail=f"Order cannot be rejected from status {rejected.status}")
     return rejected
