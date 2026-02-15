@@ -1096,12 +1096,21 @@ def get_pending_commands(instance_id: str, db: Session = Depends(get_db)) -> lis
 
 
 @app.post("/commands/{command_id}/ack", response_model=CommandAckOut, status_code=200)
-def ack_command(command_id: str, payload: CommandAckIn, db: Session = Depends(get_db)) -> CommandAckOut:
     command = db.get(CommandRecord, command_id)
     if command is None:
         raise HTTPException(
             status_code=404,
             detail={"code": "COMMAND_NOT_FOUND", "message": "command not found", "details": {"command_id": command_id}},
+        )
+
+    if command.status != "PENDING":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "COMMAND_NOT_PENDING",
+                "message": f"Command is not pending, but in status '{command.status}'",
+                "details": {"command_id": command_id, "status": command.status},
+            },
         )
 
     ack = CommandAckRecord(
