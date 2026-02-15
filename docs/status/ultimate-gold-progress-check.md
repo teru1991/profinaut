@@ -23,8 +23,8 @@
 
 | Item | Value |
 |---|---|
-| MASTER_HEAD_SHA | `7c250cd` |
-| Last Updated (JST) | `2026-02-15 20:51 JST` |
+| MASTER_HEAD_SHA | `af1f26c` |
+| Last Updated (JST) | `2026-02-15 20:55 JST` |
 
 ### Open PR Snapshot
 | PR | Status (Draft/Ready/Merged) | Scope | Link |
@@ -129,6 +129,7 @@ Recent merged PRs:
 | 2026-02-15 | コミット/PR実績に基づく進捗更新版へ改訂 | Codex |
 | 2026-02-15 | Repo Snapshot/LOCK/Open PR常設欄、PR証跡URL/SHA欄を追加 | Codex |
 | 2026-02-15 | Repo snapshot + PR/commit evidence refresh | Codex |
+| 2026-02-15 | Repo snapshot + PR/commit evidence refresh (git remote + merge evidence) | Codex |
 
 ## 10. 評価サマリー（Ultimate Gold Spec 清書版 v1.0 照合）
 
