@@ -83,13 +83,12 @@ class ModuleRun(Base):
 class CommandRecord(Base):
     __tablename__ = "commands"
 
-    command_id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    instance_id: Mapped[str] = mapped_column(String(64), ForeignKey("instances.instance_id", ondelete="CASCADE"), nullable=False)
+    command_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     command_type: Mapped[str] = mapped_column(String(32), nullable=False)
-    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    target_bot_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     payload: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
-    status: Mapped[str] = mapped_column(String(32), nullable=False, default="PENDING")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="PENDING", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_by: Mapped[str] = mapped_column(String(255), nullable=False)
 
 
@@ -97,9 +96,8 @@ class CommandAckRecord(Base):
     __tablename__ = "command_acks"
 
     ack_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    command_id: Mapped[str] = mapped_column(String(36), ForeignKey("commands.command_id", ondelete="CASCADE"), nullable=False)
-    instance_id: Mapped[str] = mapped_column(String(64), ForeignKey("instances.instance_id", ondelete="CASCADE"), nullable=False)
-    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    command_id: Mapped[str] = mapped_column(String(36), ForeignKey("commands.command_id", ondelete="CASCADE"), nullable=False, index=True)
+    ok: Mapped[bool] = mapped_column(Boolean, nullable=False)
     reason: Mapped[str | None] = mapped_column(Text)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 

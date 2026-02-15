@@ -146,6 +146,91 @@ def submit_order_intent(execution_base_url: str, intent: dict) -> dict:
     return payload
 
 
+def fetch_pending_commands(controlplane_base_url: str, bot_id: str) -> list[dict]:
+    query = urllib.parse.urlencode({"target_bot_id": bot_id, "status": "pending"})
+    status, payload = http_json("GET", f"{controlplane_base_url}/commands?{query}")
+    if status != 200:
+        raise BotError(f"unexpected commands status: {status}")
+    if not isinstance(payload, list):
+        raise BotError("unexpected commands payload shape")
+    return [item for item in payload if isinstance(item, dict)]
+
+
+def send_command_ack(controlplane_base_url: str, command_id: str, ok: bool, reason: str | None) -> None:
+    ack_payload = {"ok": ok, "reason": reason, "ts": now_utc_iso()}
+    status, _ = http_json("POST", f"{controlplane_base_url}/commands/{command_id}/ack", body=ack_payload)
+    if status not in {200, 201, 202}:
+        raise BotError(f"unexpected command ack status: {status}")
+
+
+def process_commands(controlplane_base_url: str, bot_id: str, run_id: str, paused: bool) -> bool:
+    commands = fetch_pending_commands(controlplane_base_url, bot_id)
+    if not commands:
+        return paused
+
+    for command in commands:
+        command_id = str(command.get("id") or "")
+        command_type = str(command.get("type") or "").strip().upper()
+
+        if not command_id:
+            log_event(
+                "WARN",
+                "command_skipped",
+                run_id,
+                bot_id,
+                reason="MISSING_COMMAND_ID",
+                command=command,
+                state="DEGRADED",
+                decision="SKIP_ORDER",
+            )
+            continue
+
+        if command_type == "PAUSE":
+            paused = True
+            send_command_ack(controlplane_base_url, command_id, ok=True, reason=None)
+            log_event(
+                "INFO",
+                "command_applied",
+                run_id,
+                bot_id,
+                command_id=command_id,
+                command_type=command_type,
+                paused=paused,
+                state="PAUSED",
+                decision="SKIP_ORDER",
+            )
+        elif command_type == "RESUME":
+            paused = False
+            send_command_ack(controlplane_base_url, command_id, ok=True, reason=None)
+            log_event(
+                "INFO",
+                "command_applied",
+                run_id,
+                bot_id,
+                command_id=command_id,
+                command_type=command_type,
+                paused=paused,
+                state="RUNNING",
+                decision="CHECK",
+            )
+        else:
+            reason = f"Unsupported command type '{command_type or 'UNKNOWN'}'"
+            send_command_ack(controlplane_base_url, command_id, ok=False, reason=reason)
+            log_event(
+                "WARN",
+                "command_rejected",
+                run_id,
+                bot_id,
+                command_id=command_id,
+                command_type=command_type,
+                reason=reason,
+                state="DEGRADED",
+                decision="SKIP_ORDER",
+            )
+
+    return paused
+
+
 def ticker_is_degraded(ticker: dict) -> tuple[bool, str | None]:
     if bool(ticker.get("stale")):
         return True, "STALE_TICKER"
@@ -190,7 +275,7 @@ def run() -> int:
     live_enabled = env_bool("EXECUTION_LIVE_ENABLED", default=False)
 
     marketdata_base_url = os.getenv("MARKETDATA_BASE_URL", "http://127.0.0.1:8081")
-    controlplane_base_url = os.getenv("CONTROLPLANE_BASE_URL", "http://127.0.0.1:8000")
+    controlplane_base_url = os.getenv("CONTROL_PLANE_BASE_URL") or os.getenv("CONTROLPLANE_BASE_URL", "http://127.0.0.1:8000")
     execution_base_url = os.getenv("EXECUTION_BASE_URL", "http://127.0.0.1:8001")
 
     market_exchange = os.getenv("MARKETDATA_EXCHANGE", "gmo")
@@ -202,12 +287,15 @@ def run() -> int:
     order_qty = float(os.getenv("ORDER_QTY", "0.001"))
 
     loop_interval_seconds = float(os.getenv("BOT_LOOP_INTERVAL_SECONDS", "2"))
+    command_poll_interval_seconds = float(os.getenv("COMMAND_POLL_INTERVAL_SEC", "2"))
     max_loops = int(os.getenv("BOT_MAX_LOOPS", "1"))
 
     deadman = DeadmanSwitch(
         timeout_seconds=float(os.getenv("DEADMAN_TIMEOUT_SECONDS", "10")),
         recovery_successes_required=int(os.getenv("DEADMAN_RECOVERY_SUCCESSES", "2")),
     )
+    paused_by_command = False
+    last_command_poll_monotonic: float | None = None
 
     log_event(
         "INFO",
@@ -217,6 +305,8 @@ def run() -> int:
         forced_safe_mode=forced_safe_mode,
         execution_mode=execution_mode,
         live_enabled=live_enabled,
+        control_plane_base_url=controlplane_base_url,
+        command_poll_interval_seconds=command_poll_interval_seconds,
         state="STARTING",
         decision="BOOT",
     )
@@ -230,7 +320,6 @@ def run() -> int:
             error=f"Unsupported EXECUTION_MODE '{execution_mode}'",
             state="ERROR",
             decision="SKIP_ORDER",
-            idempotency_key=idempotency_key,
         )
         return 1
 
@@ -256,6 +345,7 @@ def run() -> int:
                     run_id,
                     bot_id,
                     controlplane=controlplane,
+                    deadman_safe_mode=deadman_safe_mode,
                     state="RUNNING",
                 )
             except BotError:
@@ -267,9 +357,20 @@ def run() -> int:
                     bot_id,
                     reason=reason or "CONTROLPLANE_CHECK_FAILED",
                     deadman_safe_mode=deadman_safe_mode,
-                    state="DEGRADED",
+                    state="SAFE_MODE" if deadman_safe_mode else "DEGRADED",
                     decision="SKIP_ORDER",
                 )
+                if deadman_safe_mode:
+                    log_event(
+                        "WARN",
+                        "new_order_blocked",
+                        run_id,
+                        bot_id,
+                        reason="SAFE_MODE",
+                        block_source="DEADMAN_SWITCH",
+                        state="SAFE_MODE",
+                        decision="SKIP_ORDER",
+                    )
                 if iteration < max_loops - 1:
                     time.sleep(loop_interval_seconds)
                 continue
@@ -281,7 +382,34 @@ def run() -> int:
                     run_id,
                     bot_id,
                     reason=str(controlplane.get("degraded_reason") or "CONTROLPLANE_DEGRADED"),
+                    block_source="CONTROLPLANE_STATUS",
                     state="DEGRADED",
+                    decision="SKIP_ORDER",
+                )
+                if iteration < max_loops - 1:
+                    time.sleep(loop_interval_seconds)
+                continue
+
+
+            now_mono = time.monotonic()
+            if last_command_poll_monotonic is None or (now_mono - last_command_poll_monotonic) >= command_poll_interval_seconds:
+                paused_by_command = process_commands(
+                    controlplane_base_url=controlplane_base_url,
+                    bot_id=bot_id,
+                    run_id=run_id,
+                    paused=paused_by_command,
+                )
+                last_command_poll_monotonic = now_mono
+
+            if paused_by_command:
+                log_event(
+                    "WARN",
+                    "new_order_blocked",
+                    run_id,
+                    bot_id,
+                    reason="PAUSED",
+                    block_source="COMMAND",
+                    state="PAUSED",
                     decision="SKIP_ORDER",
                 )
                 if iteration < max_loops - 1:
@@ -303,13 +431,16 @@ def run() -> int:
                 capabilities=capabilities,
             )
             if blocked:
+                block_state = "SAFE_MODE" if reason == "SAFE_MODE" else "DEGRADED"
+                block_source = "DEADMAN_SWITCH" if reason == "SAFE_MODE" else "SERVICE_GATING"
                 log_event(
                     "WARN",
                     "new_order_blocked",
                     run_id,
                     bot_id,
                     reason=reason,
-                    state="SAFE_MODE" if reason == "SAFE_MODE" else "DEGRADED",
+                    block_source=block_source,
+                    state=block_state,
                     decision="SKIP_ORDER",
                 )
                 if iteration < max_loops - 1:
