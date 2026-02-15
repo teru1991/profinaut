@@ -153,7 +153,7 @@ export default function CommandsPage() {
         const payload = await res.json();
         setSafetyPolicy(parseCapabilities(payload));
       } catch {
-        setSafetyPolicy({ dangerousActionsEnabled: true, environmentLabel: "unknown" });
+        setSafetyPolicy({ dangerousActionsEnabled: false, environmentLabel: "unknown" });
       }
     }
 
