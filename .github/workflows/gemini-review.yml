@@ -57,13 +57,14 @@ jobs:
         if: steps.pr.outputs.isFork == 'true'
         run: |
           echo "Fork PR detected; skipping Gemini review to avoid secrets exposure."
-          exit 0
 
       - name: Fetch PR diff (no checkout)
+        if: steps.pr.outputs.isFork != 'true'
         id: diff
         uses: actions/github-script@v7
         with:
           script: |
+            const fs = require('fs');
             const prNumber = Number('${{ steps.pr.outputs.number }}');
 
             const res = await github.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
@@ -81,12 +82,11 @@ jobs:
               diffText = `${diffText.slice(0, MAX_CHARS)}\n\n[TRUNCATED]\n`;
             }
 
-            core.setOutput('text', diffText);
+            fs.writeFileSync('diff.txt', diffText);
 
       - name: Build Gemini prompt
+        if: steps.pr.outputs.isFork != 'true'
         id: prompt
-        env:
-          DIFF_TEXT: ${{ steps.diff.outputs.text }}
         run: |
           cat > prompt.txt <<'PROMPT'
           あなたは GitHub 上のプルリクエストをレビューするシニアエンジニアです。
@@ -118,9 +118,10 @@ jobs:
           【Diff】
           PROMPT
 
-          printf '%s\n' "$DIFF_TEXT" >> prompt.txt
+          cat diff.txt >> prompt.txt
 
       - name: Call Gemini API
+        if: steps.pr.outputs.isFork != 'true'
         id: gemini
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -130,18 +131,15 @@ jobs:
           : "${GEMINI_API_KEY:?Missing secrets.GEMINI_API_KEY}"
           MODEL="${GEMINI_MODEL:-gemini-1.5-pro}"
 
+          # Build JSON payload using jq to safely handle prompt content
+          jq -n --rawfile prompt prompt.txt \
+            '{contents: [{role: "user", parts: [{text: $prompt}]}]}' \
+            > payload.json
+
           RESP="$(curl -sS -X POST \
             "https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}" \
             -H "Content-Type: application/json" \
-            --data-binary @- <<JSON
-          {
-            "contents": [{
-              "role": "user",
-              "parts": [{"text": $(jq -Rs . < prompt.txt)}]
-            }]
-          }
-          JSON
-          )"
+            -d @payload.json)"
 
           OUT="$(echo "$RESP" | jq -r '.candidates[0].content.parts[0].text // empty')"
 
@@ -151,17 +149,19 @@ jobs:
             OUT="(Geminiの応答を取得できませんでした。API応答形式をご確認ください。)"
           fi
 
+          DELIM="GEMINI_EOF_$(date +%s)"
           {
-            echo "body<<EOF"
+            echo "body<<${DELIM}"
             echo "## 🤖 Gemini Review"
             echo
             echo "_model: ${MODEL}_"
             echo
             echo "$OUT"
-            echo "EOF"
+            echo "${DELIM}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Post review comment to PR
+        if: steps.pr.outputs.isFork != 'true'
         uses: actions/github-script@v7
         env:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
