@@ -45,7 +45,8 @@ Required UX/API protections:
 2. Reason input is required.
 3. Double-confirm challenge is required.
 4. Challenge TTL enforcement is required.
-5. Full audit events are required.
+5. Confirmation must bind to the same intent payload (hash or equivalent matching).
+6. Full audit events are required.
 
 ### T2 — Elevated but limited-blast operations
 Operations with bounded impact that still require traceability and explicit operator intent.
