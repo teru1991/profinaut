@@ -130,6 +130,7 @@ Recent merged PRs:
 | 2026-02-15 | Repo Snapshot/LOCK/Open PR常設欄、PR証跡URL/SHA欄を追加 | Codex |
 | 2026-02-15 | Repo snapshot + PR/commit evidence refresh | Codex |
 | 2026-02-15 | Repo snapshot + PR/commit evidence refresh (git remote + merge evidence) | Codex |
+| 2026-02-15 | dangerous ops confirmation spec added | Codex |
 
 ## 10. 評価サマリー（Ultimate Gold Spec 清書版 v1.0 照合）
 
