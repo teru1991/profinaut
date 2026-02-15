@@ -23,30 +23,27 @@
 
 | Item | Value |
 |---|---|
-| MASTER_HEAD_SHA | `9cb7ed0` |
-| Last Updated (JST) | `2026-02-15 00:00 JST` |
+| MASTER_HEAD_SHA | `af1f26c` |
+| Last Updated (JST) | `2026-02-15 20:55 JST` |
 
 ### Open PR Snapshot
 | PR | Status (Draft/Ready/Merged) | Scope | Link |
 |---|---|---|---|
-| #68 | Merged | live mode hardening / idempotency persistence / orders-fills history | https://github.com/teru1991/profinaut/pull/68 |
-| #67 | Merged | markets page type stabilization | https://github.com/teru1991/profinaut/pull/67 |
-| #66 | Merged | commands UI/API hardening | https://github.com/teru1991/profinaut/pull/66 |
-| #64 | Merged | bot command polling/ack improvements | https://github.com/teru1991/profinaut/pull/64 |
-| #63 | Merged | operational robustness updates | https://github.com/teru1991/profinaut/pull/63 |
-| #62 | Merged | operational robustness updates | https://github.com/teru1991/profinaut/pull/62 |
-| #61 | Merged | operational robustness updates | https://github.com/teru1991/profinaut/pull/61 |
-| #60 | Merged | security endpoint fixes | https://github.com/teru1991/profinaut/pull/60 |
-| #58 | Merged | marketdata validation hardening | https://github.com/teru1991/profinaut/pull/58 |
+| _none_ | - | - | - |
+
+Recent merged PRs:
+- #72 https://github.com/teru1991/profinaut/pull/72
+- #71 https://github.com/teru1991/profinaut/pull/71
+- #70 https://github.com/teru1991/profinaut/pull/70
 
 ### Current LOCK Owners（排他管理）
 | Lock Scope | Owner PR/Task | Owner | Expires | Notes |
 |---|---|---|---|---|
-| contracts | _unlocked_ | - | - | 競合時は単独PRで取得 |
-| migrations | _unlocked_ | - | - | 競合時は単独PRで取得 |
-| lockfile | _unlocked_ | - | - | 競合時は単独PRで取得 |
-| CI | _unlocked_ | - | - | 競合時は単独PRで取得 |
-| infra | _unlocked_ | - | - | 競合時は単独PRで取得 |
+| contracts | _unlocked_ | - | - | 現在Open PRなし |
+| migrations | _unlocked_ | - | - | 現在Open PRなし |
+| lockfile | _unlocked_ | - | - | 現在Open PRなし |
+| CI | _unlocked_ | - | - | 現在Open PRなし |
+| infra | _unlocked_ | - | - | 現在Open PRなし |
 
 ## 4. 進捗スナップショット（コミット/PR実績ベース）
 
@@ -77,15 +74,15 @@
 ### 5.2 直近PR/コミット由来の進捗（URL/SHA必須）
 | PR | Summary | PR URL | Merge Commit SHA |
 |---|---|---|---|
-| #68 | live mode hardening、idempotency永続化、orders/fills履歴 | https://github.com/teru1991/profinaut/pull/68 | _(fill on update)_ |
-| #67 | markets page の型安定化 | https://github.com/teru1991/profinaut/pull/67 | _(fill on update)_ |
-| #66 | commands UI/API の改善 | https://github.com/teru1991/profinaut/pull/66 | _(fill on update)_ |
-| #64 | bot command polling/ack の改善 | https://github.com/teru1991/profinaut/pull/64 | _(fill on update)_ |
-| #63 | 運用系の改善 | https://github.com/teru1991/profinaut/pull/63 | _(fill on update)_ |
-| #62 | 運用系の改善 | https://github.com/teru1991/profinaut/pull/62 | _(fill on update)_ |
-| #61 | 運用系の改善 | https://github.com/teru1991/profinaut/pull/61 | _(fill on update)_ |
-| #60 | セキュリティ関連のエンドポイント修正 | https://github.com/teru1991/profinaut/pull/60 | _(fill on update)_ |
-| #58 | marketdataのバリデーション強化 | https://github.com/teru1991/profinaut/pull/58 | _(fill on update)_ |
+| #68 | live mode hardening、idempotency永続化、orders/fills履歴 | https://github.com/teru1991/profinaut/pull/68 | `47efa14` |
+| #67 | markets page の型安定化 | https://github.com/teru1991/profinaut/pull/67 | `5cc0593` |
+| #66 | commands UI/API の改善 | https://github.com/teru1991/profinaut/pull/66 | `ea4387b` |
+| #64 | bot command polling/ack の改善 | https://github.com/teru1991/profinaut/pull/64 | `62861f5` |
+| #63 | 運用系の改善 | https://github.com/teru1991/profinaut/pull/63 | `27c9a98` |
+| #62 | 運用系の改善 | https://github.com/teru1991/profinaut/pull/62 | `ae57aa3` |
+| #61 | 運用系の改善 | https://github.com/teru1991/profinaut/pull/61 | `d52c018` |
+| #60 | セキュリティ関連のエンドポイント修正 | https://github.com/teru1991/profinaut/pull/60 | `055e2a3` |
+| #58 | marketdataのバリデーション強化 | https://github.com/teru1991/profinaut/pull/58 | `1a8c39e` |
 
 ### 5.3 Ultimate Gold要件へのマッピング（現時点）
 - **達成済み（または土台あり）**
@@ -131,6 +128,8 @@
 | 2026-02-15 | 初版作成 | Codex |
 | 2026-02-15 | コミット/PR実績に基づく進捗更新版へ改訂 | Codex |
 | 2026-02-15 | Repo Snapshot/LOCK/Open PR常設欄、PR証跡URL/SHA欄を追加 | Codex |
+| 2026-02-15 | Repo snapshot + PR/commit evidence refresh | Codex |
+| 2026-02-15 | Repo snapshot + PR/commit evidence refresh (git remote + merge evidence) | Codex |
 
 ## 10. 評価サマリー（Ultimate Gold Spec 清書版 v1.0 照合）
 
