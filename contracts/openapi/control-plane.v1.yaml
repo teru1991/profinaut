@@ -604,6 +604,18 @@ paths:
             application/json:
               schema:
                 $ref: ../schemas/command.schema.json
+        "400":
+          description: Dangerous operation confirmation required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DangerousOpsErrorEnvelope'
+        "403":
+          description: Dangerous operations are disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DangerousOpsErrorEnvelope'
 
 
   /instances/{bot_id}/commands/pending:
@@ -914,9 +926,27 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DangerousOpMeta'
       responses:
         "204":
           description: Module deleted
+        "400":
+          description: Dangerous operation confirmation required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DangerousOpsErrorEnvelope'
+        "403":
+          description: Dangerous operations are disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DangerousOpsErrorEnvelope'
 
   /modules/{module_id}/run:
     post:
@@ -995,6 +1025,12 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DangerousOpMeta'
       responses:
         "200":
           description: Canceled module run
@@ -1002,6 +1038,18 @@ paths:
             application/json:
               schema:
                 $ref: ../schemas/module_run.schema.json
+        "400":
+          description: Dangerous operation confirmation required or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DangerousOpsErrorEnvelope'
+        "403":
+          description: Dangerous operations are disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DangerousOpsErrorEnvelope'
 
   /module-runs/stats:
     get:
@@ -1222,6 +1270,12 @@ components:
   schemas:
     MarketDataTickerLatest:
       $ref: ../schemas/marketdata/ticker_latest.schema.json
+    DangerousConfirmationChallenge:
+      $ref: ../schemas/dangerous_confirmation_challenge.json
+    DangerousOpMeta:
+      $ref: ../schemas/dangerous_op_meta.json
+    DangerousOpsErrorEnvelope:
+      $ref: ../schemas/error_dangerous_ops.json
   securitySchemes:
     AdminToken:
       type: apiKey
