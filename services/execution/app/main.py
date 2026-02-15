@@ -4,12 +4,12 @@ import os
 import sys
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 
 from .config import Settings, get_settings
 from .live import GmoLiveExecutor, LiveRateLimitError, LiveTimeoutError
-from .schemas import CapabilitiesResponse, HealthResponse, Order, OrderIntent
+from .schemas import CapabilitiesResponse, FillsHistoryResponse, HealthResponse, OrdersHistoryResponse, Order, OrderIntent
 from .storage import get_storage
 
 # Add libs to path for observability module
@@ -94,6 +94,8 @@ def get_capabilities() -> CapabilitiesResponse:
     features = ["paper_execution"]
     if settings.execution_live_enabled:
         features.append("live_execution")
+        if not settings.is_live_mode():
+            features.append("live_dry_run")
     return CapabilitiesResponse(
         service="execution",
         version=settings.service_version,
@@ -123,6 +125,11 @@ def _assert_live_ready() -> None:
         raise HTTPException(
             status_code=403,
             detail=_error_payload("LIVE_DISABLED", "Live execution is disabled by feature flag"),
+        )
+    if not settings.is_live_mode():
+        raise HTTPException(
+            status_code=403,
+            detail=_error_payload("DRY_RUN_ONLY", "Live execution is in dry-run mode. Set EXECUTION_LIVE_MODE=live to enable upstream calls."),
         )
     now = datetime.now(timezone.utc)
     if _live_backoff_until_utc is not None and now < _live_backoff_until_utc:
@@ -265,6 +272,20 @@ def post_order_intent(intent: OrderIntent) -> Order:
     return order
 
 
+@app.get("/orders", response_model=OrdersHistoryResponse)
+def list_orders(page: int = Query(default=1, ge=1), page_size: int = Query(default=50, ge=1, le=200)) -> OrdersHistoryResponse:
+    storage = get_storage()
+    items, total = storage.list_orders(page=page, page_size=page_size)
+    return OrdersHistoryResponse(items=items, page=page, page_size=page_size, total=total)
+
+
+@app.get("/fills", response_model=FillsHistoryResponse)
+def list_fills(page: int = Query(default=1, ge=1), page_size: int = Query(default=50, ge=1, le=200)) -> FillsHistoryResponse:
+    storage = get_storage()
+    items, total = storage.list_fills(page=page, page_size=page_size)
+    return FillsHistoryResponse(items=items, page=page, page_size=page_size, total=total)
+
+
 @app.post("/execution/orders/{order_id}/cancel", response_model=Order)
 def cancel_order(order_id: str) -> Order:
     settings = get_settings()
@@ -288,4 +309,34 @@ def cancel_order(order_id: str) -> Order:
     canceled = storage.cancel_order(order_id)
     if canceled is None:
         raise HTTPException(status_code=404, detail="Order not found")
+    if canceled.status != "CANCELED":
+        raise HTTPException(status_code=409, detail=f"Order cannot be canceled from status {order.status}")
     return canceled
+
+
+@app.post("/execution/orders/{order_id}/fill", response_model=Order)
+def fill_order(order_id: str) -> Order:
+    storage = get_storage()
+    order = storage.get_order(order_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+    filled = storage.fill_order(order_id)
+    if filled is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if filled.status != "FILLED":
+        raise HTTPException(status_code=409, detail=f"Order cannot be filled from status {order.status}")
+    return filled
+
+
+@app.post("/execution/orders/{order_id}/reject", response_model=Order)
+def reject_order(order_id: str) -> Order:
+    storage = get_storage()
+    order = storage.get_order(order_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+    rejected = storage.reject_order(order_id)
+    if rejected is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if rejected.status != "REJECTED":
+        raise HTTPException(status_code=409, detail=f"Order cannot be rejected from status {order.status}")
+    return rejected

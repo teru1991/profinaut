@@ -6,6 +6,7 @@ const navItems = [
   { href: "/bots", label: "Bots" },
   { href: "/portfolio", label: "Portfolio" },
   { href: "/markets", label: "Markets" },
+  { href: "/commands", label: "Commands" },
   { href: "/analytics", label: "Analytics" },
   { href: "/datasets", label: "Datasets" },
   { href: "/admin/modules", label: "Modules / Admin" }

@@ -35,10 +35,33 @@ class OrderIntent(StrictBaseModel):
 
 class Order(StrictBaseModel):
     order_id: str = Field(..., min_length=1)
-    status: Literal["NEW", "PARTIALLY_FILLED", "FILLED", "CANCELED", "REJECTED", "EXPIRED"]
+    status: Literal["ACCEPTED", "FILLED", "CANCELED", "REJECTED"]
     accepted_ts_utc: datetime
     exchange: str = Field(..., min_length=1)
     symbol: str = Field(..., min_length=1)
     side: Literal["BUY", "SELL"]
     qty: float = Field(..., gt=0)
     filled_qty: float = Field(..., ge=0)
+
+
+class Fill(StrictBaseModel):
+    fill_id: str = Field(..., min_length=1)
+    order_id: str = Field(..., min_length=1)
+    symbol: str = Field(..., min_length=1)
+    side: Literal["BUY", "SELL"]
+    qty: float = Field(..., gt=0)
+    ts_utc: datetime
+
+
+class OrdersHistoryResponse(StrictBaseModel):
+    items: list[Order]
+    page: int = Field(..., ge=1)
+    page_size: int = Field(..., ge=1)
+    total: int = Field(..., ge=0)
+
+
+class FillsHistoryResponse(StrictBaseModel):
+    items: list[Fill]
+    page: int = Field(..., ge=1)
+    page_size: int = Field(..., ge=1)
+    total: int = Field(..., ge=0)

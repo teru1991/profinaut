@@ -6,6 +6,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
@@ -994,67 +995,123 @@ def update_module_run_status(
     return run
 
 
-@app.post("/commands", response_model=CommandOut, status_code=202)
+def _to_command_status(raw: str) -> str:
+    if raw == "APPLIED":
+        return "applied"
+    if raw == "NACK":
+        return "nack"
+    return "pending"
+
+
+def _latest_ack_for_command(db: Session, command_id: str) -> CommandAckRecord | None:
+    return db.scalars(
+        select(CommandAckRecord)
+        .where(CommandAckRecord.command_id == command_id)
+        .order_by(CommandAckRecord.timestamp.desc())
+        .limit(1)
+    ).first()
+
+
+def _serialize_command(db: Session, row: CommandRecord) -> CommandOut:
+    latest_ack = _latest_ack_for_command(db, row.command_id)
+    ack_payload = None
+    if latest_ack is not None:
+        ack_payload = {
+            "command_id": latest_ack.command_id,
+            "ok": latest_ack.ok,
+            "reason": latest_ack.reason,
+            "ts": latest_ack.timestamp,
+        }
+
+    return CommandOut(
+        id=row.command_id,
+        type=row.command_type,
+        target_bot_id=row.target_bot_id,
+        payload=row.payload,
+        status=_to_command_status(row.status),
+        created_at=row.created_at,
+        ack=ack_payload,
+    )
+
+
+@app.post("/commands", response_model=CommandOut, status_code=201)
 def create_command(payload: CommandIn, actor: str = Depends(require_admin_actor), db: Session = Depends(get_db)) -> CommandOut:
-    if payload.expires_at <= payload.issued_at:
-        raise HTTPException(status_code=400, detail="expires_at must be greater than issued_at")
-
-    existing = db.get(CommandRecord, payload.command_id)
-    if existing is not None:
-        raise HTTPException(status_code=409, detail="command_id already exists")
-
-    instance = db.get(Instance, payload.instance_id)
-    if instance is None:
-        raise HTTPException(status_code=404, detail="instance not found")
+    created_at = payload.created_at or datetime.now(UTC)
+    command_id = str(uuid4())
 
     row = CommandRecord(
-        command_id=payload.command_id,
-        instance_id=payload.instance_id,
-        command_type=payload.command_type,
-        issued_at=payload.issued_at,
-        expires_at=payload.expires_at,
+        command_id=command_id,
+        command_type=payload.type,
+        target_bot_id=payload.target_bot_id,
         payload=payload.payload,
         status="PENDING",
+        created_at=created_at,
         created_by=actor,
     )
     db.add(row)
-    write_audit(db, actor, "COMMAND_CREATE", "command", payload.command_id, "SUCCESS", {"type": payload.command_type})
+    write_audit(db, actor, "COMMAND_CREATE", "command", command_id, "SUCCESS", {"type": payload.type, "target_bot_id": payload.target_bot_id})
     db.commit()
     db.refresh(row)
-    return row
+    return _serialize_command(db, row)
+
+
+@app.get("/commands", response_model=list[CommandOut])
+def list_commands(
+    target_bot_id: str | None = Query(default=None),
+    status: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> list[CommandOut]:
+    query = select(CommandRecord)
+
+    if target_bot_id:
+        query = query.where(CommandRecord.target_bot_id == target_bot_id)
+
+    if status:
+        normalized = status.strip().lower()
+        if normalized not in {"pending", "applied", "nack"}:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "INVALID_STATUS",
+                    "message": "status must be one of pending|applied|nack",
+                    "details": {"status": status},
+                },
+            )
+        mapped = {"pending": "PENDING", "applied": "APPLIED", "nack": "NACK"}[normalized]
+        query = query.where(CommandRecord.status == mapped)
+
+    rows = db.scalars(query.order_by(CommandRecord.created_at.desc())).all()
+    return [_serialize_command(db, row) for row in rows]
 
 
 @app.get("/instances/{instance_id}/commands/pending", response_model=list[CommandOut])
 def get_pending_commands(instance_id: str, db: Session = Depends(get_db)) -> list[CommandOut]:
-    now = datetime.now(UTC)
     rows = db.scalars(
         select(CommandRecord)
-        .where(CommandRecord.instance_id == instance_id)
+        .where(CommandRecord.target_bot_id == instance_id)
         .where(CommandRecord.status == "PENDING")
-        .where(CommandRecord.expires_at > now)
-        .order_by(CommandRecord.issued_at)
+        .order_by(CommandRecord.created_at)
     ).all()
-    return rows
+    return [_serialize_command(db, row) for row in rows]
 
 
-@app.post("/commands/{command_id}/ack", response_model=CommandAckOut, status_code=202)
+@app.post("/commands/{command_id}/ack", response_model=CommandAckOut, status_code=200)
 def ack_command(command_id: str, payload: CommandAckIn, db: Session = Depends(get_db)) -> CommandAckOut:
-    if payload.command_id != command_id:
-        raise HTTPException(status_code=400, detail="command_id mismatch")
-
     command = db.get(CommandRecord, command_id)
     if command is None:
-        raise HTTPException(status_code=404, detail="command not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "COMMAND_NOT_FOUND", "message": "command not found", "details": {"command_id": command_id}},
+        )
 
     ack = CommandAckRecord(
-        command_id=payload.command_id,
-        instance_id=payload.instance_id,
-        status=payload.status,
+        command_id=command_id,
+        ok=payload.ok,
         reason=payload.reason,
-        timestamp=payload.timestamp,
+        timestamp=payload.ts,
     )
     db.add(ack)
-    command.status = payload.status
+    command.status = "APPLIED" if payload.ok else "NACK"
 
     write_audit(
         db,
@@ -1063,11 +1120,14 @@ def ack_command(command_id: str, payload: CommandAckIn, db: Session = Depends(ge
         target_type="command",
         target_id=command_id,
         result="SUCCESS",
-        details={"ack_status": payload.status, "reason": payload.reason},
+        details={"ok": payload.ok, "reason": payload.reason},
     )
     db.commit()
-    db.refresh(ack)
-    return ack
+    return CommandAckOut(
+        command_id=command_id,
+        status=_to_command_status(command.status),
+        ack={"command_id": command_id, "ok": payload.ok, "reason": payload.reason, "ts": payload.ts},
+    )
 
 
 
