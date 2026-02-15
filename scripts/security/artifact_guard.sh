@@ -19,23 +19,9 @@ read_changed_files() {
 
 is_forbidden_path() {
   local path="$1"
+  local forbidden_regex='(^|/)(node_modules|\.next|dist|__pycache__)/|\.pyc$'
 
-  # Directory-based patterns
-  if [[ "$path" =~ (^|/)node_modules/ ]]; then
-    return 0
-  fi
-  if [[ "$path" =~ (^|/)\.next/ ]]; then
-    return 0
-  fi
-  if [[ "$path" =~ (^|/)dist/ ]]; then
-    return 0
-  fi
-  if [[ "$path" =~ (^|/)__pycache__/ ]]; then
-    return 0
-  fi
-
-  # File extension pattern
-  if [[ "$path" == *.pyc ]]; then
+  if [[ "$path" =~ $forbidden_regex ]]; then
     return 0
   fi
 
