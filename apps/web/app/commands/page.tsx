@@ -45,7 +45,7 @@ function firstBoolean(values: unknown[]): boolean | null {
 function parseCapabilities(payload: unknown): CommandSafetyPolicy {
   const source = asRecord(payload);
   if (!source) {
-    return { dangerousActionsEnabled: true, environmentLabel: "unknown" };
+    return { dangerousActionsEnabled: false, environmentLabel: "unknown" };
   }
 
   const features = Array.isArray(source.features) ? source.features : [];
