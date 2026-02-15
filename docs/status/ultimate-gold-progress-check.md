@@ -95,3 +95,43 @@
 |---|---|---|
 | 2026-02-15 | 初版作成 | Codex |
 | 2026-02-15 | コミット/PR実績に基づく進捗更新版へ改訂 | Codex |
+
+## 10. 評価サマリー（Ultimate Gold Spec 清書版 v1.0 照合）
+
+### 10.1 総評
+- **網羅性評価: 高い（約90%）**
+  - `docs/workplan/ultimate-gold-implementation-feature-list.md` は、提示された清書版 v1.0 の章構成（0, A〜L）と機能群を概ね同一粒度で保持している。
+- **実装進捗評価: 中程度（約45〜55%）**
+  - `docs/status/ultimate-gold-progress-check.md` の進捗表では、P0中核（UG-00/A/B/C/D/I）が `In Progress` 中心で、運用安全性の“制度化・自動化”が未完。
+- **運用投入準備度: 条件付き**
+  - 基盤は揃いつつあるが、SAFE_MODE統一、中央Gate完全化、障害注入自動検証、Replay決定性が揃わない限り「最上システム」としては未達。
+
+### 10.2 強み（現状で評価できる点）
+1. **仕様のカタログ化が明確**
+   - UGF-IDで管理され、非機能要件から拡張性/SaaS化まで一本化されている。
+2. **P0の課題認識が妥当**
+   - SAFE_MODE、Policy/Risk Gate、Reconciliation、Fail test、Backtest-First など事故直結領域を未実装として正しく認識できている。
+3. **マイルストーン設計が実務的**
+   - Safety/Operability/Reproducibility/Portfolio Integrity/Extensibility の順で段階化されている。
+
+### 10.3 不足/改善推奨（優先順）
+1. **P0項目の Exit Criteria を定量化する**
+   - 例: stale秒閾値、SAFE遷移率、reconcile不一致許容時間、canary復旧成功率など。
+2. **「機能あり」と「運用保証あり」を分離管理する**
+   - 実装済みでも、runbook・監査証跡・自動テストが未整備なら `Verified` に上げない運用を徹底。
+3. **UGF-ID単位の証跡リンクを追加する**
+   - 各IDに `code/test/doc/PR` リンクを持たせ、進捗表の主観度を下げる。
+4. **依存関係（blocking chain）を明文化する**
+   - 例: UGF-D-003（中央Gate）未完了なら UGF-D-004/005 を `Verified` 不可、など。
+
+### 10.4 最短で「最上システム」に近づく実行順（提案）
+1. **M1 Safety Foundation 完了を最優先**
+   - UGF-0-002/0-004/0-005/0-010 と UGF-D-003/004/005 を同時に締める。
+2. **M2 Operability の可観測性統一**
+   - UGF-0-012/0-013/0-014 と UGF-B-009/UGF-C-010 の整合を取り、degraded理由をUI/APIで同一表現にする。
+3. **M3 Reproducible Core で再現性を担保**
+   - UGF-0-015/0-016/0-021/0-022 + UGF-E-003 + UGF-I-004 を一連で実装・検証。
+
+### 10.5 判定
+- **結論**: 現在の「最終搭載予定機能一覧」は、理想仕様の骨格として十分に妥当。
+- **ただし**: Ultimate Gold の到達判定には、P0領域の「実装完了」ではなく「安全運用での再現可能性・監査可能性・自動検証完了」までを必須条件にするべき。
