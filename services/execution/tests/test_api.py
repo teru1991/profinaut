@@ -311,7 +311,7 @@ def test_gmo_live_place_and_cancel_with_idempotency_mapping(client, monkeypatch,
     assert cancel_res.json()["status"] == "CANCELED"
 
 
-def test_paper_order_lifecycle_fill_and_terminal_guards(client):
+def test_paper_order_lifecycle_fill_and_terminal_guards(client, auth_headers):
     order_intent = {
         "idempotency_key": "paper-lifecycle-fill",
         "exchange": "binance",
@@ -329,7 +329,7 @@ def test_paper_order_lifecycle_fill_and_terminal_guards(client):
     assert fill_res.json()["status"] == "FILLED"
     assert fill_res.json()["filled_qty"] == 0.02
 
-    cancel_after_fill = client.post(f"/execution/orders/{order_id}/cancel")
+    cancel_after_fill = client.post(f"/execution/orders/{order_id}/cancel", headers=auth_headers)
     assert cancel_after_fill.status_code == 409
 
 

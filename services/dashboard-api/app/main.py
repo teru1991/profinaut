@@ -1012,8 +1012,8 @@ def _latest_ack_for_command(db: Session, command_id: str) -> CommandAckRecord | 
     ).first()
 
 
-def _serialize_command(db: Session, row: CommandRecord) -> CommandOut:
-    latest_ack = _latest_ack_for_command(db, row.command_id)
+def _serialize_command(db: Session, row: CommandRecord, pre_fetched_ack: CommandAckRecord | None = None) -> CommandOut:
+    latest_ack = pre_fetched_ack if pre_fetched_ack is not None else _latest_ack_for_command(db, row.command_id)
     ack_payload = None
     if latest_ack is not None:
         ack_payload = {
@@ -1032,6 +1032,29 @@ def _serialize_command(db: Session, row: CommandRecord) -> CommandOut:
         created_at=row.created_at,
         ack=ack_payload,
     )
+
+
+def _batch_latest_acks(db: Session, command_ids: list[str]) -> dict[str, CommandAckRecord]:
+    """Fetch latest ack for each command_id in a single query to avoid N+1."""
+    if not command_ids:
+        return {}
+    subquery = (
+        select(
+            CommandAckRecord.command_id,
+            func.max(CommandAckRecord.timestamp).label("max_timestamp"),
+        )
+        .where(CommandAckRecord.command_id.in_(command_ids))
+        .group_by(CommandAckRecord.command_id)
+        .subquery()
+    )
+    latest_acks = db.scalars(
+        select(CommandAckRecord).join(
+            subquery,
+            (CommandAckRecord.command_id == subquery.c.command_id)
+            & (CommandAckRecord.timestamp == subquery.c.max_timestamp),
+        )
+    ).all()
+    return {ack.command_id: ack for ack in latest_acks}
 
 
 @app.post("/commands", response_model=CommandOut, status_code=201)
@@ -1081,19 +1104,19 @@ def list_commands(
         query = query.where(CommandRecord.status == mapped)
 
     rows = db.scalars(query.order_by(CommandRecord.created_at.desc())).all()
-    return [_serialize_command(db, row) for row in rows]
+    acks_map = _batch_latest_acks(db, [row.command_id for row in rows])
+    return [_serialize_command(db, row, acks_map.get(row.command_id)) for row in rows]
 
 
-@app.get("/instances/{instance_id}/commands/pending", response_model=list[CommandOut])
-def get_pending_commands(instance_id: str, db: Session = Depends(get_db)) -> list[CommandOut]:
+@app.get("/instances/{bot_id}/commands/pending", response_model=list[CommandOut])
+def get_pending_commands(bot_id: str, db: Session = Depends(get_db)) -> list[CommandOut]:
     rows = db.scalars(
         select(CommandRecord)
-        .where(CommandRecord.target_bot_id == instance_id)
+        .where(CommandRecord.target_bot_id == bot_id)
         .where(CommandRecord.status == "PENDING")
         .order_by(CommandRecord.created_at)
     ).all()
-    return [_serialize_command(db, row) for row in rows]
-
+    acks_map = _batch_latest_acks(db, [row.command_id for row in rows])
     return [_serialize_command(db, row, acks_map.get(row.command_id)) for row in rows]
 
 @app.post("/commands/{command_id}/ack", response_model=CommandAckOut, status_code=200)

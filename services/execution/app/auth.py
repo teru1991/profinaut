@@ -1,4 +1,5 @@
 import os
+import secrets
 
 from fastapi import Header, HTTPException, status
 
@@ -9,12 +10,12 @@ def require_execution_token(x_execution_token: str | None = Header(default=None,
     if not expected_token:
         # If no token is configured, this is a configuration error
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Execution API token not configured"
         )
-    if not x_execution_token or x_execution_token != expected_token:
+    if not x_execution_token or not secrets.compare_digest(x_execution_token, expected_token):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, 
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Unauthorized"
         )
     return "execution-token-user"
