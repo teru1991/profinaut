@@ -366,8 +366,8 @@ def test_gmo_live_duplicate_idempotency_does_not_place_twice(client, monkeypatch
     assert len(place_calls) == 1
 
 
-def test_sensitive_endpoints_require_authentication(client):
-    """Test that cancel, fill, and reject endpoints require authentication."""
+def test_sensitive_endpoints_require_authorization(client):
+    """Test that cancel, fill, and reject endpoints require authorization."""
     order_intent = {
         "idempotency_key": "test-auth-required",
         "exchange": "binance",
@@ -391,8 +391,8 @@ def test_sensitive_endpoints_require_authentication(client):
     assert reject_res.status_code == 401
 
 
-def test_sensitive_endpoints_reject_invalid_token(client):
-    """Test that cancel, fill, and reject endpoints reject invalid tokens."""
+def test_sensitive_endpoints_reject_unauthorized_token(client):
+    """Test that cancel, fill, and reject endpoints reject invalid authorization tokens."""
     order_intent = {
         "idempotency_key": "test-invalid-token",
         "exchange": "binance",
