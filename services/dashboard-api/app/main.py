@@ -87,6 +87,7 @@ from libs.observability import audit_event, error_envelope, request_id_middlewar
 app = FastAPI(title="Profinaut Dashboard API", version="0.4.0")
 app.add_middleware(request_id_middleware())
 STALE_SECONDS = 120
+STRONG_COMMAND_TYPES = frozenset({"HALT", "FLATTEN", "CLOSE_ALL", "KILL_SWITCH"})
 
 
 @app.exception_handler(HTTPException)
@@ -251,10 +252,12 @@ def get_healthz() -> HealthResponse:
 
 @app.get("/capabilities", response_model=CapabilitiesResponse)
 def get_capabilities() -> CapabilitiesResponse:
+    settings = get_settings()
     return CapabilitiesResponse(
         version=app.version,
         status="ok",
         features=["bots", "commands", "portfolio", "analytics"],
+        command_safety_enforce_reason=settings.command_safety_enforce_reason,
         generated_at=datetime.now(UTC),
     )
 
@@ -1003,6 +1006,57 @@ def _to_command_status(raw: str) -> str:
     return "pending"
 
 
+def _parse_iso_datetime(value: str) -> datetime | None:
+    normalized = value.strip()
+    if not normalized:
+        return None
+    if normalized.endswith("Z"):
+        normalized = f"{normalized[:-1]}+00:00"
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return parsed
+
+
+def _validate_command_safety(payload: CommandIn, now: datetime) -> datetime | None:
+    settings = get_settings()
+    if not settings.command_safety_enforce_reason or payload.type not in STRONG_COMMAND_TYPES:
+        return None
+
+    error_codes: list[str] = []
+
+    if payload.reason is None or not payload.reason.strip():
+        error_codes.append("COMMAND_REASON_REQUIRED")
+
+    if payload.expires_at is None:
+        error_codes.append("COMMAND_EXPIRES_AT_REQUIRED")
+        parsed_expires_at = None
+    else:
+        parsed_expires_at = _parse_iso_datetime(payload.expires_at)
+        if parsed_expires_at is None:
+            error_codes.append("COMMAND_EXPIRES_AT_INVALID")
+        elif parsed_expires_at <= now:
+            error_codes.append("COMMAND_EXPIRES_AT_NOT_FUTURE")
+
+    if error_codes:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "COMMAND_SAFETY_VALIDATION_FAILED",
+                "message": "strong commands require non-empty reason and future expires_at",
+                "details": {
+                    "type": payload.type,
+                    "error_codes": error_codes,
+                },
+            },
+        )
+
+    return parsed_expires_at
+
+
 def _latest_ack_for_command(db: Session, command_id: str) -> CommandAckRecord | None:
     return db.scalars(
         select(CommandAckRecord)
@@ -1028,6 +1082,8 @@ def _serialize_command(db: Session, row: CommandRecord, pre_fetched_ack: Command
         type=row.command_type,
         target_bot_id=row.target_bot_id,
         payload=row.payload,
+        reason=row.reason,
+        expires_at=row.expires_at,
         status=_to_command_status(row.status),
         created_at=row.created_at,
         ack=ack_payload,
@@ -1060,6 +1116,7 @@ def _batch_latest_acks(db: Session, command_ids: list[str]) -> dict[str, Command
 @app.post("/commands", response_model=CommandOut, status_code=201)
 def create_command(payload: CommandIn, actor: str = Depends(require_admin_actor), db: Session = Depends(get_db)) -> CommandOut:
     created_at = payload.created_at or datetime.now(UTC)
+    expires_at = _validate_command_safety(payload, created_at)
     command_id = str(uuid4())
 
     row = CommandRecord(
@@ -1070,9 +1127,24 @@ def create_command(payload: CommandIn, actor: str = Depends(require_admin_actor)
         status="PENDING",
         created_at=created_at,
         created_by=actor,
+        reason=payload.reason,
+        expires_at=expires_at,
     )
     db.add(row)
-    write_audit(db, actor, "COMMAND_CREATE", "command", command_id, "SUCCESS", {"type": payload.type, "target_bot_id": payload.target_bot_id})
+    write_audit(
+        db,
+        actor,
+        "COMMAND_CREATE",
+        "command",
+        command_id,
+        "SUCCESS",
+        {
+            "type": payload.type,
+            "target_bot_id": payload.target_bot_id,
+            "reason": payload.reason,
+            "expires_at": payload.expires_at,
+        },
+    )
     db.commit()
     db.refresh(row)
     return _serialize_command(db, row)
