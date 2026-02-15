@@ -19,6 +19,35 @@
 - `P1`: 実運用に必要（可観測性/品質/自動復旧/段階導入）
 - `P2`: 拡張性・効率改善（高度分析、拡張プラグイン、SaaS化）
 
+## 3.1 Repo Snapshot（タスク前後で必ず更新）
+
+| Item | Value |
+|---|---|
+| MASTER_HEAD_SHA | `9cb7ed0` |
+| Last Updated (JST) | `2026-02-15 00:00 JST` |
+
+### Open PR Snapshot
+| PR | Status (Draft/Ready/Merged) | Scope | Link |
+|---|---|---|---|
+| #68 | Merged | live mode hardening / idempotency persistence / orders-fills history | https://github.com/teru1991/profinaut/pull/68 |
+| #67 | Merged | markets page type stabilization | https://github.com/teru1991/profinaut/pull/67 |
+| #66 | Merged | commands UI/API hardening | https://github.com/teru1991/profinaut/pull/66 |
+| #64 | Merged | bot command polling/ack improvements | https://github.com/teru1991/profinaut/pull/64 |
+| #63 | Merged | operational robustness updates | https://github.com/teru1991/profinaut/pull/63 |
+| #62 | Merged | operational robustness updates | https://github.com/teru1991/profinaut/pull/62 |
+| #61 | Merged | operational robustness updates | https://github.com/teru1991/profinaut/pull/61 |
+| #60 | Merged | security endpoint fixes | https://github.com/teru1991/profinaut/pull/60 |
+| #58 | Merged | marketdata validation hardening | https://github.com/teru1991/profinaut/pull/58 |
+
+### Current LOCK Owners（排他管理）
+| Lock Scope | Owner PR/Task | Owner | Expires | Notes |
+|---|---|---|---|---|
+| contracts | _unlocked_ | - | - | 競合時は単独PRで取得 |
+| migrations | _unlocked_ | - | - | 競合時は単独PRで取得 |
+| lockfile | _unlocked_ | - | - | 競合時は単独PRで取得 |
+| CI | _unlocked_ | - | - | 競合時は単独PRで取得 |
+| infra | _unlocked_ | - | - | 競合時は単独PRで取得 |
+
 ## 4. 進捗スナップショット（コミット/PR実績ベース）
 
 > 判定基準: `docs/roadmap.md` の Step 0〜21 完了、`docs/changelog.md` の実装履歴、直近マージPR（#58〜#68）
@@ -45,12 +74,18 @@
 - Step 0〜21 が完了状態。
 - Contracts、Dashboard API、Web UI骨格、SDK、Command/Audit、Alerts、Portfolio、Reconcile、Analytics拡張、Resource telemetry まで実装済み。
 
-### 5.2 直近PR/コミット由来の進捗
-- PR #68: live mode hardening、idempotency永続化、orders/fills履歴
-- PR #67: markets page の型安定化
-- PR #66/#64/#63/#62/#61: commands UI/API、bot command polling/ack、運用系の改善
-- PR #60: セキュリティ関連のエンドポイント修正
-- PR #58: marketdataのバリデーション強化
+### 5.2 直近PR/コミット由来の進捗（URL/SHA必須）
+| PR | Summary | PR URL | Merge Commit SHA |
+|---|---|---|---|
+| #68 | live mode hardening、idempotency永続化、orders/fills履歴 | https://github.com/teru1991/profinaut/pull/68 | _(fill on update)_ |
+| #67 | markets page の型安定化 | https://github.com/teru1991/profinaut/pull/67 | _(fill on update)_ |
+| #66 | commands UI/API の改善 | https://github.com/teru1991/profinaut/pull/66 | _(fill on update)_ |
+| #64 | bot command polling/ack の改善 | https://github.com/teru1991/profinaut/pull/64 | _(fill on update)_ |
+| #63 | 運用系の改善 | https://github.com/teru1991/profinaut/pull/63 | _(fill on update)_ |
+| #62 | 運用系の改善 | https://github.com/teru1991/profinaut/pull/62 | _(fill on update)_ |
+| #61 | 運用系の改善 | https://github.com/teru1991/profinaut/pull/61 | _(fill on update)_ |
+| #60 | セキュリティ関連のエンドポイント修正 | https://github.com/teru1991/profinaut/pull/60 | _(fill on update)_ |
+| #58 | marketdataのバリデーション強化 | https://github.com/teru1991/profinaut/pull/58 | _(fill on update)_ |
 
 ### 5.3 Ultimate Gold要件へのマッピング（現時点）
 - **達成済み（または土台あり）**
@@ -95,6 +130,7 @@
 |---|---|---|
 | 2026-02-15 | 初版作成 | Codex |
 | 2026-02-15 | コミット/PR実績に基づく進捗更新版へ改訂 | Codex |
+| 2026-02-15 | Repo Snapshot/LOCK/Open PR常設欄、PR証跡URL/SHA欄を追加 | Codex |
 
 ## 10. 評価サマリー（Ultimate Gold Spec 清書版 v1.0 照合）
 

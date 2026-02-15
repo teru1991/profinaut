@@ -3,6 +3,107 @@
 本書は、Ultimate Gold Spec v1.0 の実装対象を **機能カタログ** として整理したものです。
 進捗管理は `docs/status/ultimate-gold-progress-check.md` を参照してください。
 
+## 運用ルール（MRUカタログ化）
+
+本ファイルは機能カタログに加えて、**1PR=1scope で実装可能な MRU（Minimum Releasable Unit）** を管理する。
+
+### MRUレコード必須項目
+- MRU-ID（例: `UGF-D-003-MRU-001`）
+- Scope（PR scope名）
+- Priority（P0/P1/P2）
+- Depends-on（MRU-ID / PR URL / commit SHA）
+- Contracts?（`Yes` の場合は additive-only の単独PR）
+- Flags/Capabilities（OFF時挙動、degraded時挙動）
+- Allowed paths / Forbidden paths
+- DoD（実装・テスト・観測・縮退を含む完了条件）
+- Notes/Links（設計・Runbook・PR）
+
+### MRUテンプレート
+| Field | Value |
+|---|---|
+| MRU-ID | `UGF-?-???-MRU-???` |
+| Scope | `<scope-name>` |
+| Priority | `P0/P1/P2` |
+| Depends-on | `<none or link>` |
+| Contracts? | `No / Yes(additive-only single PR)` |
+| Flags/Capabilities | `<flag> (default OFF), capability:<name>, OFF時:<behavior>, degraded時:<behavior>` |
+| Allowed paths | `<path glob list>` |
+| Forbidden paths | `<path glob list>` |
+| DoD | `<tests + metrics + alert + runbook update>` |
+| Notes/Links | `<docs/decision/pr>` |
+
+## P0/P1 優先MRUバックログ（抜け漏れ補完）
+
+### UGF-0-013A SLO/SLI 継続監視
+| Field | Value |
+|---|---|
+| MRU-ID | `UGF-0-013A-MRU-001` |
+| Scope | `slo-sli-baseline-and-alerting` |
+| Priority | `P0` |
+| Depends-on | `UGF-0-012`, `UGF-0-013` |
+| Contracts? | `No` |
+| Flags/Capabilities | `obs.slo_enforced (default OFF), capability:slo_monitoring, OFF時:記録のみ, degraded時:新規実行抑止` |
+| Allowed paths | `docs/**`, `services/**/metrics/**`, `services/**/alerts/**`, `.github/workflows/**` |
+| Forbidden paths | `contracts/**`, `migrations/**`, `infra/**` |
+| DoD | `SLI定義（latency/error/stale/mttr）+ SLO閾値 + 連続違反アラート + ダッシュボード + Runbook更新` |
+| Notes/Links | `0-3 SLO/SLI 必須要件` |
+
+### UGF-0-023 変更管理SSOT（DecisionLog/Assumptions/ChangeLog運用）
+| Field | Value |
+|---|---|
+| MRU-ID | `UGF-0-023-MRU-001` |
+| Scope | `decisionlog-assumptions-ssot-governance` |
+| Priority | `P0` |
+| Depends-on | `UGF-A-004`, `UGF-A-009` |
+| Contracts? | `No` |
+| Flags/Capabilities | `governance.change_control_enforced (default ON), OFF時:不可, degraded時:変更凍結` |
+| Allowed paths | `docs/status/**`, `docs/workplan/**`, `docs/decisions/**`, `docs/assumptions/**`, `.github/**` |
+| Forbidden paths | `services/**`, `contracts/**` |
+| DoD | `DecisionLog/Assumptionsの更新基準明文化 + PRテンプレ必須化 + CI lint で未記載を失敗化` |
+| Notes/Links | `0-7/0-9 変更管理SSOT` |
+
+### UGF-0-024 監査ログ改ざん耐性（段階導入）
+| Field | Value |
+|---|---|
+| MRU-ID | `UGF-0-024-MRU-001` |
+| Scope | `audit-log-hash-chain-foundation` |
+| Priority | `P1` |
+| Depends-on | `UGF-0-016`, `UGF-J-002` |
+| Contracts? | `Yes(additive-only single PR)` |
+| Flags/Capabilities | `audit.tamper_proof (default OFF), capability:audit_hash_chain, OFF時:通常監査保存, degraded時:live操作禁止` |
+| Allowed paths | `contracts/**`, `services/**/audit/**`, `docs/**` |
+| Forbidden paths | `migrations/**`, `infra/**` |
+| DoD | `イベントハッシュ連結 + 検証CLI + 破損検知アラート + 保全Runbook` |
+| Notes/Links | `0-4 改ざん耐性（hash/署名/WORM）` |
+
+### UGF-0-025 サプライチェーン対策（SBOM/脆弱性/生成物コミット防止）
+| Field | Value |
+|---|---|
+| MRU-ID | `UGF-0-025-MRU-001` |
+| Scope | `supply-chain-guardrails-ci` |
+| Priority | `P1` |
+| Depends-on | `UGF-A-002`, `UGF-A-005` |
+| Contracts? | `No` |
+| Flags/Capabilities | `security.supply_chain_guard (default ON), OFF時:不可, degraded時:release禁止` |
+| Allowed paths | `.github/workflows/**`, `scripts/**`, `docs/**` |
+| Forbidden paths | `services/**`, `contracts/**` |
+| DoD | `SBOM生成 + 脆弱性スキャン + 生成物コミット検知 + lockfile変更ガード` |
+| Notes/Links | `0-6 サプライチェーン対策` |
+
+### UGF-I-004A 時刻/順序/決定性の機械検証
+| Field | Value |
+|---|---|
+| MRU-ID | `UGF-I-004A-MRU-001` |
+| Scope | `replay-determinism-clock-sequence-tests` |
+| Priority | `P0` |
+| Depends-on | `UGF-0-021`, `UGF-I-004`, `UGF-E-003` |
+| Contracts? | `No` |
+| Flags/Capabilities | `qa.replay_determinism_gate (default OFF), capability:replay_e2e, OFF時:警告のみ, degraded時:canary昇格禁止` |
+| Allowed paths | `tests/**`, `services/**/replay/**`, `.github/workflows/**`, `docs/**` |
+| Forbidden paths | `contracts/**`, `infra/**` |
+| DoD | `同一dataset_refでPolicy/OMS/Portfolio一致をCI検証 + clock drift/sequence異常注入テスト + 失敗時SAFE遷移検証` |
+| Notes/Links | `0-10/0-11 の機械検証要件` |
+
 ## 0. 全領域共通（Non-Functional Requirements）
 - **UGF-0-001** 共通ID: trace_id / request_id / run_id / bot_id / agent_id / event_id / schema_version
 - **UGF-0-002** SAFE_MODE状態機械（NORMAL/DEGRADED/SAFE_MODE/HALTED）
@@ -130,4 +231,3 @@
 2. **Phase 2（運用可能化）**: B, C, F の P0/P1 機能
 3. **Phase 3（研究・最適化）**: E, H, J
 4. **Phase 4（高度拡張）**: G, K, L
-
