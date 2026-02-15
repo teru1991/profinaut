@@ -1,20 +1,16 @@
 # Profinaut Ultimate Gold Spec v1.0 進捗チェック管理
 
 ## 1. 目的
-本ドキュメントは **Profinaut Ultimate Gold Spec v1.0** の実装進捗を、
-- Safe-by-Default
-- Backtest-First
-- Contracts SSOT
-- Reproducible / Auditable
-の原則に沿って、継続的に可視化・監査可能にするための管理台帳です。
+本ドキュメントは **Profinaut Ultimate Gold Spec v1.0** の実装進捗を、コミット/PRの実績ベースで管理するための台帳です。
+「理想仕様との差分」を明確化し、次の優先実装を判断可能にします。
 
 ## 2. ステータス定義（共通）
 - `Not Started`: 未着手
 - `Scoping`: 要件分解・設計中
-- `In Progress`: 実装中
+- `In Progress`: 実装進行中（部分達成）
 - `Blocked`: 依存待ち/意思決定待ち
 - `Review`: PRレビュー中
-- `Verified`: 検証完了（テスト/運用確認）
+- `Verified`: テスト・運用観点で確認済み
 - `Released`: 本番反映済み
 - `Deferred`: 意図的に後ろ倒し
 
@@ -23,55 +19,79 @@
 - `P1`: 実運用に必要（可観測性/品質/自動復旧/段階導入）
 - `P2`: 拡張性・効率改善（高度分析、拡張プラグイン、SaaS化）
 
-## 4. 進捗サマリー（エピック単位）
+## 4. 進捗スナップショット（コミット/PR実績ベース）
 
-| Epic ID | 領域 | 説明 | Priority | 現在状態 | 備考 |
-|---|---|---|---|---|---|
-| UG-00 | 全体NFR | 0-0〜0-11（安全・信頼性・監査・再現・セキュリティ） | P0 | Not Started | 全サービス横断 |
-| UG-A | 基盤・運用 | Repo/CI/運用ガードレール | P0 | Not Started | 1PR=1scope/危険領域ロック |
-| UG-B | Control Plane | Dashboard API/UI/RBAC/Run管理/監査 | P0 | Not Started | 鍵非保持原則 |
-| UG-C | Market Data | 収集・正規化・品質ゲート・配信 | P0 | Not Started | stale/欠損耐性 |
-| UG-D | Trading/Execution | OMS/EMS/Policy Gate/Reconcile | P0 | Not Started | 発注出口の単一化 |
-| UG-E | Strategy/Research | Strategy I/F、Backtest、Experiment | P1 | Not Started | Backtest-First |
-| UG-F | Portfolio/Treasury | 残高/ポジション/PnL/DD/資金管理 | P1 | Not Started | リスク指標連動 |
-| UG-G | Human-in-the-loop | 承認フロー/XAI/自然言語照会 | P2 | Not Started | 将来拡張 |
-| UG-H | インフラ/ランタイム | 環境分離/DR/段階リリース | P1 | Not Started | 復旧演習含む |
-| UG-I | 品質保証/安全検証 | 契約/統合/フェイル/Replay E2E | P0 | Not Started | 決定性検証 |
-| UG-J | データガバナンス | リネージ/監査保全/規制対応 | P1 | Not Started | 監査耐性 |
-| UG-K | 拡張性 | Connector/Strategy/UI Plugin | P2 | Not Started | 長期進化基盤 |
-| UG-L | SaaS化（任意） | 課金/請求/マルチ組織統治 | P2 | Deferred | 到達後導入 |
+> 判定基準: `docs/roadmap.md` の Step 0〜21 完了、`docs/changelog.md` の実装履歴、直近マージPR（#58〜#68）
 
-## 5. マイルストーン管理
+| Epic ID | 領域 | Priority | 現在状態 | 進捗感 | 実装済み要素（抜粋） | 主な未実装/不足 |
+|---|---|---|---|---:|---|---|
+| UG-00 | 全体NFR | P0 | In Progress | 55% | Contracts SSOT、idempotency、dead-man、監査ログ、health/capabilities基盤 | SAFE_MODE統一運用、SoT優先順位の明文化、replay決定性の全体保証 |
+| UG-A | 基盤・運用 | P0 | In Progress | 60% | CI、契約検証、changelog/roadmap運用、段階的ステップ開発 | 危険領域ロックの制度化、branch保護厳格化の文書固定 |
+| UG-B | Control Plane | P0 | In Progress | 70% | bots/modules/module-runs/commands/alerts/analytics UI/API | 本格RBAC、テナント分離、強操作2段確認の全機能適用 |
+| UG-C | Market Data | P0 | In Progress | 50% | ticker取得表示、marketページ、latest系API | 品質スコア、lineage、WS sequence再同期の包括実装 |
+| UG-D | Trading/Execution | P0 | In Progress | 55% | order-intent系経路、cancel、live hardening、orders/fills履歴 | 中央Policy Gateの完全化、flatten/halt標準化、照合修復runbook |
+| UG-E | Strategy/Research | P1 | Scoping | 25% | simple_mm bot、shadow/paper系の土台 | Backtest-First実行器、実験管理、model_ref固定運用 |
+| UG-F | Portfolio/Treasury | P1 | In Progress | 45% | positions/metrics ingest、exposure、net-pnl基盤 | DD停止連動、treasury強操作フロー、税務レポート |
+| UG-G | Human-in-the-loop | P2 | Not Started | 5% | なし（監査ログ土台のみ） | 承認フロー、XAI要約、自然言語クエリ |
+| UG-H | インフラ/ランタイム | P1 | Scoping | 30% | compose/基本環境、migrations、サービス分割 | DR演習、段階リリース統治、設定差分ロールバックUI |
+| UG-I | 品質保証/安全検証 | P0 | In Progress | 50% | API/SDK/contracts test、stepごとの回帰追加 | 障害注入自動化、Replay E2Eの継続検証 |
+| UG-J | データガバナンス | P1 | Scoping | 20% | 監査ログ保存の基盤 | lineage監査、保持ポリシー厳格化、コンプライアンス運用 |
+| UG-K | 拡張性 | P2 | Scoping | 35% | module registry/run枠組み | connector/strategy/ui plugin SDK制度 |
+| UG-L | SaaS化（任意） | P2 | Deferred | 0% | 対象外 | 課金/請求/組織分離 |
 
-| Milestone | 対象 | Exit Criteria（完了条件） | Target |
+## 5. 実装済み洗い出し（証跡付き）
+
+### 5.1 主要達成（Roadmap Step 0〜21 完了）
+- Step 0〜21 が完了状態。
+- Contracts、Dashboard API、Web UI骨格、SDK、Command/Audit、Alerts、Portfolio、Reconcile、Analytics拡張、Resource telemetry まで実装済み。
+
+### 5.2 直近PR/コミット由来の進捗
+- PR #68: live mode hardening、idempotency永続化、orders/fills履歴
+- PR #67: markets page の型安定化
+- PR #66/#64/#63/#62/#61: commands UI/API、bot command polling/ack、運用系の改善
+- PR #60: セキュリティ関連のエンドポイント修正
+- PR #58: marketdataのバリデーション強化
+
+### 5.3 Ultimate Gold要件へのマッピング（現時点）
+- **達成済み（または土台あり）**
+  - Contracts SSOT
+  - command_idベース冪等
+  - 監査ログ保存
+  - /healthz・/capabilities
+  - 基本的な可観測性（alerts/analytics）
+- **部分達成（追加設計・実装が必要）**
+  - SAFE_MODE統一仕様
+  - 中央Policy/Risk Gateの判定体系統合
+  - Reconciliation失敗時の自動復帰手順（canary必須化）
+  - Backtest-First（Replay決定性）
+- **未着手に近い**
+  - 承認フロー（Human-in-the-loop）
+  - Data lineage/高度ガバナンス
+  - SaaS化要件
+
+## 6. 近接マイルストーン（更新版）
+
+| Milestone | 対象 | Exit Criteria（完了条件） | 状態 |
 |---|---|---|---|
-| M1 Safety Foundation | UG-00, UG-A, UG-D | SAFE_MODE定義、中央Gate強制、Kill/Close/Flatten、command監査 | TBD |
-| M2 Operability & Observability | UG-00, UG-A, UG-B, UG-C | 共通ログ/メトリクス/アラート、/healthz・/capabilities統一 | TBD |
-| M3 Reproducible Trading Core | UG-D, UG-E, UG-I | Intent→Gate→OMS一貫、Reconcile自動、Replay E2E成立 | TBD |
-| M4 Portfolio & Risk Integrity | UG-F, UG-D, UG-I | PnL/DD再現可能、Unknown時安全側、停止条件連動 | TBD |
-| M5 Extensible Platform | UG-K, UG-C, UG-E, UG-B | SDK/Plugin拡張経路確立、互換性ゲート自動化 | TBD |
+| M1 Safety Foundation | UG-00, UG-A, UG-D | SAFE_MODE定義、中央Gate判定一元化、close-only/flatten/halt運用固定 | In Progress |
+| M2 Operability | UG-00, UG-A, UG-B, UG-C | 共通ログ項目統一、degraded理由のUI/API一貫表示 | In Progress |
+| M3 Reproducible Core | UG-D, UG-E, UG-I | Intent→Gate→OMS→Portfolioをdataset_refでReplay一致 | Scoping |
+| M4 Portfolio Integrity | UG-F, UG-D, UG-I | PnL/DD再現計算 + 停止条件連動 + 監査証跡 | Scoping |
+| M5 Extensibility | UG-K, UG-C, UG-E, UG-B | Connector/Strategy/UI拡張ガイドと互換性ゲート | Scoping |
 
-## 6. ワークリング（実行単位）
+## 7. 次アクション（P0優先）
+1. **UG-00/UG-D**: SAFE_MODE遷移と許可操作（ALLOW/BLOCK/THROTTLE/REDUCE_ONLY/CLOSE_ONLY/FLATTEN/HALT）を契約と実装で統一。
+2. **UG-B**: 重要操作の理由入力 + 二重確認 + 期限を UI/API/監査で強制。
+3. **UG-I**: 障害注入テスト（429/5xx/timeout/WS断）をCIに追加し、SAFE遷移検証を自動化。
+4. **UG-E**: Backtest-First最小実装（dataset_ref固定、look-ahead防止、artifact保存）。
 
-| Work ID | Epic | タスク名 | 状態 | Owner | 依存 | 期限 |
-|---|---|---|---|---|---|---|
-| UG-00-01 | UG-00 | 共通ID（trace/request/run/event/schema_version）の契約化 | Not Started | TBD | contracts | TBD |
-| UG-00-02 | UG-00 | SAFE_MODE状態遷移と許可操作の仕様固定 | Not Started | TBD | UG-00-01 | TBD |
-| UG-A-01 | UG-A | scope-guard + 危険領域ロック運用導入 | Not Started | TBD | repo policy | TBD |
-| UG-B-01 | UG-B | RBACロール導入（operator/risk/platform/treasury） | Not Started | TBD | auth baseline | TBD |
-| UG-C-01 | UG-C | MarketData品質指標（遅延/欠損/重複）実装 | Not Started | TBD | ingest | TBD |
-| UG-D-01 | UG-D | OrderIntent→PolicyDecision→OrderEventイベント整備 | Not Started | TBD | UG-00-01 | TBD |
-| UG-E-01 | UG-E | Backtestイベント駆動実行器（look-ahead防止） | Not Started | TBD | dataset registry | TBD |
-| UG-F-01 | UG-F | Exposure/PnL/DDの再現計算パス固定 | Not Started | TBD | reconcile | TBD |
-| UG-I-01 | UG-I | 契約互換性CI + リプレイE2E CI | Not Started | TBD | test infra | TBD |
+## 8. 更新ルール
+- 更新トリガ: `main` へのマージ、または milestone関連PR の取り込み時。
+- 更新責務: 変更を入れたPRが本ドキュメントの該当Epic行を同時更新する。
+- `In Progress` 判定は、**コード＋テスト＋運用導線** の3要素のうち2つ以上を満たすこと。
 
-## 7. 週次更新ルール
-- 毎週、各Epicの `現在状態` を更新する。
-- `Blocked` は必ず「ブロック要因」と「解除条件」を備考に記載する。
-- `Verified` へ遷移する際は、対応PR/Runbook/テスト結果をリンクする。
-- `Released` への遷移は、環境（dev/stg/prod）と日時を記録する。
-
-## 8. 変更履歴
+## 9. 変更履歴
 | Date | Change | Author |
 |---|---|---|
 | 2026-02-15 | 初版作成 | Codex |
+| 2026-02-15 | コミット/PR実績に基づく進捗更新版へ改訂 | Codex |
