@@ -15,6 +15,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import re
+
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 
@@ -31,6 +33,37 @@ if not logger.handlers:
     logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 SERVICE_NAME = "marketdata"
+
+
+_ALLOWED_EXCHANGES = {"gmo"}
+_SYMBOL_PATTERN = re.compile(r"^[A-Z0-9_/:.-]{3,32}$")
+
+
+def _normalize_and_validate_params(exchange: str, symbol: str) -> tuple[str, str]:
+    normalized_exchange = (exchange or "gmo").strip().lower()
+    normalized_symbol = (symbol or "BTC_JPY").strip().upper()
+
+    if normalized_exchange not in _ALLOWED_EXCHANGES:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "INVALID_EXCHANGE",
+                "message": f"Unsupported exchange '{normalized_exchange}'",
+                "details": {"allowed_exchanges": sorted(_ALLOWED_EXCHANGES)},
+            },
+        )
+
+    if not _SYMBOL_PATTERN.match(normalized_symbol):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "INVALID_SYMBOL",
+                "message": "Symbol format is invalid",
+                "details": {"symbol": normalized_symbol},
+            },
+        )
+
+    return normalized_exchange, normalized_symbol
 
 
 @dataclass
@@ -309,8 +342,14 @@ async def get_capabilities() -> dict[str, Any]:
 
 
 @app.get("/ticker/latest")
-async def ticker_latest(request: Request, symbol: str = Query(default="BTC_JPY")) -> JSONResponse:
-    status_code, payload = await _poller.latest_payload(symbol=symbol)
+async def ticker_latest(
+    request: Request,
+    exchange: str = Query(default="gmo"),
+    symbol: str = Query(default="BTC_JPY"),
+) -> JSONResponse:
+    _, normalized_symbol = _normalize_and_validate_params(exchange=exchange, symbol=symbol)
+    status_code, payload = await _poller.latest_payload(symbol=normalized_symbol)
     request_id = getattr(request.state, "request_id", "unknown")
     payload["request_id"] = request_id
+    payload["exchange"] = "gmo"
     return JSONResponse(status_code=status_code, content=payload)

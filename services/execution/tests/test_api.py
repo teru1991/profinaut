@@ -254,7 +254,7 @@ def test_gmo_live_place_and_cancel_with_idempotency_mapping(client, monkeypatch,
     assert cancel_res.json()["status"] == "CANCELED"
 
 
-def test_paper_order_lifecycle_fill_and_terminal_guards(client, auth_headers):
+def test_paper_order_lifecycle_fill_and_terminal_guards(client):
     order_intent = {
         "idempotency_key": "paper-lifecycle-fill",
         "exchange": "binance",
@@ -267,16 +267,16 @@ def test_paper_order_lifecycle_fill_and_terminal_guards(client, auth_headers):
     assert created.status_code == 201
     order_id = created.json()["order_id"]
 
-    fill_res = client.post(f"/execution/orders/{order_id}/fill", headers=auth_headers)
+    fill_res = client.post(f"/execution/orders/{order_id}/fill")
     assert fill_res.status_code == 200
     assert fill_res.json()["status"] == "FILLED"
     assert fill_res.json()["filled_qty"] == 0.02
 
-    cancel_after_fill = client.post(f"/execution/orders/{order_id}/cancel", headers=auth_headers)
+    cancel_after_fill = client.post(f"/execution/orders/{order_id}/cancel")
     assert cancel_after_fill.status_code == 409
 
 
-def test_paper_order_lifecycle_reject_and_terminal_guards(client, auth_headers):
+def test_paper_order_lifecycle_reject_and_terminal_guards(client):
     order_intent = {
         "idempotency_key": "paper-lifecycle-reject",
         "exchange": "binance",
@@ -289,11 +289,11 @@ def test_paper_order_lifecycle_reject_and_terminal_guards(client, auth_headers):
     assert created.status_code == 201
     order_id = created.json()["order_id"]
 
-    reject_res = client.post(f"/execution/orders/{order_id}/reject", headers=auth_headers)
+    reject_res = client.post(f"/execution/orders/{order_id}/reject")
     assert reject_res.status_code == 200
     assert reject_res.json()["status"] == "REJECTED"
 
-    fill_after_reject = client.post(f"/execution/orders/{order_id}/fill", headers=auth_headers)
+    fill_after_reject = client.post(f"/execution/orders/{order_id}/fill")
     assert fill_after_reject.status_code == 409
 
 
