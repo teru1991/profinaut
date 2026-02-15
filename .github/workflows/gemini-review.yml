@@ -1,0 +1,179 @@
+name: Gemini PR Review (with GitHub Suggestions)
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: gemini-review-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: |
+      (github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        contains(github.event.comment.body, '/gemini review'))
+      ||
+      (github.event_name == 'pull_request_target' && github.event.pull_request.draft == false)
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve PR number & basic guards
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const isIssueComment = context.eventName === 'issue_comment';
+            const prNumber = isIssueComment
+              ? context.payload.issue.number
+              : context.payload.pull_request.number;
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            // Safe-by-default: do not use repository secrets on fork PRs.
+            const isFork = pr.head.repo.full_name !== pr.base.repo.full_name;
+
+            core.setOutput('number', String(prNumber));
+            core.setOutput('isFork', String(isFork));
+            core.setOutput('headSha', pr.head.sha);
+            core.setOutput('baseSha', pr.base.sha);
+            core.setOutput('title', pr.title || '');
+            core.setOutput('author', pr.user?.login || '');
+
+      - name: Skip forks (safe default)
+        if: steps.pr.outputs.isFork == 'true'
+        run: |
+          echo "Fork PR detected; skipping Gemini review to avoid secrets exposure."
+          exit 0
+
+      - name: Fetch PR diff (no checkout)
+        id: diff
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = Number('${{ steps.pr.outputs.number }}');
+
+            const res = await github.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              headers: { accept: 'application/vnd.github.v3.diff' },
+            });
+
+            let diffText = res.data;
+
+            // Avoid token explosion on huge changesets.
+            const MAX_CHARS = 120000;
+            if (diffText.length > MAX_CHARS) {
+              diffText = `${diffText.slice(0, MAX_CHARS)}\n\n[TRUNCATED]\n`;
+            }
+
+            core.setOutput('text', diffText);
+
+      - name: Build Gemini prompt
+        id: prompt
+        env:
+          DIFF_TEXT: ${{ steps.diff.outputs.text }}
+        run: |
+          cat > prompt.txt <<'PROMPT'
+          あなたは GitHub 上のプルリクエストをレビューするシニアエンジニアです。
+          以下の Diff を分析し、Profinaut の運用原則（Safe-by-default / 1PR=1scope / contracts additive-only / 危険領域ロック）に厳密に従ってレビューしてください。
+
+          【最優先の観点（必須で確認）】
+          1) Safe-by-default:
+             - 不明/整合不能/依存不達時に “新規発注禁止” を既定にできているか
+             - SAFE_MODE / Kill Switch / Close-only / Flatten の逸脱や抜けがないか
+          2) 1PR=1scope:
+             - 変更が複数スコープに跨っていないか（跨るなら分割を提案）
+          3) contracts:
+             - contracts/** は additive-only（追記のみ）か。破壊変更が疑われる場合はブロック。
+          4) 危険領域（CI/infra/lockfile/migrations 等）:
+             - 変更が入っていないか、入っているなら理由とリスクを明確化
+
+          【レビュー出力ルール（重要）】
+          - 指摘は日本語で書くこと。
+          - 修正提案が “具体的なコード変更” になる場合は、必ず GitHub Suggestion 記法を使うこと（ワンクリック適用できる形）。
+            例:
+            ```suggestion
+            修正後のコードのみ
+            ```
+          - suggestion ブロックは「差分対象のファイル・該当箇所に対応する最小単位」で出すこと（巨大な置換は禁止）。
+          - 修正案がない場合は、無理に suggestion を作らないこと。
+          - 良い点があれば短く褒めること（ただし過剰に称賛しない）。
+          - 最後に “このPRをそのままマージして良いか” を「OK / 条件付きOK / NG」で結論し、理由を箇条書きで示すこと。
+
+          【Diff】
+          PROMPT
+
+          printf '%s\n' "$DIFF_TEXT" >> prompt.txt
+
+      - name: Call Gemini API
+        id: gemini
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: |
+          set -euo pipefail
+          : "${GEMINI_API_KEY:?Missing secrets.GEMINI_API_KEY}"
+          MODEL="${GEMINI_MODEL:-gemini-1.5-pro}"
+
+          RESP="$(curl -sS -X POST \
+            "https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}" \
+            -H "Content-Type: application/json" \
+            --data-binary @- <<JSON
+          {
+            "contents": [{
+              "role": "user",
+              "parts": [{"text": $(jq -Rs . < prompt.txt)}]
+            }]
+          }
+          JSON
+          )"
+
+          OUT="$(echo "$RESP" | jq -r '.candidates[0].content.parts[0].text // empty')"
+
+          if [ -z "$OUT" ]; then
+            echo "Gemini response was empty or unexpected:" >&2
+            echo "$RESP" | head -c 2000 >&2
+            OUT="(Geminiの応答を取得できませんでした。API応答形式をご確認ください。)"
+          fi
+
+          {
+            echo "body<<EOF"
+            echo "## 🤖 Gemini Review"
+            echo
+            echo "_model: ${MODEL}_"
+            echo
+            echo "$OUT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post review comment to PR
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          COMMENT_BODY: ${{ steps.gemini.outputs.body }}
+        with:
+          script: |
+            const prNumber = Number(process.env.PR_NUMBER);
+            const body = process.env.COMMENT_BODY;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body,
+            });
