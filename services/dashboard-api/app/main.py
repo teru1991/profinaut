@@ -1,4 +1,7 @@
 from datetime import UTC, datetime, timedelta
+import base64
+import hashlib
+import hmac
 import json
 import sys
 import time
@@ -258,6 +261,10 @@ def get_capabilities() -> CapabilitiesResponse:
         status="ok",
         features=["bots", "commands", "portfolio", "analytics"],
         command_safety_enforce_reason=settings.command_safety_enforce_reason,
+        dangerous_ops_confirmation={
+            "enabled": settings.dangerous_ops_confirmation,
+            "ttl_seconds": max(1, int(settings.dangerous_ops_confirmation_ttl_seconds)),
+        },
         generated_at=datetime.now(UTC),
     )
 
@@ -1021,6 +1028,172 @@ def _parse_iso_datetime(value: str) -> datetime | None:
     return parsed
 
 
+
+
+def _stable_json(value: object) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def _dangerous_op_name_for_command(command_type: str) -> str:
+    return f"command.{command_type.lower()}"
+
+
+def is_dangerous_command(payload: CommandIn) -> bool:
+    return payload.type in STRONG_COMMAND_TYPES
+
+
+def _dangerous_intent_hash(payload: CommandIn) -> str:
+    intent = {
+        "type": payload.type,
+        "target_bot_id": payload.target_bot_id,
+        "payload": payload.payload,
+        "reason": payload.reason,
+        "expires_at": payload.expires_at,
+    }
+    return hashlib.sha256(_stable_json(intent).encode("utf-8")).hexdigest()
+
+
+def _dangerous_ops_secret(settings) -> str:
+    return settings.dangerous_ops_confirmation_secret or settings.admin_token
+
+
+def _build_confirmation_token(*, payload: CommandIn, now: datetime) -> tuple[str, datetime, str]:
+    settings = get_settings()
+    ttl_seconds = max(1, int(settings.dangerous_ops_confirmation_ttl_seconds))
+    expires_at = now + timedelta(seconds=ttl_seconds)
+    intent_hash = _dangerous_intent_hash(payload)
+    token_payload = {"intent_hash": intent_hash, "exp": int(expires_at.timestamp())}
+    serialized = _stable_json(token_payload).encode("utf-8")
+    encoded = base64.urlsafe_b64encode(serialized).decode("ascii")
+    signature = hmac.new(_dangerous_ops_secret(settings).encode("utf-8"), encoded.encode("utf-8"), hashlib.sha256).hexdigest()
+    return f"{encoded}.{signature}", expires_at, intent_hash
+
+
+def _verify_confirmation_token(*, payload: CommandIn, token: str, now: datetime) -> tuple[str, datetime]:
+    try:
+        encoded, signature = token.split(".", 1)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail={"code": "CONFIRMATION_MISMATCH", "message": "Confirmation token mismatch", "details": {}}) from exc
+
+    settings = get_settings()
+    expected_signature = hmac.new(_dangerous_ops_secret(settings).encode("utf-8"), encoded.encode("utf-8"), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected_signature, signature):
+        raise HTTPException(status_code=400, detail={"code": "CONFIRMATION_MISMATCH", "message": "Confirmation token mismatch", "details": {}})
+
+    try:
+        raw_payload = base64.urlsafe_b64decode(encoded.encode("ascii")).decode("utf-8")
+        token_payload = json.loads(raw_payload)
+    except (ValueError, json.JSONDecodeError) as exc:
+        raise HTTPException(status_code=400, detail={"code": "CONFIRMATION_MISMATCH", "message": "Confirmation token mismatch", "details": {}}) from exc
+
+    exp_timestamp = int(token_payload.get("exp", 0))
+    expires_at = datetime.fromtimestamp(exp_timestamp, tz=UTC)
+    if now > expires_at:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "CONFIRMATION_EXPIRED",
+                "message": "Confirmation token expired",
+                "details": {"expires_at": expires_at.isoformat()},
+            },
+        )
+
+    expected_intent_hash = _dangerous_intent_hash(payload)
+    token_intent_hash = str(token_payload.get("intent_hash") or "")
+    if expected_intent_hash != token_intent_hash:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "CONFIRMATION_MISMATCH",
+                "message": "Confirmation token mismatch",
+                "details": {"intent_hash": expected_intent_hash},
+            },
+        )
+
+    return expected_intent_hash, expires_at
+
+
+def _enforce_dangerous_confirmation(*, request: Request, actor: str, payload: CommandIn, now: datetime) -> None:
+    if not is_dangerous_command(payload):
+        return
+
+    request_id = _get_request_id(request)
+    op_name = _dangerous_op_name_for_command(payload.type)
+    settings = get_settings()
+    if not settings.dangerous_ops_confirmation:
+        audit_event(
+            service="dashboard-api",
+            event="dangerous_op_rejected",
+            request_id=request_id,
+            actor=actor,
+            op_name=op_name,
+            reason=payload.reason,
+            expires_at=None,
+            result_code="DANGEROUS_OPS_DISABLED",
+        )
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "DANGEROUS_OPS_DISABLED",
+                "message": "Dangerous operations confirmation capability is disabled",
+                "details": {"op_name": op_name},
+            },
+        )
+
+    if payload.reason is None or not payload.reason.strip():
+        audit_event(
+            service="dashboard-api",
+            event="dangerous_op_rejected",
+            request_id=request_id,
+            actor=actor,
+            op_name=op_name,
+            reason=payload.reason,
+            expires_at=None,
+            result_code="REASON_REQUIRED",
+        )
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "REASON_REQUIRED",
+                "message": "Reason is required for dangerous operations",
+                "details": {"op_name": op_name},
+            },
+        )
+
+    if not payload.confirm_token:
+        token, expires_at, intent_hash = _build_confirmation_token(payload=payload, now=now)
+        audit_event(
+            service="dashboard-api",
+            event="dangerous_op_challenge_issued",
+            request_id=request_id,
+            actor=actor,
+            op_name=op_name,
+            reason=payload.reason,
+            expires_at=expires_at.isoformat(),
+            result_code="CONFIRMATION_REQUIRED",
+        )
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "CONFIRMATION_REQUIRED",
+                "message": "Confirmation required before executing dangerous operation",
+                "details": {"confirm_token": token, "confirmation": token, "expires_at": expires_at.isoformat(), "intent_hash": intent_hash},
+            },
+        )
+
+    intent_hash, expires_at = _verify_confirmation_token(payload=payload, token=payload.confirm_token, now=now)
+    audit_event(
+        service="dashboard-api",
+        event="dangerous_op_confirmed",
+        request_id=request_id,
+        actor=actor,
+        op_name=op_name,
+        reason=payload.reason,
+        expires_at=expires_at.isoformat(),
+        result_code="CONFIRMED",
+        intent_hash=intent_hash,
+    )
+
 def _validate_command_safety(payload: CommandIn, now: datetime) -> datetime | None:
     settings = get_settings()
     if not settings.command_safety_enforce_reason or payload.type not in STRONG_COMMAND_TYPES:
@@ -1114,8 +1287,14 @@ def _batch_latest_acks(db: Session, command_ids: list[str]) -> dict[str, Command
 
 
 @app.post("/commands", response_model=CommandOut, status_code=201)
-def create_command(payload: CommandIn, actor: str = Depends(require_admin_actor), db: Session = Depends(get_db)) -> CommandOut:
+def create_command(
+    payload: CommandIn,
+    request: Request,
+    actor: str = Depends(require_admin_actor),
+    db: Session = Depends(get_db),
+) -> CommandOut:
     created_at = payload.created_at or datetime.now(UTC)
+    _enforce_dangerous_confirmation(request=request, actor=actor, payload=payload, now=created_at)
     expires_at = _validate_command_safety(payload, created_at)
     command_id = str(uuid4())
 

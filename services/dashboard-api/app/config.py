@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     marketdata_base_url: str = "http://127.0.0.1:8081"
     marketdata_timeout_seconds: float = 2.0
     command_safety_enforce_reason: bool = False
+    dangerous_ops_confirmation: bool = False
+    dangerous_ops_confirmation_ttl_seconds: int = 30
+    dangerous_ops_confirmation_secret: str | None = None
 
 
 @lru_cache
