@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/policy_decision.schema.json",
+  "title": "PolicyDecision",
+  "description": "Canonical policy engine decision payload.",
+  "type": "object",
+  "required": [
+    "decision",
+    "reason_code"
+  ],
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "ALLOW",
+        "BLOCK",
+        "THROTTLE",
+        "REDUCE_ONLY",
+        "CLOSE_ONLY",
+        "FLATTEN",
+        "HALT"
+      ]
+    },
+    "reason_code": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Machine-readable short code (e.g., SAFE_MODE_BLOCKED)."
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null,
+      "description": "Human-readable reason."
+    },
+    "evidence": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "default": null,
+      "description": "Free-form JSON-serializable evidence details."
+    },
+    "created_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "default": null
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "decision": "BLOCK",
+      "reason_code": "SAFE_MODE_BLOCKED",
+      "reason": "Order flow is blocked while SAFE_MODE is active",
+      "evidence": {
+        "safe_mode": "SAFE_MODE",
+        "symbol": "BTC/USDT"
+      },
+      "created_at": "2026-01-15T12:34:56Z"
+    }
+  ]
+}

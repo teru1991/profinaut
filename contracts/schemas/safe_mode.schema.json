@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/safe_mode.schema.json",
+  "title": "SafeModeState",
+  "description": "Operational safety state.",
+  "type": "string",
+  "enum": [
+    "NORMAL",
+    "DEGRADED",
+    "SAFE_MODE",
+    "HALTED"
+  ],
+  "examples": [
+    "NORMAL",
+    "SAFE_MODE"
+  ]
+}
