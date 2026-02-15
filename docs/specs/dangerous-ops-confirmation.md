@@ -124,7 +124,7 @@ Each event MUST include fields:
 - `actor`
 - `op_name`
 - `reason`
-- `expires_at`
+- `confirm_expires_at`
 - `result`
 
 Additional guidance:
