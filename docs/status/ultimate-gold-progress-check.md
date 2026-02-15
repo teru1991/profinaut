@@ -146,7 +146,7 @@
 1. **仕様のカタログ化が明確**
    - UGF-IDで管理され、非機能要件から拡張性/SaaS化まで一本化されている。
 2. **P0の課題認識が妥当**
-   - SAFE_MODE、Policy/Risk Gate、Reconciliation、Fail test、Backtest-First など事故直結領域を未実装として正しく認識できている。
+   - `SAFE_MODE`、`Policy/Risk Gate`、`Reconciliation`、`Fail test`、`Backtest-First` など事故直結領域を未実装として正しく認識できている。
 3. **マイルストーン設計が実務的**
    - Safety/Operability/Reproducibility/Portfolio Integrity/Extensibility の順で段階化されている。
 
