@@ -19,17 +19,24 @@ def test_capabilities(client):
     assert payload["status"] in {"ok", "degraded"}
     assert isinstance(payload["features"], list)
     assert payload["command_safety_enforce_reason"] is False
+    assert payload["dangerous_ops_confirmation"]["enabled"] is False
+    assert payload["dangerous_ops_confirmation"]["ttl_seconds"] >= 1
     assert payload["generated_at"]
 
 
 def test_capabilities_exposes_command_safety_flag(client, monkeypatch):
     monkeypatch.setenv("COMMAND_SAFETY_ENFORCE_REASON", "true")
+    monkeypatch.setenv("DANGEROUS_OPS_CONFIRMATION", "true")
+    monkeypatch.setenv("DANGEROUS_OPS_CONFIRMATION_TTL_SECONDS", "45")
     from app.config import get_settings
 
     get_settings.cache_clear()
     response = client.get("/capabilities")
     assert response.status_code == 200
-    assert response.json()["command_safety_enforce_reason"] is True
+    body = response.json()
+    assert body["command_safety_enforce_reason"] is True
+    assert body["dangerous_ops_confirmation"]["enabled"] is True
+    assert body["dangerous_ops_confirmation"]["ttl_seconds"] == 45
     get_settings.cache_clear()
 
 
@@ -236,17 +243,19 @@ def test_commands_invalid_inputs_and_structured_errors(client):
     assert missing_body["code"] == "COMMAND_NOT_FOUND"
 
 
-def test_strong_command_without_reason_is_allowed_when_flag_off(client):
+def test_strong_command_without_reason_is_rejected_when_confirmation_disabled(client):
     res = client.post(
         "/commands",
         json={"type": "HALT", "target_bot_id": "bot-cmd", "payload": {}},
         headers={"X-Admin-Token": "test-admin-token"},
     )
-    assert res.status_code == 201
+    assert res.status_code == 403
+    assert res.json()["code"] == "DANGEROUS_OPS_DISABLED"
 
 
 def test_strong_command_requires_reason_and_expires_when_flag_on(client, monkeypatch):
     monkeypatch.setenv("COMMAND_SAFETY_ENFORCE_REASON", "true")
+    monkeypatch.setenv("DANGEROUS_OPS_CONFIRMATION", "true")
     from app.config import get_settings
 
     get_settings.cache_clear()
@@ -257,9 +266,7 @@ def test_strong_command_requires_reason_and_expires_when_flag_on(client, monkeyp
     )
     assert res.status_code == 400
     body = res.json()
-    assert body["code"] == "COMMAND_SAFETY_VALIDATION_FAILED"
-    assert "COMMAND_REASON_REQUIRED" in body["details"]["error_codes"]
-    assert "COMMAND_EXPIRES_AT_REQUIRED" in body["details"]["error_codes"]
+    assert body["code"] == "REASON_REQUIRED"
 
     # ensure command was not enqueued
     list_res = client.get("/commands", params={"target_bot_id": "bot-cmd"})
@@ -270,11 +277,12 @@ def test_strong_command_requires_reason_and_expires_when_flag_on(client, monkeyp
 
 def test_strong_command_with_reason_and_future_expires_is_accepted_when_flag_on(client, monkeypatch):
     monkeypatch.setenv("COMMAND_SAFETY_ENFORCE_REASON", "true")
+    monkeypatch.setenv("DANGEROUS_OPS_CONFIRMATION", "true")
     from app.config import get_settings
 
     get_settings.cache_clear()
     expires_at = (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
-    res = client.post(
+    first = client.post(
         "/commands",
         json={
             "type": "KILL_SWITCH",
@@ -285,12 +293,118 @@ def test_strong_command_with_reason_and_future_expires_is_accepted_when_flag_on(
         },
         headers={"X-Admin-Token": "test-admin-token"},
     )
-    assert res.status_code == 201
-    body = res.json()
+    assert first.status_code == 409
+    token = first.json()["details"]["confirmation"]
+    second = client.post(
+        "/commands",
+        json={
+            "type": "KILL_SWITCH",
+            "target_bot_id": "bot-cmd",
+            "payload": {},
+            "reason": "incident response",
+            "expires_at": expires_at,
+            "confirm_token": token,
+        },
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert second.status_code == 201
+    body = second.json()
     assert body["reason"] == "incident response"
     assert body["expires_at"]
     get_settings.cache_clear()
 
+
+
+
+def test_dangerous_command_challenge_then_confirm_success(client, monkeypatch):
+    monkeypatch.setenv("DANGEROUS_OPS_CONFIRMATION", "true")
+    monkeypatch.setenv("DANGEROUS_OPS_CONFIRMATION_TTL_SECONDS", "60")
+    from app.config import get_settings
+
+    events: list[dict] = []
+
+    def fake_audit_event(**kwargs):
+        events.append(kwargs)
+
+    monkeypatch.setattr("app.main.audit_event", fake_audit_event)
+    get_settings.cache_clear()
+
+    first = client.post(
+        "/commands",
+        json={"type": "HALT", "target_bot_id": "bot-cmd", "payload": {}, "reason": "manual kill"},
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert first.status_code == 409
+    first_body = first.json()
+    assert first_body["code"] == "CONFIRMATION_REQUIRED"
+    token = first_body["details"]["confirmation"]
+
+    assert client.get("/commands", params={"target_bot_id": "bot-cmd"}).json() == []
+
+    second = client.post(
+        "/commands",
+        json={
+            "type": "HALT",
+            "target_bot_id": "bot-cmd",
+            "payload": {},
+            "reason": "manual kill",
+            "confirm_token": token,
+        },
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert second.status_code == 201
+    created = second.json()
+    assert created["type"] == "HALT"
+
+    names = [e.get("event") for e in events]
+    assert "dangerous_op_challenge_issued" in names
+    assert "dangerous_op_confirmed" in names
+    get_settings.cache_clear()
+
+
+def test_dangerous_command_confirmation_expired(client, monkeypatch):
+    monkeypatch.setenv("DANGEROUS_OPS_CONFIRMATION", "true")
+    monkeypatch.setenv("DANGEROUS_OPS_CONFIRMATION_TTL_SECONDS", "1")
+    from app.config import get_settings
+    import time
+
+    get_settings.cache_clear()
+    first = client.post(
+        "/commands",
+        json={"type": "HALT", "target_bot_id": "bot-cmd", "payload": {}, "reason": "manual kill"},
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    token = first.json()["details"]["confirmation"]
+    time.sleep(1.1)
+    second = client.post(
+        "/commands",
+        json={"type": "HALT", "target_bot_id": "bot-cmd", "payload": {}, "reason": "manual kill", "confirm_token": token},
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert second.status_code == 400
+    assert second.json()["code"] == "CONFIRMATION_EXPIRED"
+    get_settings.cache_clear()
+
+
+def test_dangerous_command_confirmation_mismatch(client, monkeypatch):
+    monkeypatch.setenv("DANGEROUS_OPS_CONFIRMATION", "true")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    first = client.post(
+        "/commands",
+        json={"type": "HALT", "target_bot_id": "bot-cmd", "payload": {}, "reason": "manual kill"},
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    token = first.json()["details"]["confirmation"]
+    second = client.post(
+        "/commands",
+        json={"type": "HALT", "target_bot_id": "another-bot", "payload": {}, "reason": "manual kill", "confirm_token": token},
+        headers={"X-Admin-Token": "test-admin-token"},
+    )
+    assert second.status_code == 400
+    assert second.json()["code"] == "CONFIRMATION_MISMATCH"
+    get_settings.cache_clear()
 
 def test_pending_commands_endpoint_filters_by_target_bot_id(client):
     cmd1 = client.post(
