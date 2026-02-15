@@ -160,3 +160,24 @@ def test_paper_e2e_submits_order_when_healthy(monkeypatch) -> None:
     assert rc == 0
     assert len(calls) == 1
     assert calls[0]["type"] == "MARKET"
+
+
+def test_marketdata_stale_logs_skip_reason(monkeypatch, capsys) -> None:
+    monkeypatch.setenv("SAFE_MODE", "false")
+    monkeypatch.setenv("BOT_MAX_LOOPS", "1")
+
+    monkeypatch.setattr(main, "fetch_controlplane_capabilities", lambda *_: {"status": "ok"})
+    monkeypatch.setattr(
+        main,
+        "fetch_ticker",
+        lambda *_: {"symbol": "BTC_JPY", "stale": True, "degraded_reason": "STALE_TICKER", "quality": {"status": "STALE"}},
+    )
+    monkeypatch.setattr(main, "fetch_execution_capabilities", lambda *_: {"status": "ok"})
+
+    rc = main.run()
+    assert rc == 0
+
+    events = [json.loads(line) for line in capsys.readouterr().out.strip().splitlines() if line.strip()]
+    blocked = [e for e in events if e.get("event") == "new_order_blocked"]
+    assert blocked
+    assert any(e.get("reason") == "STALE_TICKER" and e.get("decision") == "SKIP_ORDER" for e in blocked)

@@ -9,17 +9,18 @@ This runbook validates the paper trading flow end-to-end, including MarketData G
 
 ## One-command smoke run
 
-Use the existing smoke script:
+Use the smoke script (health -> ticker -> order_intent -> fill):
 
 ```bash
-bash scripts/smoke/run_paper_e2e.sh
+bash scripts/smoke/paper_e2e.sh
 ```
 
 Expected result:
 
 - script exits with status `0`
 - `/healthz` checks succeed
-- order creation succeeds once and duplicate idempotency attempt is rejected
+- order creation succeeds
+- order fill succeeds
 
 If this fails, use the manual verification steps below to isolate MarketData vs execution issues.
 

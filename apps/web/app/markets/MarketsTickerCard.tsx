@@ -32,17 +32,18 @@ export function MarketsTickerCard({ exchange = "gmo", symbol = "BTC_JPY" }: { ex
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
 
   const activeControllerRef = useRef<AbortController | null>(null);
-  const inFlightRef = useRef(false);
+  const requestSeqRef = useRef(0);
 
   useEffect(() => {
     let mounted = true;
 
     async function loadTicker() {
-      if (inFlightRef.current) {
-        return;
+      if (activeControllerRef.current) {
+        activeControllerRef.current.abort();
       }
 
-      inFlightRef.current = true;
+      const requestSeq = requestSeqRef.current + 1;
+      requestSeqRef.current = requestSeq;
       const controller = new AbortController();
       activeControllerRef.current = controller;
 
@@ -56,7 +57,7 @@ export function MarketsTickerCard({ exchange = "gmo", symbol = "BTC_JPY" }: { ex
         );
         const payload = (await response.json()) as ProxyResponse;
 
-        if (!mounted || activeControllerRef.current !== controller) {
+        if (!mounted || requestSeqRef.current !== requestSeq) {
           return;
         }
 
@@ -92,8 +93,7 @@ export function MarketsTickerCard({ exchange = "gmo", symbol = "BTC_JPY" }: { ex
         if (activeControllerRef.current === controller) {
           activeControllerRef.current = null;
         }
-        inFlightRef.current = false;
-        if (mounted) {
+        if (requestSeqRef.current === requestSeq && mounted) {
           setLoading(false);
         }
       }
@@ -116,7 +116,6 @@ export function MarketsTickerCard({ exchange = "gmo", symbol = "BTC_JPY" }: { ex
         activeControllerRef.current.abort();
       }
       activeControllerRef.current = null;
-      inFlightRef.current = false;
     };
   }, [exchange, symbol]);
 
