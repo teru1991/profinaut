@@ -268,7 +268,7 @@ def test_gmo_live_off_never_calls_upstream(client, monkeypatch):
     assert called["place"] == 0
 
 
-def test_gmo_live_place_and_cancel_with_idempotency_mapping(client, monkeypatch):
+def test_gmo_live_place_and_cancel_with_idempotency_mapping(client, monkeypatch, auth_headers):
     from app.live import PlaceOrderResult
     from app.storage import get_storage
 
@@ -306,7 +306,7 @@ def test_gmo_live_place_and_cancel_with_idempotency_mapping(client, monkeypatch)
     storage = get_storage()
     assert storage.get_client_order_id_by_idempotency_key("gmo-live-enabled") is not None
 
-    cancel_res = client.post("/execution/orders/gmo-order-1/cancel")
+    cancel_res = client.post("/execution/orders/gmo-order-1/cancel", headers=auth_headers)
     assert cancel_res.status_code == 200
     assert cancel_res.json()["status"] == "CANCELED"
 

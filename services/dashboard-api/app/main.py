@@ -1094,6 +1094,7 @@ def get_pending_commands(instance_id: str, db: Session = Depends(get_db)) -> lis
     ).all()
     return [_serialize_command(db, row) for row in rows]
 
+    return [_serialize_command(db, row, acks_map.get(row.command_id)) for row in rows]
 
 @app.post("/commands/{command_id}/ack", response_model=CommandAckOut, status_code=200)
 def ack_command(command_id: str, payload: CommandAckIn, db: Session = Depends(get_db)) -> CommandAckOut:
