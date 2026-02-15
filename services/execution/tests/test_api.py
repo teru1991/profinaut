@@ -15,10 +15,42 @@ def test_capabilities(client):
     assert payload["service"] == "execution"
     assert payload["version"]
     assert payload["status"] in {"ok", "degraded"}
+    assert payload["safe_mode"] in {"NORMAL", "DEGRADED", "SAFE_MODE", "HALTED"}
+    assert isinstance(payload["allowed_actions"], list)
     assert isinstance(payload["features"], list)
     assert "paper_execution" in payload["features"]
     assert "generated_at" in payload
 
+
+
+
+def test_post_order_intent_blocked_in_safe_mode_never_calls_upstream(client, monkeypatch):
+    monkeypatch.setenv("EXECUTION_SAFE_MODE", "SAFE_MODE")
+    monkeypatch.setenv("ALLOWED_EXCHANGES", "binance,coinbase,gmo")
+    monkeypatch.setenv("EXECUTION_LIVE_ENABLED", "true")
+    monkeypatch.setenv("EXECUTION_LIVE_MODE", "live")
+
+    called = {"place": 0}
+
+    def _never_called(*_args, **_kwargs):
+        called["place"] += 1
+        raise AssertionError("upstream place_order should not be called in SAFE_MODE")
+
+    monkeypatch.setattr("app.live.GmoLiveExecutor.place_order", _never_called)
+
+    order_intent = {
+        "idempotency_key": "safe-mode-blocked",
+        "exchange": "gmo",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "qty": 0.01,
+        "type": "MARKET",
+    }
+
+    response = client.post("/execution/order-intents", json=order_intent)
+    assert response.status_code == 403
+    assert response.json()["code"] == "SAFE_MODE_BLOCKED"
+    assert called["place"] == 0
 
 def test_post_order_intent_success(client):
     """Test POST /execution/order-intents returns 201 with Order JSON"""

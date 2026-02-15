@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 os.environ["ALLOWED_SYMBOLS"] = "BTC/USDT,ETH/USDT"
 os.environ["ALLOWED_EXCHANGES"] = "binance,coinbase"
 os.environ["EXECUTION_API_TOKEN"] = "test-token-12345"
+os.environ["EXECUTION_SAFE_MODE"] = "NORMAL"
 
 import app.config as app_config  # noqa: E402
 import app.main as app_main  # noqa: E402

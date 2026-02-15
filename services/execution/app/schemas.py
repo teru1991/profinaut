@@ -17,6 +17,8 @@ class CapabilitiesResponse(StrictBaseModel):
     service: str = "execution"
     version: str
     status: Literal["ok", "degraded"] = "ok"
+    safe_mode: Literal["NORMAL", "DEGRADED", "SAFE_MODE", "HALTED"]
+    allowed_actions: list[str]
     features: list[str]
     degraded_reason: str | None = None
     generated_at: datetime
