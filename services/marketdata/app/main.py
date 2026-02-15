@@ -15,7 +15,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
+import re
+
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -31,6 +33,37 @@ if not logger.handlers:
     logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 SERVICE_NAME = "marketdata"
+
+
+_ALLOWED_EXCHANGES = {"gmo"}
+_SYMBOL_PATTERN = re.compile(r"^[A-Z0-9_/:.-]{3,32}$")
+
+
+def _normalize_and_validate_params(exchange: str, symbol: str) -> tuple[str, str]:
+    normalized_exchange = (exchange or "gmo").strip().lower()
+    normalized_symbol = (symbol or "BTC_JPY").strip().upper()
+
+    if normalized_exchange not in _ALLOWED_EXCHANGES:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "INVALID_EXCHANGE",
+                "message": f"Unsupported exchange '{normalized_exchange}'",
+                "details": {"allowed_exchanges": sorted(_ALLOWED_EXCHANGES)},
+            },
+        )
+
+    if not _SYMBOL_PATTERN.match(normalized_symbol):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "INVALID_SYMBOL",
+                "message": "Symbol format is invalid",
+                "details": {"symbol": normalized_symbol},
+            },
+        )
+
+    return normalized_exchange, normalized_symbol
 
 
 @dataclass
@@ -148,11 +181,52 @@ class MarketDataPoller:
                     sleep_for = self._record_failure(exc)
                 await asyncio.sleep(sleep_for)
 
-    async def latest_payload(self) -> dict[str, Any]:
+    def _degraded_payload(
+        self,
+        *,
+        symbol: str,
+        reason: str,
+        code: str,
+        message: str,
+    ) -> dict[str, Any]:
+        return {
+            "symbol": symbol,
+            "ts": None,
+            "bid": None,
+            "ask": None,
+            "last": None,
+            "mid": None,
+            "source": "gmo",
+            "quality": {"status": "DEGRADED"},
+            "stale": True,
+            "degraded_reason": reason,
+            "error": {
+                "code": code,
+                "message": message,
+            },
+        }
+
+    async def latest_payload(self, symbol: str | None = None) -> tuple[int, dict[str, Any]]:
+        requested_symbol = symbol or self._config.symbol
         async with self._lock:
             snapshot = self._snapshot
             if snapshot is None:
-                raise HTTPException(status_code=503, detail={"code": "TICKER_NOT_READY", "message": "Ticker not ready", "details": {}})
+                self._degraded_reason = "UPSTREAM_ERROR"
+                self._apply_reason_state(self._degraded_reason)
+                return 503, self._degraded_payload(
+                    symbol=requested_symbol,
+                    reason="UPSTREAM_ERROR",
+                    code="TICKER_NOT_READY",
+                    message="Ticker not ready",
+                )
+
+            if requested_symbol != snapshot.symbol:
+                return 400, self._degraded_payload(
+                    symbol=requested_symbol,
+                    reason="UNSUPPORTED_SYMBOL",
+                    code="UNSUPPORTED_SYMBOL",
+                    message=f"Only {snapshot.symbol} is currently available",
+                )
 
             degraded_reason = self._degraded_reason
             stale = True
@@ -171,7 +245,7 @@ class MarketDataPoller:
             elif degraded_reason is not None:
                 quality_status = "DEGRADED"
 
-            return {
+            return 200, {
                 "symbol": snapshot.symbol,
                 "ts": snapshot.ts,
                 "bid": snapshot.bid,
@@ -246,8 +320,12 @@ def healthz() -> dict[str, str]:
 async def get_capabilities() -> dict[str, Any]:
     """Return service capabilities and health status."""
     async with _poller._lock:
-        degraded = _poller._degraded_reason is not None
         degraded_reason = _poller._degraded_reason
+        if _poller._snapshot is not None and _poller._last_success_monotonic is not None:
+            last_success_age = time.monotonic() - _poller._last_success_monotonic
+            if last_success_age > _poller._config.stale_threshold_seconds:
+                degraded_reason = "STALE_TICKER"
+        degraded = degraded_reason is not None
 
     return {
         "service": "marketdata",
@@ -260,5 +338,14 @@ async def get_capabilities() -> dict[str, Any]:
 
 
 @app.get("/ticker/latest")
-async def ticker_latest() -> dict[str, Any]:
-    return await _poller.latest_payload()
+async def ticker_latest(
+    request: Request,
+    exchange: str = Query(default="gmo"),
+    symbol: str = Query(default="BTC_JPY"),
+) -> JSONResponse:
+    _, normalized_symbol = _normalize_and_validate_params(exchange=exchange, symbol=symbol)
+    status_code, payload = await _poller.latest_payload(symbol=normalized_symbol)
+    request_id = getattr(request.state, "request_id", "unknown")
+    payload["request_id"] = request_id
+    payload["exchange"] = "gmo"
+    return JSONResponse(status_code=status_code, content=payload)

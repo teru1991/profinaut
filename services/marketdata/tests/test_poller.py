@@ -4,7 +4,7 @@ import logging
 
 from fastapi.testclient import TestClient
 
-from services.marketdata.app.main import app, MarketDataPoller, PollerConfig, TickerSnapshot
+from services.marketdata.app.main import _poller, app, MarketDataPoller, PollerConfig, TickerSnapshot
 
 
 def run(coro):
@@ -47,7 +47,9 @@ def test_stale_detection_sets_reason_and_canonical_payload_shape() -> None:
     poller._record_success(snapshot)
     poller._last_success_monotonic -= 10
 
-    payload = run(poller.latest_payload())
+    status_code, payload = run(poller.latest_payload())
+
+    assert status_code == 200
 
     assert payload["stale"] is True
     assert payload["degraded_reason"] == "STALE_TICKER"
@@ -80,7 +82,9 @@ def test_degraded_clears_when_fresh_data_returns() -> None:
     )
     poller._record_success(fresh_snapshot)
 
-    payload = run(poller.latest_payload())
+    status_code, payload = run(poller.latest_payload())
+
+    assert status_code == 200
 
     assert payload["stale"] is False
     assert payload["degraded_reason"] is None
@@ -123,6 +127,49 @@ def test_error_envelope_includes_request_id_header() -> None:
 
     assert response.status_code == 503
     body = response.json()
-    assert body["code"] == "TICKER_NOT_READY"
+    assert body["error"]["code"] == "TICKER_NOT_READY"
+    assert body["degraded_reason"] == "UPSTREAM_ERROR"
+    assert body["exchange"] == "gmo"
     assert body["request_id"] == "req-123"
     assert response.headers.get("x-request-id") == "req-123"
+
+
+def test_latest_ticker_rejects_unsupported_symbol_with_stable_shape() -> None:
+    _poller._record_success(
+        TickerSnapshot(
+            symbol="BTC_JPY",
+            ts="2026-02-14T00:00:00Z",
+            bid=1.0,
+            ask=2.0,
+            last=1.5,
+            source="gmo",
+        )
+    )
+    with TestClient(app) as client:
+        response = client.get("/ticker/latest?symbol=ETH_JPY")
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["symbol"] == "ETH_JPY"
+    assert body["degraded_reason"] == "UNSUPPORTED_SYMBOL"
+    assert body["error"]["code"] == "UNSUPPORTED_SYMBOL"
+
+
+def test_latest_ticker_rejects_invalid_exchange_with_error_envelope() -> None:
+    with TestClient(app) as client:
+        response = client.get("/ticker/latest?exchange=binance&symbol=BTC_JPY", headers={"x-request-id": "req-ex"})
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["code"] == "INVALID_EXCHANGE"
+    assert body["request_id"] == "req-ex"
+
+
+def test_latest_ticker_rejects_invalid_symbol_with_error_envelope() -> None:
+    with TestClient(app) as client:
+        response = client.get("/ticker/latest?exchange=gmo&symbol=bad symbol", headers={"x-request-id": "req-sym"})
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["code"] == "INVALID_SYMBOL"
+    assert body["request_id"] == "req-sym"
