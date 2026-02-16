@@ -88,9 +88,7 @@ class S3ObjectStore:
         endpoint = urllib.parse.urlparse(self._config.endpoint)
         host = self._bucket_host()
         uri = self._canonical_uri(key)
-        query_string = ""
-        if query:
-            query_string = urllib.parse.urlencode(query)
+        query_string = self._canonical_query(query)
         return urllib.parse.urlunparse((endpoint.scheme or "http", host, uri, "", query_string, ""))
 
     @staticmethod
@@ -199,9 +197,16 @@ def _env_bool(name: str, default: bool = False) -> bool:
 def build_object_store_from_env() -> tuple[ObjectStore | None, ObjectStoreStatus]:
     backend = os.getenv("OBJECT_STORE_BACKEND", "memory").strip().lower()
 
-    if backend != "s3":
+    if backend == "memory":
         store = InMemoryObjectStore()
         return store, ObjectStoreStatus(backend=store.backend, ready=True, degraded_reasons=[])
+
+    if backend != "s3":
+        return None, ObjectStoreStatus(
+            backend=backend,
+            ready=False,
+            degraded_reasons=[f"OBJECT_STORE_UNSUPPORTED_BACKEND:{backend}"],
+        )
 
     required_envs = {
         "S3_ENDPOINT": os.getenv("S3_ENDPOINT"),

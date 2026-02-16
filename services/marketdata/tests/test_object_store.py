@@ -52,6 +52,7 @@ def test_s3_put_get_list_roundtrip_with_minio_style_paths(monkeypatch) -> None:
 
         query = parse_qs(parsed.query)
         if query.get("list-type") == ["2"]:
+            assert "%2F" in parsed.query
             prefix = query.get("prefix", [""])[0]
             keys = sorted(name for name in storage if name.startswith(prefix))
             items = "".join(f"<Contents><Key>{name}</Key></Contents>" for name in keys)
@@ -87,3 +88,14 @@ def test_s3_put_get_list_roundtrip_with_minio_style_paths(monkeypatch) -> None:
         "bronze/2026-01-01/part-1.jsonl",
         "bronze/2026-01-01/part-2.jsonl",
     ]
+
+
+def test_build_object_store_from_env_rejects_unsupported_backend(monkeypatch) -> None:
+    monkeypatch.setenv("OBJECT_STORE_BACKEND", "unknown")
+
+    store, status = build_object_store_from_env()
+
+    assert store is None
+    assert status.backend == "unknown"
+    assert status.ready is False
+    assert status.degraded_reasons == ["OBJECT_STORE_UNSUPPORTED_BACKEND:unknown"]
