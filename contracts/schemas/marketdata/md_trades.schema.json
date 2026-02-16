@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/marketdata/md_trades.schema.json",
+  "title": "MarketDataTrades",
+  "description": "Minimal Silver schema for trade events.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "price",
+    "qty",
+    "side",
+    "occurred_at",
+    "received_ts",
+    "raw_msg_id",
+    "source_msg_key",
+    "extra_json"
+  ],
+  "properties": {
+    "price": {
+      "type": "number"
+    },
+    "qty": {
+      "type": "number"
+    },
+    "side": {
+      "type": "string",
+      "enum": [
+        "buy",
+        "sell",
+        "unknown"
+      ]
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "received_ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "raw_msg_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "source_msg_key": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "extra_json": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}
