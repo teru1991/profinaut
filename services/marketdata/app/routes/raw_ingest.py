@@ -164,9 +164,7 @@ async def raw_ingest(request: Request) -> JSONResponse:
     envelope["quality_json"] = quality_json
 
     fs_root = os.getenv("BRONZE_FS_ROOT", "./data/bronze")
-    writer = BronzeWriter(FilesystemObjectStore(fs_root))
-    object_key = writer.append(envelope)
-    writer.close()
+object_key = _BRONZE_WRITER.append(envelope)
 
     repo.insert_raw_ingest_meta(
         RawIngestMeta(
