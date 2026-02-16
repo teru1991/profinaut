@@ -166,7 +166,7 @@ class S3ObjectStore:
         try:
             with urllib.request.urlopen(req, timeout=self._config.timeout_seconds) as response:
                 return response.read()
-        except (urllib.error.URLError, TimeoutError) as exc:  # pragma: no cover - normalized wrapper
+        except Exception as exc:  # pragma: no cover - normalized wrapper
             raise ObjectStoreError(f"S3 request failed: {method} {key}: {exc}") from exc
 
     def put_object(self, key: str, data: bytes, content_type: str = "application/octet-stream") -> None:
@@ -224,11 +224,11 @@ def build_object_store_from_env() -> tuple[ObjectStore | None, ObjectStoreStatus
         )
 
     config = S3ObjectStoreConfig(
-        endpoint=required_envs["S3_ENDPOINT"],
-        bucket=required_envs["S3_BUCKET"],
-        access_key=required_envs["S3_ACCESS_KEY"],
-        secret_key=required_envs["S3_SECRET_KEY"],
-        region=required_envs["S3_REGION"],
+        endpoint=str(required_envs["S3_ENDPOINT"]),
+        bucket=str(required_envs["S3_BUCKET"]),
+        access_key=str(required_envs["S3_ACCESS_KEY"]),
+        secret_key=str(required_envs["S3_SECRET_KEY"]),
+        region=str(required_envs["S3_REGION"]),
         force_path_style=_env_bool("S3_FORCE_PATH_STYLE", default=True),
     )
     return S3ObjectStore(config), ObjectStoreStatus(backend="s3", ready=True, degraded_reasons=[])

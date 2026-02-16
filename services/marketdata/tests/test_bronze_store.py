@@ -4,6 +4,7 @@ import gzip
 import json
 
 from services.marketdata.app.bronze_store import BronzeStore, RawMetaRepository
+from services.marketdata.app.hash_util import compute_payload_hash
 from services.marketdata.app.object_store import InMemoryObjectStore
 
 
@@ -19,6 +20,7 @@ def test_ingest_writes_gzip_jsonl_and_records_meta_fields() -> None:
     assert meta.content_type == "application/x-ndjson"
     assert isinstance(meta.object_size, int)
     assert meta.object_size > 0
+    assert meta.payload_hash == compute_payload_hash({"symbol": "BTC_JPY", "last": 100.5})
 
     blob = object_store.get_object(meta.object_key)
     lines = gzip.decompress(blob).decode("utf-8").splitlines()

@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
+from services.marketdata.app.hash_util import compute_payload_hash
 from services.marketdata.app.object_store import ObjectStore
 
 
@@ -75,7 +76,7 @@ class BronzeStore:
         meta = RawIngestMeta(
             raw_msg_id=raw_msg_id,
             object_key=object_key,
-            payload_hash=None,
+            payload_hash=compute_payload_hash(payload),
             received_ts=received_at.isoformat(),
             quality_json=quality_json,
             content_encoding=content_encoding,
