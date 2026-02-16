@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "contracts/schemas/marketdata/md_orderbook_delta.schema.json",
+  "title": "md_orderbook_delta",
+  "type": "object",
+  "required": ["raw_msg_id", "venue_id", "market_id", "received_ts", "levels"],
+  "properties": {
+    "raw_msg_id": {"type": "string"},
+    "venue_id": {"type": "string"},
+    "market_id": {"type": "string"},
+    "received_ts": {"type": "string", "format": "date-time"},
+    "event_ts": {"type": ["string", "null"], "format": "date-time"},
+    "seq": {"type": ["integer", "null"]},
+    "levels": {
+      "type": "object",
+      "required": ["bids", "asks"],
+      "properties": {
+        "bids": {"$ref": "md_orderbook_snapshot.schema.json#/definitions/levels"},
+        "asks": {"$ref": "md_orderbook_snapshot.schema.json#/definitions/levels"}
+      }
+    },
+    "extra_json": {"type": "object"}
+  }
+}

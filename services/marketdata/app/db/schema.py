@@ -128,6 +128,27 @@ MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
             """,
         ),
     ),
+    (
+        "0003_marketdata_orderbook_state",
+        (
+            """
+            CREATE TABLE IF NOT EXISTS md_orderbook_state (
+                venue_id TEXT NOT NULL,
+                market_id TEXT NOT NULL,
+                bid_px REAL,
+                bid_qty REAL,
+                ask_px REAL,
+                ask_qty REAL,
+                as_of TEXT,
+                last_update_ts TEXT NOT NULL,
+                last_seq TEXT,
+                degraded INTEGER NOT NULL DEFAULT 0,
+                reason TEXT,
+                PRIMARY KEY (venue_id, market_id)
+            )
+            """,
+        ),
+    ),
 )
 
 

@@ -96,6 +96,10 @@ def test_connector_ingests_raw_messages_into_db(monkeypatch, tmp_path: Path) -> 
 
     conn = sqlite3.connect(db_file)
     row = conn.execute("SELECT venue_id, stream_name, endpoint FROM raw_ingest_meta").fetchone()
+    sub_row = conn.execute("SELECT meta_json FROM ws_subscriptions LIMIT 1").fetchone()
+    assert sub_row is not None
+    assert "market_id" in sub_row[0]
+
     assert row is not None
     assert row[0] == "gmo"
     assert row[1] == "ticker"

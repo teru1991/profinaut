@@ -154,3 +154,42 @@ def test_ohlcv_latest_success_and_not_found(monkeypatch, tmp_path: Path) -> None
 
     assert missing.status_code == 404
     assert missing.json()["found"] is False
+
+def test_orderbook_bbo_latest_reports_stale_and_degraded(monkeypatch, tmp_path: Path) -> None:
+    db_file = tmp_path / "md.sqlite3"
+    conn = _prep_db(db_file)
+    conn.execute(
+        """
+        INSERT INTO md_orderbook_state (
+            venue_id, market_id, bid_px, bid_qty, ask_px, ask_qty,
+            as_of, last_update_ts, last_seq, degraded, reason
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "gmo",
+            "spot",
+            100.0,
+            1.0,
+            101.0,
+            2.0,
+            "2026-02-16T00:00:00Z",
+            "2026-02-16T00:00:00Z",
+            "10",
+            1,
+            "ORDERBOOK_GAP",
+        ),
+    )
+    conn.commit()
+
+    monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
+    monkeypatch.setenv("LATEST_STALE_MS", "0")
+
+    with TestClient(main.app) as client:
+        resp = client.get("/orderbook/bbo/latest?venue_id=gmo&market_id=spot")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["found"] is True
+    assert body["stale"] is True
+    assert body["degraded"] is True
+    assert body["reason"] == "ORDERBOOK_GAP"
