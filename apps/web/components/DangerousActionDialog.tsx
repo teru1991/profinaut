@@ -25,9 +25,7 @@ type Props = {
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
+  if (!value || typeof value !== "object") return null;
   return value as Record<string, unknown>;
 }
 
@@ -48,35 +46,25 @@ function parseMessage(payload: unknown, fallback: string): string {
 function parseChallenge(payload: unknown): ConfirmationChallenge | null {
   const record = asRecord(payload);
   if (!record) return null;
-
   const confirmation = asRecord(record.confirmation);
   const challenge = asRecord(record.challenge);
-
   const candidates = [
     record.confirm_token,
     confirmation?.token,
     challenge?.confirm_token,
     challenge?.token
   ];
-  const token = candidates.find((value) => typeof value === "string" && value.length > 0);
-
+  const token = candidates.find((v) => typeof v === "string" && v.length > 0);
   const expiresCandidates = [
     record.confirm_expires_at,
     record.expires_at,
     confirmation?.expires_at,
     challenge?.expires_at
   ];
-  const expiresRaw = expiresCandidates.find((value) => typeof value === "string" && value.length > 0);
+  const expiresRaw = expiresCandidates.find((v) => typeof v === "string" && v.length > 0);
   const expiresAtMs = typeof expiresRaw === "string" ? Date.parse(expiresRaw) : Number.NaN;
-
-  if (typeof token !== "string" || !Number.isFinite(expiresAtMs)) {
-    return null;
-  }
-
-  return {
-    token,
-    expiresAtMs
-  };
+  if (typeof token !== "string" || !Number.isFinite(expiresAtMs)) return null;
+  return { token, expiresAtMs };
 }
 
 function formatCountdown(ms: number): string {
@@ -111,7 +99,6 @@ export function DangerousActionDialog({
       setError(null);
       return;
     }
-
     const id = setInterval(() => setNowMs(Date.now()), 500);
     return () => clearInterval(id);
   }, [open]);
@@ -129,10 +116,7 @@ export function DangerousActionDialog({
   }, [challenge]);
 
   async function handleSubmit() {
-    if (submitting || !reasonIsValid) {
-      return;
-    }
-
+    if (submitting || !reasonIsValid) return;
     const response = await onExecute({ reason: reason.trim(), confirmToken: challenge?.token });
     const code = parseCode(response.payload);
 
@@ -163,66 +147,74 @@ export function DangerousActionDialog({
     onClose();
   }
 
-  if (!open) {
-    return null;
-  }
+  if (!open) return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0, 0, 0, 0.65)",
-        display: "grid",
-        placeItems: "center",
-        zIndex: 50
-      }}
-    >
-      <div className="card" style={{ width: "min(620px, 92vw)", display: "grid", gap: 12 }}>
-        <h3 style={{ margin: 0 }}>Dangerous operation confirmation</h3>
-        <p style={{ margin: 0 }}>
-          You are about to run <strong>{actionLabel}</strong> against <strong>{targetLabel}</strong> in
-          <strong> {environmentLabel.toUpperCase()}</strong> environment.
-        </p>
-        <p style={{ margin: 0, color: "#fecaca" }}>
-          This can immediately change live behavior and may trigger irreversible side effects. Review reason and confirm
-          deliberately.
+    <div className="dialog-overlay" role="dialog" aria-modal="true" aria-label="Dangerous operation confirmation">
+      <div className="dialog">
+        <h3 className="dialog-title">Dangerous Operation</h3>
+
+        <p className="text-sm" style={{ margin: 0 }}>
+          You are about to run <strong>{actionLabel}</strong> against{" "}
+          <strong>{targetLabel}</strong> in{" "}
+          <strong>{environmentLabel.toUpperCase()}</strong> environment.
         </p>
 
-        <label style={{ display: "grid", gap: 6 }}>
+        <div className="notice notice-error">
+          <span className="notice-icon">!</span>
+          <div className="notice-content">
+            This can immediately change live behavior and may trigger irreversible side effects.
+            Review reason and confirm deliberately.
+          </div>
+        </div>
+
+        <label style={{ display: "grid", gap: "var(--space-2)" }}>
           <span>Reason (required)</span>
           <textarea
             rows={3}
             value={reason}
-            onChange={(event) => setReason(event.target.value)}
+            onChange={(e) => setReason(e.target.value)}
             placeholder="Describe why this operation is required and what safeguards were verified."
           />
         </label>
-        {!reasonIsValid ? <small>Reason is required.</small> : null}
+        {!reasonIsValid && (
+          <span className="text-xs text-muted">A reason is required before submitting.</span>
+        )}
 
         {challenge ? (
-          <div style={{ border: "1px solid #7f1d1d", background: "#3f1d1d", borderRadius: 8, padding: 10 }}>
-            <strong>Step 2 required by server</strong>
-            <p style={{ margin: "6px 0 0" }}>Challenge expires in {formatCountdown(countdownMs)}.</p>
+          <div className="notice notice-error">
+            <span className="notice-icon">!</span>
+            <div className="notice-content">
+              <div className="notice-title">Step 2: Confirm execution</div>
+              Challenge expires in <strong className="tabular-nums">{formatCountdown(countdownMs)}</strong>
+            </div>
           </div>
         ) : (
-          <div style={{ border: "1px solid #78350f", background: "#3f2a14", borderRadius: 8, padding: 10 }}>
-            Submit once to request a server confirmation challenge. You must confirm before expiry.
+          <div className="notice notice-warning">
+            <span className="notice-icon">!</span>
+            <div className="notice-content">
+              Submit once to request a server confirmation challenge. You must confirm before expiry.
+            </div>
           </div>
         )}
 
-        {error ? (
-          <div style={{ border: "1px solid #7f1d1d", background: "#3f1d1d", borderRadius: 8, padding: 10 }}>
-            <strong>Error</strong>
-            <p style={{ margin: "6px 0 0" }}>{error}</p>
+        {error && (
+          <div className="error-state">
+            <p className="error-state-title">Error</p>
+            <p className="error-state-message">{error}</p>
           </div>
-        ) : null}
+        )}
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-          <button type="button" onClick={onClose} disabled={submitting}>
+        <div className="dialog-footer">
+          <button className="btn" type="button" onClick={onClose} disabled={submitting}>
             Cancel
           </button>
-          <button type="button" onClick={() => void handleSubmit()} disabled={submitting || !reasonIsValid}>
+          <button
+            className={`btn ${challenge ? "btn-danger" : "btn-primary"}`}
+            type="button"
+            onClick={() => void handleSubmit()}
+            disabled={submitting || !reasonIsValid}
+          >
             {confirmLabel}
           </button>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { formatTimestamp, copyToClipboard } from "../lib/format";
 
 type BotRow = {
   bot_id: string;
@@ -30,17 +31,32 @@ type ErrorState = {
   message: string;
 } | null;
 
+type SortKey = "name" | "state" | "last_seen" | "exchange" | "symbol";
+type SortDir = "asc" | "desc";
+
+function stateBadgeClass(state: string): string {
+  const upper = state.toUpperCase();
+  if (upper === "RUNNING" || upper === "ACTIVE" || upper === "OK") return "badge badge-success";
+  if (upper === "PAUSED" || upper === "IDLE") return "badge badge-warning";
+  if (upper === "STOPPED" || upper === "ERROR" || upper === "DOWN") return "badge badge-error";
+  return "badge";
+}
+
 export function BotsTable() {
   const [data, setData] = useState<BotsResponse | null>(null);
   const [error, setError] = useState<ErrorState>(null);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   async function load() {
     try {
       const response = await fetch("/api/bots?page=1&page_size=50", { cache: "no-store" });
       if (!response.ok) {
         const contentType = response.headers.get("content-type");
-        let message = `Failed to load bots`;
-        
+        let message = "Failed to load bots";
         if (contentType?.includes("application/json")) {
           try {
             const errorData = await response.json();
@@ -51,7 +67,6 @@ export function BotsTable() {
         } else {
           message = await response.text() || message;
         }
-        
         setError({ status: response.status, message });
         setData(null);
         return;
@@ -60,11 +75,13 @@ export function BotsTable() {
       setData(payload);
       setError(null);
     } catch (e) {
-      setError({ 
-        status: 0, 
-        message: e instanceof Error ? e.message : "Network error or unknown error" 
+      setError({
+        status: 0,
+        message: e instanceof Error ? e.message : "Network error"
       });
       setData(null);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -74,109 +91,201 @@ export function BotsTable() {
     return () => clearInterval(id);
   }, []);
 
-  const rows = useMemo(() => data?.items ?? [], [data]);
+  const rows = useMemo(() => {
+    let items = data?.items ?? [];
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      items = items.filter(
+        (r) =>
+          r.name.toLowerCase().includes(q) ||
+          r.bot_id.toLowerCase().includes(q) ||
+          (r.exchange ?? "").toLowerCase().includes(q) ||
+          (r.symbol ?? "").toLowerCase().includes(q)
+      );
+    }
+    items = [...items].sort((a, b) => {
+      const aVal = (a[sortKey] ?? a.status ?? "").toString().toLowerCase();
+      const bVal = (b[sortKey] ?? b.status ?? "").toString().toLowerCase();
+      const cmp = aVal.localeCompare(bVal);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return items;
+  }, [data, search, sortKey, sortDir]);
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  function sortIndicator(key: SortKey) {
+    if (sortKey !== key) return <span className="table-sort-icon">&uarr;&darr;</span>;
+    return (
+      <span className="table-sort-icon active">
+        {sortDir === "asc" ? "\u2191" : "\u2193"}
+      </span>
+    );
+  }
+
+  async function handleCopyId(id: string) {
+    const ok = await copyToClipboard(id);
+    if (ok) {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 1500);
+    }
+  }
+
+  // Loading skeleton
+  if (loading && !data && !error) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+        <div className="card">
+          <div className="skeleton skeleton-heading" />
+          <div className="skeleton skeleton-text" />
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="skeleton skeleton-row" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      {/* Bots Table Card */}
       <div className="card">
-        <h2>Bots</h2>
-        <p>
-          Polling every 5s. Total: <strong>{data?.total ?? 0}</strong>
-        </p>
-        {error ? (
-          <div style={{ 
-            padding: "12px", 
-            backgroundColor: "#7f1d1d", 
-            border: "1px solid #991b1b", 
-            borderRadius: "8px",
-            marginBottom: "16px"
-          }}>
-            <div style={{ fontWeight: "600", marginBottom: "4px" }}>
-              Error {error.status > 0 ? `(${error.status})` : ""}
-            </div>
-            <div style={{ fontSize: "0.875rem", opacity: 0.9 }}>{error.message}</div>
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">Bots</h2>
+            <p className="card-description">
+              Auto-refresh every 5s &middot; Total: <strong>{data?.total ?? 0}</strong>
+            </p>
           </div>
-        ) : null}
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Bot</th>
-              <th>State</th>
-              <th>Last Seen (UTC)</th>
-              <th>Version</th>
-              <th>Runtime</th>
-              <th>Exchange</th>
-              <th>Symbol</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && !error ? (
-              <tr>
-                <td colSpan={7}>No bots yet. Start an agent heartbeat to populate this view.</td>
-              </tr>
-            ) : (
-              rows.map((row) => {
-                const state = row.state ?? row.status ?? "UNKNOWN";
-                const isDegraded = row.degraded === true;
-                return (
-                  <tr key={`${row.bot_id}-${row.instance_id ?? "none"}`}>
-                    <td>{row.name}</td>
-                    <td>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <div>
-                          <span className="badge">{state}</span>
-                          {isDegraded ? (
-                            <>
-                              {" "}
-                              <span className="badge" style={{ backgroundColor: "#991b1b", color: "#fecaca" }}>
-                                DEGRADED
-                              </span>
-                            </>
-                          ) : null}
-                        </div>
-                        {row.degraded_reason ? (
-                          <div style={{ fontSize: "0.75rem", color: "#fca5a5" }}>
-                            {row.degraded_reason}
-                          </div>
-                        ) : null}
-                      </div>
-                    </td>
-                    <td>{row.last_seen ?? "-"}</td>
-                    <td>{row.version ?? "-"}</td>
-                    <td>{row.runtime_mode ?? "-"}</td>
-                    <td>{row.exchange ?? "-"}</td>
-                    <td>{row.symbol ?? "-"}</td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Read-only Kill Switch Panel */}
-      <div className="card" style={{ marginTop: "24px" }}>
-        <h2>Kill Switch</h2>
-        <div style={{ 
-          padding: "12px", 
-          backgroundColor: "#1f2937", 
-          border: "1px solid #374151", 
-          borderRadius: "8px",
-          marginTop: "12px"
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-            <span className="badge" style={{ backgroundColor: "#065f46", color: "#6ee7b7" }}>
-              INACTIVE
-            </span>
-            <span style={{ fontSize: "0.875rem", opacity: 0.8 }}>
-              Read-only mode
-            </span>
-          </div>
-          <div style={{ fontSize: "0.875rem", opacity: 0.7, lineHeight: "1.5" }}>
-            Kill switch is currently inactive. All bots can operate normally.
-            Control actions are not available in this view.
+          <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
+            <input
+              className="search-input"
+              type="text"
+              placeholder="Search bots..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search bots"
+            />
           </div>
         </div>
+
+        {error && (
+          <div className="error-state" style={{ marginBottom: "var(--space-4)" }}>
+            <p className="error-state-title">
+              Error{error.status > 0 ? ` (${error.status})` : ""}
+            </p>
+            <p className="error-state-message">{error.message}</p>
+          </div>
+        )}
+
+        {!error && rows.length === 0 && data ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">&#x1F916;</div>
+            <h3 className="empty-state-title">
+              {search ? "No matching bots" : "No bots registered"}
+            </h3>
+            <p className="empty-state-description">
+              {search
+                ? `No bots match "${search}". Try a different search term.`
+                : "Start an agent heartbeat to populate this view."}
+            </p>
+          </div>
+        ) : !error ? (
+          <div className="table-wrapper">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th className="table-sortable" onClick={() => toggleSort("name")}>
+                    Bot {sortIndicator("name")}
+                  </th>
+                  <th className="table-sortable" onClick={() => toggleSort("state")}>
+                    State {sortIndicator("state")}
+                  </th>
+                  <th className="table-sortable" onClick={() => toggleSort("last_seen")}>
+                    Last Seen {sortIndicator("last_seen")}
+                  </th>
+                  <th>Version</th>
+                  <th>Runtime</th>
+                  <th className="table-sortable" onClick={() => toggleSort("exchange")}>
+                    Exchange {sortIndicator("exchange")}
+                  </th>
+                  <th className="table-sortable" onClick={() => toggleSort("symbol")}>
+                    Symbol {sortIndicator("symbol")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => {
+                  const state = row.state ?? row.status ?? "UNKNOWN";
+                  const isDegraded = row.degraded === true;
+                  return (
+                    <tr key={`${row.bot_id}-${row.instance_id ?? "none"}`}>
+                      <td>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span className="font-medium">{row.name}</span>
+                          <span style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+                            <span className="text-mono text-muted">{row.bot_id.slice(0, 12)}</span>
+                            <button
+                              className="copy-btn"
+                              onClick={() => handleCopyId(row.bot_id)}
+                              title="Copy bot ID"
+                              aria-label={`Copy bot ID ${row.bot_id}`}
+                            >
+                              {copiedId === row.bot_id ? "\u2713" : "\u2398"}
+                            </button>
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <div style={{ display: "flex", gap: "var(--space-1)", flexWrap: "wrap" }}>
+                            <span className={stateBadgeClass(state)}>{state}</span>
+                            {isDegraded && (
+                              <span className="badge badge-error">DEGRADED</span>
+                            )}
+                          </div>
+                          {row.degraded_reason && (
+                            <span className="text-xs text-error">{row.degraded_reason}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="text-mono tabular-nums">{formatTimestamp(row.last_seen)}</td>
+                      <td>{row.version ?? <span className="text-muted">-</span>}</td>
+                      <td>
+                        {row.runtime_mode ? (
+                          <span className="badge badge-accent">{row.runtime_mode}</span>
+                        ) : (
+                          <span className="text-muted">-</span>
+                        )}
+                      </td>
+                      <td>{row.exchange ?? <span className="text-muted">-</span>}</td>
+                      <td>{row.symbol ?? <span className="text-muted">-</span>}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Kill Switch Panel */}
+      <div className="card card-compact">
+        <div className="card-header" style={{ marginBottom: "var(--space-2)" }}>
+          <h3 className="card-title">Kill Switch</h3>
+          <span className="badge badge-success">INACTIVE</span>
+        </div>
+        <p className="text-sm text-muted" style={{ margin: 0, lineHeight: "var(--leading-relaxed)" }}>
+          Kill switch is currently inactive. All bots can operate normally.
+          Control actions are not available in this view.
+        </p>
       </div>
     </div>
   );
