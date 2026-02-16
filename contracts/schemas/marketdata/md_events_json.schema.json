@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/marketdata/md_events_json.schema.json",
+  "title": "MarketDataEventsJson",
+  "description": "Universal hub schema for normalized market-data events linked back to raw envelopes.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "raw_msg_id",
+    "tenant_id",
+    "event_type",
+    "event_ts",
+    "received_ts",
+    "payload_jsonb",
+    "payload_schema_ref",
+    "parser_version",
+    "extra_json"
+  ],
+  "properties": {
+    "raw_msg_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "event_type": {
+      "type": "string",
+      "pattern": "^(ref|deriv|venue|news|onchain)\\..+$",
+      "description": "Event type naming convention: ref.*, deriv.*, venue.*, news.*, onchain.*"
+    },
+    "event_ts": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "received_ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload_jsonb": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "payload_schema_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Reference to the schema that validates payload_jsonb."
+    },
+    "parser_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "extra_json": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

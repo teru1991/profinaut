@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/common/raw_envelope.schema.json",
+  "title": "RawEnvelope",
+  "description": "Raw-first immutable market-data envelope. MUST fields are required and preserve source payload for downstream regeneration.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "raw_msg_id",
+    "tenant_id",
+    "source_type",
+    "venue_id",
+    "market_id",
+    "stream_name",
+    "endpoint",
+    "symbol_raw",
+    "instrument_id",
+    "event_ts",
+    "received_ts",
+    "seq",
+    "source_msg_key",
+    "payload_json",
+    "payload_hash",
+    "quality_json",
+    "parser_version"
+  ],
+  "properties": {
+    "raw_msg_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "ULID string identifier for this raw message."
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "WS_PUBLIC",
+        "REST_PUBLIC",
+        "REST_PRIVATE",
+        "FILE",
+        "ONCHAIN",
+        "NEWS",
+        "OTHER"
+      ]
+    },
+    "venue_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "market_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "stream_name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "endpoint": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "symbol_raw": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "instrument_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical instrument id; nullable in v0.1."
+    },
+    "event_ts": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Event timestamp from source if available (RFC3339)."
+    },
+    "received_ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Ingestion receive time in UTC (RFC3339)."
+    },
+    "seq": {
+      "type": [
+        "string",
+        "number",
+        "null"
+      ]
+    },
+    "source_msg_key": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "payload_json": {
+      "type": "object",
+      "description": "Original upstream payload as JSON object.",
+      "additionalProperties": true
+    },
+    "payload_hash": {
+      "type": "string",
+      "minLength": 1
+    },
+    "quality_json": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "parser_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "payload_bytes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional encoded payload bytes (e.g., base64)."
+    },
+    "payload_encoding": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "payload_size": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "headers_json": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "ip_hash": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}
