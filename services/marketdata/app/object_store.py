@@ -166,7 +166,7 @@ class S3ObjectStore:
         try:
             with urllib.request.urlopen(req, timeout=self._config.timeout_seconds) as response:
                 return response.read()
-        except Exception as exc:  # pragma: no cover - normalized wrapper
+        except (urllib.error.URLError, TimeoutError) as exc:  # pragma: no cover - normalized wrapper
             raise ObjectStoreError(f"S3 request failed: {method} {key}: {exc}") from exc
 
     def put_object(self, key: str, data: bytes, content_type: str = "application/octet-stream") -> None:
