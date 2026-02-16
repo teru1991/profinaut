@@ -189,6 +189,60 @@ class MarketDataMetaRepository:
         )
         self._conn.commit()
 
+    def update_ws_session_end(
+        self,
+        *,
+        session_id: str,
+        ended_at: str,
+        close_reason: str | None,
+        recv_count: int,
+        dup_suspect_count: int,
+        gap_suspect_count: int,
+        lag_stats_json: dict[str, Any],
+    ) -> None:
+        self._conn.execute(
+            """
+            UPDATE ws_sessions
+            SET ended_at = ?,
+                close_reason = ?,
+                recv_count = ?,
+                dup_suspect_count = ?,
+                gap_suspect_count = ?,
+                lag_stats_json = ?
+            WHERE session_id = ?
+            """,
+            (
+                ended_at,
+                close_reason,
+                recv_count,
+                dup_suspect_count,
+                gap_suspect_count,
+                json.dumps(lag_stats_json, separators=(",", ":"), ensure_ascii=False),
+                session_id,
+            ),
+        )
+        self._conn.commit()
+
+    def update_ws_subscription_end(
+        self,
+        *,
+        session_id: str,
+        stream_name: str,
+        subscribed_at: str,
+        unsubscribed_at: str,
+    ) -> None:
+        self._conn.execute(
+            """
+            UPDATE ws_subscriptions
+            SET unsubscribed_at = ?
+            WHERE session_id = ?
+              AND stream_name = ?
+              AND subscribed_at = ?
+            """,
+            (unsubscribed_at, session_id, stream_name, subscribed_at),
+        )
+        self._conn.commit()
+
     def insert_md_trade(
         self,
         *,
