@@ -5,6 +5,7 @@ import logging
 from fastapi.testclient import TestClient
 
 from services.marketdata.app.main import _poller, app, MarketDataPoller, PollerConfig, TickerSnapshot
+from services.marketdata.app.object_store import ObjectStoreStatus
 
 
 def run(coro):
@@ -173,3 +174,22 @@ def test_latest_ticker_rejects_invalid_symbol_with_error_envelope() -> None:
     body = response.json()
     assert body["code"] == "INVALID_SYMBOL"
     assert body["request_id"] == "req-sym"
+
+
+def test_capabilities_include_storage_backend_and_degraded_reasons(monkeypatch) -> None:
+    from services.marketdata.app import main as app_main
+
+    monkeypatch.setattr(
+        app_main,
+        "_object_store_status",
+        ObjectStoreStatus(backend="s3", ready=False, degraded_reasons=["OBJECT_STORE_S3_MISSING_CONFIG:S3_BUCKET"]),
+    )
+
+    with TestClient(app) as client:
+        response = client.get("/capabilities")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["storage_backend"] == "s3"
+    assert "OBJECT_STORE_S3_MISSING_CONFIG:S3_BUCKET" in body["degraded_reasons"]
+    assert body["status"] == "degraded"

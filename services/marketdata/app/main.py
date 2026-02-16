@@ -25,6 +25,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.append(str(_REPO_ROOT))
 
 from libs.observability import audit_event, error_envelope, request_id_middleware
+from services.marketdata.app.object_store import build_object_store_from_env
 
 logger = logging.getLogger("marketdata")
 if not logger.handlers:
@@ -268,6 +269,7 @@ class MarketDataPoller:
 app = FastAPI(title="profinaut-marketdata", version="0.1.0")
 app.add_middleware(request_id_middleware())
 _poller = MarketDataPoller(PollerConfig())
+_object_store, _object_store_status = build_object_store_from_env()
 
 
 @app.exception_handler(HTTPException)
@@ -331,12 +333,19 @@ async def get_capabilities() -> dict[str, Any]:
                 degraded_reason = "STALE_TICKER"
         degraded = degraded_reason is not None
 
+    degraded_reasons: list[str] = []
+    if degraded_reason is not None:
+        degraded_reasons.append(degraded_reason)
+    degraded_reasons.extend(_object_store_status.degraded_reasons)
+
     return {
         "service": "marketdata",
         "version": "0.1.0",
-        "status": "degraded" if degraded else "ok",
+        "status": "degraded" if degraded or bool(_object_store_status.degraded_reasons) else "ok",
         "features": ["ticker_latest", "gmo_poller"],
+        "storage_backend": _object_store_status.backend,
         "degraded_reason": degraded_reason,
+        "degraded_reasons": degraded_reasons,
         "generated_at": datetime.now(UTC).isoformat(),
     }
 
