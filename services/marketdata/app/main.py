@@ -29,6 +29,9 @@ if str(_REPO_ROOT) not in sys.path:
 from libs.observability import audit_event, error_envelope, request_id_middleware
 from services.marketdata.app.bronze_store import BronzeStore, RawMetaRepository
 from services.marketdata.app.object_store import build_object_store_from_env
+from services.marketdata.app.gmo_ws_connector import GmoPublicWsConnector, GmoWsConfig
+from services.marketdata.app.routes.health import router as health_router
+from services.marketdata.app.routes.raw_ingest import router as raw_ingest_router
 
 logger = logging.getLogger("marketdata")
 if not logger.handlers:
@@ -352,6 +355,7 @@ _raw_meta_repo = RawMetaRepository()
 _bronze_store: BronzeStore | None = None
 if _object_store is not None:
     _bronze_store = BronzeStore(_object_store, _raw_meta_repo)
+_gmo_ws_connector = GmoPublicWsConnector(GmoWsConfig())
 
 
 
@@ -389,6 +393,9 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 @app.on_event("startup")
 async def startup() -> None:
     app.state.poller_task = asyncio.create_task(_poller.run_forever())
+    app.state.gmo_ws_task = None
+    if _gmo_ws_connector.enabled:
+        app.state.gmo_ws_task = asyncio.create_task(_gmo_ws_connector.run_forever())
 
 
 @app.on_event("shutdown")
@@ -398,6 +405,12 @@ async def shutdown() -> None:
         task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await task
+    ws_task = getattr(app.state, "gmo_ws_task", None)
+    if ws_task:
+        await _gmo_ws_connector.stop()
+        ws_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await ws_task
 
 
 async def _db_health_snapshot() -> tuple[bool, float | None, str | None]:
@@ -435,6 +448,8 @@ async def get_capabilities() -> dict[str, Any]:
     degraded_reasons: list[str] = []
     if degraded_reason is not None:
         degraded_reasons.append(degraded_reason)
+    if _gmo_ws_connector.degraded_reason is not None:
+        degraded_reasons.append(_gmo_ws_connector.degraded_reason)
     degraded_reasons.extend(_object_store_status.degraded_reasons)
     if db_reason is not None:
         degraded_reasons.append(db_reason)
@@ -443,7 +458,7 @@ async def get_capabilities() -> dict[str, Any]:
         "service": "marketdata",
         "version": "0.1.0",
         "status": "degraded" if degraded or bool(_object_store_status.degraded_reasons) or (not db_ok) else "ok",
-        "features": ["ticker_latest", "gmo_poller"],
+        "features": ["ticker_latest", "gmo_poller", "gmo_ws_connector"],
         "storage_backend": _object_store_status.backend,
         "db_ok": db_ok,
         "db_latency_ms": db_latency_ms,
