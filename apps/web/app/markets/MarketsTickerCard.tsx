@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { formatNumber, formatTimestamp } from "../../lib/format";
 
 type TickerPayload = {
   exchange?: string;
@@ -50,16 +51,11 @@ export function MarketsTickerCard({ exchange = "gmo", symbol = "BTC_JPY" }: { ex
       try {
         const response = await fetch(
           `/api/markets/ticker/latest?exchange=${encodeURIComponent(exchange)}&symbol=${encodeURIComponent(symbol)}`,
-          {
-            cache: "no-store",
-            signal: controller.signal
-          }
+          { cache: "no-store", signal: controller.signal }
         );
         const payload = (await response.json()) as ProxyResponse;
 
-        if (!mounted || requestSeqRef.current !== requestSeq) {
-          return;
-        }
+        if (!mounted || requestSeqRef.current !== requestSeq) return;
 
         if (!response.ok) {
           const msg = payload.message ?? payload.code ?? `Ticker fetch failed (${response.status})`;
@@ -80,12 +76,8 @@ export function MarketsTickerCard({ exchange = "gmo", symbol = "BTC_JPY" }: { ex
         setTicker(payload.data);
         setFetchedAt(new Date().toISOString());
       } catch (e) {
-        if (!mounted || activeControllerRef.current !== controller) {
-          return;
-        }
-        if (e instanceof Error && e.name === "AbortError") {
-          return;
-        }
+        if (!mounted || activeControllerRef.current !== controller) return;
+        if (e instanceof Error && e.name === "AbortError") return;
         const msg = e instanceof Error ? e.message : "Failed to fetch ticker.";
         setError(msg);
         setTicker(null);
@@ -105,9 +97,7 @@ export function MarketsTickerCard({ exchange = "gmo", symbol = "BTC_JPY" }: { ex
     setRequestId(null);
     void loadTicker();
 
-    const timer = setInterval(() => {
-      void loadTicker();
-    }, POLL_INTERVAL_MS);
+    const timer = setInterval(() => void loadTicker(), POLL_INTERVAL_MS);
 
     return () => {
       mounted = false;
@@ -128,70 +118,100 @@ export function MarketsTickerCard({ exchange = "gmo", symbol = "BTC_JPY" }: { ex
 
   return (
     <div className="card">
-      <h2>Markets</h2>
-      <p>Latest ticker via dashboard-api marketdata proxy.</p>
-
-      {loading ? <p>Loading latest ticker...</p> : null}
-
-      {error ? (
-        <div style={{ border: "1px solid #7f1d1d", background: "#3f1d1d", padding: 12, borderRadius: 8 }}>
-          <strong>Ticker fetch failed</strong>
-          <p style={{ marginBottom: 0 }}>{error}</p>
-          {requestId ? <p style={{ marginTop: 8, opacity: 0.8 }}>request_id: {requestId}</p> : null}
-        </div>
-      ) : null}
-
-      {!loading && !error && !ticker ? <p>No ticker data available.</p> : null}
-
-      {ticker ? (
+      <div className="card-header">
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <h2 className="card-title">Ticker</h2>
+          <p className="card-description">Auto-refresh every 5s</p>
+        </div>
+        <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
+          {ticker && (
             <span className="badge">{ticker.exchange ?? exchange}:{ticker.symbol ?? symbol}</span>
-            {degradedReason ? (
-              <span className="badge" style={{ background: "#7f1d1d" }}>
-                DEGRADED
-              </span>
+          )}
+          {ticker && (
+            degradedReason ? (
+              <span className="badge badge-error">DEGRADED</span>
             ) : (
-              <span className="badge" style={{ background: "#14532d" }}>
-                HEALTHY
-              </span>
-            )}
+              <span className="badge badge-success">HEALTHY</span>
+            )
+          )}
+        </div>
+      </div>
+
+      {loading && !ticker && !error && (
+        <div>
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="skeleton skeleton-row" />
+          ))}
+        </div>
+      )}
+
+      {error && (
+        <div className="error-state" style={{ marginBottom: "var(--space-4)" }}>
+          <p className="error-state-title">Ticker fetch failed</p>
+          <p className="error-state-message">{error}</p>
+          {requestId && (
+            <p className="error-state-message" style={{ opacity: 0.7 }}>
+              request_id: {requestId}
+            </p>
+          )}
+        </div>
+      )}
+
+      {!loading && !error && !ticker && (
+        <div className="empty-state">
+          <div className="empty-state-icon">&#x1F4C8;</div>
+          <h3 className="empty-state-title">No ticker data</h3>
+          <p className="empty-state-description">
+            No data available for this exchange/symbol pair.
+          </p>
+        </div>
+      )}
+
+      {ticker && (
+        <div>
+          {degradedReason && (
+            <div className="notice notice-warning" style={{ marginBottom: "var(--space-4)" }}>
+              <span className="notice-icon">!</span>
+              <div className="notice-content">
+                <div className="notice-title">Degraded</div>
+                {degradedReason}
+              </div>
+            </div>
+          )}
+
+          <div className="card-grid-2" style={{ display: "grid", gap: "var(--space-4)", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))" }}>
+            <div className="kpi-card card-compact">
+              <span className="kpi-label">Bid</span>
+              <span className="kpi-value" style={{ fontSize: "var(--text-xl)" }}>{formatNumber(ticker.bid)}</span>
+            </div>
+            <div className="kpi-card card-compact">
+              <span className="kpi-label">Ask</span>
+              <span className="kpi-value" style={{ fontSize: "var(--text-xl)" }}>{formatNumber(ticker.ask)}</span>
+            </div>
+            <div className="kpi-card card-compact">
+              <span className="kpi-label">Last</span>
+              <span className="kpi-value" style={{ fontSize: "var(--text-xl)" }}>{formatNumber(ticker.last)}</span>
+            </div>
+            <div className="kpi-card card-compact">
+              <span className="kpi-label">Mid</span>
+              <span className="kpi-value" style={{ fontSize: "var(--text-xl)" }}>{formatNumber(ticker.mid)}</span>
+            </div>
           </div>
 
-          <table className="table">
+          <table className="table-inline" style={{ marginTop: "var(--space-4)" }}>
             <tbody>
               <tr>
-                <th>Bid</th>
-                <td>{ticker.bid ?? "-"}</td>
-              </tr>
-              <tr>
-                <th>Ask</th>
-                <td>{ticker.ask ?? "-"}</td>
-              </tr>
-              <tr>
-                <th>Last</th>
-                <td>{ticker.last ?? "-"}</td>
-              </tr>
-              <tr>
-                <th>Mid</th>
-                <td>{ticker.mid ?? "-"}</td>
-              </tr>
-              <tr>
                 <th>Ticker ts</th>
-                <td>{ticker.ts ?? "-"}</td>
+                <td>{formatTimestamp(ticker.ts)}</td>
               </tr>
               <tr>
                 <th>Last updated</th>
-                <td>{fetchedAt ?? "-"}</td>
-              </tr>
-              <tr>
-                <th>Degraded reason</th>
-                <td>{degradedReason ?? "-"}</td>
+                <td>{formatTimestamp(fetchedAt)}</td>
               </tr>
             </tbody>
           </table>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
