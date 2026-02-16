@@ -359,7 +359,7 @@ export default function CommandsPage() {
                   <tr key={cmd.id}>
                     <td className="tabular-nums">{formatTimestamp(cmd.created_at)}</td>
                     <td>
-                      <span className={`badge ${cmd.type === "PAUSE" ? "badge-error" : cmd.type === "RESUME" ? "badge-success" : "badge-info"}`}>
+                      <span className={getCommandTypeBadgeClass(cmd.type)}>
                         {cmd.type}
                       </span>
                     </td>
