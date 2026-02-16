@@ -18,13 +18,15 @@ from services.marketdata.app.db.repository import MarketDataMetaRepository, RawI
 from services.marketdata.app.db.schema import apply_migrations
 from services.marketdata.app.logging import scrub_sensitive_fields
 from services.marketdata.app.metrics import ingest_metrics
-from services.marketdata.app.settings import load_settings
+from services.marketdata.app.settings import ServiceSettings, load_settings
 from services.marketdata.app.silver.normalizer import normalize_envelope
 from services.marketdata.app.storage.fs_store import FilesystemObjectStore
 
 router = APIRouter()
 
 _CROCKFORD32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+_BRONZE_WRITER: BronzeWriter | None = None
+_BRONZE_WRITER_ROOT: str | None = None
 
 
 def _encode_crockford(value: int, length: int) -> str:
@@ -80,39 +82,41 @@ def _connect_repo(db_dsn: str) -> MarketDataMetaRepository:
     return MarketDataMetaRepository(conn)
 
 
-@router.post("/raw/ingest")
-async def raw_ingest(request: Request) -> JSONResponse:
-    settings = load_settings()
+def _get_bronze_writer() -> BronzeWriter:
+    global _BRONZE_WRITER
+    global _BRONZE_WRITER_ROOT
 
-    if settings.object_store_backend is None:
-        ingest_metrics.record_failure()
-        return JSONResponse(
-            status_code=503,
-            content={"error": "INGEST_DISABLED", "reason": "STORAGE_NOT_CONFIGURED"},
-        )
-    if settings.db_dsn is None:
-        ingest_metrics.record_failure()
-        return JSONResponse(
-            status_code=503,
-            content={"error": "INGEST_DISABLED", "reason": "DB_NOT_CONFIGURED"},
-        )
+    root = os.getenv("BRONZE_FS_ROOT", "data/bronze")
+    if _BRONZE_WRITER is not None and _BRONZE_WRITER_ROOT == root:
+        return _BRONZE_WRITER
 
-    body = await request.json()
+    _BRONZE_WRITER_ROOT = root
+    _BRONZE_WRITER = BronzeWriter(FilesystemObjectStore(root))
+    return _BRONZE_WRITER
+
+
+def ingest_raw_envelope(body: dict[str, Any], *, settings: ServiceSettings | None = None) -> tuple[int, dict[str, Any]]:
+    configured = settings or load_settings()
+
+    if configured.object_store_backend is None:
+        ingest_metrics.record_failure()
+        return 503, {"error": "INGEST_DISABLED", "reason": "STORAGE_NOT_CONFIGURED"}
+    if configured.db_dsn is None:
+        ingest_metrics.record_failure()
+        return 503, {"error": "INGEST_DISABLED", "reason": "DB_NOT_CONFIGURED"}
+
     if not isinstance(body, dict):
         ingest_metrics.record_failure()
-        return JSONResponse(status_code=400, content={"error": "INVALID_REQUEST", "reason": "BODY_MUST_BE_OBJECT"})
+        return 400, {"error": "INVALID_REQUEST", "reason": "BODY_MUST_BE_OBJECT"}
 
     for required in ("tenant_id", "source_type", "received_ts", "payload_json"):
         if required not in body:
             ingest_metrics.record_failure()
-            return JSONResponse(status_code=400, content={"error": "INVALID_REQUEST", "reason": f"MISSING_{required.upper()}"})
+            return 400, {"error": "INVALID_REQUEST", "reason": f"MISSING_{required.upper()}"}
 
     if not isinstance(body["payload_json"], dict):
         ingest_metrics.record_failure()
-        return JSONResponse(
-            status_code=400,
-            content={"error": "INVALID_REQUEST", "reason": "PAYLOAD_JSON_MUST_BE_OBJECT"},
-        )
+        return 400, {"error": "INVALID_REQUEST", "reason": "PAYLOAD_JSON_MUST_BE_OBJECT"}
 
     envelope = dict(body)
     envelope.setdefault("raw_msg_id", _new_ulid())
@@ -133,12 +137,9 @@ async def raw_ingest(request: Request) -> JSONResponse:
         _ = _parse_rfc3339(str(envelope["received_ts"]))
     except ValueError:
         ingest_metrics.record_failure()
-        return JSONResponse(
-            status_code=400,
-            content={"error": "INVALID_REQUEST", "reason": "RECEIVED_TS_INVALID_RFC3339"},
-        )
+        return 400, {"error": "INVALID_REQUEST", "reason": "RECEIVED_TS_INVALID_RFC3339"}
 
-    repo = _connect_repo(settings.db_dsn)
+    repo = _connect_repo(configured.db_dsn)
 
     duplicate_reasons: list[str] = []
     window_start = (_parse_rfc3339(str(envelope["received_ts"])) - timedelta(minutes=5)).isoformat().replace("+00:00", "Z")
@@ -163,16 +164,9 @@ async def raw_ingest(request: Request) -> JSONResponse:
     quality_json["lag_ms"] = lag_ms
     envelope["quality_json"] = quality_json
 
-@dataclass(frozen=True)
-class ServiceSettings:
-    db_dsn: str | None
-    object_store_backend: StorageBackend | None
-    bronze_fs_root: str | None
-    ingest_raw_enabled: bool
-    silver_enabled: bool
-    degraded: bool
-    degraded_reasons: list[str]
-object_key = _BRONZE_WRITER.append(envelope)
+    writer = _get_bronze_writer()
+    object_key = writer.append(envelope)
+    writer.close()
 
     repo.insert_raw_ingest_meta(
         RawIngestMeta(
@@ -197,26 +191,29 @@ object_key = _BRONZE_WRITER.append(envelope)
 
     normalized_target = None
     normalized_event_type = None
-    if settings.silver_enabled:
+    if configured.silver_enabled:
         normalized = normalize_envelope(repo, envelope)
         normalized_target = normalized.target
         normalized_event_type = normalized.event_type
 
-    # Deliberately scrub payload body from logs.
     _ = scrub_sensitive_fields(envelope)
 
     dup_suspect = bool(quality_json.get("dup_suspect"))
     ingest_metrics.record_success(dup_suspect=dup_suspect)
 
-    return JSONResponse(
-        status_code=200,
-        content={
-            "raw_msg_id": envelope["raw_msg_id"],
-            "object_key": object_key,
-            "stored": True,
-            "dup_suspect": dup_suspect,
-            "degraded": False,
-            "normalized_target": normalized_target,
-            "normalized_event_type": normalized_event_type,
-        },
-    )
+    return 200, {
+        "raw_msg_id": envelope["raw_msg_id"],
+        "object_key": object_key,
+        "stored": True,
+        "dup_suspect": dup_suspect,
+        "degraded": False,
+        "normalized_target": normalized_target,
+        "normalized_event_type": normalized_event_type,
+    }
+
+
+@router.post("/raw/ingest")
+async def raw_ingest(request: Request) -> JSONResponse:
+    body = await request.json()
+    status_code, payload = ingest_raw_envelope(body)
+    return JSONResponse(status_code=status_code, content=payload)
