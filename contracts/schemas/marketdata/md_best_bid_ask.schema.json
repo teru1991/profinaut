@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/marketdata/md_best_bid_ask.schema.json",
+  "title": "MarketDataBestBidAsk",
+  "description": "Minimal Silver schema for best bid/ask snapshots.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "bid_px",
+    "bid_qty",
+    "ask_px",
+    "ask_qty",
+    "event_ts",
+    "received_ts",
+    "raw_msg_id",
+    "extra_json"
+  ],
+  "properties": {
+    "bid_px": {
+      "type": "number"
+    },
+    "bid_qty": {
+      "type": "number"
+    },
+    "ask_px": {
+      "type": "number"
+    },
+    "ask_qty": {
+      "type": "number"
+    },
+    "event_ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "received_ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "raw_msg_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "extra_json": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "tenant_id": "tenant-smoke",
+  "source_type": "WS_PUBLIC",
+  "venue_id": "gmo",
+  "market_id": "spot",
+  "instrument_id": "btc_jpy",
+  "received_ts": "2026-02-16T00:02:01Z",
+  "payload_json": {
+    "mystery": "value",
+    "nested": {"x": 1}
+  }
+}
