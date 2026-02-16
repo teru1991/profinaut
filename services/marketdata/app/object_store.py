@@ -224,11 +224,11 @@ def build_object_store_from_env() -> tuple[ObjectStore | None, ObjectStoreStatus
         )
 
     config = S3ObjectStoreConfig(
-        endpoint=str(required_envs["S3_ENDPOINT"]),
-        bucket=str(required_envs["S3_BUCKET"]),
-        access_key=str(required_envs["S3_ACCESS_KEY"]),
-        secret_key=str(required_envs["S3_SECRET_KEY"]),
-        region=str(required_envs["S3_REGION"]),
+        endpoint=required_envs["S3_ENDPOINT"],
+        bucket=required_envs["S3_BUCKET"],
+        access_key=required_envs["S3_ACCESS_KEY"],
+        secret_key=required_envs["S3_SECRET_KEY"],
+        region=required_envs["S3_REGION"],
         force_path_style=_env_bool("S3_FORCE_PATH_STYLE", default=True),
     )
     return S3ObjectStore(config), ObjectStoreStatus(backend="s3", ready=True, degraded_reasons=[])
