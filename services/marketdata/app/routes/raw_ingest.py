@@ -163,7 +163,15 @@ async def raw_ingest(request: Request) -> JSONResponse:
     quality_json["lag_ms"] = lag_ms
     envelope["quality_json"] = quality_json
 
-    fs_root = os.getenv("BRONZE_FS_ROOT", "./data/bronze")
+@dataclass(frozen=True)
+class ServiceSettings:
+    db_dsn: str | None
+    object_store_backend: StorageBackend | None
+    bronze_fs_root: str | None
+    ingest_raw_enabled: bool
+    silver_enabled: bool
+    degraded: bool
+    degraded_reasons: list[str]
 object_key = _BRONZE_WRITER.append(envelope)
 
     repo.insert_raw_ingest_meta(
