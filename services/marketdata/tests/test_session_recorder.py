@@ -44,12 +44,12 @@ def test_session_recorder_start_and_clean_shutdown_flow() -> None:
         """
     ).fetchone()
     assert session_row is not None
-    assert session_row[0] == "2026-02-16T00:01:00Z"
-    assert session_row[1] == "shutdown"
-    assert session_row[2] == 3
-    assert session_row[3] == 1
-    assert session_row[4] == 1
-    assert session_row[5] == '{"count":2,"min_ms":9,"max_ms":11,"last_ms":9}'
+    assert session_row["ended_at"] == "2026-02-16T00:01:00Z"
+    assert session_row["close_reason"] == "shutdown"
+    assert session_row["recv_count"] == 3
+    assert session_row["dup_suspect_count"] == 1
+    assert session_row["gap_suspect_count"] == 1
+    assert session_row["lag_stats_json"] == '{"count":2,"min_ms":9,"max_ms":11,"last_ms":9}'
 
     sub_row = conn.execute(
         """
