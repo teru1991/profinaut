@@ -26,10 +26,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.append(str(_REPO_ROOT))
 
 from libs.observability import audit_event, error_envelope, request_id_middleware
-from services.marketdata.app.routes.health import router as health_router
-from services.marketdata.app.routes.raw_ingest import router as raw_ingest_router
-from services.marketdata.app.settings import load_settings
-from services.marketdata.app.db.repository import MarketDataMetaRepository
+from services.marketdata.app.object_store import build_object_store_from_env
 
 logger = logging.getLogger("marketdata")
 if not logger.handlers:
@@ -303,6 +300,7 @@ app.add_middleware(request_id_middleware())
 app.include_router(health_router)
 app.include_router(raw_ingest_router)
 _poller = MarketDataPoller(PollerConfig())
+_object_store, _object_store_status = build_object_store_from_env()
 
 
 @app.exception_handler(HTTPException)
@@ -349,6 +347,38 @@ async def shutdown() -> None:
         with contextlib.suppress(asyncio.CancelledError):
             await task
 
+
+@app.get("/healthz")
+def healthz() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.get("/capabilities")
+async def get_capabilities() -> dict[str, Any]:
+    """Return service capabilities and health status."""
+    async with _poller._lock:
+        degraded_reason = _poller._degraded_reason
+        if _poller._snapshot is not None and _poller._last_success_monotonic is not None:
+            last_success_age = time.monotonic() - _poller._last_success_monotonic
+            if last_success_age > _poller._config.stale_threshold_seconds:
+                degraded_reason = "STALE_TICKER"
+        degraded = degraded_reason is not None
+
+    degraded_reasons: list[str] = []
+    if degraded_reason is not None:
+        degraded_reasons.append(degraded_reason)
+    degraded_reasons.extend(_object_store_status.degraded_reasons)
+
+    return {
+        "service": "marketdata",
+        "version": "0.1.0",
+        "status": "degraded" if degraded_reasons else "ok",
+        "features": ["ticker_latest", "gmo_poller"],
+        "storage_backend": _object_store_status.backend,
+        "degraded_reason": degraded_reason,
+        "degraded_reasons": degraded_reasons,
+        "generated_at": datetime.now(UTC).isoformat(),
+    }
 
 
 @app.get("/ticker/latest")
