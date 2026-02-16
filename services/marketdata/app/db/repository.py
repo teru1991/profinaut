@@ -480,3 +480,74 @@ class MarketDataMetaRepository:
             "is_final": bool(row[6]),
             "received_ts": row[0],
         }
+
+    def upsert_orderbook_state(
+        self,
+        *,
+        venue_id: str,
+        market_id: str,
+        bid_px: float | None,
+        bid_qty: float | None,
+        ask_px: float | None,
+        ask_qty: float | None,
+        as_of: str | None,
+        last_update_ts: str,
+        last_seq: str | None,
+        degraded: bool,
+        reason: str | None,
+    ) -> None:
+        self._conn.execute(
+            """
+            INSERT INTO md_orderbook_state (
+                venue_id, market_id, bid_px, bid_qty, ask_px, ask_qty,
+                as_of, last_update_ts, last_seq, degraded, reason
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(venue_id, market_id) DO UPDATE SET
+                bid_px = excluded.bid_px,
+                bid_qty = excluded.bid_qty,
+                ask_px = excluded.ask_px,
+                ask_qty = excluded.ask_qty,
+                as_of = excluded.as_of,
+                last_update_ts = excluded.last_update_ts,
+                last_seq = excluded.last_seq,
+                degraded = excluded.degraded,
+                reason = excluded.reason
+            """,
+            (
+                venue_id,
+                market_id,
+                bid_px,
+                bid_qty,
+                ask_px,
+                ask_qty,
+                as_of,
+                last_update_ts,
+                last_seq,
+                1 if degraded else 0,
+                reason,
+            ),
+        )
+        self._conn.commit()
+
+    def get_orderbook_state(self, *, venue_id: str, market_id: str) -> dict[str, Any] | None:
+        row = self._conn.execute(
+            """
+            SELECT bid_px, bid_qty, ask_px, ask_qty, as_of, last_update_ts, last_seq, degraded, reason
+            FROM md_orderbook_state
+            WHERE venue_id = ? AND market_id = ?
+            """,
+            (venue_id, market_id),
+        ).fetchone()
+        if row is None:
+            return None
+        return {
+            "bid_px": row[0],
+            "bid_qty": row[1],
+            "ask_px": row[2],
+            "ask_qty": row[3],
+            "as_of": row[4],
+            "last_update_ts": row[5],
+            "last_seq": row[6],
+            "degraded": bool(row[7]),
+            "reason": row[8],
+        }

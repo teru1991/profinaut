@@ -5,6 +5,7 @@ import contextlib
 import json
 import logging
 import os
+import random
 import time
 import sqlite3
 import urllib.error
@@ -30,8 +31,10 @@ from libs.observability import audit_event, error_envelope, request_id_middlewar
 from services.marketdata.app.bronze_store import BronzeStore, RawMetaRepository
 from services.marketdata.app.object_store import build_object_store_from_env
 from services.marketdata.app.gmo_ws_connector import GmoPublicWsConnector, GmoWsConfig
+from services.marketdata.app.db.repository import MarketDataMetaRepository
 from services.marketdata.app.routes.health import router as health_router
-from services.marketdata.app.routes.raw_ingest import router as raw_ingest_router
+from services.marketdata.app.routes.raw_ingest import ingest_raw_envelope, router as raw_ingest_router
+from services.marketdata.app.settings import load_settings
 
 logger = logging.getLogger("marketdata")
 if not logger.handlers:
@@ -75,8 +78,10 @@ def _normalize_and_validate_params(exchange: str, symbol: str) -> tuple[str, str
 
 @dataclass
 class PollerConfig:
+    enabled: bool = os.getenv("GMO_REST_ENABLED", "0").strip() == "1"
     gmo_api_base_url: str = os.getenv("GMO_MARKETDATA_BASE_URL", "https://api.coin.z.com/public/v1")
     symbol: str = os.getenv("MARKETDATA_SYMBOL", "BTC_JPY")
+    market_id: str = os.getenv("MARKETDATA_MARKET_ID", "spot")
     interval_seconds: float = float(os.getenv("MARKETDATA_POLL_INTERVAL_SECONDS", "2"))
     stale_threshold_seconds: float = float(os.getenv("MARKETDATA_STALE_THRESHOLD_SECONDS", "10"))
     backoff_initial_seconds: float = float(os.getenv("MARKETDATA_BACKOFF_INITIAL_SECONDS", "1"))
@@ -168,7 +173,6 @@ class MarketDataPoller:
             self._transition("degraded", reason=degraded_reason)
 
     def _is_stale_due_to_age(self) -> bool:
-        """Check if the last successful data fetch is stale based on age threshold."""
         if self._last_success_monotonic is None:
             return True
         last_success_age = time.monotonic() - self._last_success_monotonic
@@ -182,11 +186,12 @@ class MarketDataPoller:
         self._degraded_reason = None
         self._apply_reason_state(self._degraded_reason)
 
-    def _record_failure(self, exc: Exception) -> float:
+    def _record_failure(self, exc: Exception, reason: str) -> float:
         self._consecutive_failures += 1
-        self._degraded_reason = "UPSTREAM_ERROR"
+        self._degraded_reason = reason
         self._apply_reason_state(self._degraded_reason)
-        sleep_for = self._current_backoff
+        base = self._current_backoff
+        sleep_for = min(base + random.uniform(0, max(base * 0.2, 0.01)), self._config.backoff_max_seconds)
         self._current_backoff = min(self._current_backoff * 2, self._config.backoff_max_seconds)
         audit_event(
             service=SERVICE_NAME,
@@ -198,12 +203,33 @@ class MarketDataPoller:
         )
         return sleep_for
 
-    def _fetch_gmo_ticker(self) -> TickerSnapshot:
-        params = urllib.parse.urlencode({"symbol": self._config.symbol})
-        url = f"{self._config.gmo_api_base_url.rstrip('/')}/ticker?{params}"
+    def _request_json(self, endpoint: str, query: dict[str, str]) -> dict[str, Any]:
+        params = urllib.parse.urlencode(query)
+        url = f"{self._config.gmo_api_base_url.rstrip('/')}/{endpoint}?{params}"
         req = urllib.request.Request(url, headers={"accept": "application/json"}, method="GET")
         with urllib.request.urlopen(req, timeout=self._config.timeout_seconds) as response:
-            payload = json.loads(response.read().decode("utf-8"))
+            return json.loads(response.read().decode("utf-8"))
+
+    def _ingest_rest_raw(self, endpoint: str, payload: dict[str, Any]) -> None:
+        received_ts = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+        ingest_raw_envelope(
+            {
+                "tenant_id": "marketdata",
+                "source_type": "REST_PUBLIC",
+                "received_ts": received_ts,
+                "payload_json": payload,
+                "venue_id": "gmo",
+                "market_id": self._config.market_id,
+                "stream_name": endpoint,
+                "endpoint": f"/{endpoint}",
+                "event_ts": None,
+                "source_msg_key": None,
+            }
+        )
+
+    def _fetch_gmo_ticker(self) -> TickerSnapshot:
+        payload = self._request_json("ticker", {"symbol": self._config.symbol})
+        self._ingest_rest_raw("ticker", payload)
 
         status = int(payload.get("status", 0))
         if status != 0:
@@ -217,36 +243,34 @@ class MarketDataPoller:
         bid = float(item["bid"])
         ask = float(item["ask"])
         last = float(item.get("last") or item.get("price"))
-        ts = item.get("timestamp") or datetime.now(UTC).isoformat()
-        return TickerSnapshot(
-            symbol=item.get("symbol", self._config.symbol),
-            ts=ts,
-            bid=bid,
-            ask=ask,
-            last=last,
-            source="gmo",
-        )
+        ts = item.get("timestamp") or datetime.now(UTC).isoformat().replace("+00:00", "Z")
+        return TickerSnapshot(symbol=item.get("symbol", self._config.symbol), ts=ts, bid=bid, ask=ask, last=last, source="gmo")
+
+    def _fetch_gmo_ohlcv(self) -> None:
+        payload = self._request_json("klines", {"symbol": self._config.symbol, "interval": "1min"})
+        self._ingest_rest_raw("ohlcv", payload)
 
     async def run_forever(self) -> None:
+        if not self._config.enabled:
+            return
         while True:
             try:
                 snapshot = await asyncio.to_thread(self._fetch_gmo_ticker)
+                await asyncio.to_thread(self._fetch_gmo_ohlcv)
                 async with self._lock:
                     self._record_success(snapshot)
                 await asyncio.sleep(self._config.interval_seconds)
-            except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError, KeyError, RuntimeError) as exc:
+            except urllib.error.HTTPError as exc:
+                reason = "UPSTREAM_RATE_LIMITED" if getattr(exc, "code", None) == 429 else "UPSTREAM_UNREACHABLE"
                 async with self._lock:
-                    sleep_for = self._record_failure(exc)
+                    sleep_for = self._record_failure(exc, reason)
+                await asyncio.sleep(sleep_for)
+            except (urllib.error.URLError, TimeoutError, ValueError, KeyError, RuntimeError) as exc:
+                async with self._lock:
+                    sleep_for = self._record_failure(exc, "UPSTREAM_UNREACHABLE")
                 await asyncio.sleep(sleep_for)
 
-    def _degraded_payload(
-        self,
-        *,
-        symbol: str,
-        reason: str,
-        code: str,
-        message: str,
-    ) -> dict[str, Any]:
+    def _degraded_payload(self, *, symbol: str, reason: str, code: str, message: str) -> dict[str, Any]:
         return {
             "symbol": symbol,
             "ts": None,
@@ -258,10 +282,7 @@ class MarketDataPoller:
             "quality": {"status": "DEGRADED"},
             "stale": True,
             "degraded_reason": reason,
-            "error": {
-                "code": code,
-                "message": message,
-            },
+            "error": {"code": code, "message": message},
         }
 
     async def latest_payload(self, symbol: str | None = None) -> tuple[int, dict[str, Any]]:
@@ -269,31 +290,19 @@ class MarketDataPoller:
         async with self._lock:
             snapshot = self._snapshot
             if snapshot is None:
-                self._degraded_reason = "UPSTREAM_ERROR"
+                self._degraded_reason = "UPSTREAM_UNREACHABLE"
                 self._apply_reason_state(self._degraded_reason)
-                return 503, self._degraded_payload(
-                    symbol=requested_symbol,
-                    reason="UPSTREAM_ERROR",
-                    code="TICKER_NOT_READY",
-                    message="Ticker not ready",
-                )
+                return 503, self._degraded_payload(symbol=requested_symbol, reason="UPSTREAM_UNREACHABLE", code="TICKER_NOT_READY", message="Ticker not ready")
 
             if requested_symbol != snapshot.symbol:
-                return 400, self._degraded_payload(
-                    symbol=requested_symbol,
-                    reason="UNSUPPORTED_SYMBOL",
-                    code="UNSUPPORTED_SYMBOL",
-                    message=f"Only {snapshot.symbol} is currently available",
-                )
+                return 400, self._degraded_payload(symbol=requested_symbol, reason="UNSUPPORTED_SYMBOL", code="UNSUPPORTED_SYMBOL", message=f"Only {snapshot.symbol} is currently available")
 
             degraded_reason = self._degraded_reason
             stale = self._is_stale_due_to_age()
-
             if stale:
                 degraded_reason = "STALE_TICKER"
 
             self._apply_reason_state(degraded_reason)
-
             quality_status = "OK"
             if degraded_reason == "STALE_TICKER":
                 quality_status = "STALE"
@@ -312,7 +321,6 @@ class MarketDataPoller:
                 "stale": stale,
                 "degraded_reason": degraded_reason,
             }
-
 
 
 
@@ -468,6 +476,64 @@ async def get_capabilities() -> dict[str, Any]:
     }
 
 
+@app.get("/orderbook/bbo/latest")
+async def orderbook_bbo_latest(
+    request: Request,
+    venue_id: str = Query(...),
+    market_id: str = Query(...),
+) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    try:
+        repo = _connect_read_repo()
+    except RuntimeError as exc:
+        return JSONResponse(status_code=503, content={"found": False, "stale": True, "degraded": True, "reason": str(exc), "request_id": request_id})
+
+    state = repo.get_orderbook_state(venue_id=venue_id, market_id=market_id)
+    if state is None:
+        return JSONResponse(status_code=200, content={"found": False, "stale": True, "as_of": None, "bid": None, "ask": None, "degraded": False, "reason": None})
+
+    stale_ms = int(os.getenv("LATEST_STALE_MS", "30000"))
+    stale, _ = _compute_stale(str(state.get("as_of") or state.get("last_update_ts")), stale_ms / 1000)
+    return JSONResponse(
+        status_code=200,
+        content={
+            "found": True,
+            "stale": stale,
+            "as_of": state.get("as_of"),
+            "bid": None if state.get("bid_px") is None else {"price": state.get("bid_px"), "size": state.get("bid_qty")},
+            "ask": None if state.get("ask_px") is None else {"price": state.get("ask_px"), "size": state.get("ask_qty")},
+            "degraded": bool(state.get("degraded")),
+            "reason": state.get("reason"),
+        },
+    )
+
+
+@app.get("/orderbook/state")
+async def orderbook_state(
+    venue_id: str = Query(...),
+    market_id: str = Query(...),
+) -> JSONResponse:
+    try:
+        repo = _connect_read_repo()
+    except RuntimeError as exc:
+        return JSONResponse(status_code=503, content={"found": False, "degraded": True, "reason": str(exc)})
+
+    state = repo.get_orderbook_state(venue_id=venue_id, market_id=market_id)
+    if state is None:
+        return JSONResponse(status_code=200, content={"found": False, "degraded": False, "reason": None})
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "found": True,
+            "last_seq": state.get("last_seq"),
+            "last_update_ts": state.get("last_update_ts"),
+            "degraded": bool(state.get("degraded")),
+            "reason": state.get("reason"),
+        },
+    )
+
+
 @app.get("/ticker/latest")
 async def ticker_latest(
     request: Request,
@@ -552,6 +618,26 @@ async def ticker_latest(
     payload["exchange"] = "gmo"
     return JSONResponse(status_code=status_code, content=payload)
 
+
+
+
+@app.get("/ohlcv/latest")
+async def ohlcv_latest(
+    venue_id: str = Query(...),
+    market_id: str = Query(...),
+    instrument_id: str = Query(...),
+    timeframe: str = Query(default="1m"),
+) -> JSONResponse:
+    try:
+        repo = _connect_read_repo()
+    except RuntimeError as exc:
+        return JSONResponse(status_code=503, content={"code": "READ_MODEL_UNAVAILABLE", "reason": str(exc)})
+
+    row = repo.get_latest_ohlcv(venue_id=venue_id, market_id=market_id, instrument_id=instrument_id, timeframe=timeframe)
+    if row is None:
+        return JSONResponse(status_code=404, content={"found": False, "venue_id": venue_id, "market_id": market_id, "instrument_id": instrument_id, "timeframe": timeframe})
+
+    return JSONResponse(status_code=200, content={"found": True, "venue_id": venue_id, "market_id": market_id, "instrument_id": instrument_id, "timeframe": timeframe, **row})
 
 def _raw_dependency_unavailable(request_id: str) -> JSONResponse:
     return JSONResponse(

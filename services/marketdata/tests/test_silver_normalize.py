@@ -87,3 +87,50 @@ def test_unknown_payload_routes_to_md_events_json(monkeypatch, tmp_path: Path) -
     assert row is not None
     assert row[0] == body["raw_msg_id"]
     assert row[1] == body["normalized_event_type"]
+
+def test_orderbook_gap_sets_degraded_state(monkeypatch, tmp_path: Path) -> None:
+    db_file = tmp_path / "md.sqlite3"
+    bronze_root = tmp_path / "bronze"
+
+    monkeypatch.setenv("OBJECT_STORE_BACKEND", "fs")
+    monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
+    monkeypatch.setenv("BRONZE_FS_ROOT", str(bronze_root))
+    monkeypatch.setenv("SILVER_ENABLED", "1")
+    monkeypatch.setattr(main._poller, "run_forever", _idle_poller)
+
+    with TestClient(main.app) as client:
+        first = client.post(
+            "/raw/ingest",
+            json={
+                "tenant_id": "tenant-a",
+                "source_type": "WS_PUBLIC",
+                "received_ts": "2026-02-16T00:00:01Z",
+                "payload_json": {"bids": [{"price": "100", "size": "1"}], "asks": [{"price": "101", "size": "1"}]},
+                "venue_id": "gmo",
+                "market_id": "spot",
+                "stream_name": "orderbooks",
+                "seq": 1,
+            },
+        )
+        second = client.post(
+            "/raw/ingest",
+            json={
+                "tenant_id": "tenant-a",
+                "source_type": "WS_PUBLIC",
+                "received_ts": "2026-02-16T00:00:02Z",
+                "payload_json": {"bids": [{"price": "101", "size": "1"}], "asks": [{"price": "102", "size": "1"}]},
+                "venue_id": "gmo",
+                "market_id": "spot",
+                "stream_name": "orderbooks",
+                "seq": 3,
+            },
+        )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+
+    conn = sqlite3.connect(db_file)
+    gap = conn.execute("SELECT event_type FROM md_events_json WHERE event_type='md_orderbook_gap'").fetchone()
+    state = conn.execute("SELECT degraded, reason FROM md_orderbook_state WHERE venue_id='gmo' AND market_id='spot'").fetchone()
+    assert gap is not None
+    assert state == (1, "ORDERBOOK_GAP")

@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 from services.marketdata.app.db.repository import MarketDataMetaRepository
+from services.marketdata.app.silver.orderbook import OrderbookEngine
+
+ORDERBOOK_GAP = "ORDERBOOK_GAP"
+ORDERBOOK_RESYNC_FAILED = "ORDERBOOK_RESYNC_FAILED"
+ORDERBOOK_SEQ_MISSING = "ORDERBOOK_SEQ_MISSING"
 
 
 @dataclass(frozen=True)
@@ -12,8 +18,25 @@ class NormalizeResult:
     event_type: str | None
 
 
+_ORDERBOOK_ENGINES: dict[tuple[str, str], OrderbookEngine] = {}
+_ORDERBOOK_LAST_SEQ: dict[tuple[str, str], int | None] = {}
+
+
 def _as_float(value: object) -> float:
     return float(value)
+
+
+def _utc_now() -> str:
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _parse_seq(value: object) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(str(value))
+    except ValueError:
+        return None
 
 
 def _insert_trade(repo: MarketDataMetaRepository, envelope: dict[str, Any], payload: dict[str, Any]) -> None:
@@ -78,10 +101,165 @@ def _fallback_event_type(envelope: dict[str, Any]) -> str:
     return f"ref.raw.{venue}"
 
 
+def _insert_event_hub(
+    repo: MarketDataMetaRepository,
+    envelope: dict[str, Any],
+    payload: dict[str, Any],
+    *,
+    event_type: str,
+    schema_ref: str,
+    extra_json: dict[str, Any],
+) -> None:
+    repo.insert_md_events_json(
+        raw_msg_id=str(envelope["raw_msg_id"]),
+        tenant_id=str(envelope["tenant_id"]),
+        event_type=event_type,
+        event_ts=None if envelope.get("event_ts") is None else str(envelope.get("event_ts")),
+        received_ts=str(envelope["received_ts"]),
+        payload_jsonb=payload,
+        payload_schema_ref=schema_ref,
+        parser_version=str(envelope.get("parser_version") or "v0.1"),
+        extra_json=extra_json,
+    )
+
+
+def _normalize_orderbook(repo: MarketDataMetaRepository, envelope: dict[str, Any], payload: dict[str, Any]) -> NormalizeResult:
+    venue_id = str(envelope.get("venue_id") or "gmo")
+    market_id = str(envelope.get("market_id") or payload.get("symbol") or "spot")
+    key = (venue_id, market_id)
+    event_ts = str(envelope.get("event_ts") or envelope["received_ts"])
+    seq = _parse_seq(envelope.get("seq") or payload.get("sequence") or payload.get("seq"))
+
+    engine = _ORDERBOOK_ENGINES.setdefault(key, OrderbookEngine())
+    prev_seq = _ORDERBOOK_LAST_SEQ.get(key)
+
+    if seq is None:
+        repo.upsert_orderbook_state(
+            venue_id=venue_id,
+            market_id=market_id,
+            bid_px=None,
+            bid_qty=None,
+            ask_px=None,
+            ask_qty=None,
+            as_of=event_ts,
+            last_update_ts=str(envelope["received_ts"]),
+            last_seq=None,
+            degraded=True,
+            reason=ORDERBOOK_SEQ_MISSING,
+        )
+
+    event_type = str(payload.get("type") or "snapshot").lower()
+    is_snapshot = event_type == "snapshot" or ("changes" not in payload and "asks" in payload and "bids" in payload)
+
+    if seq is not None and OrderbookEngine.check_gap(prev_seq, seq):
+        gap_payload = {
+            "raw_msg_id": str(envelope["raw_msg_id"]),
+            "venue_id": venue_id,
+            "market_id": market_id,
+            "received_ts": str(envelope["received_ts"]),
+            "event_ts": envelope.get("event_ts"),
+            "prev_seq": prev_seq,
+            "next_seq": seq,
+            "seq": seq,
+            "extra_json": {"fallback_event_ts": event_ts},
+        }
+        _insert_event_hub(
+            repo,
+            envelope,
+            gap_payload,
+            event_type="md_orderbook_gap",
+            schema_ref="contracts/schemas/marketdata/md_orderbook_gap.schema.json",
+            extra_json={"reason": ORDERBOOK_GAP},
+        )
+        repo.upsert_orderbook_state(
+            venue_id=venue_id,
+            market_id=market_id,
+            bid_px=None,
+            bid_qty=None,
+            ask_px=None,
+            ask_qty=None,
+            as_of=event_ts,
+            last_update_ts=str(envelope["received_ts"]),
+            last_seq=str(seq),
+            degraded=True,
+            reason=ORDERBOOK_GAP,
+        )
+        _ORDERBOOK_LAST_SEQ[key] = seq
+        return NormalizeResult(target="md_events_json", event_type="md_orderbook_gap")
+
+    if is_snapshot:
+        event_name = "md_orderbook_snapshot"
+        schema_ref = "contracts/schemas/marketdata/md_orderbook_snapshot.schema.json"
+        engine.apply_snapshot(payload)
+    else:
+        event_name = "md_orderbook_delta"
+        schema_ref = "contracts/schemas/marketdata/md_orderbook_delta.schema.json"
+        delta_payload = payload.get("changes") if isinstance(payload.get("changes"), dict) else payload
+        engine.apply_delta(delta_payload)
+
+    best_bid, best_ask = engine.derive_bbo()
+    if best_bid is not None and best_ask is not None:
+        repo.insert_md_best_bid_ask(
+            raw_msg_id=str(envelope["raw_msg_id"]),
+            venue_id=venue_id,
+            market_id=market_id,
+            instrument_id=str(envelope.get("instrument_id") or market_id),
+            bid_px=best_bid.price,
+            bid_qty=best_bid.size,
+            ask_px=best_ask.price,
+            ask_qty=best_ask.size,
+            event_ts=event_ts,
+            received_ts=str(envelope["received_ts"]),
+            extra_json={"source": "orderbook"},
+        )
+
+    _insert_event_hub(
+        repo,
+        envelope,
+        {
+            "raw_msg_id": str(envelope["raw_msg_id"]),
+            "venue_id": venue_id,
+            "market_id": market_id,
+            "received_ts": str(envelope["received_ts"]),
+            "event_ts": envelope.get("event_ts"),
+            "seq": seq,
+            "levels": {
+                "bids": payload.get("bids") or [],
+                "asks": payload.get("asks") or [],
+            },
+            "extra_json": {"fallback_event_ts": event_ts},
+        },
+        event_type=event_name,
+        schema_ref=schema_ref,
+        extra_json={"source_type": envelope.get("source_type")},
+    )
+
+    repo.upsert_orderbook_state(
+        venue_id=venue_id,
+        market_id=market_id,
+        bid_px=None if best_bid is None else best_bid.price,
+        bid_qty=None if best_bid is None else best_bid.size,
+        ask_px=None if best_ask is None else best_ask.price,
+        ask_qty=None if best_ask is None else best_ask.size,
+        as_of=event_ts,
+        last_update_ts=str(envelope["received_ts"]),
+        last_seq=None if seq is None else str(seq),
+        degraded=seq is None,
+        reason=ORDERBOOK_SEQ_MISSING if seq is None else None,
+    )
+    if seq is not None:
+        _ORDERBOOK_LAST_SEQ[key] = seq
+    return NormalizeResult(target="md_events_json", event_type=event_name)
+
+
 def classify_envelope(envelope: dict[str, Any]) -> NormalizeResult:
     payload = envelope.get("payload_json")
     if not isinstance(payload, dict):
         payload = {}
+
+    stream_name = str(envelope.get("stream_name") or payload.get("channel") or "").lower()
+    if stream_name in {"orderbook", "orderbooks"} or "bids" in payload or "asks" in payload:
+        return NormalizeResult(target="md_orderbook", event_type="md_orderbook_snapshot")
 
     if {"price", "qty", "side"}.issubset(payload.keys()):
         return NormalizeResult(target="md_trades", event_type=None)
@@ -113,16 +291,16 @@ def normalize_envelope(repo: MarketDataMetaRepository, envelope: dict[str, Any])
         _insert_bba(repo, envelope, payload)
         return classified
 
+    if classified.target == "md_orderbook":
+        return _normalize_orderbook(repo, envelope, payload)
+
     event_type = classified.event_type or _fallback_event_type(envelope)
-    repo.insert_md_events_json(
-        raw_msg_id=str(envelope["raw_msg_id"]),
-        tenant_id=str(envelope["tenant_id"]),
+    _insert_event_hub(
+        repo,
+        envelope,
+        payload,
         event_type=event_type,
-        event_ts=None if envelope.get("event_ts") is None else str(envelope.get("event_ts")),
-        received_ts=str(envelope["received_ts"]),
-        payload_jsonb=payload,
-        payload_schema_ref="contracts/schemas/marketdata/md_events_json.schema.json",
-        parser_version=str(envelope.get("parser_version") or "v0.1"),
+        schema_ref="contracts/schemas/marketdata/md_events_json.schema.json",
         extra_json={"source_type": envelope.get("source_type")},
     )
     return classified
