@@ -78,7 +78,8 @@ class GmoPublicWsConnector:
 
     async def _ingest_message(self, stream_name: str, payload: dict[str, Any]) -> None:
         received_ts = datetime.now(UTC).isoformat().replace("+00:00", "Z")
-        status, body = ingest_raw_envelope(
+        status, body = await asyncio.to_thread(
+            ingest_raw_envelope,
             {
                 "tenant_id": self._config.tenant_id,
                 "source_type": "WS_PUBLIC",
@@ -91,7 +92,7 @@ class GmoPublicWsConnector:
                 "event_ts": self._extract_event_ts(payload),
                 "source_msg_key": None,
                 "seq": payload.get("sequence") or payload.get("seq"),
-            }
+            },
         )
 
         if status == 200:
