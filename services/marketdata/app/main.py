@@ -16,15 +16,18 @@ from pathlib import Path
 from typing import Any
 
 import re
+import socket
 
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.append(str(_REPO_ROOT))
 
 from libs.observability import audit_event, error_envelope, request_id_middleware
+from services.marketdata.app.bronze_store import BronzeStore, RawMetaRepository
+from services.marketdata.app.object_store import build_object_store_from_env
 
 logger = logging.getLogger("marketdata")
 if not logger.handlers:
@@ -85,6 +88,50 @@ class TickerSnapshot:
     ask: float
     last: float
     source: str
+
+
+@dataclass
+class DBHealthConfig:
+    database_url: str | None = os.getenv("DATABASE_URL")
+    timeout_ms: int = int(os.getenv("DB_PING_TIMEOUT_MS", "500"))
+
+
+class DBHealthChecker:
+    def __init__(self, config: DBHealthConfig):
+        self._config = config
+
+    def _resolve_target(self) -> tuple[str, int] | None:
+        if not self._config.database_url:
+            return None
+
+        parsed = urllib.parse.urlparse(self._config.database_url)
+        host = parsed.hostname
+        if not host:
+            return None
+
+        port = parsed.port
+        if port is None:
+            if parsed.scheme in {"postgres", "postgresql"}:
+                port = 5432
+            elif parsed.scheme in {"mysql", "mariadb"}:
+                port = 3306
+            else:
+                port = 5432
+        return host, int(port)
+
+    def ping(self) -> tuple[bool, float | None, str | None]:
+        target = self._resolve_target()
+        if target is None:
+            return False, None, "DB_UNREACHABLE"
+
+        started = time.perf_counter()
+        try:
+            connection = socket.create_connection(target, timeout=self._config.timeout_ms / 1000)
+            connection.close()
+            latency_ms = (time.perf_counter() - started) * 1000
+            return True, latency_ms, None
+        except OSError:
+            return False, None, "DB_UNREACHABLE"
 
 
 class MarketDataPoller:
@@ -268,6 +315,13 @@ class MarketDataPoller:
 app = FastAPI(title="profinaut-marketdata", version="0.1.0")
 app.add_middleware(request_id_middleware())
 _poller = MarketDataPoller(PollerConfig())
+_object_store, _object_store_status = build_object_store_from_env()
+_db_checker = DBHealthChecker(DBHealthConfig())
+_raw_meta_repo = RawMetaRepository()
+_bronze_store: BronzeStore | None = None
+if _object_store is not None:
+    _bronze_store = BronzeStore(_object_store, _raw_meta_repo)
+
 
 
 @app.exception_handler(HTTPException)
@@ -315,9 +369,23 @@ async def shutdown() -> None:
             await task
 
 
+async def _db_health_snapshot() -> tuple[bool, float | None, str | None]:
+    return await asyncio.to_thread(_db_checker.ping)
+
+
 @app.get("/healthz")
-def healthz() -> dict[str, str]:
-    return {"status": "ok"}
+async def healthz() -> dict[str, Any]:
+    db_ok, db_latency_ms, db_reason = await _db_health_snapshot()
+    degraded_reasons: list[str] = []
+    if db_reason is not None:
+        degraded_reasons.append(db_reason)
+
+    return {
+        "status": "degraded" if degraded_reasons else "ok",
+        "db_ok": db_ok,
+        "db_latency_ms": db_latency_ms,
+        "degraded_reasons": degraded_reasons,
+    }
 
 
 @app.get("/capabilities")
@@ -331,12 +399,25 @@ async def get_capabilities() -> dict[str, Any]:
                 degraded_reason = "STALE_TICKER"
         degraded = degraded_reason is not None
 
+    db_ok, db_latency_ms, db_reason = await _db_health_snapshot()
+
+    degraded_reasons: list[str] = []
+    if degraded_reason is not None:
+        degraded_reasons.append(degraded_reason)
+    degraded_reasons.extend(_object_store_status.degraded_reasons)
+    if db_reason is not None:
+        degraded_reasons.append(db_reason)
+
     return {
         "service": "marketdata",
         "version": "0.1.0",
-        "status": "degraded" if degraded else "ok",
+        "status": "degraded" if degraded or bool(_object_store_status.degraded_reasons) or (not db_ok) else "ok",
         "features": ["ticker_latest", "gmo_poller"],
+        "storage_backend": _object_store_status.backend,
+        "db_ok": db_ok,
+        "db_latency_ms": db_latency_ms,
         "degraded_reason": degraded_reason,
+        "degraded_reasons": degraded_reasons,
         "generated_at": datetime.now(UTC).isoformat(),
     }
 
@@ -353,3 +434,87 @@ async def ticker_latest(
     payload["request_id"] = request_id
     payload["exchange"] = "gmo"
     return JSONResponse(status_code=status_code, content=payload)
+
+
+def _raw_dependency_unavailable(request_id: str) -> JSONResponse:
+    return JSONResponse(
+        status_code=503,
+        content=error_envelope(
+            code="RAW_DEPENDENCY_UNAVAILABLE",
+            message="Raw metadata/object dependencies are unavailable",
+            details={"storage_backend": _object_store_status.backend},
+            request_id=request_id,
+        ),
+    )
+
+
+@app.get("/raw/meta/{raw_msg_id}")
+async def get_raw_meta(raw_msg_id: str, request: Request) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+
+    if _bronze_store is None:
+        return _raw_dependency_unavailable(request_id)
+
+    meta = _raw_meta_repo.get(raw_msg_id)
+    if meta is None:
+        return JSONResponse(
+            status_code=404,
+            content=error_envelope(
+                code="RAW_META_NOT_FOUND",
+                message=f"raw_msg_id not found: {raw_msg_id}",
+                details={"raw_msg_id": raw_msg_id},
+                request_id=request_id,
+            ),
+        )
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "raw_msg_id": meta.raw_msg_id,
+            "object_key": meta.object_key,
+            "payload_hash": meta.payload_hash,
+            "received_ts": meta.received_ts,
+            "quality_json": meta.quality_json,
+            "content_encoding": meta.content_encoding,
+            "content_type": meta.content_type,
+            "object_size": meta.object_size,
+            "request_id": request_id,
+        },
+    )
+
+
+@app.get("/raw/download/{raw_msg_id}")
+async def download_raw(raw_msg_id: str, request: Request):
+    request_id = getattr(request.state, "request_id", "unknown")
+
+    if _bronze_store is None:
+        return _raw_dependency_unavailable(request_id)
+
+    meta = _raw_meta_repo.get(raw_msg_id)
+    if meta is None:
+        return JSONResponse(
+            status_code=404,
+            content=error_envelope(
+                code="RAW_META_NOT_FOUND",
+                message=f"raw_msg_id not found: {raw_msg_id}",
+                details={"raw_msg_id": raw_msg_id},
+                request_id=request_id,
+            ),
+        )
+
+    max_bytes = int(os.getenv("RAW_DOWNLOAD_MAX_BYTES", "1048576"))
+    if meta.object_size is not None and meta.object_size > max_bytes:
+        return JSONResponse(
+            status_code=413,
+            content=error_envelope(
+                code="RAW_DOWNLOAD_TOO_LARGE",
+                message="Raw object exceeds size limit",
+                details={"raw_msg_id": raw_msg_id, "object_size": meta.object_size, "max_bytes": max_bytes},
+                request_id=request_id,
+            ),
+        )
+
+    payloads = _bronze_store.replay_payload(meta.object_key)
+    ndjson = "".join(json.dumps(item, separators=(",", ":"), sort_keys=True) + "\n" for item in payloads)
+    headers = {"x-request-id": request_id}
+    return PlainTextResponse(content=ndjson, media_type="application/x-ndjson", headers=headers)
