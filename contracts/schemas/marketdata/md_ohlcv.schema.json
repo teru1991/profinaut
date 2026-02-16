@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/marketdata/md_ohlcv.schema.json",
+  "title": "MarketDataOhlcv",
+  "description": "Minimal Silver schema for OHLCV bars.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "timeframe",
+    "open_ts",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+    "is_final",
+    "raw_msg_id",
+    "extra_json"
+  ],
+  "properties": {
+    "timeframe": {
+      "type": "string",
+      "minLength": 1
+    },
+    "open_ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "open": {
+      "type": "number"
+    },
+    "high": {
+      "type": "number"
+    },
+    "low": {
+      "type": "number"
+    },
+    "close": {
+      "type": "number"
+    },
+    "volume": {
+      "type": "number"
+    },
+    "is_final": {
+      "type": "boolean"
+    },
+    "raw_msg_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "extra_json": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

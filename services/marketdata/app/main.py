@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import time
+import sqlite3
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -25,6 +26,10 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.append(str(_REPO_ROOT))
 
 from libs.observability import audit_event, error_envelope, request_id_middleware
+from services.marketdata.app.routes.health import router as health_router
+from services.marketdata.app.routes.raw_ingest import router as raw_ingest_router
+from services.marketdata.app.settings import load_settings
+from services.marketdata.app.db.repository import MarketDataMetaRepository
 
 logger = logging.getLogger("marketdata")
 if not logger.handlers:
@@ -265,8 +270,38 @@ class MarketDataPoller:
 
 
 
+def _parse_rfc3339(ts: str) -> datetime:
+    return datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(UTC)
+
+
+def _compute_stale(as_of_ts: str, threshold_seconds: float) -> tuple[bool, int | None]:
+    try:
+        as_of = _parse_rfc3339(as_of_ts)
+    except ValueError:
+        return True, None
+    stale_by_ms = int((datetime.now(UTC) - as_of).total_seconds() * 1000)
+    return stale_by_ms > int(threshold_seconds * 1000), max(stale_by_ms, 0)
+
+
+def _connect_read_repo() -> MarketDataMetaRepository:
+    settings = load_settings()
+    if settings.db_dsn is None:
+        raise RuntimeError("DB_NOT_CONFIGURED")
+    if not settings.db_dsn.startswith("sqlite:///"):
+        raise RuntimeError("READ_MODEL_UNAVAILABLE")
+
+    db_path = settings.db_dsn.removeprefix("sqlite:///")
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA foreign_keys = ON")
+    return MarketDataMetaRepository(conn)
+
+
+
+
 app = FastAPI(title="profinaut-marketdata", version="0.1.0")
 app.add_middleware(request_id_middleware())
+app.include_router(health_router)
+app.include_router(raw_ingest_router)
 _poller = MarketDataPoller(PollerConfig())
 
 
@@ -315,41 +350,152 @@ async def shutdown() -> None:
             await task
 
 
-@app.get("/healthz")
-def healthz() -> dict[str, str]:
-    return {"status": "ok"}
-
-
-@app.get("/capabilities")
-async def get_capabilities() -> dict[str, Any]:
-    """Return service capabilities and health status."""
-    async with _poller._lock:
-        degraded_reason = _poller._degraded_reason
-        if _poller._snapshot is not None and _poller._last_success_monotonic is not None:
-            last_success_age = time.monotonic() - _poller._last_success_monotonic
-            if last_success_age > _poller._config.stale_threshold_seconds:
-                degraded_reason = "STALE_TICKER"
-        degraded = degraded_reason is not None
-
-    return {
-        "service": "marketdata",
-        "version": "0.1.0",
-        "status": "degraded" if degraded else "ok",
-        "features": ["ticker_latest", "gmo_poller"],
-        "degraded_reason": degraded_reason,
-        "generated_at": datetime.now(UTC).isoformat(),
-    }
-
 
 @app.get("/ticker/latest")
 async def ticker_latest(
     request: Request,
     exchange: str = Query(default="gmo"),
     symbol: str = Query(default="BTC_JPY"),
+    venue_id: str | None = Query(default=None),
+    market_id: str | None = Query(default=None),
+    instrument_id: str | None = Query(default=None),
 ) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+
+    if venue_id and market_id and instrument_id:
+        try:
+            repo = _connect_read_repo()
+        except RuntimeError as exc:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "code": "READ_MODEL_UNAVAILABLE",
+                    "message": "Read model is unavailable",
+                    "reason": str(exc),
+                    "request_id": request_id,
+                },
+            )
+
+        bba = repo.get_latest_best_bid_ask(venue_id=venue_id, market_id=market_id, instrument_id=instrument_id)
+        threshold_seconds = float(os.getenv("READ_STALE_THRESHOLD_SECONDS", "10"))
+        if bba is not None:
+            stale, stale_by_ms = _compute_stale(str(bba["received_ts"]), threshold_seconds)
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "found": True,
+                    "venue_id": venue_id,
+                    "market_id": market_id,
+                    "instrument_id": instrument_id,
+                    "bid": bba["bid_px"],
+                    "ask": bba["ask_px"],
+                    "bid_qty": bba["bid_qty"],
+                    "ask_qty": bba["ask_qty"],
+                    "price": (float(bba["bid_px"]) + float(bba["ask_px"])) / 2,
+                    "as_of": bba["received_ts"],
+                    "stale": stale,
+                    "stale_by_ms": stale_by_ms,
+                },
+            )
+
+        trade = repo.get_latest_trade(venue_id=venue_id, market_id=market_id, instrument_id=instrument_id)
+        if trade is not None:
+            stale, stale_by_ms = _compute_stale(str(trade["received_ts"]), threshold_seconds)
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "found": True,
+                    "venue_id": venue_id,
+                    "market_id": market_id,
+                    "instrument_id": instrument_id,
+                    "price": trade["price"],
+                    "bid": None,
+                    "ask": None,
+                    "as_of": trade["received_ts"],
+                    "stale": stale,
+                    "stale_by_ms": stale_by_ms,
+                },
+            )
+
+        return JSONResponse(
+            status_code=404,
+            content={
+                "found": False,
+                "venue_id": venue_id,
+                "market_id": market_id,
+                "instrument_id": instrument_id,
+                "stale": True,
+                "stale_by_ms": None,
+            },
+        )
+
     _, normalized_symbol = _normalize_and_validate_params(exchange=exchange, symbol=symbol)
     status_code, payload = await _poller.latest_payload(symbol=normalized_symbol)
-    request_id = getattr(request.state, "request_id", "unknown")
     payload["request_id"] = request_id
     payload["exchange"] = "gmo"
     return JSONResponse(status_code=status_code, content=payload)
+
+
+@app.get("/ohlcv/latest")
+async def ohlcv_latest(
+    request: Request,
+    venue_id: str,
+    market_id: str,
+    instrument_id: str,
+    timeframe: str,
+) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    try:
+        repo = _connect_read_repo()
+    except RuntimeError as exc:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "code": "READ_MODEL_UNAVAILABLE",
+                "message": "Read model is unavailable",
+                "reason": str(exc),
+                "request_id": request_id,
+            },
+        )
+
+    row = repo.get_latest_ohlcv(
+        venue_id=venue_id,
+        market_id=market_id,
+        instrument_id=instrument_id,
+        timeframe=timeframe,
+    )
+    if row is None:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "found": False,
+                "venue_id": venue_id,
+                "market_id": market_id,
+                "instrument_id": instrument_id,
+                "timeframe": timeframe,
+            },
+        )
+
+    threshold_seconds = float(os.getenv("READ_STALE_THRESHOLD_SECONDS", "10"))
+    stale, stale_by_ms = _compute_stale(str(row["received_ts"]), threshold_seconds)
+    return JSONResponse(
+        status_code=200,
+        content={
+            "found": True,
+            "venue_id": venue_id,
+            "market_id": market_id,
+            "instrument_id": instrument_id,
+            "timeframe": timeframe,
+            "open_ts": row["open_ts"],
+            "open": row["open"],
+            "high": row["high"],
+            "low": row["low"],
+            "close": row["close"],
+            "volume": row["volume"],
+            "is_final": row["is_final"],
+            "as_of": row["received_ts"],
+            "stale": stale,
+            "stale_by_ms": stale_by_ms,
+        },
+    )
+
