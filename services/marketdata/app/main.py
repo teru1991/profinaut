@@ -341,7 +341,7 @@ async def get_capabilities() -> dict[str, Any]:
     return {
         "service": "marketdata",
         "version": "0.1.0",
-        "status": "degraded" if degraded or bool(_object_store_status.degraded_reasons) else "ok",
+        "status": "degraded" if degraded_reasons else "ok",
         "features": ["ticker_latest", "gmo_poller"],
         "storage_backend": _object_store_status.backend,
         "degraded_reason": degraded_reason,
