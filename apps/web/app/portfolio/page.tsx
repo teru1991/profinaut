@@ -83,7 +83,7 @@ export default function PortfolioPage() {
         {lastUpdated && (
           <div className="last-updated">
             <span className="last-updated-dot" />
-            Auto-refresh 5s &middot; {lastUpdated.toLocaleTimeString("en-US", { hour12: false })}
+            Auto-refresh 5s &middot; {formatTime(lastUpdated)}
           </div>
         )}
       </div>
