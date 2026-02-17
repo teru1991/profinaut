@@ -352,6 +352,25 @@ def _connect_read_repo() -> MarketDataMetaRepository:
 
 
 
+
+
+def _validation_error(request_id: str, *, code: str, message: str, details: dict[str, Any] | None = None) -> JSONResponse:
+    return JSONResponse(
+        status_code=400,
+        content=error_envelope(code=code, message=message, details=details or {}, request_id=request_id),
+    )
+
+
+def _is_valid_tf(tf: str) -> bool:
+    return tf in {"1m", "5m", "15m", "1h", "1d", "1min", "5min", "15min", "1hour", "1day"}
+
+
+def _is_valid_rfc3339(ts: str) -> bool:
+    try:
+        _ = _parse_rfc3339(ts)
+        return True
+    except ValueError:
+        return False
 app = FastAPI(title="profinaut-marketdata", version="0.1.0")
 app.add_middleware(request_id_middleware())
 app.include_router(health_router)
@@ -479,10 +498,14 @@ async def get_capabilities() -> dict[str, Any]:
 @app.get("/orderbook/bbo/latest")
 async def orderbook_bbo_latest(
     request: Request,
-    venue_id: str = Query(...),
-    market_id: str = Query(...),
+    venue_id: str | None = Query(default=None),
+    market_id: str | None = Query(default=None),
 ) -> JSONResponse:
     request_id = getattr(request.state, "request_id", "unknown")
+    if not venue_id:
+        return _validation_error(request_id, code="MISSING_VENUE_ID", message="venue_id is required")
+    if not market_id:
+        return _validation_error(request_id, code="MISSING_MARKET_ID", message="market_id is required")
     try:
         repo = _connect_read_repo()
     except RuntimeError as exc:
@@ -510,9 +533,15 @@ async def orderbook_bbo_latest(
 
 @app.get("/orderbook/state")
 async def orderbook_state(
-    venue_id: str = Query(...),
-    market_id: str = Query(...),
+    request: Request,
+    venue_id: str | None = Query(default=None),
+    market_id: str | None = Query(default=None),
 ) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    if not venue_id:
+        return _validation_error(request_id, code="MISSING_VENUE_ID", message="venue_id is required")
+    if not market_id:
+        return _validation_error(request_id, code="MISSING_MARKET_ID", message="market_id is required")
     try:
         repo = _connect_read_repo()
     except RuntimeError as exc:
@@ -544,6 +573,14 @@ async def ticker_latest(
     instrument_id: str | None = Query(default=None),
 ) -> JSONResponse:
     request_id = getattr(request.state, "request_id", "unknown")
+
+    provided = [venue_id is not None, market_id is not None, instrument_id is not None]
+    if any(provided) and not all(provided):
+        return _validation_error(
+            request_id,
+            code="MISSING_IDENTIFIERS",
+            message="venue_id, market_id and instrument_id must be provided together",
+        )
 
     if venue_id and market_id and instrument_id:
         try:
@@ -623,21 +660,130 @@ async def ticker_latest(
 
 @app.get("/ohlcv/latest")
 async def ohlcv_latest(
+    request: Request,
     venue_id: str = Query(...),
     market_id: str = Query(...),
-    instrument_id: str = Query(...),
-    timeframe: str = Query(default="1m"),
+    tf: str = Query(default="1m"),
+    instrument_id: str | None = Query(default=None),
+    timeframe: str | None = Query(default=None),
 ) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    effective_tf = str(timeframe or tf)
+    if not _is_valid_tf(effective_tf):
+        return _validation_error(request_id, code="INVALID_TF", message="timeframe is invalid", details={"tf": effective_tf})
     try:
         repo = _connect_read_repo()
     except RuntimeError as exc:
-        return JSONResponse(status_code=503, content={"code": "READ_MODEL_UNAVAILABLE", "reason": str(exc)})
+        return JSONResponse(
+            status_code=503,
+            content={
+                "found": False,
+                "stale": True,
+                "as_of": None,
+                "tf": effective_tf,
+                "candles": [],
+                "error": {"code": "READ_MODEL_UNAVAILABLE", "message": str(exc)},
+                "request_id": request_id,
+                "degraded": True,
+            },
+        )
 
-    row = repo.get_latest_ohlcv(venue_id=venue_id, market_id=market_id, instrument_id=instrument_id, timeframe=timeframe)
+    row = (
+        repo.get_latest_ohlcv(venue_id=venue_id, market_id=market_id, instrument_id=instrument_id, timeframe=effective_tf)
+        if instrument_id
+        else repo.get_latest_ohlcv_by_market(venue_id=venue_id, market_id=market_id, timeframe=effective_tf)
+    )
     if row is None:
-        return JSONResponse(status_code=404, content={"found": False, "venue_id": venue_id, "market_id": market_id, "instrument_id": instrument_id, "timeframe": timeframe})
+        return JSONResponse(status_code=200, content={"found": False, "stale": True, "as_of": None, "tf": effective_tf, "candles": []})
 
-    return JSONResponse(status_code=200, content={"found": True, "venue_id": venue_id, "market_id": market_id, "instrument_id": instrument_id, "timeframe": timeframe, **row})
+    stale_ms = int(os.getenv("LATEST_STALE_MS", "30000"))
+    stale, _ = _compute_stale(str(row.get("open_ts")), stale_ms / 1000)
+    candle = {
+        "open_ts": row.get("open_ts"),
+        "open": row.get("open"),
+        "high": row.get("high"),
+        "low": row.get("low"),
+        "close": row.get("close"),
+        "volume": row.get("volume"),
+        "is_final": row.get("is_final"),
+    }
+    return JSONResponse(
+        status_code=200,
+        content={
+            "found": True,
+            "stale": stale,
+            "as_of": row.get("open_ts"),
+            "tf": effective_tf,
+            "candles": [candle],
+        },
+    )
+
+
+@app.get("/ohlcv/range")
+async def ohlcv_range(
+    request: Request,
+    venue_id: str = Query(...),
+    market_id: str = Query(...),
+    tf: str = Query(default="1m"),
+    from_ts: str = Query(..., alias="from"),
+    to_ts: str = Query(..., alias="to"),
+    limit: int = Query(default=100, ge=1, le=1000),
+) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    if not _is_valid_tf(tf):
+        return _validation_error(request_id, code="INVALID_TF", message="timeframe is invalid", details={"tf": tf})
+    if not _is_valid_rfc3339(from_ts):
+        return _validation_error(request_id, code="INVALID_FROM_TS", message="from must be RFC3339", details={"from": from_ts})
+    if not _is_valid_rfc3339(to_ts):
+        return _validation_error(request_id, code="INVALID_TO_TS", message="to must be RFC3339", details={"to": to_ts})
+    if _parse_rfc3339(from_ts) > _parse_rfc3339(to_ts):
+        return _validation_error(request_id, code="INVALID_TS_RANGE", message="from must be <= to")
+    try:
+        repo = _connect_read_repo()
+    except RuntimeError as exc:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "found": False,
+                "stale": True,
+                "as_of": None,
+                "tf": tf,
+                "candles": [],
+                "error": {"code": "READ_MODEL_UNAVAILABLE", "message": str(exc)},
+                "request_id": request_id,
+                "degraded": True,
+            },
+        )
+
+    rows = repo.get_ohlcv_range(
+        venue_id=venue_id,
+        market_id=market_id,
+        timeframe=tf,
+        from_ts=from_ts,
+        to_ts=to_ts,
+        limit=limit,
+    )
+    if not rows:
+        return JSONResponse(status_code=200, content={"found": False, "stale": True, "as_of": None, "tf": tf, "candles": []})
+
+    as_of = str(rows[-1].get("open_ts"))
+    stale_ms = int(os.getenv("LATEST_STALE_MS", "30000"))
+    stale, _ = _compute_stale(as_of, stale_ms / 1000)
+
+    candles = [
+        {
+            "open_ts": row.get("open_ts"),
+            "open": row.get("open"),
+            "high": row.get("high"),
+            "low": row.get("low"),
+            "close": row.get("close"),
+            "volume": row.get("volume"),
+            "is_final": row.get("is_final"),
+        }
+        for row in rows
+    ]
+    return JSONResponse(status_code=200, content={"found": True, "stale": stale, "as_of": as_of, "tf": tf, "candles": candles})
+
 
 def _raw_dependency_unavailable(request_id: str) -> JSONResponse:
     return JSONResponse(
