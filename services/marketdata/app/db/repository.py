@@ -141,8 +141,8 @@ class MarketDataMetaRepository:
         dup_suspect_count: int,
         gap_suspect_count: int,
         lag_stats_json: dict[str, Any],
-    ) -> None:
-        self._conn.execute(
+    ) -> bool:
+        cur = self._conn.execute(
             """
             INSERT INTO ws_sessions (
                 session_id, venue_id, market_id, started_at, ended_at, close_reason,
@@ -257,8 +257,8 @@ class MarketDataMetaRepository:
         occurred_at: str,
         received_ts: str,
         extra_json: dict[str, Any],
-    ) -> None:
-        self._conn.execute(
+    ) -> bool:
+        cur = self._conn.execute(
             """
             INSERT OR IGNORE INTO md_trades (
                 raw_msg_id, venue_id, market_id, instrument_id, source_msg_key,
@@ -280,6 +280,7 @@ class MarketDataMetaRepository:
             ),
         )
         self._conn.commit()
+        return bool(cur.rowcount)
 
     def insert_md_ohlcv(
         self,
