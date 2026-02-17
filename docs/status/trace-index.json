@@ -1,0 +1,23 @@
+{
+  "items": [
+    {
+      "req_id": "DOC-OS-001",
+      "progress_update_ids": [],
+      "pr_urls": [],
+      "commit_shas": [],
+      "spec_refs": [
+        "docs/specs/parallel-task-safety.md"
+      ],
+      "runbook_refs": [],
+      "verification_refs": [],
+      "results_refs": [
+        "docs/audits/docs-os-existing-file-scan.md",
+        "docs/audits/docs-os-consolidation-decision.md",
+        "docs/SSOT/README_AI.md",
+        "docs/status/status.json",
+        "docs/handoff/HANDOFF.json",
+        "docs/decisions/decisions.md"
+      ]
+    }
+  ]
+}
