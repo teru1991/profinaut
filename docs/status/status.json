@@ -3,7 +3,18 @@
   "active_task": "CI-010-B",
   "owner": "codex",
   "state": "in_progress",
-  "open_prs": [],
+  "open_prs": [
+    {
+      "pr_number": null,
+      "title": "TBD",
+      "url": "",
+      "branch": "",
+      "locks": [
+        "LOCK:ci"
+      ],
+      "status": "unknown"
+    }
+  ],
   "locks_held": [
     "LOCK:ci"
   ],

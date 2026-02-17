@@ -1,38 +1,21 @@
 {
-  "items": [
-    {
-      "req_id": "DOC-OS-001",
-      "progress_update_ids": [],
+  "tasks": {
+    "DOC-FIX-001": {
+      "branch": "",
       "pr_urls": [],
       "commit_shas": [],
-      "spec_refs": [
-        "docs/specs/parallel-task-safety.md"
-      ],
-      "runbook_refs": [],
-      "verification_refs": [],
-      "results_refs": [
-        "docs/audits/docs-os-existing-file-scan.md",
-        "docs/audits/docs-os-consolidation-decision.md",
-        "docs/SSOT/README_AI.md",
-        "docs/status/status.json",
-        "docs/handoff/HANDOFF.json",
-        "docs/decisions/decisions.md"
+      "verification_evidence": [
+        "docs/verification/"
       ]
     },
-    {
-      "req_id": "DOC-030",
-      "progress_update_ids": [],
+    "CI-010-B": {
+      "branch": "",
       "pr_urls": [],
       "commit_shas": [],
-      "spec_refs": [],
-      "runbook_refs": [
-        "docs/runbooks/pr-preflight.md"
-      ],
-      "verification_refs": [],
-      "results_refs": [
-        "docs/rules/parallel-development-safety.md",
-        "docs/runbooks/pr-preflight.md"
+      "verification_evidence": [
+        "docs/verification/"
       ]
     }
-  ]
+  },
+  "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links."
 }

@@ -40,6 +40,21 @@ Copy/paste this into any AI before starting:
 > Use `docs/status/trace-index.json` as trace link SSOT.
 > In task cards always declare Allowed/Forbidden paths and Required LOCKS; if LOCK conflicts exist, stop and return.
 
+
+## PR LOCK declaration (required in PR descriptions)
+
+When opening or updating a PR, include a short lock block in the PR description:
+
+```
+Required Locks:
+- LOCK:<name>
+
+Releases Locks:
+- LOCK:<name>
+```
+
+If lock ownership is unknown, state `LOCK status: unknown` and do not proceed with conflicting work until resolved in `docs/status/status.json`.
+
 ## Mandatory operating reminders
 
 - **Stop protocol (Multi-AI / Credit-out):** if stopping, pausing, or handing over, update `docs/status/HANDOFF.json` and `docs/handoff/HANDOFF.json` with `what_done`, `what_next`, `errors`, `commands_next`.
