@@ -239,35 +239,34 @@ def test_orderbook_bbo_latest_reports_stale_and_degraded(monkeypatch, tmp_path: 
     assert body["reason"] == "ORDERBOOK_GAP"
 
 
-def test_gold_api_bad_input_returns_400_with_error_codes(monkeypatch, tmp_path: Path) -> None:
+def test_gold_api_input_validation_returns_400_with_error_codes(monkeypatch, tmp_path: Path) -> None:
     db_file = tmp_path / "md.sqlite3"
     _prep_db(db_file)
-
     monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
     monkeypatch.setattr(main._poller, "run_forever", _idle_poller)
 
     with TestClient(main.app) as client:
-        missing_orderbook = client.get("/orderbook/bbo/latest?market_id=spot")
-        missing_state = client.get("/orderbook/state?venue_id=gmo")
-        invalid_tf = client.get("/ohlcv/latest?venue_id=gmo&market_id=spot&tf=bogus")
-        invalid_ts = client.get("/ohlcv/range?venue_id=gmo&market_id=spot&tf=1m&from=bad-ts&to=2026-02-16T00:02:00Z")
-        invalid_range = client.get("/ohlcv/range?venue_id=gmo&market_id=spot&tf=1m&from=2026-02-16T00:03:00Z&to=2026-02-16T00:02:00Z")
-        partial_ticker = client.get("/ticker/latest?venue_id=gmo&market_id=spot")
+        r1 = client.get("/orderbook/bbo/latest?market_id=spot")
+        r2 = client.get("/orderbook/state?venue_id=gmo")
+        r3 = client.get("/ticker/latest?venue_id=gmo&market_id=spot")
+        r4 = client.get("/ohlcv/latest?venue_id=gmo&market_id=spot&tf=BAD")
+        r5 = client.get("/ohlcv/range?venue_id=gmo&market_id=spot&tf=1m&from=bad&to=2026-02-16T00:00:00Z")
+        r6 = client.get("/ohlcv/range?venue_id=gmo&market_id=spot&tf=1m&from=2026-02-16T00:01:00Z&to=2026-02-16T00:00:00Z")
 
-    assert missing_orderbook.status_code == 400
-    assert missing_orderbook.json()["code"] == "MISSING_REQUIRED_QUERY"
+    assert r1.status_code == 400
+    assert r1.json()["code"] == "MISSING_VENUE_ID"
 
-    assert missing_state.status_code == 400
-    assert missing_state.json()["code"] == "MISSING_REQUIRED_QUERY"
+    assert r2.status_code == 400
+    assert r2.json()["code"] == "MISSING_MARKET_ID"
 
-    assert invalid_tf.status_code == 400
-    assert invalid_tf.json()["code"] == "INVALID_TIMEFRAME"
+    assert r3.status_code == 400
+    assert r3.json()["code"] == "MISSING_IDENTIFIERS"
 
-    assert invalid_ts.status_code == 400
-    assert invalid_ts.json()["code"] == "INVALID_TIMESTAMP"
+    assert r4.status_code == 400
+    assert r4.json()["code"] == "INVALID_TF"
 
-    assert invalid_range.status_code == 400
-    assert invalid_range.json()["code"] == "INVALID_TIME_RANGE"
+    assert r5.status_code == 400
+    assert r5.json()["code"] == "INVALID_FROM_TS"
 
-    assert partial_ticker.status_code == 400
-    assert partial_ticker.json()["code"] == "MISSING_REQUIRED_QUERY"
+    assert r6.status_code == 400
+    assert r6.json()["code"] == "INVALID_TS_RANGE"

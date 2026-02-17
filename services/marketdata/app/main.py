@@ -352,6 +352,25 @@ def _connect_read_repo() -> MarketDataMetaRepository:
 
 
 
+
+
+def _validation_error(request_id: str, *, code: str, message: str, details: dict[str, Any] | None = None) -> JSONResponse:
+    return JSONResponse(
+        status_code=400,
+        content=error_envelope(code=code, message=message, details=details or {}, request_id=request_id),
+    )
+
+
+def _is_valid_tf(tf: str) -> bool:
+    return tf in {"1m", "5m", "15m", "1h", "1d", "1min", "5min", "15min", "1hour", "1day"}
+
+
+def _is_valid_rfc3339(ts: str) -> bool:
+    try:
+        _ = _parse_rfc3339(ts)
+        return True
+    except ValueError:
+        return False
 app = FastAPI(title="profinaut-marketdata", version="0.1.0")
 app.add_middleware(request_id_middleware())
 app.include_router(health_router)
@@ -528,16 +547,10 @@ async def orderbook_bbo_latest(
     market_id: str | None = Query(default=None),
 ) -> JSONResponse:
     request_id = getattr(request.state, "request_id", "unknown")
-    venue = _validate_required_text("venue_id", venue_id)
-    market = _validate_required_text("market_id", market_id)
-    if venue is None or market is None:
-        return _gold_bad_request(
-            request_id,
-            code="MISSING_REQUIRED_QUERY",
-            message="venue_id and market_id are required",
-            details={"required": ["venue_id", "market_id"]},
-        )
-
+    if not venue_id:
+        return _validation_error(request_id, code="MISSING_VENUE_ID", message="venue_id is required")
+    if not market_id:
+        return _validation_error(request_id, code="MISSING_MARKET_ID", message="market_id is required")
     try:
         repo = _connect_read_repo()
     except RuntimeError as exc:
@@ -572,16 +585,10 @@ async def orderbook_state(
     market_id: str | None = Query(default=None),
 ) -> JSONResponse:
     request_id = getattr(request.state, "request_id", "unknown")
-    venue = _validate_required_text("venue_id", venue_id)
-    market = _validate_required_text("market_id", market_id)
-    if venue is None or market is None:
-        return _gold_bad_request(
-            request_id,
-            code="MISSING_REQUIRED_QUERY",
-            message="venue_id and market_id are required",
-            details={"required": ["venue_id", "market_id"]},
-        )
-
+    if not venue_id:
+        return _validation_error(request_id, code="MISSING_VENUE_ID", message="venue_id is required")
+    if not market_id:
+        return _validation_error(request_id, code="MISSING_MARKET_ID", message="market_id is required")
     try:
         repo = _connect_read_repo()
     except RuntimeError as exc:
@@ -616,25 +623,13 @@ async def ticker_latest(
 
     provided = [venue_id is not None, market_id is not None, instrument_id is not None]
     if any(provided) and not all(provided):
-        return _gold_bad_request(
+        return _validation_error(
             request_id,
-            code="MISSING_REQUIRED_QUERY",
-            message="venue_id, market_id, instrument_id must be provided together",
-            details={"required_together": ["venue_id", "market_id", "instrument_id"]},
+            code="MISSING_IDENTIFIERS",
+            message="venue_id, market_id and instrument_id must be provided together",
         )
 
-    if all(provided):
-        venue = str(venue_id).strip()
-        market = str(market_id).strip()
-        instrument = str(instrument_id).strip()
-        if not venue or not market or not instrument:
-            return _gold_bad_request(
-                request_id,
-                code="MISSING_REQUIRED_QUERY",
-                message="venue_id, market_id, instrument_id must be non-empty",
-                details={"required_together": ["venue_id", "market_id", "instrument_id"]},
-            )
-
+    if venue_id and market_id and instrument_id:
         try:
             repo = _connect_read_repo()
         except RuntimeError as exc:
@@ -710,26 +705,9 @@ async def ohlcv_latest(
     timeframe: str | None = Query(default=None),
 ) -> JSONResponse:
     request_id = getattr(request.state, "request_id", "unknown")
-    venue = _validate_required_text("venue_id", venue_id)
-    market = _validate_required_text("market_id", market_id)
-    if venue is None or market is None:
-        return _gold_bad_request(
-            request_id,
-            code="MISSING_REQUIRED_QUERY",
-            message="venue_id and market_id are required",
-            details={"required": ["venue_id", "market_id"]},
-        )
-
-    effective_tf_raw = str(timeframe or tf)
-    effective_tf = _normalize_tf(effective_tf_raw)
-    if effective_tf is None:
-        return _gold_bad_request(
-            request_id,
-            code="INVALID_TIMEFRAME",
-            message="tf/timeframe is invalid",
-            details={"tf": effective_tf_raw, "allowed": ["1m", "5m", "15m", "1h", "1d"]},
-        )
-
+    effective_tf = str(timeframe or tf)
+    if not _is_valid_tf(effective_tf):
+        return _validation_error(request_id, code="INVALID_TF", message="timeframe is invalid", details={"tf": effective_tf})
     try:
         repo = _connect_read_repo()
     except RuntimeError as exc:
@@ -777,52 +755,14 @@ async def ohlcv_range(
     limit: int = Query(default=100, ge=1, le=1000),
 ) -> JSONResponse:
     request_id = getattr(request.state, "request_id", "unknown")
-    venue = _validate_required_text("venue_id", venue_id)
-    market = _validate_required_text("market_id", market_id)
-    if venue is None or market is None:
-        return _gold_bad_request(
-            request_id,
-            code="MISSING_REQUIRED_QUERY",
-            message="venue_id and market_id are required",
-            details={"required": ["venue_id", "market_id"]},
-        )
-
-    effective_tf = _normalize_tf(tf)
-    if effective_tf is None:
-        return _gold_bad_request(
-            request_id,
-            code="INVALID_TIMEFRAME",
-            message="tf is invalid",
-            details={"tf": tf, "allowed": ["1m", "5m", "15m", "1h", "1d"]},
-        )
-
-    if not from_ts or not to_ts:
-        return _gold_bad_request(
-            request_id,
-            code="MISSING_REQUIRED_QUERY",
-            message="from and to are required",
-            details={"required": ["from", "to"]},
-        )
-
-    try:
-        from_dt = _parse_rfc3339(from_ts)
-        to_dt = _parse_rfc3339(to_ts)
-    except ValueError:
-        return _gold_bad_request(
-            request_id,
-            code="INVALID_TIMESTAMP",
-            message="from/to must be RFC3339 timestamps",
-            details={"from": from_ts, "to": to_ts},
-        )
-
-    if to_dt < from_dt:
-        return _gold_bad_request(
-            request_id,
-            code="INVALID_TIME_RANGE",
-            message="to must be greater than or equal to from",
-            details={"from": from_ts, "to": to_ts},
-        )
-
+    if not _is_valid_tf(tf):
+        return _validation_error(request_id, code="INVALID_TF", message="timeframe is invalid", details={"tf": tf})
+    if not _is_valid_rfc3339(from_ts):
+        return _validation_error(request_id, code="INVALID_FROM_TS", message="from must be RFC3339", details={"from": from_ts})
+    if not _is_valid_rfc3339(to_ts):
+        return _validation_error(request_id, code="INVALID_TO_TS", message="to must be RFC3339", details={"to": to_ts})
+    if _parse_rfc3339(from_ts) > _parse_rfc3339(to_ts):
+        return _validation_error(request_id, code="INVALID_TS_RANGE", message="from must be <= to")
     try:
         repo = _connect_read_repo()
     except RuntimeError as exc:
