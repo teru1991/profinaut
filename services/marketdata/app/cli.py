@@ -52,8 +52,8 @@ def main() -> int:
         print(
             json.dumps(
                 {
-                    "from_ts": args.from_ts,
-                    "to_ts": args.to_ts,
+                    "from": args.from_ts,
+                    "to": args.to_ts,
                     "venue": args.venue,
                     "market": args.market,
                     "source_type": args.source_type,
