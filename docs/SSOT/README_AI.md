@@ -1,31 +1,22 @@
-# README_AI (Canonical Docs Development OS Entry)
+# README_AI (SSOT entrypoint for operators)
 
-This is the **canonical SSOT entrypoint** for AI agents and humans operating this repository's docs workflow.
+This page is the must-read entrypoint for AI/human operators before starting work.
 
-## Must-read order
-1. North Star (What): `docs/workplan/ultimate-gold-implementation-feature-list.md`
-2. Now/Progress (Now): `docs/status/ultimate-gold-progress-check.md`
-3. Machine-readable current status: `docs/status/status.json`
-4. Traceability SSOT: `docs/status/trace-index.json`
-5. Rules SSOT: `docs/specs/parallel-task-safety.md`
-6. Runbooks: `docs/runbooks/**`
-7. Verification evidence: `docs/verification/**`
-8. Progress evidence logs: `docs/status/progress-updates/*`
-9. Handoff protocol: `docs/handoff/HANDOFF.json`
-10. Decision log: `docs/decisions/decisions.md`
+## Must-read links (in order)
 
-## Canonical SSOT declarations
-- **North Star (What)** → `docs/workplan/ultimate-gold-implementation-feature-list.md`
-- **Now/Progress (Now)** → `docs/status/ultimate-gold-progress-check.md`
-- **Evidence** → `docs/status/progress-updates/*`
-- **Rules SSOT** → `docs/specs/parallel-task-safety.md`
-- **Runbooks** → `docs/runbooks/**`
-- **Verification** → `docs/verification/**`
-- **Credit-out / Stop protocol** → update `docs/handoff/HANDOFF.json` before stopping
-- **Decision logging** → append to `docs/decisions/decisions.md`
-- **Traceability SSOT** → `docs/status/trace-index.json`
+1. This file: `docs/SSOT/README_AI.md`
+2. Runtime status: `docs/status/status.json`
+3. Handoff state: `docs/status/HANDOFF.json`
+4. Decision baseline: `docs/status/decisions.md`
+5. Rules SSOT:
+   - `docs/rules/task-generation-policy.md`
+   - `docs/rules/parallel-development-safety.md`
 
-## Update policy (mandatory)
-- You MUST NOT claim progress unless it is reflected in `docs/status/status.json` or `docs/status/progress-updates/*`.
-- When an AI agent stops, hands off, or is replaced, updating `docs/handoff/HANDOFF.json` is mandatory.
-- PR URLs, commits, and requirement/evidence link mappings are SSOT in `docs/status/trace-index.json`; do not maintain separate competing link lists in other docs.
+## Mandatory operating reminders
+
+- **Stop protocol (Multi-AI / Credit-out):** if stopping, pausing, or handing over, update `docs/status/HANDOFF.json` with `what_done`, `what_next`, `errors`, `commands_next`.
+- **Single active task:** only one active task is tracked in `docs/status/status.json`.
+- **Progress claim evidence:** update `docs/status/status.json` or append `docs/status/progress-updates/*` before claiming progress.
+- **LOCK areas:** lock-sensitive areas include contracts/ci/infra/lockfiles and shared-docs (`docs/SSOT/**`, `docs/rules/**`, docs hubs). Declare `Required Locks` in task cards.
+- **Trace SSOT:** `docs/status/trace-index.md` is the canonical place for PR/commit/evidence links.
+- **Decisions are binding:** use `docs/status/decisions.md` to fix assumptions and supersede only via explicit new decision entries.

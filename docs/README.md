@@ -10,7 +10,8 @@ This is the documentation hub for Profinaut.
 - Ultimate Gold implementation feature list: [`workplan/ultimate-gold-implementation-feature-list.md`](workplan/ultimate-gold-implementation-feature-list.md)
 
 ## Specifications
-- Parallel task safety (SSOT for parallel development safety): [`specs/parallel-task-safety.md`](specs/parallel-task-safety.md)
+- Rules SSOT (task generation + parallel safety): [`rules/task-generation-policy.md`](rules/task-generation-policy.md), [`rules/parallel-development-safety.md`](rules/parallel-development-safety.md)
+- AI operator onboarding SSOT: [`SSOT/README_AI.md`](SSOT/README_AI.md)
 - Controlplane bots: [`specs/controlplane-bots.md`](specs/controlplane-bots.md)
 - UI bots: [`specs/ui-bots.md`](specs/ui-bots.md)
 - Execution: [`specs/execution.md`](specs/execution.md)

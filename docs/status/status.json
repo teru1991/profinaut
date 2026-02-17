@@ -1,13 +1,7 @@
 {
-  "base_branch": "main",
-  "active_epic": "docs-os",
-  "active_task": "DOC-OS-001",
-  "open_prs": [],
-  "locks_held": [],
-  "next_actions": [
-    "Keep docs/status/status.json synchronized with current docs scope.",
-    "Append decisions to docs/decisions/decisions.md when operating rules change.",
-    "Update docs/status/trace-index.json whenever PR/commit/evidence links change."
-  ],
-  "last_updated": "2026-02-17T00:00:00Z"
+  "active_task": null,
+  "owner": null,
+  "state": "idle",
+  "last_updated": "1970-01-01T00:00:00Z",
+  "notes": "Update this file when task ownership or state changes."
 }
