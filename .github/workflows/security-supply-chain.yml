@@ -2,6 +2,8 @@ name: Security Supply Chain Guardrails
 
 on:
   pull_request:
+  schedule:
+    - cron: "17 2 * * *"
   workflow_dispatch:
 
 permissions:
@@ -30,7 +32,20 @@ jobs:
           name: cyclonedx-sbom
           path: sbom.cyclonedx.json
 
-      - name: Run vulnerability scan (Trivy filesystem scan)
+      - name: Run vulnerability scan (Trivy filesystem scan, non-blocking for PR)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+
+      - name: Run vulnerability scan (Trivy filesystem scan, blocking for schedule/dispatch)
+        if: github.event_name != 'pull_request'
         uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: fs
