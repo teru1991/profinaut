@@ -22,6 +22,7 @@ class NormalizeResult:
     event_type: str | None
 
 
+_ORDERBOOK_LOCK = threading.Lock()
 _ORDERBOOK_ENGINES: dict[tuple[str, str], OrderbookEngine] = {}
 _ORDERBOOK_LAST_SEQ: dict[tuple[str, str], int | None] = {}
 _ORDERBOOK_REQUIRE_SNAPSHOT: dict[tuple[str, str], bool] = {}
