@@ -1,12 +1,15 @@
 {
-  "active_task": "CI-010",
+  "active_task": "CI-010-B",
   "what_done": [
-    "Ran Docs OS preflight reads in required order.",
-    "Normalized docs/status/status.json required keys for preflight compatibility."
+    "Added .github/dependency-review.yml and wired dependency-review workflow config-file to enforce fail-on-severity: high.",
+    "Updated security-supply-chain workflow to run Trivy non-blocking on pull_request and blocking on schedule/workflow_dispatch.",
+    "Hardened scripts/security/artifact_guard.sh to pass cleanly when changed-file set is empty.",
+    "Appended CI-010-B hardening and verification notes to docs/audits/ci-workflows-audit.md."
   ],
   "what_next": [
-    "Complete workflow inventory and publish ci-workflows-audit.md.",
-    "Publish gap plan and apply minimal workflow updates under .github/workflows/."
+    "Validate in PR checks that Dependency Review enforces configured policy and that Trivy findings are warn-only on pull_request.",
+    "Run workflow_dispatch for security-supply-chain to verify blocking branch fails on HIGH/CRITICAL findings.",
+    "If regressions appear, apply rollback plan by reverting supply-chain Trivy split and dependency-review config wiring."
   ],
   "open_pr": "",
   "locks_held": [
@@ -14,8 +17,9 @@
   ],
   "errors": [],
   "commands_next": [
-    "rg --files .github/workflows",
-    "sed -n '1,260p' .github/workflows/ci.yml",
-    "sed -n '1,260p' .github/workflows/security-supply-chain.yml"
+    "gh workflow run security-supply-chain.yml",
+    "gh run list --workflow security-supply-chain.yml --limit 5",
+    "gh run view --log <run-id>",
+    "gh pr checks <pr-number>"
   ]
 }

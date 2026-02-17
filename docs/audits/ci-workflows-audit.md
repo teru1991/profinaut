@@ -94,3 +94,31 @@
 | Path-based optimization | ○ | Present in core `ci.yml` and targeted workflows. |
 | PR template/required checks operational alignment in runbooks | △ | `docs/runbooks/pr-preflight.md` has generic checklist, but no explicit required-check list tied to current workflow names. |
 
+
+---
+
+## 4) CI-010-B follow-up hardening (ci-security-guardrails-tuning)
+
+### Implemented changes
+
+1. Added `.github/dependency-review.yml` and wired `actions/dependency-review-action` to use `with: config-file: .github/dependency-review.yml`.
+   - Policy now enforces `fail-on-severity: high` for PR dependency changes.
+2. Updated `security-supply-chain.yml` trigger/behavior split:
+   - `pull_request`: Trivy runs with `continue-on-error: true` (warn-only behavior).
+   - `schedule` and `workflow_dispatch`: Trivy remains blocking (`exit-code: '1'`) for HIGH/CRITICAL findings.
+3. Hardened `scripts/security/artifact_guard.sh` for zero-diff stability:
+   - If no changed files are detected, it exits successfully with an explicit pass message.
+
+### Verification notes
+
+- Local static validation confirmed workflow branches and config linkage are present.
+- PR runtime validation target:
+  - `Dependency Review` should fail when dependency updates include HIGH+ severity advisories.
+  - `Security Supply Chain Guardrails` should not fail entire PR checks solely due to Trivy findings.
+- Schedule/runtime validation target:
+  - Trigger via `workflow_dispatch` as schedule proxy; blocking Trivy path (`if: github.event_name != 'pull_request'`) must fail on HIGH/CRITICAL.
+
+### Rollback ready
+
+- Revert `security-supply-chain.yml` to single Trivy step without `continue-on-error` for PR.
+- Remove `.github/dependency-review.yml` and `config-file` binding from dependency-review workflow.

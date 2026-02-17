@@ -31,13 +31,20 @@ is_forbidden_path() {
 main() {
   local forbidden_files=()
   local changed_file=""
+  local changed_count=0
 
   while IFS= read -r changed_file; do
     [[ -z "$changed_file" ]] && continue
+    changed_count=$((changed_count + 1))
     if is_forbidden_path "$changed_file"; then
       forbidden_files+=("$changed_file")
     fi
   done < <(read_changed_files "$@")
+
+  if [[ "$changed_count" -eq 0 ]]; then
+    echo "✅ Artifact guard passed: no changed files detected (nothing to validate)."
+    return 0
+  fi
 
   if [[ "${#forbidden_files[@]}" -gt 0 ]]; then
     echo "❌ Generated artifact files are not allowed in PR commits."
