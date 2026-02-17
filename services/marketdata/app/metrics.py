@@ -80,26 +80,26 @@ class IngestMetrics:
 ingest_metrics = IngestMetrics()
 
 
-class NormalizationMetrics:
+class QualityGateMetrics:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._anomaly_total = 0
-        self._anomaly_by_code: dict[str, int] = {}
+        self._by_code: dict[str, int] = {}
 
-    def record_anomaly(self, code: str) -> None:
-        key = str(code or "UNKNOWN")
+    def record_anomaly(self, *, code: str) -> None:
+        key = str(code or "UNKNOWN").upper()
         with self._lock:
             self._anomaly_total += 1
-            self._anomaly_by_code[key] = self._anomaly_by_code.get(key, 0) + 1
+            self._by_code[key] = int(self._by_code.get(key, 0)) + 1
 
     def summary(self) -> dict[str, object]:
         with self._lock:
-            return {"anomaly_total": self._anomaly_total, "anomaly_by_code": dict(self._anomaly_by_code)}
+            return {"anomaly_total": self._anomaly_total, "by_code": dict(self._by_code)}
 
     def reset_for_tests(self) -> None:
         with self._lock:
             self._anomaly_total = 0
-            self._anomaly_by_code.clear()
+            self._by_code.clear()
 
 
-normalization_metrics = NormalizationMetrics()
+quality_gate_metrics = QualityGateMetrics()

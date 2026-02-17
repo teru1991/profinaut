@@ -192,7 +192,7 @@ def run_backfill_ohlcv(
                 raw_msg_id=raw_msg_id,
                 venue_id=venue,
                 market_id=market,
-                instrument_id=symbol_value,
+                instrument_id=market,
                 timeframe=parsed["timeframe"],
                 open_ts=parsed["open_ts"],
                 open_price=parsed["open"],
