@@ -11,6 +11,7 @@ class IngestMetrics:
         self._ingest_count = 0
         self._ingest_fail_count = 0
         self._dup_suspect_count = 0
+        self._dup_suspect_total = 0
         self._success_timestamps: deque[datetime] = deque()
         self._fail_timestamps: deque[datetime] = deque()
         self._dup_timestamps: deque[datetime] = deque()
@@ -28,7 +29,17 @@ class IngestMetrics:
             self._success_timestamps.append(now)
             if dup_suspect:
                 self._dup_suspect_count += 1
+                self._dup_suspect_total += 1
                 self._dup_timestamps.append(now)
+            self._prune(now)
+
+
+    def record_trade_duplicate(self) -> None:
+        now = datetime.now(UTC)
+        with self._lock:
+            self._dup_suspect_count += 1
+            self._dup_suspect_total += 1
+            self._dup_timestamps.append(now)
             self._prune(now)
 
     def record_failure(self) -> None:
@@ -60,6 +71,7 @@ class IngestMetrics:
             self._ingest_count = 0
             self._ingest_fail_count = 0
             self._dup_suspect_count = 0
+            self._dup_suspect_total = 0
             self._success_timestamps.clear()
             self._fail_timestamps.clear()
             self._dup_timestamps.clear()
