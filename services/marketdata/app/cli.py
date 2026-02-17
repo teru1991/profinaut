@@ -19,8 +19,9 @@ def _build_parser() -> argparse.ArgumentParser:
     replay.add_argument("--market", default=None, help="Optional market filter")
     replay.add_argument("--source-type", default=None, help="Optional source type filter")
     replay.add_argument("--parser-version", default="v0.1", help="Parser version to stamp")
-    replay.add_argument("--dry-run", action="store_true", help="Count only, do not write")
-    replay.add_argument("--write", action="store_true", help="Enable write mode (default is read-only)")
+    group = replay.add_mutually_exclusive_group()
+    group.add_argument("--dry-run", action="store_true", help="Count only, do not write")
+    group.add_argument("--write", action="store_true", help="Enable write mode (default is read-only)")
 
     return parser
 
