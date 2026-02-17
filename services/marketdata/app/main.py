@@ -494,6 +494,8 @@ async def orderbook_bbo_latest(
 
     stale_ms = int(os.getenv("LATEST_STALE_MS", "30000"))
     stale, _ = _compute_stale(str(state.get("as_of") or state.get("last_update_ts")), stale_ms / 1000)
+    stale_reason = "ORDERBOOK_STATE_STALE" if stale and not state.get("reason") else state.get("reason")
+    degraded = bool(state.get("degraded")) or stale
     return JSONResponse(
         status_code=200,
         content={
@@ -502,8 +504,8 @@ async def orderbook_bbo_latest(
             "as_of": state.get("as_of"),
             "bid": None if state.get("bid_px") is None else {"price": state.get("bid_px"), "size": state.get("bid_qty")},
             "ask": None if state.get("ask_px") is None else {"price": state.get("ask_px"), "size": state.get("ask_qty")},
-            "degraded": bool(state.get("degraded")),
-            "reason": state.get("reason"),
+            "degraded": degraded,
+            "reason": stale_reason,
         },
     )
 
