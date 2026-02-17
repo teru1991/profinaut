@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from services.marketdata.app import main
-from services.marketdata.app.metrics import ingest_metrics
+from services.marketdata.app.metrics import ingest_metrics, normalization_metrics
 
 
 async def _idle_poller() -> None:
@@ -134,3 +134,112 @@ def test_orderbook_gap_sets_degraded_state(monkeypatch, tmp_path: Path) -> None:
     state = conn.execute("SELECT degraded, reason FROM md_orderbook_state WHERE venue_id='gmo' AND market_id='spot'").fetchone()
     assert gap is not None
     assert state == (1, "ORDERBOOK_GAP")
+
+
+def test_quality_gates_record_trade_anomaly(monkeypatch, tmp_path: Path) -> None:
+    ingest_metrics.reset_for_tests()
+    normalization_metrics.reset_for_tests()
+    db_file = tmp_path / "md.sqlite3"
+    bronze_root = tmp_path / "bronze"
+
+    monkeypatch.setenv("OBJECT_STORE_BACKEND", "fs")
+    monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
+    monkeypatch.setenv("BRONZE_FS_ROOT", str(bronze_root))
+    monkeypatch.setenv("SILVER_ENABLED", "1")
+    monkeypatch.setenv("MARKETDATA_QUALITY_GATES_ENABLED", "1")
+    monkeypatch.setattr(main._poller, "run_forever", _idle_poller)
+
+    with TestClient(main.app) as client:
+        resp = client.post(
+            "/raw/ingest",
+            json={
+                "tenant_id": "tenant-a",
+                "source_type": "WS_PUBLIC",
+                "received_ts": "2026-02-16T00:00:01Z",
+                "payload_json": {"price": -1, "qty": 1, "side": "buy"},
+                "venue_id": "gmo",
+                "market_id": "spot",
+                "instrument_id": "btc_jpy",
+            },
+        )
+
+    assert resp.status_code == 200
+    conn = sqlite3.connect(db_file)
+    assert conn.execute("SELECT COUNT(*) FROM md_trades").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM md_events_json WHERE event_type='md_data_anomaly'").fetchone()[0] == 1
+    assert normalization_metrics.summary()["anomaly_total"] >= 1
+
+
+def test_quality_gates_record_ohlcv_anomaly(monkeypatch, tmp_path: Path) -> None:
+    normalization_metrics.reset_for_tests()
+    db_file = tmp_path / "md.sqlite3"
+    bronze_root = tmp_path / "bronze"
+
+    monkeypatch.setenv("OBJECT_STORE_BACKEND", "fs")
+    monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
+    monkeypatch.setenv("BRONZE_FS_ROOT", str(bronze_root))
+    monkeypatch.setenv("SILVER_ENABLED", "1")
+    monkeypatch.setenv("MARKETDATA_QUALITY_GATES_ENABLED", "1")
+    monkeypatch.setattr(main._poller, "run_forever", _idle_poller)
+
+    with TestClient(main.app) as client:
+        resp = client.post(
+            "/raw/ingest",
+            json={
+                "tenant_id": "tenant-a",
+                "source_type": "REST",
+                "received_ts": "2026-02-16T00:00:01Z",
+                "payload_json": {
+                    "timeframe": "1m",
+                    "open_ts": "2026-02-16T00:00:00Z",
+                    "open": 100,
+                    "high": 90,
+                    "low": 80,
+                    "close": 95,
+                    "volume": 1,
+                    "is_final": True,
+                },
+                "venue_id": "gmo",
+                "market_id": "spot",
+                "instrument_id": "btc_jpy",
+            },
+        )
+
+    assert resp.status_code == 200
+    conn = sqlite3.connect(db_file)
+    assert conn.execute("SELECT COUNT(*) FROM md_ohlcv").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM md_events_json WHERE event_type='md_data_anomaly'").fetchone()[0] == 1
+
+
+def test_quality_gates_record_crossed_bbo_anomaly_and_mark_degraded(monkeypatch, tmp_path: Path) -> None:
+    normalization_metrics.reset_for_tests()
+    db_file = tmp_path / "md.sqlite3"
+    bronze_root = tmp_path / "bronze"
+
+    monkeypatch.setenv("OBJECT_STORE_BACKEND", "fs")
+    monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
+    monkeypatch.setenv("BRONZE_FS_ROOT", str(bronze_root))
+    monkeypatch.setenv("SILVER_ENABLED", "1")
+    monkeypatch.setenv("MARKETDATA_QUALITY_GATES_ENABLED", "1")
+    monkeypatch.setattr(main._poller, "run_forever", _idle_poller)
+
+    with TestClient(main.app) as client:
+        resp = client.post(
+            "/raw/ingest",
+            json={
+                "tenant_id": "tenant-a",
+                "source_type": "WS_PUBLIC",
+                "received_ts": "2026-02-16T00:00:01Z",
+                "payload_json": {"bid_px": 101, "bid_qty": 1, "ask_px": 100, "ask_qty": 1},
+                "venue_id": "gmo",
+                "market_id": "spot",
+            },
+        )
+
+    assert resp.status_code == 200
+    conn = sqlite3.connect(db_file)
+    assert conn.execute("SELECT COUNT(*) FROM md_best_bid_ask").fetchone()[0] == 0
+    anomaly = conn.execute("SELECT event_type FROM md_events_json WHERE event_type='md_data_anomaly'").fetchone()
+    state = conn.execute("SELECT degraded, reason FROM md_orderbook_state WHERE venue_id='gmo' AND market_id='spot'").fetchone()
+    assert anomaly is not None
+    assert state == (1, "DATA_INVALID")
