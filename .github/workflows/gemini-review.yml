@@ -1,8 +1,6 @@
 name: Gemini PR Review (with GitHub Suggestions)
 
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened, ready_for_review]
   issue_comment:
     types: [created]
 
@@ -18,11 +16,9 @@ concurrency:
 jobs:
   review:
     if: |
-      (github.event_name == 'issue_comment' &&
-        github.event.issue.pull_request &&
-        contains(github.event.comment.body, '/gemini review'))
-      ||
-      (github.event_name == 'pull_request_target' && github.event.pull_request.draft == false)
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/gemini review')
 
     runs-on: ubuntu-latest
 
@@ -32,10 +28,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const isIssueComment = context.eventName === 'issue_comment';
-            const prNumber = isIssueComment
-              ? context.payload.issue.number
-              : context.payload.pull_request.number;
+            const prNumber = context.payload.issue.number;
 
             const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,
@@ -43,23 +36,61 @@ jobs:
               pull_number: prNumber,
             });
 
+            const authorAssociation = context.payload.comment.author_association || 'NONE';
+            const allowedAssociations = ['OWNER', 'MEMBER', 'COLLABORATOR'];
+            const isTrustedRequester = allowedAssociations.includes(authorAssociation);
+
             // Safe-by-default: do not use repository secrets on fork PRs.
             const isFork = pr.head.repo.full_name !== pr.base.repo.full_name;
 
             core.setOutput('number', String(prNumber));
             core.setOutput('isFork', String(isFork));
+            core.setOutput('isTrustedRequester', String(isTrustedRequester));
+            core.setOutput('authorAssociation', authorAssociation);
             core.setOutput('headSha', pr.head.sha);
             core.setOutput('baseSha', pr.base.sha);
             core.setOutput('title', pr.title || '');
             core.setOutput('author', pr.user?.login || '');
 
+      - name: Skip untrusted requesters
+        if: steps.pr.outputs.isTrustedRequester != 'true'
+        run: |
+          echo "Comment author association '${{ steps.pr.outputs.authorAssociation }}' is not allowed to trigger Gemini review."
+
       - name: Skip forks (safe default)
-        if: steps.pr.outputs.isFork == 'true'
+        if: steps.pr.outputs.isTrustedRequester == 'true' && steps.pr.outputs.isFork == 'true'
         run: |
           echo "Fork PR detected; skipping Gemini review to avoid secrets exposure."
 
+      - name: Guard required secret
+        if: steps.pr.outputs.isTrustedRequester == 'true' && steps.pr.outputs.isFork != 'true'
+        id: secret_guard
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "${GEMINI_API_KEY}" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Comment missing secret
+        if: steps.pr.outputs.isTrustedRequester == 'true' && steps.pr.outputs.isFork != 'true' && steps.secret_guard.outputs.present != 'true'
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        with:
+          script: |
+            const prNumber = Number(process.env.PR_NUMBER);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: '⚠️ Geminiレビューを実行できませんでした。`GEMINI_API_KEY` シークレットが未設定です。Repository Settings > Secrets and variables > Actions で設定してください。',
+            });
+
       - name: Fetch PR diff (no checkout)
-        if: steps.pr.outputs.isFork != 'true'
+        if: steps.pr.outputs.isTrustedRequester == 'true' && steps.pr.outputs.isFork != 'true' && steps.secret_guard.outputs.present == 'true'
         id: diff
         uses: actions/github-script@v7
         with:
@@ -85,7 +116,7 @@ jobs:
             fs.writeFileSync('diff.txt', diffText);
 
       - name: Build Gemini prompt
-        if: steps.pr.outputs.isFork != 'true'
+        if: steps.pr.outputs.isTrustedRequester == 'true' && steps.pr.outputs.isFork != 'true' && steps.secret_guard.outputs.present == 'true'
         id: prompt
         run: |
           cat > prompt.txt <<'PROMPT'
@@ -121,15 +152,14 @@ jobs:
           cat diff.txt >> prompt.txt
 
       - name: Call Gemini API
-        if: steps.pr.outputs.isFork != 'true'
+        if: steps.pr.outputs.isTrustedRequester == 'true' && steps.pr.outputs.isFork != 'true' && steps.secret_guard.outputs.present == 'true'
         id: gemini
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
         run: |
           set -euo pipefail
-          : "${GEMINI_API_KEY:?Missing secrets.GEMINI_API_KEY}"
-          MODEL="${GEMINI_MODEL:-gemini-1.5-pro}"
+          MODEL="${GEMINI_MODEL:-gemini-1.5-flash}"
 
           # Build JSON payload using jq to safely handle prompt content
           jq -n --rawfile prompt prompt.txt \
@@ -161,7 +191,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Post review comment to PR
-        if: steps.pr.outputs.isFork != 'true'
+        if: steps.pr.outputs.isTrustedRequester == 'true' && steps.pr.outputs.isFork != 'true' && steps.secret_guard.outputs.present == 'true'
         uses: actions/github-script@v7
         env:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
