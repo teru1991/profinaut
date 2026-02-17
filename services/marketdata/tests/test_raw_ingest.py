@@ -157,3 +157,111 @@ def test_raw_ingest_marks_dup_suspect_and_updates_capabilities_stats(monkeypatch
     assert stats["dup_suspect_count"] >= 1
     assert stats["last_5m"]["ingest_count"] >= 2
     assert stats["last_5m"]["dup_suspect_count"] >= 1
+
+
+def test_gmo_trade_source_msg_key_prefers_upstream_trade_id_and_dedups_md_trades(monkeypatch, tmp_path: Path) -> None:
+    ingest_metrics.reset_for_tests()
+    db_file = tmp_path / "md.sqlite3"
+    bronze_root = tmp_path / "bronze"
+
+    monkeypatch.setenv("OBJECT_STORE_BACKEND", "fs")
+    monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
+    monkeypatch.setenv("BRONZE_FS_ROOT", str(bronze_root))
+    monkeypatch.setenv("SILVER_ENABLED", "1")
+    monkeypatch.setattr(main._poller, "run_forever", _idle_poller)
+
+    payload = {
+        "trade_id": "t-100",
+        "price": "100.1",
+        "qty": "0.5",
+        "side": "BUY",
+    }
+
+    with TestClient(main.app) as client:
+        first = client.post(
+            "/raw/ingest",
+            json={
+                "tenant_id": "tenant-a",
+                "source_type": "WS_PUBLIC",
+                "received_ts": "2026-02-16T00:00:01Z",
+                "event_ts": "2026-02-16T00:00:01Z",
+                "payload_json": payload,
+                "venue_id": "gmo",
+                "market_id": "spot",
+                "stream_name": "trades",
+            },
+        )
+        second = client.post(
+            "/raw/ingest",
+            json={
+                "tenant_id": "tenant-a",
+                "source_type": "WS_PUBLIC",
+                "received_ts": "2026-02-16T00:00:02Z",
+                "event_ts": "2026-02-16T00:00:01Z",
+                "payload_json": payload,
+                "venue_id": "gmo",
+                "market_id": "spot",
+                "stream_name": "trades",
+            },
+        )
+        caps = client.get("/capabilities")
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert second.json()["dup_suspect"] is True
+
+    conn = sqlite3.connect(db_file)
+    count = conn.execute("SELECT COUNT(*) FROM md_trades").fetchone()[0]
+    src_key = conn.execute("SELECT source_msg_key FROM md_trades LIMIT 1").fetchone()[0]
+    assert count == 1
+    assert src_key == "gmo:trade_id:t-100"
+
+    stats = caps.json()["ingest_stats"]
+    assert stats["dup_suspect_total"] >= 1
+
+
+def test_gmo_trade_composite_source_msg_key_is_stable_on_reordered_arrival(monkeypatch, tmp_path: Path) -> None:
+    ingest_metrics.reset_for_tests()
+    db_file = tmp_path / "md.sqlite3"
+    bronze_root = tmp_path / "bronze"
+
+    monkeypatch.setenv("OBJECT_STORE_BACKEND", "fs")
+    monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
+    monkeypatch.setenv("BRONZE_FS_ROOT", str(bronze_root))
+    monkeypatch.setenv("SILVER_ENABLED", "1")
+    monkeypatch.setattr(main._poller, "run_forever", _idle_poller)
+
+    base = {
+        "tenant_id": "tenant-a",
+        "source_type": "WS_PUBLIC",
+        "event_ts": "2026-02-16T00:00:10Z",
+        "payload_json": {
+            "price": "101.0",
+            "qty": "0.75",
+            "side": "sell",
+            "sequence": 20,
+        },
+        "venue_id": "gmo",
+        "market_id": "spot",
+        "stream_name": "trades",
+        "seq": 20,
+    }
+
+    with TestClient(main.app) as client:
+        newer = client.post(
+            "/raw/ingest",
+            json={**base, "received_ts": "2026-02-16T00:00:20Z"},
+        )
+        older = client.post(
+            "/raw/ingest",
+            json={**base, "received_ts": "2026-02-16T00:00:05Z"},
+        )
+
+    assert newer.status_code == 200
+    assert older.status_code == 200
+
+    conn = sqlite3.connect(db_file)
+    count = conn.execute("SELECT COUNT(*) FROM md_trades").fetchone()[0]
+    src_key = conn.execute("SELECT source_msg_key FROM md_trades LIMIT 1").fetchone()[0]
+    assert count == 1
+    assert src_key == "gmo:trade:v1:gmo:spot:2026-02-16T00:00:10Z:101.0:0.75:sell:20"
