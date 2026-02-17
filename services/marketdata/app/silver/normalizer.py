@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
 import os
@@ -11,6 +12,7 @@ from services.marketdata.app.silver.orderbook import OrderbookEngine
 ORDERBOOK_GAP = "ORDERBOOK_GAP"
 ORDERBOOK_RESYNC_FAILED = "ORDERBOOK_RESYNC_FAILED"
 ORDERBOOK_SEQ_MISSING = "ORDERBOOK_SEQ_MISSING"
+ORDERBOOK_STATE_STALE = "ORDERBOOK_STATE_STALE"
 
 
 @dataclass(frozen=True)
@@ -21,7 +23,7 @@ class NormalizeResult:
 
 _ORDERBOOK_ENGINES: dict[tuple[str, str], OrderbookEngine] = {}
 _ORDERBOOK_LAST_SEQ: dict[tuple[str, str], int | None] = {}
-_ORDERBOOK_DEGRADED_UNTIL_SNAPSHOT: dict[tuple[str, str], bool] = {}
+_ORDERBOOK_REQUIRE_SNAPSHOT: dict[tuple[str, str], bool] = {}
 
 
 def _as_float(value: object) -> float:
@@ -41,50 +43,23 @@ def _parse_seq(value: object) -> int | None:
         return None
 
 
-
-
-def _parse_rfc3339(ts: str) -> datetime | None:
+def _parse_rfc3339(ts: str | None) -> datetime | None:
+    if not ts:
+        return None
     try:
-        return datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(UTC)
+        return datetime.fromisoformat(str(ts).replace("Z", "+00:00")).astimezone(UTC)
     except ValueError:
         return None
 
 
-def _is_warm_state_too_old(last_update_ts: str | None, current_received_ts: str) -> bool:
-    if not last_update_ts:
-        return False
-    max_age = float(os.getenv("ORDERBOOK_WARM_MAX_AGE_SECONDS", "300"))
-    prev = _parse_rfc3339(last_update_ts)
-    now = _parse_rfc3339(current_received_ts)
-    if prev is None or now is None:
-        return False
-    return (now - prev).total_seconds() > max_age
+def _seeded_now() -> datetime:
+    override = os.getenv("ORDERBOOK_WARM_START_NOW_TS", "").strip()
+    if override:
+        parsed = _parse_rfc3339(override)
+        if parsed is not None:
+            return parsed
+    return datetime.now(UTC)
 
-
-def _init_orderbook_runtime_state(repo: MarketDataMetaRepository, *, venue_id: str, market_id: str, received_ts: str) -> None:
-    key = (venue_id, market_id)
-    if key in _ORDERBOOK_ENGINES:
-        return
-
-    engine = OrderbookEngine()
-    state = repo.get_orderbook_state(venue_id=venue_id, market_id=market_id)
-    if state is not None:
-        engine.load_from_bbo(
-            bid_px=None if state.get("bid_px") is None else float(state["bid_px"]),
-            bid_qty=None if state.get("bid_qty") is None else float(state["bid_qty"]),
-            ask_px=None if state.get("ask_px") is None else float(state["ask_px"]),
-            ask_qty=None if state.get("ask_qty") is None else float(state["ask_qty"]),
-        )
-        _ORDERBOOK_LAST_SEQ[key] = _parse_seq(state.get("last_seq"))
-        stale_from_restart = _is_warm_state_too_old(
-            None if state.get("last_update_ts") is None else str(state["last_update_ts"]),
-            received_ts,
-        )
-        _ORDERBOOK_DEGRADED_UNTIL_SNAPSHOT[key] = stale_from_restart
-    else:
-        _ORDERBOOK_LAST_SEQ[key] = None
-        _ORDERBOOK_DEGRADED_UNTIL_SNAPSHOT[key] = False
-    _ORDERBOOK_ENGINES[key] = engine
 
 def _insert_trade(repo: MarketDataMetaRepository, envelope: dict[str, Any], payload: dict[str, Any]) -> None:
     repo.insert_md_trade(
@@ -170,6 +145,50 @@ def _insert_event_hub(
     )
 
 
+def _warm_start_orderbook_if_needed(
+    repo: MarketDataMetaRepository,
+    *,
+    key: tuple[str, str],
+) -> tuple[OrderbookEngine, int | None]:
+    if key in _ORDERBOOK_ENGINES:
+        return _ORDERBOOK_ENGINES[key], _ORDERBOOK_LAST_SEQ.get(key)
+
+    venue_id, market_id = key
+    engine = OrderbookEngine()
+    _ORDERBOOK_ENGINES[key] = engine
+    _ORDERBOOK_LAST_SEQ[key] = None
+    _ORDERBOOK_REQUIRE_SNAPSHOT[key] = False
+
+    persisted = repo.get_orderbook_state(venue_id=venue_id, market_id=market_id)
+    if persisted is None:
+        return engine, None
+
+    bid_px = persisted.get("bid_px")
+    bid_qty = persisted.get("bid_qty")
+    ask_px = persisted.get("ask_px")
+    ask_qty = persisted.get("ask_qty")
+
+    bids: list[dict[str, str]] = []
+    asks: list[dict[str, str]] = []
+    if bid_px is not None and bid_qty is not None:
+        bids.append({"price": str(bid_px), "size": str(bid_qty)})
+    if ask_px is not None and ask_qty is not None:
+        asks.append({"price": str(ask_px), "size": str(ask_qty)})
+    if bids or asks:
+        engine.apply_snapshot({"bids": bids, "asks": asks})
+
+    last_seq = _parse_seq(persisted.get("last_seq"))
+    _ORDERBOOK_LAST_SEQ[key] = last_seq
+
+    now = _seeded_now()
+    stale_after_seconds = float(os.getenv("ORDERBOOK_WARM_START_MAX_AGE_SECONDS", "300"))
+    as_of = _parse_rfc3339(str(persisted.get("as_of") or persisted.get("last_update_ts") or ""))
+    if as_of is not None and (now - as_of).total_seconds() > stale_after_seconds:
+        _ORDERBOOK_REQUIRE_SNAPSHOT[key] = True
+
+    return engine, last_seq
+
+
 def _normalize_orderbook(repo: MarketDataMetaRepository, envelope: dict[str, Any], payload: dict[str, Any]) -> NormalizeResult:
     venue_id = str(envelope.get("venue_id") or "gmo")
     market_id = str(envelope.get("market_id") or payload.get("symbol") or "spot")
@@ -177,9 +196,7 @@ def _normalize_orderbook(repo: MarketDataMetaRepository, envelope: dict[str, Any
     event_ts = str(envelope.get("event_ts") or envelope["received_ts"])
     seq = _parse_seq(envelope.get("seq") or payload.get("sequence") or payload.get("seq"))
 
-    _init_orderbook_runtime_state(repo, venue_id=venue_id, market_id=market_id, received_ts=str(envelope["received_ts"]))
-    engine = _ORDERBOOK_ENGINES.setdefault(key, OrderbookEngine())
-    prev_seq = _ORDERBOOK_LAST_SEQ.get(key)
+    engine, prev_seq = _warm_start_orderbook_if_needed(repo, key=key)
 
     if seq is None:
         repo.upsert_orderbook_state(
@@ -239,7 +256,7 @@ def _normalize_orderbook(repo: MarketDataMetaRepository, envelope: dict[str, Any
         event_name = "md_orderbook_snapshot"
         schema_ref = "contracts/schemas/marketdata/md_orderbook_snapshot.schema.json"
         engine.apply_snapshot(payload)
-        _ORDERBOOK_DEGRADED_UNTIL_SNAPSHOT[key] = False
+        _ORDERBOOK_REQUIRE_SNAPSHOT[key] = False
     else:
         event_name = "md_orderbook_delta"
         schema_ref = "contracts/schemas/marketdata/md_orderbook_delta.schema.json"
@@ -283,10 +300,7 @@ def _normalize_orderbook(repo: MarketDataMetaRepository, envelope: dict[str, Any
         extra_json={"source_type": envelope.get("source_type")},
     )
 
-    degraded_until_snapshot = _ORDERBOOK_DEGRADED_UNTIL_SNAPSHOT.get(key, False)
-    degraded = (seq is None) or degraded_until_snapshot
-    reason = ORDERBOOK_SEQ_MISSING if seq is None else ("ORDERBOOK_STATE_STALE" if degraded_until_snapshot else None)
-
+    stale_from_warm_start = bool(_ORDERBOOK_REQUIRE_SNAPSHOT.get(key)) and not is_snapshot
     repo.upsert_orderbook_state(
         venue_id=venue_id,
         market_id=market_id,
@@ -297,8 +311,8 @@ def _normalize_orderbook(repo: MarketDataMetaRepository, envelope: dict[str, Any
         as_of=event_ts,
         last_update_ts=str(envelope["received_ts"]),
         last_seq=None if seq is None else str(seq),
-        degraded=degraded,
-        reason=reason,
+        degraded=seq is None or stale_from_warm_start,
+        reason=ORDERBOOK_SEQ_MISSING if seq is None else (ORDERBOOK_STATE_STALE if stale_from_warm_start else None),
     )
     if seq is not None:
         _ORDERBOOK_LAST_SEQ[key] = seq
