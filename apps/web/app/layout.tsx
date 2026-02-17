@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { ThemeProvider } from "../components/ThemeProvider";
 import { NavShell } from "../components/NavShell";
 import { StatusRibbon } from "../components/StatusRibbon";
 
@@ -13,10 +14,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
       <body>
-        <StatusRibbon />
-        <NavShell>{children}</NavShell>
+        <ThemeProvider>
+          <StatusRibbon />
+          <NavShell>{children}</NavShell>
+        </ThemeProvider>
       </body>
     </html>
   );

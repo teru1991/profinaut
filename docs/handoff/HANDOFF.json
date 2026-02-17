@@ -1,0 +1,19 @@
+{
+  "active_task": "DOC-OS-001",
+  "what_done": [
+    "Scanned docs for existing equivalent artifacts and recorded audit output.",
+    "Defined canonical docs OS entrypoint and machine-readable operating artifacts."
+  ],
+  "what_next": [
+    "On next docs task, update status.json and trace-index.json first.",
+    "If stopping mid-task, update this handoff file before exit."
+  ],
+  "open_pr": "",
+  "locks_held": [],
+  "errors": [],
+  "commands_next": [
+    "git status --short",
+    "cat docs/status/status.json",
+    "cat docs/status/trace-index.json"
+  ]
+}

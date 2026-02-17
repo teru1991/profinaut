@@ -40,14 +40,26 @@ export default function MarketsPage() {
   }
 
   return (
-    <div style={{ display: "grid", gap: 12 }}>
-      <div className="card">
-        <h2>Market selector</h2>
-        <p>Choose exchange/symbol and persist to query params.</p>
+    <div>
+      <div className="page-header">
+        <div className="page-header-left">
+          <h1 className="page-title">Markets</h1>
+          <p className="page-subtitle">Live ticker data via dashboard-api marketdata proxy</p>
+        </div>
+      </div>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "end", flexWrap: "wrap" }}>
-          <label>
-            <div>Exchange</div>
+      {/* Market Selector */}
+      <div className="card" style={{ marginBottom: "var(--space-4)" }}>
+        <div className="card-header">
+          <h2 className="card-title">Market Selector</h2>
+          <span className="badge badge-accent">
+            {activeExchange.toUpperCase()}:{activeSymbol}
+          </span>
+        </div>
+
+        <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-end", flexWrap: "wrap" }}>
+          <label style={{ display: "grid", gap: "var(--space-1)" }}>
+            <span className="text-xs text-muted">Exchange</span>
             <select value={exchange} onChange={(e) => setExchange(e.target.value)}>
               {EXCHANGES.map((item) => (
                 <option key={item} value={item}>
@@ -57,19 +69,15 @@ export default function MarketsPage() {
             </select>
           </label>
 
-          <label>
-            <div>Symbol</div>
+          <label style={{ display: "grid", gap: "var(--space-1)" }}>
+            <span className="text-xs text-muted">Symbol</span>
             <input value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="BTC_JPY" />
           </label>
 
-          <button type="button" onClick={applySelection}>
+          <button className="btn btn-primary" type="button" onClick={applySelection}>
             Apply
           </button>
         </div>
-
-        <p style={{ marginTop: 8, opacity: 0.8 }}>
-          Active query: ?exchange={activeExchange}&amp;symbol={activeSymbol}
-        </p>
       </div>
 
       <MarketsTickerCard exchange={activeExchange} symbol={activeSymbol} />
