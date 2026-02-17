@@ -21,6 +21,16 @@ type ExposureSummary = {
   by_symbol: ExposureBySymbol[];
 };
 
+
+function formatLastUpdatedTime(value: Date): string {
+  return value.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  });
+}
+
 export default function PortfolioPage() {
   const [data, setData] = useState<ExposureSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +93,7 @@ export default function PortfolioPage() {
         {lastUpdated && (
           <div className="last-updated">
             <span className="last-updated-dot" />
-            Auto-refresh 5s &middot; {formatTime(lastUpdated)}
+            Auto-refresh 5s &middot; {formatLastUpdatedTime(lastUpdated)}
           </div>
         )}
       </div>
