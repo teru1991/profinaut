@@ -46,10 +46,12 @@ class IngestMetrics:
                 "ingest_count": self._ingest_count,
                 "ingest_fail_count": self._ingest_fail_count,
                 "dup_suspect_count": self._dup_suspect_count,
+                "dup_suspect_total": self._dup_suspect_count,
                 "last_5m": {
                     "ingest_count": len(self._success_timestamps),
                     "ingest_fail_count": len(self._fail_timestamps),
                     "dup_suspect_count": len(self._dup_timestamps),
+                    "dup_suspect_total": len(self._dup_timestamps),
                 },
             }
 
