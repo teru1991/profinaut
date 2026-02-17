@@ -174,16 +174,16 @@ def _already_processed(repo: MarketDataMetaRepository, envelope: dict[str, Any],
     if not raw_msg_id:
         return False
 
-    target_table_map = {
-        "md_trades": "md_trades",
-        "md_ohlcv": "md_ohlcv",
-        "md_best_bid_ask": "md_best_bid_ask",
-        "md_orderbook": "md_best_bid_ask",
-    }
-    table = target_table_map.get(target, "md_events_json")
+    if target == "md_trades":
+        table = "md_trades"
+    elif target == "md_ohlcv":
+        table = "md_ohlcv"
+    elif target == "md_best_bid_ask" or target == "md_orderbook":
+        table = "md_best_bid_ask"
+    else:
+        table = "md_events_json"
 
-    query = "SELECT 1 FROM " + table + " WHERE raw_msg_id = ? LIMIT 1"
-    row = repo._conn.execute(query, (raw_msg_id,)).fetchone()
+    row = repo._conn.execute(f"SELECT 1 FROM {table} WHERE raw_msg_id = ? LIMIT 1", (raw_msg_id,)).fetchone()
     return row is not None
 
 
@@ -239,7 +239,7 @@ def run_replay(
         envelopes.extend(parsed)
         skipped_count += skipped
 
-    envelopes.sort(key=lambda item: (_parse_rfc3339(item.received_ts), item.raw_msg_id, item.seq))
+    envelopes.sort(key=lambda item: (item.received_ts, item.raw_msg_id, item.seq))
 
     for item in envelopes:
         envelope = item.envelope
