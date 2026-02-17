@@ -3,6 +3,7 @@
 This is the documentation hub for Profinaut.
 
 ## Start here
+- AI SSOT entry (canonical docs development OS): [`SSOT/README_AI.md`](SSOT/README_AI.md)
 - Roadmap (plan + step progress): [`roadmap.md`](roadmap.md)
 - Changelog (release history): [`changelog.md`](changelog.md)
 - Ultimate Gold progress check: [`status/ultimate-gold-progress-check.md`](status/ultimate-gold-progress-check.md)
