@@ -1,19 +1,21 @@
 {
-  "active_task": "DOC-OS-001",
+  "active_task": "CI-010",
   "what_done": [
-    "Scanned docs for existing equivalent artifacts and recorded audit output.",
-    "Defined canonical docs OS entrypoint and machine-readable operating artifacts."
+    "Ran Docs OS preflight reads in required order.",
+    "Normalized docs/status/status.json required keys for preflight compatibility."
   ],
   "what_next": [
-    "On next docs task, update status.json and trace-index.json first.",
-    "If stopping mid-task, update this handoff file before exit."
+    "Complete workflow inventory and publish ci-workflows-audit.md.",
+    "Publish gap plan and apply minimal workflow updates under .github/workflows/."
   ],
   "open_pr": "",
-  "locks_held": [],
+  "locks_held": [
+    "LOCK:ci"
+  ],
   "errors": [],
   "commands_next": [
-    "git status --short",
-    "cat docs/status/status.json",
-    "cat docs/status/trace-index.json"
+    "rg --files .github/workflows",
+    "sed -n '1,260p' .github/workflows/ci.yml",
+    "sed -n '1,260p' .github/workflows/security-supply-chain.yml"
   ]
 }

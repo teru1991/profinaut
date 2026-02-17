@@ -1,7 +1,16 @@
 {
-  "active_task": null,
-  "owner": null,
-  "state": "idle",
-  "last_updated": "1970-01-01T00:00:00Z",
-  "notes": "Update this file when task ownership or state changes."
+  "base_branch": "main",
+  "active_task": "CI-010",
+  "owner": "codex",
+  "state": "in_progress",
+  "open_prs": [],
+  "locks_held": [
+    "LOCK:ci"
+  ],
+  "next_actions": [
+    "Audit all .github/workflows files and produce docs/audits/ci-workflows-audit.md",
+    "Produce docs/audits/ci-workflows-gap-plan.md and implement minimal workflow fixes"
+  ],
+  "last_updated": "2026-02-17T00:00:00Z",
+  "notes": "CI-010 preflight normalized status keys and lock declaration."
 }

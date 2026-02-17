@@ -3,7 +3,34 @@ name: CI
 on:
   push:
     branches: ["**"]
+    paths:
+      - "contracts/**"
+      - "services/**"
+      - "apps/**"
+      - "sdk/**"
+      - "scripts/**"
+      - "requirements*.txt"
+      - "package.json"
+      - "docker-compose.yml"
+      - ".github/workflows/ci.yml"
   pull_request:
+    paths:
+      - "contracts/**"
+      - "services/**"
+      - "apps/**"
+      - "sdk/**"
+      - "scripts/**"
+      - "requirements*.txt"
+      - "package.json"
+      - "docker-compose.yml"
+      - ".github/workflows/ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   contracts:
@@ -88,6 +115,19 @@ jobs:
         run: |
           npm --prefix apps/web install
           npm --prefix apps/web run build
+
+  docker-compose-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Docker Compose config validation
+        run: docker compose config
+
+      - name: Docker Compose build
+        run: docker compose build
 
   baseline:
     runs-on: ubuntu-latest
