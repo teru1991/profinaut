@@ -12,11 +12,14 @@ This page is the must-read entrypoint for AI/human operators before starting wor
 6. Handoff state: `docs/status/HANDOFF.json` and `docs/handoff/HANDOFF.json`
 7. Decision baseline: `docs/status/decisions.md`
 8. Trace SSOT: `docs/status/trace-index.md` and `docs/status/trace-index.json`
-9. Rules SSOT:
-   - `docs/rules/task-generation-policy.md`
+9. Task Generation SSOT:
+   - `docs/rules/task-generation-policy-v3-enforced.md`
+   - `docs/rules/task-generation-rules-using-docs-os.md`
+10. Rules / Safety references:
+   - `docs/rules/task-generation-policy.md` (compatibility stub)
    - `docs/rules/parallel-development-safety.md`
    - `docs/specs/parallel-task-safety.md`
-10. Before PR / Merge checklist: `docs/runbooks/pr-preflight.md`
+11. Before PR / Merge checklist: `docs/runbooks/pr-preflight.md`
 
 ## SSOT boundaries (important)
 
@@ -45,3 +48,4 @@ Copy/paste this into any AI before starting:
 - **LOCK areas:** lock-sensitive areas include contracts/ci/infra/lockfiles and shared-docs (`docs/SSOT/**`, `docs/rules/**`, docs hubs). Declare `Required Locks` in task cards.
 - **Trace SSOT:** `docs/status/trace-index.md` / `docs/status/trace-index.json` are the canonical place for PR/commit/evidence links.
 - **Decisions are binding:** use `docs/status/decisions.md` to fix assumptions and supersede only via explicit new decision entries.
+- **Preflight gate for task issuance:** if preflight cannot be satisfied, do **not** issue implementation tasks; issue a docs-only remediation task first.
