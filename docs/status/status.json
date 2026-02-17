@@ -1,0 +1,7 @@
+{
+  "active_task": null,
+  "owner": null,
+  "state": "idle",
+  "last_updated": "1970-01-01T00:00:00Z",
+  "notes": "Update this file when task ownership or state changes."
+}

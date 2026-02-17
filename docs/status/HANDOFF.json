@@ -1,0 +1,10 @@
+{
+  "task_id": null,
+  "from": null,
+  "to": null,
+  "timestamp": "1970-01-01T00:00:00Z",
+  "what_done": [],
+  "what_next": [],
+  "errors": [],
+  "commands_next": []
+}
