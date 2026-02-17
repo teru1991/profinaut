@@ -239,7 +239,7 @@ def run_replay(
         envelopes.extend(parsed)
         skipped_count += skipped
 
-    envelopes.sort(key=lambda item: (item.received_ts, item.raw_msg_id, item.seq))
+    envelopes.sort(key=lambda item: (_parse_rfc3339(item.received_ts), item.raw_msg_id, item.seq))
 
     for item in envelopes:
         envelope = item.envelope
