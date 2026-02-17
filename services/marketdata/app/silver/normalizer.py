@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
+import os
 from typing import Any
 
 from services.marketdata.app.db.repository import MarketDataMetaRepository
@@ -81,6 +82,8 @@ def _insert_trade(repo: MarketDataMetaRepository, envelope: dict[str, Any], payl
         received_ts=str(envelope["received_ts"]),
         extra_json={"payload": payload},
     )
+    if not inserted:
+        ingest_metrics.record_trade_duplicate()
 
 
 def _insert_ohlcv(repo: MarketDataMetaRepository, envelope: dict[str, Any], payload: dict[str, Any]) -> None:
