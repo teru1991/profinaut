@@ -52,6 +52,39 @@ def _parse_rfc3339(ts: str) -> datetime:
     return datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(UTC)
 
 
+
+
+def _is_trade_payload(payload: dict[str, Any]) -> bool:
+    has_price = "price" in payload
+    has_size = "qty" in payload or "size" in payload
+    has_side = "side" in payload
+    return has_price and has_size and has_side
+
+
+def _stable_trade_source_msg_key(envelope: dict[str, Any]) -> str | None:
+    payload = envelope.get("payload_json")
+    if not isinstance(payload, dict) or not _is_trade_payload(payload):
+        return None
+
+    venue = str(envelope.get("venue_id") or "").lower()
+    if venue != "gmo":
+        return None
+
+    for upstream_id_key in ("trade_id", "tradeId", "id"):
+        upstream_id = payload.get(upstream_id_key)
+        if upstream_id is None:
+            continue
+        upstream = str(upstream_id).strip()
+        if upstream:
+            return f"gmo:trade_id:{upstream}"
+
+    market = str(envelope.get("market_id") or payload.get("symbol") or "").lower()
+    event_ts = str(envelope.get("event_ts") or envelope.get("received_ts") or "")
+    price = str(payload.get("price"))
+    size = str(payload.get("qty") if payload.get("qty") is not None else payload.get("size"))
+    side = str(payload.get("side") or "").lower()
+    seq = str(envelope.get("seq") if envelope.get("seq") is not None else (payload.get("seq") or payload.get("sequence") or ""))
+    return f"gmo:trade:v1:{venue}:{market}:{event_ts}:{price}:{size}:{side}:{seq}"
 def _derive_event_ts_quality(event_ts: object, received_ts: str) -> tuple[str, float | None]:
     received = _parse_rfc3339(received_ts)
     if isinstance(event_ts, str) and event_ts.strip():
@@ -125,6 +158,8 @@ def ingest_raw_envelope(body: dict[str, Any], *, settings: ServiceSettings | Non
     envelope.setdefault("parser_version", "v0.1")
     envelope.setdefault("event_ts", None)
     envelope.setdefault("source_msg_key", None)
+    if not envelope.get("source_msg_key"):
+        envelope["source_msg_key"] = _stable_trade_source_msg_key(envelope)
     envelope.setdefault("seq", None)
     envelope.setdefault("venue_id", None)
     envelope.setdefault("market_id", None)
