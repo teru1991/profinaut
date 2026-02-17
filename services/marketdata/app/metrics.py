@@ -46,10 +46,12 @@ class IngestMetrics:
                 "ingest_count": self._ingest_count,
                 "ingest_fail_count": self._ingest_fail_count,
                 "dup_suspect_count": self._dup_suspect_count,
+                "dup_suspect_total": self._dup_suspect_count,
                 "last_5m": {
                     "ingest_count": len(self._success_timestamps),
                     "ingest_fail_count": len(self._fail_timestamps),
                     "dup_suspect_count": len(self._dup_timestamps),
+                    "dup_suspect_total": len(self._dup_timestamps),
                 },
             }
 
@@ -64,3 +66,28 @@ class IngestMetrics:
 
 
 ingest_metrics = IngestMetrics()
+
+
+class QualityGateMetrics:
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._anomaly_total = 0
+        self._by_code: dict[str, int] = {}
+
+    def record_anomaly(self, *, code: str) -> None:
+        key = str(code or "UNKNOWN").upper()
+        with self._lock:
+            self._anomaly_total += 1
+            self._by_code[key] = int(self._by_code.get(key, 0)) + 1
+
+    def summary(self) -> dict[str, object]:
+        with self._lock:
+            return {"anomaly_total": self._anomaly_total, "by_code": dict(self._by_code)}
+
+    def reset_for_tests(self) -> None:
+        with self._lock:
+            self._anomaly_total = 0
+            self._by_code.clear()
+
+
+quality_gate_metrics = QualityGateMetrics()
