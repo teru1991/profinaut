@@ -92,7 +92,7 @@ export default function PortfolioPage() {
         {lastUpdated && (
           <div className="last-updated">
             <span className="last-updated-dot" />
-            Auto-refresh 5s &middot; {formatLastUpdatedTime(lastUpdated)}
+            Auto-refresh 5s &middot; {formatTime(lastUpdated)}
           </div>
         )}
       </div>
