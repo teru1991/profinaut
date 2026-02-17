@@ -101,19 +101,20 @@ This framework does NOT alter non-crypto marketdata modules (Python FastAPI serv
 
 ## Task D — Persistence (Mongo bulk + Durable Spool + Dedup window)
 
-**Status:** IN PROGRESS
+**Status:** DONE
 **Start:** 2026-02-17
+**Completed:** 2026-02-17
 **Branch:** `claude/task-d-persistence-mongo-spool-UUYGr`
 
 ### Deliverables Checklist
 
-- [ ] D1 — Mongo bulk insert sink (`MongoSink` with `insert_many`, bounded retry, state: OK/MongoUnavailable/Degraded)
-- [ ] D2 — Durable spool (append-only segments, rotation by max_segment_mb, total cap, crash safety, on_full policy)
-- [ ] D3 — Replay worker (oldest-first, deletes after successful insert, rate-limited, shutdown-safe)
-- [ ] D4 — Dedup window (optional toggle, bounded window store, key priority rules, dedup_dropped_total metric)
-- [ ] D5 — Integration with Task C pipeline (Sink trait impl, fallback logic: Mongo → Spool → on_full)
-- [ ] D6 — Tests: unit (spool rotation/cap/on_full/partial-write/dedup) + fake integration (fail→succeed + spool grows/drains + metrics)
-- [ ] D7 — Doc updates (docs/troubleshooting.md, docs/marketdata_collector_framework_v1_4.md)
+- [x] D1 — Mongo bulk insert sink (`MongoSink` with `insert_many`, bounded retry, state: OK/MongoUnavailable/Degraded)
+- [x] D2 — Durable spool (append-only segments, rotation by max_segment_mb, total cap, crash safety, on_full policy)
+- [x] D3 — Replay worker (oldest-first, deletes after successful insert, rate-limited, shutdown-safe)
+- [x] D4 — Dedup window (optional toggle, bounded window store, key priority rules, dedup_dropped_total metric)
+- [x] D5 — Integration with Task C pipeline (Sink trait impl, fallback logic: Mongo → Spool → on_full)
+- [x] D6 — Tests: unit (spool rotation/cap/on_full/partial-write/dedup) + fake integration (fail→succeed + spool grows/drains + metrics)
+- [x] D7 — Doc updates (docs/troubleshooting.md, docs/marketdata_collector_framework_v1_4.md)
 
 ---
 
@@ -172,3 +173,58 @@ This framework does NOT alter non-crypto marketdata modules (Python FastAPI serv
 4. **Dedup key priority:** message_id > "seq:{exchange}:{channel}:{seq}" > "hash:{DefaultHasher hex}".
 5. **Spool/Dedup disabled by default** in config (`spool.enabled = false`, `dedup.enabled = false`).
 6. **Tasks B/C not done:** Envelope v1 and Sink trait defined here as the stable interface for Tasks E/F.
+
+---
+
+## End-of-Task Update (Task D)
+
+**Completed:** 2026-02-17
+
+### Verification Results
+
+| Step | Result | Notes |
+|------|--------|-------|
+| `cargo build -p crypto-collector` | PASS | No errors |
+| `cargo test -p crypto-collector` | PASS | 51/51 tests passed |
+| D1: MongoSink retry + state transitions | PASS | 6 unit tests |
+| D2: Spool rotation / on_full / partial-write recovery | PASS | 5 unit tests |
+| D3: Replay worker oldest-first + no-delete-on-fail + shutdown | PASS | 3 unit tests |
+| D4: Dedup window time-eviction + max_keys + labeled metrics | PASS | 6 unit tests |
+| D5: Pipeline fallback chain (Mongo→Spool→on_full) | PASS | 5 unit tests |
+| D6: Fake integration (spool grows→drains, metrics tracked) | PASS | `fake_integration_spool_grows_then_drains` |
+| D7: Docs (troubleshooting.md, marketdata_collector_framework_v1_4.md) | PASS | Created |
+| Mongo insert_many (live server) | NOT VERIFIED | `mongodb` crate not added; requires running Mongo |
+
+### Files Created (Task D)
+
+| File | Purpose |
+|------|---------|
+| `services/marketdata-rs/crypto-collector/src/persistence/mod.rs` | Module root + re-exports |
+| `services/marketdata-rs/crypto-collector/src/persistence/envelope.rs` | Envelope v1 type |
+| `services/marketdata-rs/crypto-collector/src/persistence/sink.rs` | Sink trait, SinkState, SinkError |
+| `services/marketdata-rs/crypto-collector/src/persistence/metrics.rs` | PersistenceMetrics (atomic + labeled counters) |
+| `services/marketdata-rs/crypto-collector/src/persistence/mongo.rs` | D1: MongoTarget trait + MongoSink |
+| `services/marketdata-rs/crypto-collector/src/persistence/spool.rs` | D2: DurableSpool |
+| `services/marketdata-rs/crypto-collector/src/persistence/replay.rs` | D3: ReplayWorker |
+| `services/marketdata-rs/crypto-collector/src/persistence/dedup.rs` | D4: DedupWindow |
+| `services/marketdata-rs/crypto-collector/src/persistence/pipeline.rs` | D5: PipelineSink |
+| `docs/troubleshooting.md` | D7: Troubleshooting doc |
+| `docs/marketdata_collector_framework_v1_4.md` | D7: Framework reference doc |
+
+### Files Modified (Task D)
+
+| File | Change |
+|------|--------|
+| `services/marketdata-rs/crypto-collector/Cargo.toml` | +async-trait, +tokio features, +tempfile dev-dep |
+| `services/marketdata-rs/crypto-collector/src/config.rs` | +PersistenceConfig, SpoolConfigToml, DedupConfigToml |
+| `services/marketdata-rs/crypto-collector/src/main.rs` | +`mod persistence;` |
+| `docs/progress/marketdata_collector_framework_v1_4.md` | Task D sections |
+| `docs/dod/marketdata_collector_framework_v1_4.md` | Task D acceptance criteria |
+
+### Notes for Task E/F
+
+- `Sink` trait is the stable interface; do not change its signature.
+- `Envelope` v1 is the stable data type; new fields must be optional.
+- `PipelineSink::build()` is the async constructor; `build()` opens the spool and spawns the replay worker.
+- `shutdown_rx: Option<watch::Receiver<bool>>` controls replay worker shutdown.
+- `mongodb` crate integration: add `real-mongo` feature in Cargo.toml, implement `MongoTarget` for `mongodb::Collection<bson::Document>`.

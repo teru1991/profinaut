@@ -75,11 +75,27 @@
 
 | Step | Result | Notes |
 |------|--------|-------|
-| Build | NOT VERIFIED | Pending |
-| Unit tests | NOT VERIFIED | Pending |
-| Spool rotation | NOT VERIFIED | Pending |
-| Spool cap / on_full | NOT VERIFIED | Pending |
-| Partial write recovery | NOT VERIFIED | Pending |
-| Dedup eviction | NOT VERIFIED | Pending |
-| Fake integration | NOT VERIFIED | Pending |
-| Mongo insert_many | NOT VERIFIED | Requires live Mongo; mongodb crate not added as compile dep |
+| Build (`cargo build -p crypto-collector`) | PASS | No errors |
+| Unit tests (`cargo test -p crypto-collector`) | PASS | 51/51 tests passed |
+| Spool rotation | PASS | `segment_rotation_by_size` test |
+| Spool cap / on_full (drop_all) | PASS | `on_full_drop_all_drops_silently` test |
+| Spool cap / on_full (drop_ticker_depth_keep_trade) | PASS | `on_full_drop_ticker_depth_keeps_trades` test |
+| Partial write recovery | PASS | `partial_write_recovery` test |
+| Dedup eviction by time | PASS | `eviction_by_time` test |
+| Dedup eviction by max_keys | PASS | `eviction_by_max_keys` test |
+| Fake integration (spool grows then drains) | PASS | `fake_integration_spool_grows_then_drains` test |
+| Mongo insert_many (live server) | NOT VERIFIED | Requires live Mongo; mongodb crate not added as compile dep (see troubleshooting.md) |
+
+### Acceptance Criteria Check
+
+- [x] D1: `MongoSink<T: MongoTarget>` exists; consumes `Vec<Envelope>` via `insert_many`; bounded retry with exponential backoff; deterministic state transitions OK→MongoUnavailable→Degraded.
+- [x] D1b: Metrics: `write_batch_latency_ms` records last batch write duration; `ingest_errors_total{exchange}` increments on sink failure per exchange.
+- [x] D2: `DurableSpool` exists; append-only, length-prefix encoded, crash-safe; segment rotation by `max_segment_mb`; total cap by `max_total_mb`; `on_full` policy enforced deterministically.
+- [x] D2b: Metrics: `spool_bytes` (gauge), `spool_segments` (gauge), `spool_dropped_total{exchange,channel}`, `spool_replay_total`.
+- [x] D3: `ReplayWorker` exists; replays oldest segments first; deletes segment only after successful insert; rate-limited; shutdown-safe via watch channel.
+- [x] D4: `DedupWindow` exists; bounded (window_seconds + max_keys); key priority correct; `dedup_dropped_total{exchange,channel}` increments correctly; no memory leak.
+- [x] D5: `PipelineSink` implements `Sink` trait; fallback chain correct; interfaces stable for Task E/F.
+- [x] D6: Unit tests exist and pass. Fake integration test exists and passes.
+- [x] D7: `docs/troubleshooting.md` created. `docs/marketdata_collector_framework_v1_4.md` created.
+- [x] Chosen Paths recorded in progress doc.
+- [x] No changes to non-crypto modules or forbidden paths.
