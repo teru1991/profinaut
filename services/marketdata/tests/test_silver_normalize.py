@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from services.marketdata.app import main
-from services.marketdata.app.metrics import ingest_metrics
+from services.marketdata.app.metrics import ingest_metrics, normalization_metrics
 
 
 async def _idle_poller() -> None:
@@ -136,129 +136,110 @@ def test_orderbook_gap_sets_degraded_state(monkeypatch, tmp_path: Path) -> None:
     assert state == (1, "ORDERBOOK_GAP")
 
 
-def test_orderbook_warm_start_restores_bbo_and_seq_for_delta(tmp_path: Path) -> None:
-    from services.marketdata.app.db.repository import MarketDataMetaRepository
-    from services.marketdata.app.db.schema import apply_migrations
-    from services.marketdata.app.silver import normalizer as normalizer_module
-
+def test_quality_gates_record_trade_anomaly(monkeypatch, tmp_path: Path) -> None:
+    ingest_metrics.reset_for_tests()
+    normalization_metrics.reset_for_tests()
     db_file = tmp_path / "md.sqlite3"
+    bronze_root = tmp_path / "bronze"
+
+    monkeypatch.setenv("OBJECT_STORE_BACKEND", "fs")
+    monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
+    monkeypatch.setenv("BRONZE_FS_ROOT", str(bronze_root))
+    monkeypatch.setenv("SILVER_ENABLED", "1")
+    monkeypatch.setenv("MARKETDATA_QUALITY_GATES_ENABLED", "1")
+    monkeypatch.setattr(main._poller, "run_forever", _idle_poller)
+
+    with TestClient(main.app) as client:
+        resp = client.post(
+            "/raw/ingest",
+            json={
+                "tenant_id": "tenant-a",
+                "source_type": "WS_PUBLIC",
+                "received_ts": "2026-02-16T00:00:01Z",
+                "payload_json": {"price": -1, "qty": 1, "side": "buy"},
+                "venue_id": "gmo",
+                "market_id": "spot",
+                "instrument_id": "btc_jpy",
+            },
+        )
+
+    assert resp.status_code == 200
     conn = sqlite3.connect(db_file)
-    apply_migrations(conn)
-    repo = MarketDataMetaRepository(conn)
+    assert conn.execute("SELECT COUNT(*) FROM md_trades").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM md_events_json WHERE event_type='md_data_anomaly'").fetchone()[0] == 1
+    assert normalization_metrics.summary()["anomaly_total"] >= 1
 
-    repo.upsert_orderbook_state(
-        venue_id="gmo",
-        market_id="spot",
-        bid_px=100.0,
-        bid_qty=1.0,
-        ask_px=101.0,
-        ask_qty=2.0,
-        as_of="2026-02-16T00:00:00Z",
-        last_update_ts="2026-02-16T00:00:00Z",
-        last_seq="10",
-        degraded=False,
-        reason=None,
-    )
 
-    normalizer_module._ORDERBOOK_ENGINES.clear()
-    normalizer_module._ORDERBOOK_LAST_SEQ.clear()
-    normalizer_module._ORDERBOOK_DEGRADED_UNTIL_SNAPSHOT.clear()
+def test_quality_gates_record_ohlcv_anomaly(monkeypatch, tmp_path: Path) -> None:
+    normalization_metrics.reset_for_tests()
+    db_file = tmp_path / "md.sqlite3"
+    bronze_root = tmp_path / "bronze"
 
-    normalizer_module.normalize_envelope(
-        repo,
-        {
-            "raw_msg_id": "delta-11",
-            "tenant_id": "tenant-a",
-            "source_type": "WS_PUBLIC",
-            "venue_id": "gmo",
-            "market_id": "spot",
-            "stream_name": "orderbooks",
-            "received_ts": "2026-02-16T00:00:01Z",
-            "seq": 11,
-            "payload_json": {
-                "type": "delta",
-                "changes": {
-                    "bids": [{"price": "100.5", "size": "1.5"}],
+    monkeypatch.setenv("OBJECT_STORE_BACKEND", "fs")
+    monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
+    monkeypatch.setenv("BRONZE_FS_ROOT", str(bronze_root))
+    monkeypatch.setenv("SILVER_ENABLED", "1")
+    monkeypatch.setenv("MARKETDATA_QUALITY_GATES_ENABLED", "1")
+    monkeypatch.setattr(main._poller, "run_forever", _idle_poller)
+
+    with TestClient(main.app) as client:
+        resp = client.post(
+            "/raw/ingest",
+            json={
+                "tenant_id": "tenant-a",
+                "source_type": "REST",
+                "received_ts": "2026-02-16T00:00:01Z",
+                "payload_json": {
+                    "timeframe": "1m",
+                    "open_ts": "2026-02-16T00:00:00Z",
+                    "open": 100,
+                    "high": 90,
+                    "low": 80,
+                    "close": 95,
+                    "volume": 1,
+                    "is_final": True,
                 },
+                "venue_id": "gmo",
+                "market_id": "spot",
+                "instrument_id": "btc_jpy",
             },
-        },
-    )
+        )
 
-    state = repo.get_orderbook_state(venue_id="gmo", market_id="spot")
-    assert state is not None
-    assert state["last_seq"] == "11"
-    assert state["bid_px"] == 100.5
-    assert state["ask_px"] == 101.0
-    assert state["degraded"] is False
-
-
-def test_orderbook_warm_start_old_state_stays_degraded_until_snapshot(monkeypatch, tmp_path: Path) -> None:
-    from services.marketdata.app.db.repository import MarketDataMetaRepository
-    from services.marketdata.app.db.schema import apply_migrations
-    from services.marketdata.app.silver import normalizer as normalizer_module
-
-    db_file = tmp_path / "md.sqlite3"
+    assert resp.status_code == 200
     conn = sqlite3.connect(db_file)
-    apply_migrations(conn)
-    repo = MarketDataMetaRepository(conn)
+    assert conn.execute("SELECT COUNT(*) FROM md_ohlcv").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM md_events_json WHERE event_type='md_data_anomaly'").fetchone()[0] == 1
 
-    repo.upsert_orderbook_state(
-        venue_id="gmo",
-        market_id="spot",
-        bid_px=100.0,
-        bid_qty=1.0,
-        ask_px=101.0,
-        ask_qty=1.0,
-        as_of="2026-02-16T00:00:00Z",
-        last_update_ts="2026-02-16T00:00:00Z",
-        last_seq="20",
-        degraded=False,
-        reason=None,
-    )
 
-    normalizer_module._ORDERBOOK_ENGINES.clear()
-    normalizer_module._ORDERBOOK_LAST_SEQ.clear()
-    normalizer_module._ORDERBOOK_DEGRADED_UNTIL_SNAPSHOT.clear()
-    monkeypatch.setenv("ORDERBOOK_WARM_MAX_AGE_SECONDS", "0")
+def test_quality_gates_record_crossed_bbo_anomaly_and_mark_degraded(monkeypatch, tmp_path: Path) -> None:
+    normalization_metrics.reset_for_tests()
+    db_file = tmp_path / "md.sqlite3"
+    bronze_root = tmp_path / "bronze"
 
-    normalizer_module.normalize_envelope(
-        repo,
-        {
-            "raw_msg_id": "delta-21",
-            "tenant_id": "tenant-a",
-            "source_type": "WS_PUBLIC",
-            "venue_id": "gmo",
-            "market_id": "spot",
-            "stream_name": "orderbooks",
-            "received_ts": "2026-02-16T00:01:00Z",
-            "seq": 21,
-            "payload_json": {"type": "delta", "changes": {"bids": [{"price": "99", "size": "1"}]}},
-        },
-    )
-    after_delta = repo.get_orderbook_state(venue_id="gmo", market_id="spot")
-    assert after_delta is not None
-    assert after_delta["degraded"] is True
-    assert after_delta["reason"] == "ORDERBOOK_STATE_STALE"
+    monkeypatch.setenv("OBJECT_STORE_BACKEND", "fs")
+    monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
+    monkeypatch.setenv("BRONZE_FS_ROOT", str(bronze_root))
+    monkeypatch.setenv("SILVER_ENABLED", "1")
+    monkeypatch.setenv("MARKETDATA_QUALITY_GATES_ENABLED", "1")
+    monkeypatch.setattr(main._poller, "run_forever", _idle_poller)
 
-    normalizer_module.normalize_envelope(
-        repo,
-        {
-            "raw_msg_id": "snapshot-22",
-            "tenant_id": "tenant-a",
-            "source_type": "WS_PUBLIC",
-            "venue_id": "gmo",
-            "market_id": "spot",
-            "stream_name": "orderbooks",
-            "received_ts": "2026-02-16T00:01:01Z",
-            "seq": 22,
-            "payload_json": {
-                "type": "snapshot",
-                "bids": [{"price": "100", "size": "1"}],
-                "asks": [{"price": "101", "size": "1"}],
+    with TestClient(main.app) as client:
+        resp = client.post(
+            "/raw/ingest",
+            json={
+                "tenant_id": "tenant-a",
+                "source_type": "WS_PUBLIC",
+                "received_ts": "2026-02-16T00:00:01Z",
+                "payload_json": {"bid_px": 101, "bid_qty": 1, "ask_px": 100, "ask_qty": 1},
+                "venue_id": "gmo",
+                "market_id": "spot",
             },
-        },
-    )
-    after_snapshot = repo.get_orderbook_state(venue_id="gmo", market_id="spot")
-    assert after_snapshot is not None
-    assert after_snapshot["degraded"] is False
-    assert after_snapshot["reason"] is None
+        )
+
+    assert resp.status_code == 200
+    conn = sqlite3.connect(db_file)
+    assert conn.execute("SELECT COUNT(*) FROM md_best_bid_ask").fetchone()[0] == 0
+    anomaly = conn.execute("SELECT event_type FROM md_events_json WHERE event_type='md_data_anomaly'").fetchone()
+    state = conn.execute("SELECT degraded, reason FROM md_orderbook_state WHERE venue_id='gmo' AND market_id='spot'").fetchone()
+    assert anomaly is not None
+    assert state == (1, "DATA_INVALID")

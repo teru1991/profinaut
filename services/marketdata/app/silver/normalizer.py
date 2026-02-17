@@ -7,13 +7,14 @@ import os
 from typing import Any
 
 from services.marketdata.app.db.repository import MarketDataMetaRepository
-from services.marketdata.app.metrics import ingest_metrics
+from services.marketdata.app.metrics import normalization_metrics
 from services.marketdata.app.silver.orderbook import OrderbookEngine
 
 ORDERBOOK_GAP = "ORDERBOOK_GAP"
 ORDERBOOK_RESYNC_FAILED = "ORDERBOOK_RESYNC_FAILED"
 ORDERBOOK_SEQ_MISSING = "ORDERBOOK_SEQ_MISSING"
 ORDERBOOK_STATE_STALE = "ORDERBOOK_STATE_STALE"
+DATA_INVALID = "DATA_INVALID"
 
 
 @dataclass(frozen=True)
@@ -22,6 +23,7 @@ class NormalizeResult:
     event_type: str | None
 
 
+_ORDERBOOK_LOCK = threading.Lock()
 _ORDERBOOK_ENGINES: dict[tuple[str, str], OrderbookEngine] = {}
 _ORDERBOOK_LAST_SEQ: dict[tuple[str, str], int | None] = {}
 _ORDERBOOK_REQUIRE_SNAPSHOT: dict[tuple[str, str], bool] = {}
@@ -152,6 +154,89 @@ def _insert_event_hub(
     )
 
 
+def _quality_gates_enabled() -> bool:
+    return os.getenv("MARKETDATA_QUALITY_GATES_ENABLED", "1").strip() != "0"
+
+
+def _record_anomaly(
+    repo: MarketDataMetaRepository,
+    envelope: dict[str, Any],
+    *,
+    code: str,
+    detail: str,
+    target: str,
+) -> NormalizeResult:
+    normalization_metrics.record_anomaly(code)
+    anomaly_payload = {
+        "raw_msg_id": str(envelope.get("raw_msg_id") or ""),
+        "venue_id": envelope.get("venue_id"),
+        "market_id": envelope.get("market_id"),
+        "target": target,
+        "code": code,
+        "detail": detail,
+    }
+    _insert_event_hub(
+        repo,
+        envelope,
+        anomaly_payload,
+        event_type="md_data_anomaly",
+        schema_ref="contracts/schemas/marketdata/md_events_json.schema.json",
+        extra_json={"reason": code, "target": target},
+    )
+    if envelope.get("venue_id") and envelope.get("market_id"):
+        repo.upsert_orderbook_state(
+            venue_id=str(envelope.get("venue_id")),
+            market_id=str(envelope.get("market_id")),
+            bid_px=None,
+            bid_qty=None,
+            ask_px=None,
+            ask_qty=None,
+            as_of=str(envelope.get("event_ts") or envelope.get("received_ts") or _utc_now()),
+            last_update_ts=str(envelope.get("received_ts") or _utc_now()),
+            last_seq=None if envelope.get("seq") is None else str(envelope.get("seq")),
+            degraded=True,
+            reason=DATA_INVALID,
+        )
+    return NormalizeResult(target="md_events_json", event_type="md_data_anomaly")
+
+
+def _validate_trade(payload: dict[str, Any]) -> str | None:
+    try:
+        if float(payload.get("price")) < 0 or float(payload.get("qty")) < 0:
+            return "TRADE_NON_NEGATIVE"
+    except (TypeError, ValueError):
+        return "TRADE_NON_NEGATIVE"
+    return None
+
+
+def _validate_ohlcv(payload: dict[str, Any]) -> str | None:
+    try:
+        op = float(payload.get("open"))
+        hi = float(payload.get("high"))
+        lo = float(payload.get("low"))
+        cl = float(payload.get("close"))
+    except (TypeError, ValueError):
+        return "OHLCV_INVALID"
+    if hi < max(op, cl) or lo > min(op, cl):
+        return "OHLCV_INVALID"
+    return None
+
+
+def _validate_bba(payload: dict[str, Any]) -> str | None:
+    try:
+        bid_px = float(payload.get("bid_px"))
+        ask_px = float(payload.get("ask_px"))
+        bid_qty = float(payload.get("bid_qty"))
+        ask_qty = float(payload.get("ask_qty"))
+    except (TypeError, ValueError):
+        return "BBO_INVALID"
+    if bid_px < 0 or ask_px < 0 or bid_qty < 0 or ask_qty < 0:
+        return "BBO_INVALID"
+    if bid_px >= ask_px:
+        return "BBO_CROSSED"
+    return None
+
+
 def _warm_start_orderbook_if_needed(
     repo: MarketDataMetaRepository,
     *,
@@ -271,6 +356,12 @@ def _normalize_orderbook(repo: MarketDataMetaRepository, envelope: dict[str, Any
         engine.apply_delta(delta_payload)
 
     best_bid, best_ask = engine.derive_bbo()
+    if _quality_gates_enabled() and best_bid is not None and best_ask is not None:
+        if best_bid.price < 0 or best_ask.price < 0 or best_bid.size < 0 or best_ask.size < 0:
+            return _record_anomaly(repo, envelope, code=DATA_INVALID, detail="ORDERBOOK_NON_NEGATIVE", target="md_orderbook")
+        if best_bid.price >= best_ask.price:
+            return _record_anomaly(repo, envelope, code=DATA_INVALID, detail="ORDERBOOK_CROSSED", target="md_orderbook")
+
     if best_bid is not None and best_ask is not None:
         repo.insert_md_best_bid_ask(
             raw_msg_id=str(envelope["raw_msg_id"]),
@@ -354,14 +445,26 @@ def normalize_envelope(repo: MarketDataMetaRepository, envelope: dict[str, Any])
 
     classified = classify_envelope(envelope)
     if classified.target == "md_trades":
+        if _quality_gates_enabled():
+            reason = _validate_trade(payload)
+            if reason is not None:
+                return _record_anomaly(repo, envelope, code=DATA_INVALID, detail=reason, target="md_trades")
         _insert_trade(repo, envelope, payload)
         return classified
 
     if classified.target == "md_ohlcv":
+        if _quality_gates_enabled():
+            reason = _validate_ohlcv(payload)
+            if reason is not None:
+                return _record_anomaly(repo, envelope, code=DATA_INVALID, detail=reason, target="md_ohlcv")
         _insert_ohlcv(repo, envelope, payload)
         return classified
 
     if classified.target == "md_best_bid_ask":
+        if _quality_gates_enabled():
+            reason = _validate_bba(payload)
+            if reason is not None:
+                return _record_anomaly(repo, envelope, code=DATA_INVALID, detail=reason, target="md_best_bid_ask")
         _insert_bba(repo, envelope, payload)
         return classified
 
