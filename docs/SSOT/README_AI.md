@@ -4,13 +4,25 @@ This page is the must-read entrypoint for AI/human operators before starting wor
 
 ## Must-read links (in order)
 
-1. This file: `docs/SSOT/README_AI.md`
-2. Runtime status: `docs/status/status.json`
-3. Handoff state: `docs/status/HANDOFF.json`
-4. Decision baseline: `docs/status/decisions.md`
-5. Rules SSOT:
+1. This file: `docs/SSOT/README_AI.md` (AI constitution / entrypoint)
+2. Human-readable status snapshot (non-SSOT): `docs/status/CURRENT_STATUS.md`
+3. Runtime status SSOT: `docs/status/status.json`
+4. Tech context hub (non-SSOT links-only): `docs/SSOT/TECH_CONTEXT.md`
+5. Handoff state: `docs/status/HANDOFF.json`
+6. Decision baseline: `docs/status/decisions.md`
+7. Trace SSOT: `docs/status/trace-index.md`
+8. Rules SSOT:
    - `docs/rules/task-generation-policy.md`
    - `docs/rules/parallel-development-safety.md`
+   - `docs/specs/parallel-task-safety.md`
+
+## SSOT boundaries (important)
+
+- **Canonical AI entrypoint:** `docs/SSOT/README_AI.md`
+- **Status SSOT:** `docs/status/status.json`
+- **`docs/status/CURRENT_STATUS.md` is a summary only (non-SSOT).**
+- **`docs/SSOT/TECH_CONTEXT.md` is a links hub only (non-SSOT).**
+- Detailed specifications must remain in their existing canonical docs (specs/workplan/contracts/runbooks/status artifacts).
 
 ## Mandatory operating reminders
 
