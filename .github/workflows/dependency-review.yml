@@ -1,0 +1,27 @@
+name: Dependency Review
+
+on:
+  pull_request:
+    paths:
+      - "**/package-lock.json"
+      - "**/pnpm-lock.yaml"
+      - "**/yarn.lock"
+      - "**/poetry.lock"
+      - "**/Pipfile.lock"
+      - "**/requirements*.txt"
+      - "**/pyproject.toml"
+      - ".github/workflows/dependency-review.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-review-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
