@@ -2,7 +2,7 @@
 Bot registry and lifecycle management.
 """
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 from contracts.schemas import BotConfig, BotState, BotStatus
 
@@ -20,7 +20,7 @@ class Bot:
         """Start the bot."""
         logger.info(f"Starting bot {self.config.bot_id}")
         self.state.status = BotStatus.STARTING
-        self.state.started_at = datetime.utcnow()
+        self.state.started_at = datetime.now(UTC)
         await self._start()
         self.state.status = BotStatus.RUNNING
 
@@ -30,7 +30,7 @@ class Bot:
         self.state.status = BotStatus.STOPPING
         await self._stop()
         self.state.status = BotStatus.STOPPED
-        self.state.stopped_at = datetime.utcnow()
+        self.state.stopped_at = datetime.now(UTC)
 
     async def _start(self) -> None:
         """Bot-specific start logic."""

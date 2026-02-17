@@ -43,7 +43,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
     details: dict[str, object] = {}
 
     if isinstance(exc.detail, dict):
-        code = str(exc.detail.get("error") or code)
+        code = str(exc.detail.get("code") or exc.detail.get("error") or code)
         message = str(exc.detail.get("message") or message)
 
     return JSONResponse(
