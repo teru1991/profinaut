@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter
 
-from services.marketdata.app.metrics import ingest_metrics
+from services.marketdata.app.metrics import ingest_metrics, quality_gate_metrics
 from services.marketdata.app.settings import load_settings
 
 router = APIRouter()
@@ -42,4 +42,5 @@ def capabilities() -> dict[str, object]:
         "degraded_reasons": settings.degraded_reasons,
         "build": {"id": _build_id()},
         "ingest_stats": ingest_metrics.summary(),
+        "quality_gate_stats": quality_gate_metrics.summary(),
     }
