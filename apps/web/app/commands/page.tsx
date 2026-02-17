@@ -95,13 +95,13 @@ function statusBadgeClass(status: string): string {
   }
 }
 
-
 function getCommandTypeBadgeClass(type: string): string {
-  switch (type) {
-    case "PAUSE": return "badge badge-error";
-    case "RESUME": return "badge badge-success";
-    default: return "badge badge-ghost";
-  }
+  const badgeClassMap: Record<string, string> = {
+    "PAUSE": "badge badge-warning",
+    "RESUME": "badge badge-success",
+  };
+
+  return badgeClassMap[type] ?? "badge badge-neutral";
 }
 
 export default function CommandsPage() {
