@@ -16,6 +16,7 @@ This page is the must-read entrypoint for AI/human operators before starting wor
    - `docs/rules/task-generation-policy.md`
    - `docs/rules/parallel-development-safety.md`
    - `docs/specs/parallel-task-safety.md`
+10. Before PR / Merge checklist: `docs/runbooks/pr-preflight.md`
 
 ## SSOT boundaries (important)
 
