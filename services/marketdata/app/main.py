@@ -495,6 +495,51 @@ async def get_capabilities() -> dict[str, Any]:
     }
 
 
+
+
+def _gold_bad_request(request_id: str, *, code: str, message: str, details: dict[str, Any]) -> JSONResponse:
+    return JSONResponse(
+        status_code=400,
+        content=error_envelope(code=code, message=message, details=details, request_id=request_id),
+    )
+
+
+def _gold_read_unavailable(request_id: str, reason: str) -> JSONResponse:
+    return JSONResponse(
+        status_code=503,
+        content=error_envelope(
+            code="READ_MODEL_UNAVAILABLE",
+            message="Read model is unavailable",
+            details={"reason": reason},
+            request_id=request_id,
+        ),
+    )
+
+
+def _validate_required_text(name: str, value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip()
+    return normalized or None
+
+
+def _normalize_tf(value: str) -> str | None:
+    normalized = value.strip().lower()
+    mapping = {
+        "1m": "1m",
+        "1min": "1m",
+        "5m": "5m",
+        "5min": "5m",
+        "15m": "15m",
+        "15min": "15m",
+        "1h": "1h",
+        "1hour": "1h",
+        "1d": "1d",
+        "1day": "1d",
+    }
+    return mapping.get(normalized)
+
+
 @app.get("/orderbook/bbo/latest")
 async def orderbook_bbo_latest(
     request: Request,
@@ -509,14 +554,16 @@ async def orderbook_bbo_latest(
     try:
         repo = _connect_read_repo()
     except RuntimeError as exc:
-        return JSONResponse(status_code=503, content={"found": False, "stale": True, "degraded": True, "reason": str(exc), "request_id": request_id})
+        return _gold_read_unavailable(request_id, str(exc))
 
-    state = repo.get_orderbook_state(venue_id=venue_id, market_id=market_id)
+    state = repo.get_orderbook_state(venue_id=venue, market_id=market)
     if state is None:
         return JSONResponse(status_code=200, content={"found": False, "stale": True, "as_of": None, "bid": None, "ask": None, "degraded": False, "reason": None})
 
     stale_ms = int(os.getenv("LATEST_STALE_MS", "30000"))
     stale, _ = _compute_stale(str(state.get("as_of") or state.get("last_update_ts")), stale_ms / 1000)
+    stale_reason = "ORDERBOOK_STATE_STALE" if stale and not state.get("reason") else state.get("reason")
+    degraded = bool(state.get("degraded")) or stale
     return JSONResponse(
         status_code=200,
         content={
@@ -525,8 +572,8 @@ async def orderbook_bbo_latest(
             "as_of": state.get("as_of"),
             "bid": None if state.get("bid_px") is None else {"price": state.get("bid_px"), "size": state.get("bid_qty")},
             "ask": None if state.get("ask_px") is None else {"price": state.get("ask_px"), "size": state.get("ask_qty")},
-            "degraded": bool(state.get("degraded")),
-            "reason": state.get("reason"),
+            "degraded": degraded,
+            "reason": stale_reason,
         },
     )
 
@@ -545,9 +592,9 @@ async def orderbook_state(
     try:
         repo = _connect_read_repo()
     except RuntimeError as exc:
-        return JSONResponse(status_code=503, content={"found": False, "degraded": True, "reason": str(exc)})
+        return _gold_read_unavailable(request_id, str(exc))
 
-    state = repo.get_orderbook_state(venue_id=venue_id, market_id=market_id)
+    state = repo.get_orderbook_state(venue_id=venue, market_id=market)
     if state is None:
         return JSONResponse(status_code=200, content={"found": False, "degraded": False, "reason": None})
 
@@ -586,17 +633,9 @@ async def ticker_latest(
         try:
             repo = _connect_read_repo()
         except RuntimeError as exc:
-            return JSONResponse(
-                status_code=503,
-                content={
-                    "code": "READ_MODEL_UNAVAILABLE",
-                    "message": "Read model is unavailable",
-                    "reason": str(exc),
-                    "request_id": request_id,
-                },
-            )
+            return _gold_read_unavailable(request_id, str(exc))
 
-        bba = repo.get_latest_best_bid_ask(venue_id=venue_id, market_id=market_id, instrument_id=instrument_id)
+        bba = repo.get_latest_best_bid_ask(venue_id=venue, market_id=market, instrument_id=instrument)
         threshold_seconds = float(os.getenv("READ_STALE_THRESHOLD_SECONDS", "10"))
         if bba is not None:
             stale, stale_by_ms = _compute_stale(str(bba["received_ts"]), threshold_seconds)
@@ -604,9 +643,9 @@ async def ticker_latest(
                 status_code=200,
                 content={
                     "found": True,
-                    "venue_id": venue_id,
-                    "market_id": market_id,
-                    "instrument_id": instrument_id,
+                    "venue_id": venue,
+                    "market_id": market,
+                    "instrument_id": instrument,
                     "bid": bba["bid_px"],
                     "ask": bba["ask_px"],
                     "bid_qty": bba["bid_qty"],
@@ -618,16 +657,16 @@ async def ticker_latest(
                 },
             )
 
-        trade = repo.get_latest_trade(venue_id=venue_id, market_id=market_id, instrument_id=instrument_id)
+        trade = repo.get_latest_trade(venue_id=venue, market_id=market, instrument_id=instrument)
         if trade is not None:
             stale, stale_by_ms = _compute_stale(str(trade["received_ts"]), threshold_seconds)
             return JSONResponse(
                 status_code=200,
                 content={
                     "found": True,
-                    "venue_id": venue_id,
-                    "market_id": market_id,
-                    "instrument_id": instrument_id,
+                    "venue_id": venue,
+                    "market_id": market,
+                    "instrument_id": instrument,
                     "price": trade["price"],
                     "bid": None,
                     "ask": None,
@@ -641,9 +680,9 @@ async def ticker_latest(
             status_code=404,
             content={
                 "found": False,
-                "venue_id": venue_id,
-                "market_id": market_id,
-                "instrument_id": instrument_id,
+                "venue_id": venue,
+                "market_id": market,
+                "instrument_id": instrument,
                 "stale": True,
                 "stale_by_ms": None,
             },
@@ -654,8 +693,6 @@ async def ticker_latest(
     payload["request_id"] = request_id
     payload["exchange"] = "gmo"
     return JSONResponse(status_code=status_code, content=payload)
-
-
 
 
 @app.get("/ohlcv/latest")
