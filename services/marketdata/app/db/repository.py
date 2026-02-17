@@ -482,6 +482,78 @@ class MarketDataMetaRepository:
             "received_ts": row[0],
         }
 
+    def get_latest_ohlcv_by_market(
+        self,
+        *,
+        venue_id: str,
+        market_id: str,
+        timeframe: str,
+    ) -> dict[str, Any] | None:
+        row = self._conn.execute(
+            """
+            SELECT open_ts, open, high, low, close, volume, is_final, instrument_id
+            FROM md_ohlcv
+            WHERE venue_id = ? AND market_id = ? AND timeframe = ?
+            ORDER BY open_ts DESC, id DESC
+            LIMIT 1
+            """,
+            (venue_id, market_id, timeframe),
+        ).fetchone()
+        if row is None:
+            return None
+        return {
+            "open_ts": row[0],
+            "open": row[1],
+            "high": row[2],
+            "low": row[3],
+            "close": row[4],
+            "volume": row[5],
+            "is_final": bool(row[6]),
+            "instrument_id": row[7],
+            "received_ts": row[0],
+        }
+
+    def get_ohlcv_range(
+        self,
+        *,
+        venue_id: str,
+        market_id: str,
+        timeframe: str,
+        from_ts: str,
+        to_ts: str,
+        limit: int,
+    ) -> list[dict[str, Any]]:
+        rows = self._conn.execute(
+            """
+            SELECT open_ts, open, high, low, close, volume, is_final, instrument_id
+            FROM md_ohlcv
+            WHERE venue_id = ?
+              AND market_id = ?
+              AND timeframe = ?
+              AND open_ts >= ?
+              AND open_ts <= ?
+            ORDER BY open_ts ASC, id ASC
+            LIMIT ?
+            """,
+            (venue_id, market_id, timeframe, from_ts, to_ts, limit),
+        ).fetchall()
+        out: list[dict[str, Any]] = []
+        for row in rows:
+            out.append(
+                {
+                    "open_ts": row[0],
+                    "open": row[1],
+                    "high": row[2],
+                    "low": row[3],
+                    "close": row[4],
+                    "volume": row[5],
+                    "is_final": bool(row[6]),
+                    "instrument_id": row[7],
+                    "received_ts": row[0],
+                }
+            )
+        return out
+
     def upsert_orderbook_state(
         self,
         *,
