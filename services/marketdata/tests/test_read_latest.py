@@ -219,8 +219,8 @@ def test_orderbook_bbo_latest_reports_stale_and_degraded(monkeypatch, tmp_path: 
             "2026-02-16T00:00:00Z",
             "2026-02-16T00:00:00Z",
             "10",
-            1,
-            "ORDERBOOK_GAP",
+            0,
+            None,
         ),
     )
     conn.commit()

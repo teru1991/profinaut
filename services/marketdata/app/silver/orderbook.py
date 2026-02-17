@@ -31,6 +31,21 @@ class OrderbookEngine:
             result.append(OrderbookLevel(price=price, size=size))
         return result
 
+    def load_from_bbo(
+        self,
+        *,
+        bid_px: float | None,
+        bid_qty: float | None,
+        ask_px: float | None,
+        ask_qty: float | None,
+    ) -> None:
+        self._bids.clear()
+        self._asks.clear()
+        if bid_px is not None and bid_qty is not None and bid_qty > 0:
+            self._bids[float(bid_px)] = float(bid_qty)
+        if ask_px is not None and ask_qty is not None and ask_qty > 0:
+            self._asks[float(ask_px)] = float(ask_qty)
+
     def apply_snapshot(self, snapshot: dict[str, Any]) -> None:
         self._bids.clear()
         self._asks.clear()
