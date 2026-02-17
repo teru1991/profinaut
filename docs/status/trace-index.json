@@ -18,6 +18,21 @@
         "docs/handoff/HANDOFF.json",
         "docs/decisions/decisions.md"
       ]
+    },
+    {
+      "req_id": "DOC-030",
+      "progress_update_ids": [],
+      "pr_urls": [],
+      "commit_shas": [],
+      "spec_refs": [],
+      "runbook_refs": [
+        "docs/runbooks/pr-preflight.md"
+      ],
+      "verification_refs": [],
+      "results_refs": [
+        "docs/rules/parallel-development-safety.md",
+        "docs/runbooks/pr-preflight.md"
+      ]
     }
   ]
 }

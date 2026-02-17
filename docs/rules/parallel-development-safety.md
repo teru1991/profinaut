@@ -71,3 +71,20 @@ When cross-scope edits become necessary during execution:
 - [ ] Required Locks declared
 - [ ] No overlap in LOCK/semi-LOCK areas
 - [ ] Revert/rollback path is clear
+
+## 7. CI-safe editing minimums (cross-reference)
+
+To reduce avoidable CI failures during parallel work, apply these minimums on every task:
+
+- Declare `Allowed/Forbidden paths` before editing and keep diff constrained.
+- Keep line endings/naming/style consistent with existing files.
+- Run required formatting/lint/typecheck checks for touched scope before commit.
+- Never include generated artifacts in PR diffs.
+
+Detailed operational checklist and CI failure evidence template are maintained in:
+
+- `docs/runbooks/pr-preflight.md` (sections 5-7).
+
+## Update history
+
+- 2026-02-17: Added CI-safe editing minimums and explicit pointer to PR preflight runbook sections 5-7.
