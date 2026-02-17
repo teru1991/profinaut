@@ -949,7 +949,7 @@ def trigger_module_run(
         raise HTTPException(status_code=404, detail="Module not found")
 
     run = ModuleRun(
-        run_id=str(__import__("uuid").uuid4()),
+        run_id=str(uuid4()),
         module_id=module_id,
         trigger_type=payload.trigger_type,
         status="QUEUED",

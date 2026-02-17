@@ -2,7 +2,7 @@
 FastAPI Dashboard API application.
 """
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import FastAPI, HTTPException
 from prometheus_client import Counter, generate_latest
@@ -45,7 +45,7 @@ async def health_check():
 
     return HealthStatus(
         status="healthy",
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(UTC),
         services={
             "api": "healthy",
             "bots": f"{len(bot_registry.bots)} bots registered",

@@ -3,7 +3,7 @@ Market data provider with caching.
 """
 import logging
 import random
-from datetime import datetime
+from datetime import UTC, datetime
 
 from contracts.schemas import MarketData, MarketDataType
 
@@ -33,7 +33,7 @@ class MarketDataProvider:
         market_data = MarketData(
             symbol=symbol,
             data_type=MarketDataType.PRICE,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             value=price,
             source="dummy",
         )
@@ -51,7 +51,7 @@ class MarketDataProvider:
         market_data = MarketData(
             symbol=symbol,
             data_type=MarketDataType.VOLUME,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             value=volume,
             source="dummy",
         )
@@ -71,7 +71,7 @@ class MarketDataProvider:
         market_data = MarketData(
             symbol=symbol,
             data_type=MarketDataType.ORDERBOOK,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             value=orderbook_data,
             source="dummy",
         )

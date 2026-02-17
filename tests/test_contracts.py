@@ -1,7 +1,7 @@
 """
 Tests for contracts schemas.
 """
-from datetime import datetime
+from datetime import UTC, datetime
 
 from contracts.schemas import (
     BotConfig,
@@ -35,7 +35,7 @@ def test_market_data_creation():
     data = MarketData(
         symbol="BTC/USD",
         data_type=MarketDataType.PRICE,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(UTC),
         value=50000.0,
     )
     assert data.symbol == "BTC/USD"
@@ -45,7 +45,7 @@ def test_market_data_creation():
 
 def test_health_status_creation():
     """Test HealthStatus creation."""
-    health = HealthStatus(status="healthy", timestamp=datetime.utcnow())
+    health = HealthStatus(status="healthy", timestamp=datetime.now(UTC))
     assert health.status == "healthy"
 
 
