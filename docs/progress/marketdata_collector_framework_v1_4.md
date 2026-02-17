@@ -96,3 +96,79 @@ This framework does NOT alter non-crypto marketdata modules (Python FastAPI serv
 - `parse.expr.expressions` are length-bounded only; expression parsing engine is Task B.
 - The `AppState` is currently immutable (built at startup). Task B may need to add runtime state (connection status, etc.).
 - Symbol map file loading (reading the TOML) is deferred — only existence check is done.
+
+---
+
+## Task D — Persistence (Mongo bulk + Durable Spool + Dedup window)
+
+**Status:** IN PROGRESS
+**Start:** 2026-02-17
+**Branch:** `claude/task-d-persistence-mongo-spool-UUYGr`
+
+### Deliverables Checklist
+
+- [ ] D1 — Mongo bulk insert sink (`MongoSink` with `insert_many`, bounded retry, state: OK/MongoUnavailable/Degraded)
+- [ ] D2 — Durable spool (append-only segments, rotation by max_segment_mb, total cap, crash safety, on_full policy)
+- [ ] D3 — Replay worker (oldest-first, deletes after successful insert, rate-limited, shutdown-safe)
+- [ ] D4 — Dedup window (optional toggle, bounded window store, key priority rules, dedup_dropped_total metric)
+- [ ] D5 — Integration with Task C pipeline (Sink trait impl, fallback logic: Mongo → Spool → on_full)
+- [ ] D6 — Tests: unit (spool rotation/cap/on_full/partial-write/dedup) + fake integration (fail→succeed + spool grows/drains + metrics)
+- [ ] D7 — Doc updates (docs/troubleshooting.md, docs/marketdata_collector_framework_v1_4.md)
+
+---
+
+## Existing Implementation Audit (Task D)
+
+### Audit Date: 2026-02-17
+
+### What Exists (Task D Scope)
+
+| Path | Description | Matches D spec? |
+|------|-------------|-----------------|
+| `services/marketdata-rs/crypto-collector/` | Rust crate: config, descriptor, health, state, main. Task A only. | No persistence code at all. |
+| `services/marketdata/` | Python FastAPI service (Mongo via pymongo, bronze/silver pipeline). | Different language/concern. Do NOT touch. |
+
+### What Does NOT Exist
+
+- No `MongoSink` / `insert_many` pattern in crypto subsystem (Rust)
+- No durable spool / local queue / disk buffering in crypto subsystem
+- No dedup window or idempotency logic in crypto subsystem
+- No persistence metrics defined in crypto subsystem
+- No Envelope v1 type
+- No Sink trait definition
+- **Tasks B and C were not implemented** — Envelope v1 and Sink trait must be defined as part of Task D to provide the integration surface.
+
+### Refactor Plan
+
+- **Keep:** All existing Task A code unchanged.
+- **Add:** `services/marketdata-rs/crypto-collector/src/persistence/` module with all D1–D5 deliverables.
+- **Modify:** `crypto-collector/Cargo.toml` — add `tokio` features (`sync`, `time`, `fs`, `io-util`) and `async-trait` dependency.
+- **Modify:** `crypto-collector/src/main.rs` — add `mod persistence;` declaration.
+- **Modify:** `crypto-collector/src/config.rs` — add `PersistenceConfig` struct.
+- **Note:** `mongodb` driver NOT added as a compile dependency. `MongoTarget` trait abstraction is used; real implementation is documented but marked NOT VERIFIED (requires running Mongo instance).
+
+### Chosen Paths (Task D additions)
+
+| Purpose | Path |
+|---------|------|
+| Persistence module root | `services/marketdata-rs/crypto-collector/src/persistence/mod.rs` |
+| Envelope v1 type | `services/marketdata-rs/crypto-collector/src/persistence/envelope.rs` |
+| Sink trait + error types | `services/marketdata-rs/crypto-collector/src/persistence/sink.rs` |
+| Persistence metrics | `services/marketdata-rs/crypto-collector/src/persistence/metrics.rs` |
+| D1: Mongo sink | `services/marketdata-rs/crypto-collector/src/persistence/mongo.rs` |
+| D2: Durable spool | `services/marketdata-rs/crypto-collector/src/persistence/spool.rs` |
+| D3: Replay worker | `services/marketdata-rs/crypto-collector/src/persistence/replay.rs` |
+| D4: Dedup window | `services/marketdata-rs/crypto-collector/src/persistence/dedup.rs` |
+| D5: Pipeline sink (integration) | `services/marketdata-rs/crypto-collector/src/persistence/pipeline.rs` |
+| Persistence config additions | `services/marketdata-rs/crypto-collector/src/config.rs` (extended) |
+| Troubleshooting doc (new) | `docs/troubleshooting.md` |
+| Framework reference doc (new) | `docs/marketdata_collector_framework_v1_4.md` |
+
+### Notes / Decisions (Task D)
+
+1. **No mongodb crate dependency:** MongoTarget trait abstraction allows full unit + fake-integration testing without a running Mongo instance. The `real_mongo` feature flag would enable the actual driver (future work).
+2. **Spool format:** Length-prefix encoded JSON records (`[u32 LE length][JSON bytes]`). Crash-safe: partial records truncated on recovery.
+3. **Segment naming:** `spool_{seq:06}.dat` for lexicographic sort = chronological order.
+4. **Dedup key priority:** message_id > "seq:{exchange}:{channel}:{seq}" > "hash:{DefaultHasher hex}".
+5. **Spool/Dedup disabled by default** in config (`spool.enabled = false`, `dedup.enabled = false`).
+6. **Tasks B/C not done:** Envelope v1 and Sink trait defined here as the stable interface for Tasks E/F.

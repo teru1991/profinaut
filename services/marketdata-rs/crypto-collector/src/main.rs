@@ -6,6 +6,7 @@
 mod config;
 mod descriptor;
 mod health;
+mod persistence;
 mod state;
 
 use std::net::SocketAddr;
