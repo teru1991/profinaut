@@ -178,10 +178,10 @@ Required output format:
 
 Ask Gemini to always return:
 
-1. **原因推定（最有力→次点）**
-2. **修正案（最小差分）**
-3. **影響範囲**（CI/jobs/files/runtime impact）
-4. **GitHub suggestion 形式**（可能な場合）
+1. **Cause hypothesis** (most likely -> second likely)
+2. **Minimal diff fix proposal**
+3. **Impact/risk scope** (CI/jobs/files/runtime impact)
+4. **GitHub suggestion blocks** (if possible)
 
 ### 7.3 Noise control rules
 
