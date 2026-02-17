@@ -95,6 +95,14 @@ function statusBadgeClass(status: string): string {
   }
 }
 
+function getCommandTypeBadgeClass(type: string): string {
+  switch (type) {
+    case "PAUSE": return "badge badge-warning";
+    case "RESUME": return "badge badge-success";
+    default: return "badge badge-neutral";
+  }
+}
+
 export default function CommandsPage() {
   const [botId, setBotId] = useState("simple-mm");
   const [activeBotId, setActiveBotId] = useState("simple-mm");

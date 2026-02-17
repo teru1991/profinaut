@@ -21,6 +21,15 @@ type ExposureSummary = {
   by_symbol: ExposureBySymbol[];
 };
 
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  });
+}
+
 export default function PortfolioPage() {
   const [data, setData] = useState<ExposureSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
