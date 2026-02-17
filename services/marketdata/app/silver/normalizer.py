@@ -62,34 +62,17 @@ def _seeded_now() -> datetime:
     return datetime.now(UTC)
 
 
-
-def _derive_trade_source_msg_key(envelope: dict[str, Any], payload: dict[str, Any]) -> str:
-    for key in ("trade_id", "tradeId", "id", "execution_id", "executionId"):
-        value = payload.get(key)
-        if value is not None and str(value).strip():
-            return f"trade_id:{str(value).strip()}"
-
-    venue = str(envelope.get("venue_id") or "unknown").lower()
-    market = str(envelope.get("market_id") or envelope.get("instrument_id") or "unknown").lower()
-    occurred_at = str(envelope.get("event_ts") or envelope.get("received_ts") or "")
-    price = str(payload.get("price"))
-    qty = str(payload.get("qty"))
-    side = str(payload.get("side") or "").lower()
-    seq = str(envelope.get("seq") or payload.get("seq") or payload.get("sequence") or "")
-    return "|".join(["trade", venue, market, occurred_at, price, qty, side, seq])
-
 def _insert_trade(repo: MarketDataMetaRepository, envelope: dict[str, Any], payload: dict[str, Any]) -> None:
-    source_msg_key = (
-        str(envelope.get("source_msg_key"))
-        if envelope.get("source_msg_key") is not None and str(envelope.get("source_msg_key")).strip()
-        else _derive_trade_source_msg_key(envelope, payload)
-    )
-    inserted = repo.insert_md_trade(
+    instrument_id = envelope.get("instrument_id")
+    if instrument_id is None:
+        instrument_id = envelope.get("market_id") or payload.get("symbol")
+
+    repo.insert_md_trade(
         raw_msg_id=str(envelope["raw_msg_id"]),
         venue_id=None if envelope.get("venue_id") is None else str(envelope.get("venue_id")),
         market_id=None if envelope.get("market_id") is None else str(envelope.get("market_id")),
-        instrument_id=None if envelope.get("instrument_id") is None else str(envelope.get("instrument_id")),
-        source_msg_key=source_msg_key,
+        instrument_id=None if instrument_id is None else str(instrument_id),
+        source_msg_key=None if envelope.get("source_msg_key") is None else str(envelope.get("source_msg_key")),
         price=_as_float(payload["price"]),
         qty=_as_float(payload["qty"]),
         side=str(payload["side"]).lower(),
