@@ -1,21 +1,353 @@
 {
+  "ssot": "This file is the canonical trace-index. Do not create duplicate trace link files.",
+  "last_updated": "2026-02-17T00:00:00Z",
   "tasks": {
     "DOC-FIX-001": {
-      "branch": "",
-      "pr_urls": [],
-      "commit_shas": [],
+      "description": "Bootstrap preflight SSOT docs",
+      "branch": "codex/fix-and-repair-ssot-documentation",
+      "pr_urls": [
+        "https://github.com/teru1991/profinaut/pull/113"
+      ],
+      "commit_shas": [
+        "4a0fdaf"
+      ],
       "verification_evidence": [
-        "docs/verification/"
+        "docs/SSOT/README_AI.md",
+        "docs/status/status.json",
+        "docs/status/HANDOFF.json",
+        "docs/status/trace-index.json",
+        "docs/status/trace-index.md"
       ]
     },
     "CI-010-B": {
+      "description": "CI security guardrails tuning (dependency-review + Trivy split + artifact_guard hardening)",
       "branch": "",
+      "pr_urls": [
+        "https://github.com/teru1991/profinaut/pull/112"
+      ],
+      "commit_shas": [
+        "223cd38"
+      ],
+      "verification_evidence": [
+        "docs/audits/ci-workflows-audit.md",
+        ".github/workflows/security-supply-chain.yml",
+        ".github/workflows/dependency-review.yml",
+        "scripts/security/artifact_guard.sh"
+      ]
+    },
+    "PROG-AUDIT-001": {
+      "description": "Epic-level progress audit with trace-index and status.json consistency update",
+      "branch": "claude/audit-epic-progress-Eu5Ew",
       "pr_urls": [],
       "commit_shas": [],
       "verification_evidence": [
-        "docs/verification/"
+        "docs/status/progress-updates/PROG-AUDIT-20260217.md",
+        "docs/status/trace-index.json",
+        "docs/status/status.json"
       ]
     }
   },
-  "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links."
+  "epics": {
+    "UG-A": {
+      "name": "基盤・運用 (Repo/CI/安全運用)",
+      "status": "In Progress",
+      "progress_pct": 60,
+      "evidence": [
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/109",
+          "commit": "6606201",
+          "description": "CI audit and security baseline pipelines"
+        },
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/110",
+          "commit": "4a1314f",
+          "description": "CI workflow rules integrated into docs"
+        },
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/112",
+          "commit": "223cd38",
+          "description": "Security workflows hardening (dependency-review, supply-chain, Trivy split)"
+        },
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/108",
+          "commit": "2c364fa",
+          "description": "Docs OS context pack (rules, preflight, SSOT)"
+        },
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/113",
+          "commit": "4a0fdaf",
+          "description": "SSOT docs bootstrap (DOC-FIX-001)"
+        },
+        {
+          "type": "file",
+          "path": "docs/rules/parallel-development-safety.md",
+          "description": "Parallel dev safety rules"
+        },
+        {
+          "type": "file",
+          "path": "docs/runbooks/pr-preflight.md",
+          "description": "PR preflight runbook"
+        }
+      ]
+    },
+    "UG-B": {
+      "name": "Control Plane (Dashboard API + UI)",
+      "status": "In Progress",
+      "progress_pct": 70,
+      "evidence": [
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/66",
+          "commit": "ea4387b",
+          "description": "Commands UI/API improvements"
+        },
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/64",
+          "commit": "62861f5",
+          "description": "Bot command polling/ack improvements"
+        },
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/67",
+          "commit": "5cc0593",
+          "description": "Markets page type stabilization"
+        },
+        {
+          "type": "file",
+          "path": "docs/status/progress-updates/UG-P0-103.md",
+          "description": "UG-P0-103: Commands API reason enforcement (capabilities-gated)"
+        },
+        {
+          "type": "file",
+          "path": "docs/status/progress-updates/UG-P0-104.md",
+          "description": "UG-P0-104: Commands UI reason+confirm+expiry (capabilities-driven)"
+        },
+        {
+          "type": "file",
+          "path": "docs/specs/dangerous-ops-confirmation.md",
+          "description": "Dangerous ops confirmation spec"
+        }
+      ]
+    },
+    "UG-C": {
+      "name": "Market Data Platform",
+      "status": "In Progress",
+      "progress_pct": 50,
+      "evidence": [
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/58",
+          "commit": "1a8c39e",
+          "description": "Marketdata validation hardening"
+        },
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/115",
+          "commit": "cbfdf6d",
+          "description": "Orderbook warm-start persistence recovery"
+        },
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/117",
+          "commit": "1ad9d9d",
+          "description": "Orderbook warm-start persistence recovery (hardened)"
+        },
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/119",
+          "commit": "06fde5b",
+          "description": "GMO trade dedup stable source key"
+        },
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/120",
+          "commit": "e2f9454",
+          "description": "GMO trade dedup stable source key (hardened)"
+        },
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/114",
+          "commit": "34018b5",
+          "description": "Deterministic replay CLI and verification hook"
+        },
+        {
+          "type": "file",
+          "path": "docs/verification/marketdata-data-platform-smoke-results.md",
+          "description": "Marketdata smoke test results"
+        }
+      ]
+    },
+    "UG-D": {
+      "name": "Trading/Execution Platform",
+      "status": "In Progress",
+      "progress_pct": 55,
+      "evidence": [
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/68",
+          "commit": "47efa14",
+          "description": "Live mode hardening, idempotency persistence, orders/fills history"
+        },
+        {
+          "type": "file",
+          "path": "docs/status/progress-updates/UG-P0-101.md",
+          "description": "UG-P0-101: SAFE_MODE + PolicyDecision contract schemas"
+        },
+        {
+          "type": "file",
+          "path": "docs/status/progress-updates/UG-P0-102.md",
+          "description": "UG-P0-102: Execution SAFE_MODE gating + capabilities"
+        },
+        {
+          "type": "file",
+          "path": "docs/status/progress-updates/UG-P0-110.md",
+          "description": "UG-P0-110: Central Policy Gate (ALLOW/BLOCK/THROTTLE/.../HALT)"
+        },
+        {
+          "type": "file",
+          "path": "docs/status/progress-updates/UG-P0-111.md",
+          "description": "UG-P0-111: Reconcile mismatch repair runbook (canary-first)"
+        },
+        {
+          "type": "file",
+          "path": "docs/runbooks/reconcile-mismatch-repair.md",
+          "description": "Reconcile mismatch repair runbook"
+        },
+        {
+          "type": "file",
+          "path": "docs/specs/execution-gmo.md",
+          "description": "GMO live execution spec"
+        }
+      ]
+    },
+    "UG-E": {
+      "name": "Strategy/Research Platform",
+      "status": "In Progress",
+      "progress_pct": 30,
+      "evidence": [
+        {
+          "type": "file",
+          "path": "docs/status/progress-updates/UG-P0-106.md",
+          "description": "UG-P0-106: SDK Dead Man's Switch to SAFE_MODE"
+        },
+        {
+          "type": "file",
+          "path": "docs/status/progress-updates/UG-P0-112.md",
+          "description": "UG-P0-112: Backtest-First minimum (dataset_ref, look-ahead prevention, determinism)"
+        },
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/114",
+          "commit": "34018b5",
+          "description": "Deterministic replay CLI and verification hook"
+        },
+        {
+          "type": "file",
+          "path": "bots/simple_mm/",
+          "description": "Simple MM bot runtime"
+        },
+        {
+          "type": "file",
+          "path": "sdk/python/",
+          "description": "Python SDK with heartbeat/command/dead-man"
+        }
+      ]
+    },
+    "UG-F": {
+      "name": "Portfolio/Treasury",
+      "status": "In Progress",
+      "progress_pct": 45,
+      "evidence": [
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/107",
+          "commit": "7c2b0e4",
+          "description": "Portfolio page fix"
+        },
+        {
+          "type": "file",
+          "path": "docs/status/progress-updates/UG-P0-111.md",
+          "description": "UG-P0-111: Reconcile runbook (canary-first)"
+        },
+        {
+          "type": "file",
+          "path": "docs/runbooks/reconcile-mismatch-repair.md",
+          "description": "Reconcile mismatch repair runbook"
+        },
+        {
+          "type": "file",
+          "path": "services/dashboard-api/",
+          "description": "Portfolio/exposure/analytics API (Roadmap Step 21)"
+        }
+      ]
+    },
+    "UG-H": {
+      "name": "インフラ/ランタイム",
+      "status": "In Progress",
+      "progress_pct": 35,
+      "evidence": [
+        {
+          "type": "file",
+          "path": "docker-compose.yml",
+          "description": "Service composition (reference; forbidden to modify in audit tasks)"
+        },
+        {
+          "type": "file",
+          "path": "alembic/",
+          "description": "Database migrations baseline"
+        },
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/112",
+          "commit": "223cd38",
+          "description": "Supply chain security CI (infra-adjacent)"
+        }
+      ]
+    },
+    "UG-I": {
+      "name": "品質保証/安全検証",
+      "status": "In Progress",
+      "progress_pct": 50,
+      "evidence": [
+        {
+          "type": "file",
+          "path": "docs/status/progress-updates/UG-P0-105.md",
+          "description": "UG-P0-105: Chaos injection tests (429/5xx/timeout/WS drop)"
+        },
+        {
+          "type": "file",
+          "path": "docs/status/progress-updates/UG-P0-112.md",
+          "description": "UG-P0-112: Backtest determinism tests"
+        },
+        {
+          "type": "pr",
+          "url": "https://github.com/teru1991/profinaut/pull/114",
+          "commit": "34018b5",
+          "description": "Deterministic replay CLI and verification hook"
+        },
+        {
+          "type": "file",
+          "path": ".github/workflows/chaos-injection.yml",
+          "description": "Chaos injection CI workflow"
+        },
+        {
+          "type": "file",
+          "path": "docs/verification/marketdata-data-platform-smoke-results.md",
+          "description": "Marketdata platform smoke results"
+        },
+        {
+          "type": "file",
+          "path": "docs/runbooks/paper_e2e.md",
+          "description": "Paper E2E smoke runbook"
+        }
+      ]
+    }
+  },
+  "notes": "SSOT mapping of task IDs and Epic areas to PR/branch/commit/doc evidence links. Updated by PROG-AUDIT-001 (2026-02-17). Do not scatter trace links across other files — consolidate here."
 }

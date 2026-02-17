@@ -1,28 +1,36 @@
 {
   "base_branch": "main",
-  "active_task": "CI-010-B",
-  "owner": "codex",
+  "active_task": "PROG-AUDIT-001",
+  "owner": "claude",
   "state": "in_progress",
   "open_prs": [
     {
       "pr_number": null,
-      "title": "TBD",
+      "title": "PROG-AUDIT-001: Epic-level progress audit (docs-only)",
       "url": "",
-      "branch": "",
+      "branch": "claude/audit-epic-progress-Eu5Ew",
       "locks": [
-        "LOCK:ci"
+        "LOCK:shared-docs"
       ],
-      "status": "unknown"
+      "status": "open"
     }
   ],
   "locks_held": [
-    "LOCK:ci"
+    "LOCK:shared-docs"
   ],
   "next_actions": [
-    "Validate dependency-review and security-supply-chain behavior on PR runs.",
-    "Verify blocking branch via workflow_dispatch for security-supply-chain.",
-    "Prepare CI-010 closure notes after run log confirmation."
+    "Merge PR for PROG-AUDIT-001 after review.",
+    "After merge: resume CI-010-B (LOCK:ci) per docs/handoff/HANDOFF.json.",
+    "Next P0 candidates: UG-A CODEOWNERS, UG-B T191 bots-fields-align, UG-D T060 execution-observability, UG-I Replay E2E CI gate."
   ],
   "last_updated": "2026-02-17T00:00:00Z",
-  "notes": "CI-010 preflight normalized status keys and lock declaration."
+  "previous_task": {
+    "task_id": "CI-010-B",
+    "owner": "codex",
+    "state": "in_progress",
+    "locks_held": ["LOCK:ci"],
+    "handoff_ref": "docs/handoff/HANDOFF.json",
+    "notes": "CI-010-B paused for PROG-AUDIT-001. Resume after audit PR merges."
+  },
+  "notes": "PROG-AUDIT-001 audit active (LOCK:shared-docs). CI-010-B paused; see previous_task + docs/handoff/HANDOFF.json. Audit report: docs/status/progress-updates/PROG-AUDIT-20260217.md."
 }
