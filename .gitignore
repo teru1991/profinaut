@@ -13,6 +13,9 @@ apps/web/.next/
 .next/
 *.tsbuildinfo
 
+# Rust
+target/
+
 # Env
 .env
 
