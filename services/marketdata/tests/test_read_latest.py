@@ -194,10 +194,13 @@ def test_ohlcv_endpoints_return_explicit_error_when_db_unavailable(monkeypatch) 
         rng = client.get("/ohlcv/range?venue_id=gmo&market_id=spot&tf=1m&from=2026-02-16T00:00:00Z&to=2026-02-16T00:02:00Z")
 
     assert latest.status_code == 503
-    assert latest.json()["code"] == "READ_MODEL_UNAVAILABLE"
+    assert latest.json()["error"]["code"] == "READ_MODEL_UNAVAILABLE"
+    assert latest.json()["found"] is False
+    assert latest.json()["degraded"] is True
 
     assert rng.status_code == 503
-    assert rng.json()["code"] == "READ_MODEL_UNAVAILABLE"
+    assert rng.json()["error"]["code"] == "READ_MODEL_UNAVAILABLE"
+    assert rng.json()["found"] is False
 
 def test_orderbook_bbo_latest_reports_stale_and_degraded(monkeypatch, tmp_path: Path) -> None:
     db_file = tmp_path / "md.sqlite3"

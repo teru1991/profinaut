@@ -160,9 +160,13 @@ def run_backfill_ohlcv(
             try:
                 batch = fetch(symbol_value, tf, page)
                 break
-            except urllib.error.URLError as exc:
-                # Retry on 429 Too Many Requests, or other transient URL errors.
-                if retry >= 3 or (isinstance(exc, urllib.error.HTTPError) and exc.code != 429):
+            except urllib.error.HTTPError as exc:
+                if exc.code != 429 or retry >= 3:
+                    raise
+                sleep_fn(min(2**retry, 8))
+                retry += 1
+            except urllib.error.URLError:
+                if retry >= 3:
                     raise
                 sleep_fn(min(2**retry, 8))
                 retry += 1
