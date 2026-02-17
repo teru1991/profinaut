@@ -1,0 +1,25 @@
+# Multi-Exchange Market Data Collector — collector.toml
+# Framework v1.4 (Crypto Subsystem)
+
+[run]
+http_port = 8090
+log_level = "info"
+
+# ---------------------------------------------------------------------------
+# Exchange instances
+# ---------------------------------------------------------------------------
+
+[[exchange]]
+name = "example-exchange"
+enabled = true
+descriptor_path = "exchanges/example_v1_4.toml"
+symbols = ["BTC/USDT", "ETH/USDT"]
+channels = ["trades", "orderbook_l2"]
+
+[[exchange]]
+name = "another-exchange"
+enabled = false
+descriptor_path = "exchanges/another_v1_4.toml"
+symbols = []
+channels = []
+# Disabled instances are validated for shape but descriptors are not loaded.

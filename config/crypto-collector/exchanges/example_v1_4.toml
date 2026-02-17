@@ -1,0 +1,81 @@
+# Exchange Descriptor — Example Exchange (v1.4)
+# This is a sample descriptor that validates but does not connect to anything.
+
+[meta]
+name = "example-exchange"
+version = "1.4"
+
+# ---------------------------------------------------------------------------
+# WebSocket connections
+# ---------------------------------------------------------------------------
+
+[[ws.connections]]
+id = "main"
+urls = ["wss://ws.example-exchange.com/v1"]
+read_timeout_ms = 30000
+
+[ws.connections.tls]
+enabled = true
+
+[ws.connections.keepalive]
+mode = "ping_frame"
+interval_ms = 25000
+
+[[ws.connections]]
+id = "private"
+urls = ["wss://ws-private.example-exchange.com/v1"]
+read_timeout_ms = 15000
+
+[ws.connections.keepalive]
+mode = "application"
+interval_ms = 20000
+template = "{\"op\":\"ping\"}"
+
+# ---------------------------------------------------------------------------
+# REST API (optional)
+# ---------------------------------------------------------------------------
+
+[rest]
+base_urls = ["https://api.example-exchange.com"]
+
+[rest.rate_limit]
+requests_per_minute = 120
+
+# ---------------------------------------------------------------------------
+# Subscriptions
+# ---------------------------------------------------------------------------
+
+[[subscriptions]]
+connection_id = "main"
+generator = "json_subscribe(channel, symbol)"
+
+[subscriptions.ack]
+field = "/result"
+value = "subscribed"
+
+[[subscriptions]]
+connection_id = "main"
+generator = "json_subscribe_orderbook(symbol, depth=20)"
+
+# ---------------------------------------------------------------------------
+# Parse pointers
+# ---------------------------------------------------------------------------
+
+[parse]
+channel = "/ch"
+symbol = "/data/symbol"
+server_time = "/data/timestamp"
+sequence = "/data/sequence"
+message_id = "/id"
+
+# ---------------------------------------------------------------------------
+# Maps (optional)
+# ---------------------------------------------------------------------------
+
+[maps]
+symbol_map_file = "maps/example_symbol_map.toml"
+
+[maps.channel_map]
+trade = "trades"
+book = "orderbook_l2"
+ticker = "ticker"
