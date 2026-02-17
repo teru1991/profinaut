@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { DangerousActionDialog } from "../../components/DangerousActionDialog";
+import { formatTimestamp, copyToClipboard } from "../../lib/format";
 
 type Ack = {
   command_id: string;
@@ -27,26 +28,20 @@ type CommandSafetyPolicy = {
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
+  if (!value || typeof value !== "object") return null;
   return value as Record<string, unknown>;
 }
 
 function firstBoolean(values: unknown[]): boolean | null {
   for (const value of values) {
-    if (typeof value === "boolean") {
-      return value;
-    }
+    if (typeof value === "boolean") return value;
   }
   return null;
 }
 
 function parseCapabilities(payload: unknown): CommandSafetyPolicy {
   const source = asRecord(payload);
-  if (!source) {
-    return { dangerousActionsEnabled: false, environmentLabel: "unknown" };
-  }
+  if (!source) return { dangerousActionsEnabled: false, environmentLabel: "unknown" };
 
   const features = Array.isArray(source.features) ? source.features : [];
   const dangerousOps = asRecord(source.dangerous_operations);
@@ -73,16 +68,14 @@ function parseCapabilities(payload: unknown): CommandSafetyPolicy {
     "unknown";
 
   return {
-    dangerousActionsEnabled: enabled === null ? false : enabled,
+    dangerousActionsEnabled: enabled === null ? false : enabled && !disabledByFeature,
     environmentLabel: environmentCandidate
   };
 }
 
 function parseError(payload: unknown, status: number, fallback: string): string {
   const record = asRecord(payload);
-  if (!record) {
-    return fallback;
-  }
+  if (!record) return fallback;
   const code = typeof record.code === "string" ? record.code : null;
   const message =
     typeof record.message === "string"
@@ -93,11 +86,20 @@ function parseError(payload: unknown, status: number, fallback: string): string 
   return code ? `${code}: ${message}` : `${message} (${status})`;
 }
 
+function statusBadgeClass(status: string): string {
+  switch (status) {
+    case "applied": return "badge badge-success";
+    case "nack": return "badge badge-error";
+    case "pending": return "badge badge-warning";
+    default: return "badge";
+  }
+}
+
 export default function CommandsPage() {
   const [botId, setBotId] = useState("simple-mm");
   const [activeBotId, setActiveBotId] = useState("simple-mm");
   const [commands, setCommands] = useState<Command[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [safetyPolicy, setSafetyPolicy] = useState<CommandSafetyPolicy>({
@@ -105,6 +107,7 @@ export default function CommandsPage() {
     environmentLabel: "unknown"
   });
   const [dialogType, setDialogType] = useState<"PAUSE" | "RESUME" | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const lastAck = useMemo(() => {
     for (const cmd of commands) {
@@ -114,7 +117,6 @@ export default function CommandsPage() {
   }, [commands]);
 
   async function loadCommands(target = activeBotId) {
-    setLoading(true);
     try {
       const res = await fetch(`/api/commands?target_bot_id=${encodeURIComponent(target)}`, { cache: "no-store" });
       const payload = await res.json();
@@ -156,24 +158,17 @@ export default function CommandsPage() {
         setSafetyPolicy({ dangerousActionsEnabled: false, environmentLabel: "unknown" });
       }
     }
-
     void loadCapabilities();
   }, []);
 
   async function issueCommand(type: "PAUSE" | "RESUME", reason: string, confirmToken?: string) {
-    const commandPayload: Record<string, string> = {
-      reason
-    };
-
+    const commandPayload: Record<string, string> = { reason };
     const requestBody: Record<string, unknown> = {
       type,
       target_bot_id: activeBotId,
       payload: commandPayload
     };
-
-    if (confirmToken) {
-      requestBody.confirm_token = confirmToken;
-    }
+    if (confirmToken) requestBody.confirm_token = confirmToken;
 
     setSubmitting(true);
     try {
@@ -182,14 +177,8 @@ export default function CommandsPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(requestBody)
       });
-
       let payload: unknown = null;
-      try {
-        payload = await res.json();
-      } catch {
-        payload = null;
-      }
-
+      try { payload = await res.json(); } catch { payload = null; }
       return { ok: res.ok, status: res.status, payload };
     } catch (e) {
       const message = e instanceof Error ? e.message : `Failed to issue ${type}`;
@@ -204,45 +193,75 @@ export default function CommandsPage() {
     const next = botId.trim() || "simple-mm";
     setBotId(next);
     setActiveBotId(next);
+    setLoading(true);
+  }
+
+  async function handleCopyId(id: string) {
+    const ok = await copyToClipboard(id);
+    if (ok) {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 1500);
+    }
   }
 
   return (
-    <div className="card" style={{ display: "grid", gap: 12 }}>
-      <h2>Commands</h2>
-      <p>Issue dangerous PAUSE/RESUME commands and monitor latest ack for a bot.</p>
-
-      <form onSubmit={onApplyBotId} style={{ display: "flex", gap: 8, alignItems: "end", flexWrap: "wrap" }}>
-        <label>
-          <div>Bot ID</div>
-          <input value={botId} onChange={(e) => setBotId(e.target.value)} placeholder="simple-mm" />
-        </label>
-        <button type="submit">Apply Bot</button>
-      </form>
-
-      <div style={{ display: "flex", gap: 8 }}>
-        <button
-          type="button"
-          onClick={() => setDialogType("PAUSE")}
-          disabled={submitting || !safetyPolicy.dangerousActionsEnabled}
-          title={safetyPolicy.dangerousActionsEnabled ? "" : "Disabled by policy"}
-        >
-          PAUSE
-        </button>
-        <button
-          type="button"
-          onClick={() => setDialogType("RESUME")}
-          disabled={submitting || !safetyPolicy.dangerousActionsEnabled}
-          title={safetyPolicy.dangerousActionsEnabled ? "" : "Disabled by policy"}
-        >
-          RESUME
-        </button>
+    <div>
+      <div className="page-header">
+        <div className="page-header-left">
+          <h1 className="page-title">Commands</h1>
+          <p className="page-subtitle">Issue PAUSE/RESUME commands with 2-step confirmation</p>
+        </div>
+        <div className="page-header-actions">
+          <span className="badge badge-accent">Target: {activeBotId}</span>
+          <span className="badge">
+            {safetyPolicy.environmentLabel.toUpperCase()}
+          </span>
+        </div>
       </div>
 
-      {!safetyPolicy.dangerousActionsEnabled ? (
-        <small style={{ color: "#fca5a5" }}>Dangerous command actions are disabled by policy.</small>
-      ) : null}
+      {/* Bot Selector + Actions */}
+      <div className="card" style={{ marginBottom: "var(--space-4)" }}>
+        <div className="card-header">
+          <h2 className="card-title">Bot Target & Actions</h2>
+        </div>
 
-      {dialogType ? (
+        <form onSubmit={onApplyBotId} style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-end", flexWrap: "wrap", marginBottom: "var(--space-4)" }}>
+          <label style={{ display: "grid", gap: "var(--space-1)" }}>
+            <span className="text-xs text-muted">Bot ID</span>
+            <input value={botId} onChange={(e) => setBotId(e.target.value)} placeholder="simple-mm" />
+          </label>
+          <button className="btn" type="submit">Apply Bot</button>
+        </form>
+
+        <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", flexWrap: "wrap" }}>
+          <button
+            className="btn btn-danger"
+            type="button"
+            onClick={() => setDialogType("PAUSE")}
+            disabled={submitting || !safetyPolicy.dangerousActionsEnabled}
+            title={safetyPolicy.dangerousActionsEnabled ? "Pause the target bot" : "Disabled by policy"}
+          >
+            PAUSE
+          </button>
+          <button
+            className="btn btn-success"
+            type="button"
+            onClick={() => setDialogType("RESUME")}
+            disabled={submitting || !safetyPolicy.dangerousActionsEnabled}
+            title={safetyPolicy.dangerousActionsEnabled ? "Resume the target bot" : "Disabled by policy"}
+          >
+            RESUME
+          </button>
+
+          {!safetyPolicy.dangerousActionsEnabled && (
+            <span className="text-xs text-error">
+              Dangerous command actions are disabled by policy.
+            </span>
+          )}
+        </div>
+      </div>
+
+      {dialogType && (
         <DangerousActionDialog
           actionLabel={dialogType}
           targetLabel={`bot:${activeBotId}`}
@@ -256,50 +275,112 @@ export default function CommandsPage() {
             await loadCommands(activeBotId);
           }}
         />
-      ) : null}
+      )}
 
-      {error ? (
-        <div style={{ border: "1px solid #7f1d1d", background: "#3f1d1d", borderRadius: 8, padding: 10 }}>
-          <strong>Error</strong>
-          <p style={{ marginBottom: 0 }}>{error}</p>
+      {error && (
+        <div className="error-state" style={{ marginBottom: "var(--space-4)" }}>
+          <p className="error-state-title">Error</p>
+          <p className="error-state-message">{error}</p>
         </div>
-      ) : null}
+      )}
 
-      {loading ? <p>Loading commands...</p> : null}
-
-      {!loading && commands.length === 0 ? <p>No commands found for bot_id={activeBotId}.</p> : null}
-
-      {lastAck ? (
-        <div className="card" style={{ background: "rgba(255,255,255,0.02)" }}>
-          <strong>Last ack</strong>
-          <p style={{ margin: "8px 0 0" }}>
-            command_id={lastAck.command_id} ok={String(lastAck.ok)} reason={lastAck.reason ?? "-"} ts={lastAck.ts}
-          </p>
-        </div>
-      ) : null}
-
-      {commands.length > 0 ? (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Created</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Ack</th>
-            </tr>
-          </thead>
-          <tbody>
-            {commands.map((cmd) => (
-              <tr key={cmd.id}>
-                <td>{cmd.created_at}</td>
-                <td>{cmd.type}</td>
-                <td>{cmd.status}</td>
-                <td>{cmd.ack ? `${cmd.ack.ok ? "ok" : "nack"}${cmd.ack.reason ? ` (${cmd.ack.reason})` : ""}` : "-"}</td>
+      {/* Last Ack */}
+      {lastAck && (
+        <div className="card card-compact" style={{ marginBottom: "var(--space-4)" }}>
+          <div className="card-header" style={{ marginBottom: "var(--space-2)" }}>
+            <h3 className="card-title">Last Acknowledgement</h3>
+            <span className={`badge ${lastAck.ok ? "badge-success" : "badge-error"}`}>
+              {lastAck.ok ? "OK" : "NACK"}
+            </span>
+          </div>
+          <table className="table-inline">
+            <tbody>
+              <tr>
+                <th>Command ID</th>
+                <td>
+                  <span className="text-mono">{lastAck.command_id.slice(0, 16)}</span>
+                  <button
+                    className="copy-btn"
+                    onClick={() => handleCopyId(lastAck.command_id)}
+                    style={{ marginLeft: "var(--space-2)" }}
+                    aria-label="Copy command ID"
+                  >
+                    {copiedId === lastAck.command_id ? "\u2713" : "\u2398"}
+                  </button>
+                </td>
               </tr>
+              <tr>
+                <th>Reason</th>
+                <td>{lastAck.reason ?? "-"}</td>
+              </tr>
+              <tr>
+                <th>Timestamp</th>
+                <td className="tabular-nums">{formatTimestamp(lastAck.ts)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Commands Table */}
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title">Command History</h2>
+          <span className="text-xs text-muted">Auto-refresh 4s</span>
+        </div>
+
+        {loading && commands.length === 0 && !error ? (
+          <div>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="skeleton skeleton-row" />
             ))}
-          </tbody>
-        </table>
-      ) : null}
+          </div>
+        ) : commands.length === 0 && !error ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">&#x1F4E8;</div>
+            <h3 className="empty-state-title">No commands</h3>
+            <p className="empty-state-description">
+              No commands found for bot_id={activeBotId}. Issue a command above to get started.
+            </p>
+          </div>
+        ) : commands.length > 0 ? (
+          <div className="table-wrapper">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Created</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Ack</th>
+                </tr>
+              </thead>
+              <tbody>
+                {commands.map((cmd) => (
+                  <tr key={cmd.id}>
+                    <td className="tabular-nums">{formatTimestamp(cmd.created_at)}</td>
+                    <td>
+                      <span className={getCommandTypeBadgeClass(cmd.type)}>
+                        {cmd.type}
+                      </span>
+                    </td>
+                    <td><span className={statusBadgeClass(cmd.status)}>{cmd.status}</span></td>
+                    <td>
+                      {cmd.ack ? (
+                        <span className={`badge ${cmd.ack.ok ? "badge-success" : "badge-error"}`}>
+                          {cmd.ack.ok ? "ok" : "nack"}
+                          {cmd.ack.reason ? ` (${cmd.ack.reason})` : ""}
+                        </span>
+                      ) : (
+                        <span className="text-muted">-</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -23,45 +23,24 @@ type FetchState = {
 const POLL_INTERVAL_MS = 30000;
 
 function formatTime(date: Date): string {
-  return date.toLocaleTimeString();
+  return date.toLocaleTimeString("en-US", { hour12: false });
 }
 
-function statusColor(status: string): string {
+function statusBadgeClass(status: string): string {
   switch (status.toUpperCase()) {
-    case "OK":
-      return "#065f46";
-    case "DEGRADED":
-      return "#92400e";
-    case "DOWN":
-      return "#7f1d1d";
-    default:
-      return "#1f2937";
+    case "OK": return "badge badge-success";
+    case "DEGRADED": return "badge badge-warning";
+    case "DOWN": return "badge badge-error";
+    default: return "badge";
   }
 }
 
-function statusTextColor(status: string): string {
+function ribbonBgVar(status: string): string {
   switch (status.toUpperCase()) {
-    case "OK":
-      return "#6ee7b7";
-    case "DEGRADED":
-      return "#fcd34d";
-    case "DOWN":
-      return "#fca5a5";
-    default:
-      return "#e6edf3";
-  }
-}
-
-function ribbonBackground(status: string): string {
-  switch (status.toUpperCase()) {
-    case "OK":
-      return "#0f172a";
-    case "DEGRADED":
-      return "#451a03";
-    case "DOWN":
-      return "#450a0a";
-    default:
-      return "#0f172a";
+    case "OK": return "var(--ribbon-ok-bg)";
+    case "DEGRADED": return "var(--ribbon-degraded-bg)";
+    case "DOWN": return "var(--ribbon-down-bg)";
+    default: return "var(--ribbon-ok-bg)";
   }
 }
 
@@ -129,20 +108,17 @@ export function StatusRibbon() {
   );
 
   const bg = state.error
-    ? "#1e1b4b"
-    : ribbonBackground(overallStatus);
+    ? "var(--ribbon-unknown-bg)"
+    : ribbonBgVar(overallStatus);
 
   return (
-    <div
-      className="status-ribbon"
-      style={{ background: bg }}
-    >
+    <div className="status-ribbon" style={{ background: bg }}>
       <div className="status-ribbon-content">
         {state.loading && !state.data && !state.error ? (
-          <span className="status-ribbon-text">Loading system status…</span>
+          <span className="status-ribbon-text">Loading system status...</span>
         ) : state.error ? (
           <>
-            <span className="badge status-ribbon-badge-unavailable">
+            <span className="badge badge-info" style={{ fontSize: "var(--text-xs)" }}>
               STATUS UNAVAILABLE
             </span>
             <span className="status-ribbon-text" style={{ opacity: 0.8 }}>
@@ -151,22 +127,15 @@ export function StatusRibbon() {
           </>
         ) : (
           <>
-            <span
-              className="badge"
-              style={{
-                backgroundColor: statusColor(overallStatus),
-                color: statusTextColor(overallStatus),
-                fontSize: "11px"
-              }}
-            >
+            <span className={statusBadgeClass(overallStatus)} style={{ fontSize: "var(--text-xs)" }}>
               {overallStatus}
             </span>
             {degradedComponents.length > 0 && (
               <span className="status-ribbon-text">
                 {degradedComponents.map((c) => (
-                  <span key={c.name} style={{ marginRight: "12px" }}>
+                  <span key={c.name} style={{ marginRight: "var(--space-3)" }}>
                     <strong>{c.name}</strong>: {c.status}
-                    {c.reason ? ` — ${c.reason}` : ""}
+                    {c.reason ? ` \u2014 ${c.reason}` : ""}
                   </span>
                 ))}
               </span>
@@ -191,8 +160,9 @@ export function StatusRibbon() {
           onClick={handleRefresh}
           disabled={state.loading}
           title="Refresh status"
+          aria-label="Refresh system status"
         >
-          ↻
+          &#x21bb;
         </button>
       </div>
     </div>
