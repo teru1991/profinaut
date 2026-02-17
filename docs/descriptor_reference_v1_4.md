@@ -143,3 +143,146 @@ All pointer strings must follow RFC 6901 format (start with `/`).
 
 See `config/crypto-collector/exchanges/example_v1_4.toml` for a complete
 example that validates against the v1.4 schema.
+
+---
+
+## Subscription Generator DSL (Task B)
+
+The `generator` field in each subscription entry contains a DSL program that
+produces subscription messages at runtime. The DSL is safe, bounded, and
+deterministic.
+
+### Grammar
+
+```text
+program     = statement*
+statement   = foreach_stmt | if_stmt | emit_stmt
+
+foreach_stmt = "foreach" "(" IDENT "in" IDENT ")" "{" statement* "}"
+if_stmt      = "if" "(" condition ")" "{" statement* "}"
+                ("else" "if" "(" condition ")" "{" statement* "}")*
+                ("else" "{" statement* "}")?
+emit_stmt    = "emit" "(" string_literal ")" ";"
+
+condition   = or_expr
+or_expr     = and_expr ("||" and_expr)*
+and_expr    = cmp_expr ("&&" cmp_expr)*
+cmp_expr    = "(" condition ")" | operand ("==" | "!=") operand
+operand     = IDENT | string_literal
+```
+
+### Loop Collections
+
+- `symbols` — the symbols array from the collector exchange instance config
+- `channels` — the channels array from the collector exchange instance config
+
+### Condition Identifiers
+
+- `symbol` — current symbol loop variable
+- `ch` / `channel` — current channel loop variable
+- `conn_id` — connection ID for the subscription's binding
+
+### Example
+
+```text
+foreach(symbol in symbols) {
+    foreach(ch in channels) {
+        if (ch == "trades") {
+            emit("{channel}:{symbol}");
+        } else {
+            emit("book:{symbol}");
+        }
+    }
+}
+```
+
+### Line Comments
+
+Lines starting with `//` are ignored. Inline comments (`// ...`) are also supported.
+
+---
+
+## Placeholder Substitution (Task B)
+
+Emitted strings support `{placeholder}` substitution. Use `{{` and `}}` for
+literal brace characters.
+
+| Placeholder | Description |
+|-------------|-------------|
+| `{symbol}` | Current symbol value from loop |
+| `{ch}` | Current channel value from loop |
+| `{channel}` | Alias for `{ch}` |
+| `{conn_id}` | Generator-bound connection ID |
+| `{now_ms}` | Unix epoch milliseconds at evaluation time |
+| `{uuid}` | UUID v4 (unique per occurrence) |
+| `{env:VAR}` | Environment variable `VAR` |
+| `{arg:KEY}` | Context argument `KEY` |
+
+**Policies:**
+
+- Unknown placeholders produce an error (not silently ignored).
+- Missing environment variables produce an error (do not silently produce
+  invalid subscription messages).
+- `{{` produces a literal `{`; `}}` produces a literal `}`.
+
+---
+
+## Mini-Expression Evaluator (Task B)
+
+When `parse.expr.enabled = true`, expression strings from
+`parse.expr.expressions` are evaluated against the JSON message payload.
+
+### Supported Syntax
+
+```text
+expr        = fallback_expr
+fallback    = access ("??" access)*
+access      = primary (("." IDENT) | ("[" NUMBER "]"))*
+primary     = IDENT | function_call | string_literal | number_literal
+function    = IDENT "(" expr ")"
+```
+
+### Features
+
+| Feature | Example | Description |
+|---------|---------|-------------|
+| Dot access | `data.symbol` | Access nested JSON fields |
+| Array index | `data.trades[0]` | Index into JSON arrays |
+| Fallback | `data.sym ?? data.symbol ?? "unknown"` | First non-null value |
+| `to_number(x)` | `to_number(data.price)` | Cast string/bool to number |
+| `to_string(x)` | `to_string(data.seq)` | Cast number/bool to string |
+
+### Behavior
+
+- Missing field → `null`
+- Array index out of range → `null`
+- `x ?? y` → if `x` is null, evaluate `y`
+- Unknown function → error
+
+### Strict Prohibitions
+
+- No arithmetic (`+`, `-`, `*`, `/`)
+- No user-defined functions
+- No loops or recursion
+- No external access (IO, network, environment variables)
+
+---
+
+## Safety / Constraints
+
+The DSL, placeholder engine, and expression evaluator enforce strict bounds
+to prevent resource exhaustion and ensure deterministic behavior.
+
+| Constraint | Default | Description |
+|------------|---------|-------------|
+| Max DSL output messages | 1,000,000 | Per generator execution |
+| Max expression length | 4,096 bytes | Per expression string |
+| Max AST nodes (expr) | 1,000 | Per expression parse tree |
+| Max evaluation steps (expr) | 10,000 | Per expression evaluation |
+| Placeholder nesting | None | No nested or recursive templates |
+
+Error messages include:
+- **DSL:** line/column for syntax errors; subscription index + connection ID for runtime errors
+- **Placeholders:** placeholder name for unknown/missing errors
+- **Pointers:** pointer path and value type for extraction/cast errors
+- **Expressions:** position for parse errors; function name for unknown functions

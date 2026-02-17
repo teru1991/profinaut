@@ -3,9 +3,21 @@
 //! Service skeleton: Tokio runtime, structured tracing, graceful shutdown,
 //! config loading, descriptor validation, and `/healthz` endpoint.
 
+#[allow(dead_code)]
+mod api;
 mod config;
 mod descriptor;
+#[allow(dead_code)]
+mod dsl;
+#[allow(dead_code)]
+mod expr;
 mod health;
+#[allow(dead_code)]
+mod maps;
+#[allow(dead_code)]
+mod placeholder;
+#[allow(dead_code)]
+mod pointer;
 mod state;
 
 use std::net::SocketAddr;

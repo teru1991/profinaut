@@ -39,3 +39,36 @@
 | Graceful shutdown | PASS | SIGTERM → clean "shut down gracefully" log |
 | Config error reporting | PASS | Unit test `reject_duplicate_names` verifies contextual messages |
 | Descriptor error reporting | PASS | Unit test `reject_invalid_connection_ref` verifies cross-ref errors |
+
+---
+
+## Task B — Descriptor Execution Engine
+
+### Acceptance Criteria
+
+- [x] B1: DSL parser produces AST with line/col errors; interpreter executes foreach/if/emit with bounded output
+- [x] B2: Placeholder engine substitutes all specified placeholders; errors on unknown/missing
+- [x] B3: JSON pointer extraction returns typed values; errors include pointer path and value type
+- [x] B4: Mini-expr evaluator supports dot access, array index, ?? fallback, whitelisted functions only
+- [x] B5: Maps loader reads symbol_map_file TOML and applies channel_map; normalize functions work
+- [x] B6: Public API surfaces exist: generate_subscriptions, extract_metadata, normalize_metadata
+- [x] B7: Unit tests cover all mandated cases (DSL, placeholders, pointer, expr, maps)
+- [x] B8: docs/descriptor_reference_v1_4.md updated with DSL grammar, placeholder set, mini-expr, safety section
+
+### Verification Steps
+
+| Step | Command | Expected |
+|------|---------|----------|
+| Build | `cd services/marketdata-rs && cargo build -p crypto-collector` | Success, no warnings |
+| Format | `cd services/marketdata-rs && cargo fmt -p crypto-collector -- --check` | No diffs |
+| Clippy | `cd services/marketdata-rs && cargo clippy -p crypto-collector -- -D warnings` | No warnings |
+| Unit tests | `cd services/marketdata-rs && cargo test -p crypto-collector` | All pass (Task A + Task B) |
+
+### Verification Results
+
+| Step | Result | Notes |
+|------|--------|-------|
+| Build | PASS | No warnings |
+| Format | PASS | No diffs |
+| Clippy | PASS | `-D warnings` — zero warnings |
+| Unit tests | PASS | 91/91 tests passed (15 Task A + 76 Task B) |

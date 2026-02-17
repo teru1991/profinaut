@@ -96,3 +96,85 @@ This framework does NOT alter non-crypto marketdata modules (Python FastAPI serv
 - `parse.expr.expressions` are length-bounded only; expression parsing engine is Task B.
 - The `AppState` is currently immutable (built at startup). Task B may need to add runtime state (connection status, etc.).
 - Symbol map file loading (reading the TOML) is deferred — only existence check is done.
+
+---
+
+## Task B — Descriptor Execution Engine (DSL + mini-expr + JSON extraction + maps)
+
+**Status:** DONE
+**Start:** 2026-02-17
+**Branch:** `claude/crypto-collector-framework-v1-4-P5A5T`
+
+### Deliverables Checklist
+
+- [x] B1 — DSL parser + AST + interpreter (foreach, if/else, emit, bounded execution)
+- [x] B2 — Placeholder substitution engine ({symbol}, {ch}, {conn_id}, {now_ms}, {uuid}, {env:VAR}, {arg:KEY})
+- [x] B3 — JSON pointer extraction + casting utils (RFC 6901)
+- [x] B4 — Safe mini-expr evaluator (dot access, array index, ?? fallback, to_number/to_string)
+- [x] B5 — Maps loader + normalization (symbol_map_file, channel_map)
+- [x] B6 — Public API surfaces (generate_subscriptions, extract_metadata, normalize_metadata)
+- [x] B7 — Unit tests (all mandated cases)
+- [x] B8 — Doc updates (DSL grammar, placeholder set, mini-expr subset, safety/constraints)
+
+### Existing Implementation Audit (Task B)
+
+- **DSL/template engines:** None found anywhere in the repo.
+- **JSON pointer extractors:** None. Task A validates pointer format only.
+- **Expression evaluators:** None. Task A stores `parse.expr` but does not evaluate.
+- **Symbol/channel mapping logic:** None. Task A stores `maps` section but does not load files or apply mappings.
+- **Conclusion:** All B1–B8 are new implementations. No refactoring needed.
+
+### Chosen Paths
+
+Same as Task A — all new code goes into `services/marketdata-rs/crypto-collector/src/`.
+
+| Purpose | Path |
+|---------|------|
+| DSL engine | `services/marketdata-rs/crypto-collector/src/dsl.rs` |
+| Placeholder engine | `services/marketdata-rs/crypto-collector/src/placeholder.rs` |
+| JSON pointer utils | `services/marketdata-rs/crypto-collector/src/pointer.rs` |
+| Mini-expr evaluator | `services/marketdata-rs/crypto-collector/src/expr.rs` |
+| Maps loader | `services/marketdata-rs/crypto-collector/src/maps.rs` |
+| Public API | `services/marketdata-rs/crypto-collector/src/api.rs` |
+
+### Notes / Decisions
+
+1. **Placeholder literal braces:** `{{` produces literal `{` and `}}` produces literal `}`. This allows JSON output in emitted strings.
+2. **Missing env var policy:** Error (not silent). Invalid subscription messages are worse than a clear startup error.
+3. **Numeric string casting:** JSON pointer `cast_to_u64`/`cast_to_i64` accept numeric strings ("123" → 123). Non-numeric strings produce cast errors.
+4. **Mini-expr missing field:** Returns `null` (not error). Array index out-of-range also returns `null`.
+5. **Expression override semantics:** Expression evaluation runs in Task B but exact field override mapping is deferred to Task C+ (expressions are validated and executed but results are not yet wired to override pointer-extracted metadata).
+
+### End-of-Task Update
+
+**Completed:** 2026-02-17
+
+### Verification Results
+
+| Step | Result |
+|------|--------|
+| `cargo build -p crypto-collector` | PASS — no warnings |
+| `cargo fmt -p crypto-collector -- --check` | PASS — no diffs |
+| `cargo clippy -p crypto-collector -- -D warnings` | PASS — no warnings |
+| `cargo test -p crypto-collector` | PASS — 91/91 tests passed |
+
+### Test Breakdown
+
+| Module | Tests |
+|--------|-------|
+| config (Task A) | 6 |
+| descriptor (Task A) | 9 |
+| dsl | 17 |
+| placeholder | 15 |
+| pointer | 10 |
+| expr | 17 |
+| maps | 8 |
+| api | 5 |
+| **Total** | **91** (new: 76 from Task B) |
+
+### Notes for Task C
+
+- DSL execution is fully functional; Task C can wire it into the WS subscription flow.
+- `extract_metadata` and `normalize_metadata` APIs are ready for message processing pipelines.
+- Expression override semantics (which expr result overrides which metadata field) need finalization.
+- The `AppState` remains immutable; Task C may need runtime-mutable state for connection tracking.
