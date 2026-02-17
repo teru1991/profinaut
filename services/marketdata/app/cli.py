@@ -17,7 +17,13 @@ def _build_parser() -> argparse.ArgumentParser:
     replay.add_argument("--bronze-root", default="./data/bronze", help="Bronze filesystem root")
     replay.add_argument("--venue", default=None, help="Optional venue filter")
     replay.add_argument("--market", default=None, help="Optional market filter")
-    replay.add_argument("--source-type", default=None, help="Optional source type filter")
+    replay.add_argument(
+        "--source-type",
+        "--source_type",
+        dest="source_type",
+        default=None,
+        help="Optional source type filter",
+    )
     replay.add_argument("--parser-version", default="v0.1", help="Parser version to stamp")
     group = replay.add_mutually_exclusive_group()
     group.add_argument("--dry-run", action="store_true", help="Count only, do not write")
