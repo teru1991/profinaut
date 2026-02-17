@@ -5,7 +5,7 @@ if [[ -z "${DB_DSN:-}" ]]; then
   DB_PATH="$(mktemp -u /tmp/marketdata-replay-verify-XXXXXX.sqlite3)"
   DB_DSN="sqlite:///${DB_PATH}"
 else
-  DB_DSN="${DB_DSN}"
+  DB_DSN="sqlite:///${DB_PATH}"
   [[ "${DB_DSN}" == sqlite:///* ]] || { echo "DB_DSN must be sqlite:///..." >&2; exit 2; }
   DB_PATH="${DB_DSN#sqlite:///}"
 fi
