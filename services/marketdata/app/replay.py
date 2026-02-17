@@ -180,6 +180,8 @@ def _already_processed(repo: MarketDataMetaRepository, envelope: dict[str, Any],
         table = "md_ohlcv"
     elif target == "md_best_bid_ask":
         table = "md_best_bid_ask"
+    elif target == "md_orderbook":
+        table = "md_events_json"
     else:
         table = "md_events_json"
 

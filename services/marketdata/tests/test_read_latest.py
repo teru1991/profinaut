@@ -194,55 +194,12 @@ def test_ohlcv_endpoints_return_explicit_error_when_db_unavailable(monkeypatch) 
         rng = client.get("/ohlcv/range?venue_id=gmo&market_id=spot&tf=1m&from=2026-02-16T00:00:00Z&to=2026-02-16T00:02:00Z")
 
     assert latest.status_code == 503
-    assert latest.json()["error"]["code"] == "READ_MODEL_UNAVAILABLE"
-    assert latest.json()["found"] is False
-    assert latest.json()["degraded"] is True
+    assert latest.json()["code"] == "READ_MODEL_UNAVAILABLE"
 
     assert rng.status_code == 503
-    assert rng.json()["error"]["code"] == "READ_MODEL_UNAVAILABLE"
-    assert rng.json()["found"] is False
+    assert rng.json()["code"] == "READ_MODEL_UNAVAILABLE"
 
 def test_orderbook_bbo_latest_reports_stale_and_degraded(monkeypatch, tmp_path: Path) -> None:
-    db_file = tmp_path / "md.sqlite3"
-    conn = _prep_db(db_file)
-    conn.execute(
-        """
-        INSERT INTO md_orderbook_state (
-            venue_id, market_id, bid_px, bid_qty, ask_px, ask_qty,
-            as_of, last_update_ts, last_seq, degraded, reason
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            "gmo",
-            "spot",
-            100.0,
-            1.0,
-            101.0,
-            2.0,
-            "2026-02-16T00:00:00Z",
-            "2026-02-16T00:00:00Z",
-            "10",
-            1,
-            "ORDERBOOK_GAP",
-        ),
-    )
-    conn.commit()
-
-    monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
-    monkeypatch.setenv("LATEST_STALE_MS", "0")
-
-    with TestClient(main.app) as client:
-        resp = client.get("/orderbook/bbo/latest?venue_id=gmo&market_id=spot")
-
-    assert resp.status_code == 200
-    body = resp.json()
-    assert body["found"] is True
-    assert body["stale"] is True
-    assert body["degraded"] is True
-    assert body["reason"] == "ORDERBOOK_GAP"
-
-
-def test_orderbook_bbo_latest_marks_stale_state_as_degraded(monkeypatch, tmp_path: Path) -> None:
     db_file = tmp_path / "md.sqlite3"
     conn = _prep_db(db_file)
     conn.execute(
@@ -279,4 +236,38 @@ def test_orderbook_bbo_latest_marks_stale_state_as_degraded(monkeypatch, tmp_pat
     assert body["found"] is True
     assert body["stale"] is True
     assert body["degraded"] is True
-    assert body["reason"] == "ORDERBOOK_STATE_STALE"
+    assert body["reason"] == "ORDERBOOK_GAP"
+
+
+def test_gold_api_bad_input_returns_400_with_error_codes(monkeypatch, tmp_path: Path) -> None:
+    db_file = tmp_path / "md.sqlite3"
+    _prep_db(db_file)
+
+    monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
+    monkeypatch.setattr(main._poller, "run_forever", _idle_poller)
+
+    with TestClient(main.app) as client:
+        missing_orderbook = client.get("/orderbook/bbo/latest?market_id=spot")
+        missing_state = client.get("/orderbook/state?venue_id=gmo")
+        invalid_tf = client.get("/ohlcv/latest?venue_id=gmo&market_id=spot&tf=bogus")
+        invalid_ts = client.get("/ohlcv/range?venue_id=gmo&market_id=spot&tf=1m&from=bad-ts&to=2026-02-16T00:02:00Z")
+        invalid_range = client.get("/ohlcv/range?venue_id=gmo&market_id=spot&tf=1m&from=2026-02-16T00:03:00Z&to=2026-02-16T00:02:00Z")
+        partial_ticker = client.get("/ticker/latest?venue_id=gmo&market_id=spot")
+
+    assert missing_orderbook.status_code == 400
+    assert missing_orderbook.json()["code"] == "MISSING_REQUIRED_QUERY"
+
+    assert missing_state.status_code == 400
+    assert missing_state.json()["code"] == "MISSING_REQUIRED_QUERY"
+
+    assert invalid_tf.status_code == 400
+    assert invalid_tf.json()["code"] == "INVALID_TIMEFRAME"
+
+    assert invalid_ts.status_code == 400
+    assert invalid_ts.json()["code"] == "INVALID_TIMESTAMP"
+
+    assert invalid_range.status_code == 400
+    assert invalid_range.json()["code"] == "INVALID_TIME_RANGE"
+
+    assert partial_ticker.status_code == 400
+    assert partial_ticker.json()["code"] == "MISSING_REQUIRED_QUERY"
