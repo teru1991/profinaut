@@ -1,0 +1,8 @@
+# Symbol map — Example Exchange
+# Maps exchange-native symbol names to canonical Profinaut symbols.
+
+[symbols]
+BTCUSDT = "BTC/USDT"
+ETHUSDT = "ETH/USDT"
+SOLUSDT = "SOL/USDT"
+XRPUSDT = "XRP/USDT"
