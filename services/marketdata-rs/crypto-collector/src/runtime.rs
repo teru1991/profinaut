@@ -163,23 +163,23 @@ impl AckGate {
         self.expected.is_subset(&self.acked)
     }
 
-    pub async fn wait_until<F>(&mut self, timeout: Duration, mut next: F) -> Result<(), AckError>
-    where
-        F: FnMut() -> Option<Value>,
-    {
-        let deadline = Instant::now() + timeout;
-        while Instant::now() < deadline {
-            if let Some(msg) = next() {
-                self.on_message(&msg);
-                if self.is_complete() {
-                    return Ok(());
-                }
-            } else {
-                tokio::time::sleep(Duration::from_millis(1)).await;
+pub async fn wait_until(
+    &mut self,
+    timeout_duration: Duration,
+    mut receiver: tokio::sync::mpsc::Receiver<Value>,
+) -> Result<(), AckError> {
+    tokio::time::timeout(timeout_duration, async {
+        loop {
+            let msg = receiver.recv().await.ok_or(AckError::Timeout)?;
+            self.on_message(&msg);
+            if self.is_complete() {
+                return Ok(());
             }
         }
-        Err(AckError::Timeout)
-    }
+    })
+    .await
+    .map_err(|_| AckError::Timeout)?
+}
 }
 
 pub fn build_envelope(
