@@ -232,7 +232,8 @@ impl DurableSpool {
             self.current_seq
                 .store(next_seq, std::sync::atomic::Ordering::Release);
             *head = WriteHead { seq: next_seq, file, file_bytes: 0 };
-            self.metrics.add_spool_bytes(0); // trigger re-count on next refresh
+            *head = WriteHead { seq: next_seq, file, file_bytes: 0 };
+            self.metrics.spool_segments.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         }
 
         let h = head_guard.as_mut().unwrap();
