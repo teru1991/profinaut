@@ -41,88 +41,96 @@ class MockRuntime:
     connection_state: str = "INIT"
     _tick: int = 0
     _mongo_down_until_ms: float = 0
+    _lock: asyncio.Lock = None
+
+    def __post_init__(self):
+        if self._lock is None:
+            self._lock = asyncio.Lock()
 
     async def run(self, stop_event: asyncio.Event) -> None:
         while not stop_event.is_set():
             await asyncio.sleep(0.1)
-            self._tick += 1
-            self.ingest_messages_total += 1
-            self.last_msg_time = _now()
-            self.connection_state = "RUNNING"
+            async with self._lock:
+                self._tick += 1
+                self.ingest_messages_total += 1
+                self.last_msg_time = _now()
+                self.connection_state = "RUNNING"
 
-            if self.scenario.disconnect_every > 0 and self._tick % self.scenario.disconnect_every == 0:
-                self.reconnect_count += 1
-                self.last_reconnect_time = _now()
+                if self.scenario.disconnect_every > 0 and self._tick % self.scenario.disconnect_every == 0:
+                    self.reconnect_count += 1
+                    self.last_reconnect_time = _now()
 
-            current_time_ms = time.time() * 1000
-            if self.scenario.mongo_down_ms > 0:
-                if current_time_ms >= self._mongo_down_until_ms: # Mongo is currently UP or just recovered
-                    if self._mongo_down_until_ms > 0: # If it just recovered, reset to 0
-                        self._mongo_down_until_ms = 0
-                    elif self.scenario.disconnect_every > 0 and self._tick % self.scenario.disconnect_every == 0: # If up, and time to start new downtime
-                        self._mongo_down_until_ms = current_time_ms + self.scenario.mongo_down_ms
-            mongo_down = current_time_ms < self._mongo_down_until_ms
-            if mongo_down:
-                self.spool_bytes += 512
-                self.spool_replay_backlog += 1
-                self.spool_segments = max(1, self.spool_bytes // (1024 * 4))
-            elif self.spool_bytes > 0:
-                self.spool_bytes = max(0, self.spool_bytes - 1024)
-                self.spool_replay_backlog = max(0, self.spool_replay_backlog - 2)
-                if self.spool_replay_backlog > 0:
-                    self.dedup_dropped_total += 1
+                current_time_ms = time.time() * 1000
+                if self.scenario.mongo_down_ms > 0:
+                    if current_time_ms >= self._mongo_down_until_ms: # Mongo is currently UP or just recovered
+                        if self._mongo_down_until_ms > 0: # If it just recovered, reset to 0
+                            self._mongo_down_until_ms = 0
+                        elif self.scenario.disconnect_every > 0 and self._tick % self.scenario.disconnect_every == 0: # If up, and time to start new downtime
+                            self._mongo_down_until_ms = current_time_ms + self.scenario.mongo_down_ms
+                mongo_down = current_time_ms < self._mongo_down_until_ms
+                if mongo_down:
+                    self.spool_bytes += 512
+                    self.spool_replay_backlog += 1
+                    self.spool_segments = max(1, self.spool_bytes // (1024 * 4))
+                elif self.spool_bytes > 0:
+                    self.spool_bytes = max(0, self.spool_bytes - 1024)
+                    self.spool_replay_backlog = max(0, self.spool_replay_backlog - 2)
+                    if self.spool_replay_backlog > 0:
+                        self.dedup_dropped_total += 1
 
             if self.scenario.silence_ms > 0:
                 await asyncio.sleep(self.scenario.silence_ms / 1000)
 
-    def health(self) -> dict[str, Any]:
-        mongo_down = time.time() * 1000 < self._mongo_down_until_ms
-        return {
-            "service": "marketdata",
-            "version": "0.1.0",
-            "connector_instance_id": "mock-connector-1",
-            "config_loaded": True,
-            "descriptors_loaded_count": 1,
-            "instances": [
-                {
-                    "name": "mock-v4",
-                    "enabled": self.scenario.enabled,
-                    "descriptor": "config/exchanges/mock_v4.toml",
-                    "validation_status": "ok",
-                    "instance_state": self.connection_state,
-                }
-            ],
-            "connections": [
-                {
-                    "conn_id": "mock-public-0",
-                    "state": self.connection_state,
-                    "url_index": 0,
-                    "last_msg_time": self.last_msg_time,
-                    "last_reconnect_time": self.last_reconnect_time,
-                }
-            ],
-            "persistence": {
-                "mongo_state": "DOWN" if mongo_down else "OK",
-                "spool": {
-                    "enabled": True,
-                    "bytes": self.spool_bytes,
-                    "segments": self.spool_segments,
-                    "replay_backlog": self.spool_replay_backlog,
+    async def health(self) -> dict[str, Any]:
+        async with self._lock:
+            mongo_down = time.time() * 1000 < self._mongo_down_until_ms
+            return {
+                "service": "marketdata",
+                "version": "0.1.0",
+                "connector_instance_id": "mock-connector-1",
+                "config_loaded": True,
+                "descriptors_loaded_count": 1,
+                "instances": [
+                    {
+                        "name": "mock-v4",
+                        "enabled": self.scenario.enabled,
+                        "descriptor": "config/exchanges/mock_v4.toml",
+                        "validation_status": "ok",
+                        "instance_state": self.connection_state,
+                    }
+                ],
+                "connections": [
+                    {
+                        "conn_id": "mock-public-0",
+                        "state": self.connection_state,
+                        "url_index": 0,
+                        "last_msg_time": self.last_msg_time,
+                        "last_reconnect_time": self.last_reconnect_time,
+                    }
+                ],
+                "persistence": {
+                    "mongo_state": "DOWN" if mongo_down else "OK",
+                    "spool": {
+                        "enabled": True,
+                        "bytes": self.spool_bytes,
+                        "segments": self.spool_segments,
+                        "replay_backlog": self.spool_replay_backlog,
+                    },
+                    "dedup": {"enabled": True, "config": {"window_seconds": 30}},
                 },
-                "dedup": {"enabled": True, "config": {"window_seconds": 30}},
-            },
-            "time_quality": {"server_time_ratio": 1.0, "skew_ms_p95": 0.0},
-        }
+                "time_quality": {"server_time_ratio": 1.0, "skew_ms_p95": 0.0},
+            }
 
-    def metrics(self) -> dict[str, float]:
-        return {
-            "ingest_messages_total": float(self.ingest_messages_total),
-            "reconnect_count": float(self.reconnect_count),
-            "spool_bytes": float(self.spool_bytes),
-            "spool_segments": float(self.spool_segments),
-            "spool_replay_backlog": float(self.spool_replay_backlog),
-            "dedup_dropped_total": float(self.dedup_dropped_total),
-        }
+    async def metrics(self) -> dict[str, float]:
+        async with self._lock:
+            return {
+                "ingest_messages_total": float(self.ingest_messages_total),
+                "reconnect_count": float(self.reconnect_count),
+                "spool_bytes": float(self.spool_bytes),
+                "spool_segments": float(self.spool_segments),
+                "spool_replay_backlog": float(self.spool_replay_backlog),
+                "dedup_dropped_total": float(self.dedup_dropped_total),
+            }
 
 
 def build_router(runtime: MockRuntime) -> APIRouter:
@@ -149,7 +157,11 @@ def build_router(runtime: MockRuntime) -> APIRouter:
             text = payload.get("text")
             if not text:
                 continue
-            msg = json.loads(text)
+            try:
+                msg = json.loads(text)
+            except json.JSONDecodeError:
+                # Skip malformed JSON messages
+                continue
             if msg.get("op") == "ping":
                 await websocket.send_text(json.dumps({"op": "pong", "ts": _now()}))
                 continue
@@ -175,12 +187,30 @@ def build_router(runtime: MockRuntime) -> APIRouter:
         await websocket.accept()
         authenticated = False
         while True:
-            payload = await websocket.receive_json()
-            if payload.get("op") == "auth" and payload.get("token"):
-                authenticated = True
-                await websocket.send_json({"type": "auth_ack", "ok": True})
-                continue
-            if payload.get("op") == "subscribe":
-                await websocket.send_json({"type": "ack", "authorized": authenticated, "correlation_id": payload.get("correlation_id")})
+            try:
+                payload = await websocket.receive()
+                if payload.get("type") == "websocket.disconnect":
+                    break
+                # Try to parse as JSON first
+                text = payload.get("text")
+                if text:
+                    try:
+                        msg = json.loads(text)
+                    except json.JSONDecodeError:
+                        # Skip malformed JSON messages
+                        continue
+                else:
+                    # If no text, try receive_json which will handle the message
+                    msg = json.loads(payload.get("bytes", b"{}").decode("utf-8"))
+                
+                if msg.get("op") == "auth" and msg.get("token"):
+                    authenticated = True
+                    await websocket.send_json({"type": "auth_ack", "ok": True})
+                    continue
+                if msg.get("op") == "subscribe":
+                    await websocket.send_json({"type": "ack", "authorized": authenticated, "correlation_id": msg.get("correlation_id")})
+            except Exception:
+                # Handle any other exceptions (e.g., connection errors) gracefully
+                break
 
     return router
