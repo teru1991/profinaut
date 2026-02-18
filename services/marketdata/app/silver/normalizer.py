@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import os
+import threading
 from dataclasses import dataclass
 from datetime import UTC, datetime
-import os
 from typing import Any
 
 from services.marketdata.app.db.repository import MarketDataMetaRepository

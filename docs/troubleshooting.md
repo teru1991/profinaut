@@ -166,3 +166,9 @@ Collected values:
 If skew drifts significantly:
 - verify host NTP synchronization,
 - compare across multiple exchanges to isolate local vs remote clock issues.
+
+## Task F Mock runtime troubleshooting
+
+- If `/metrics` is static in mock mode, verify `--mock` is enabled and confirm `MOCK_ENABLED=1` in process env.
+- If reconnect metrics do not move, lower `--mock-disconnect-every` (e.g. 4) to force frequent reconnect transitions.
+- If spool behavior is not visible, raise `--mock-mongo-down-ms` so spool grows long enough before replay drain.

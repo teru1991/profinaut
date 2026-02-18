@@ -1,0 +1,19 @@
+[exchange]
+name = "mock-v4"
+version = "1.4"
+
+[ws.public]
+url = "ws://127.0.0.1:18181/mock/ws/public"
+ack_matcher = "$.type == 'ack'"
+correlation_pointer = "$.correlation_id"
+
+[ws.private]
+url = "ws://127.0.0.1:18181/mock/ws/private"
+auth_template = '{"op":"auth","token":"${TOKEN}"}'
+
+[rest]
+base_url = "http://127.0.0.1:18181"
+endpoints = ["/mock/rest/time", "/mock/rest/snapshot"]
+
+[maps]
+symbol_map_file = "config/exchanges/maps/mock_symbol_map.toml"
