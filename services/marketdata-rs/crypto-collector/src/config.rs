@@ -1,4 +1,7 @@
 //! Collector config (`collector.toml`) model, loader, and validator.
+//!
+//! Task D adds an optional `[persistence]` section.  Existing configs that
+//! omit `[persistence]` continue to work (all fields default to disabled).
 
 use serde::Deserialize;
 use std::collections::HashSet;
@@ -70,6 +73,131 @@ pub struct ExchangeInstance {
 
 fn default_enabled() -> bool {
     true
+}
+
+// ---------------------------------------------------------------------------
+// Persistence config (Task D)
+// ---------------------------------------------------------------------------
+
+/// Top-level persistence configuration (maps to `[persistence]` in TOML).
+/// All sub-sections default to disabled; existing configs remain valid.
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct PersistenceConfig {
+    /// MongoDB connection URI.
+    #[serde(default = "default_mongo_uri")]
+    pub mongo_uri: String,
+    /// MongoDB database name.
+    #[serde(default = "default_mongo_database")]
+    pub mongo_database: String,
+    /// MongoDB collection name for raw envelopes.
+    #[serde(default = "default_mongo_collection")]
+    pub mongo_collection: String,
+    /// Max retries per batch before declaring MongoUnavailable.
+    #[serde(default = "default_mongo_max_retries")]
+    pub mongo_max_retries: u32,
+    /// Base delay (ms) for exponential retry backoff.
+    #[serde(default = "default_mongo_retry_base_ms")]
+    pub mongo_retry_base_ms: u64,
+    /// Consecutive batch failures before transitioning to Degraded state.
+    #[serde(default = "default_consecutive_failures_for_degraded")]
+    pub mongo_consecutive_failures_for_degraded: u32,
+
+    #[serde(default)]
+    pub spool: SpoolConfigToml,
+
+    #[serde(default)]
+    pub dedup: DedupConfigToml,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct SpoolConfigToml {
+    /// Enable the durable spool (default: false).
+    #[serde(default)]
+    pub enabled: bool,
+    /// Directory for spool segment files.
+    #[serde(default = "default_spool_dir")]
+    pub dir: String,
+    /// Maximum size of a single spool segment in MiB (default: 64).
+    #[serde(default = "default_max_segment_mb")]
+    pub max_segment_mb: u64,
+    /// Maximum total spool size in MiB (default: 1024).
+    #[serde(default = "default_max_total_mb")]
+    pub max_total_mb: u64,
+    /// Policy when spool is full: "drop_ticker_depth_keep_trade" | "drop_all" | "block".
+    #[serde(default = "default_on_full")]
+    pub on_full: String,
+}
+
+impl Default for SpoolConfigToml {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            dir: default_spool_dir(),
+            max_segment_mb: default_max_segment_mb(),
+            max_total_mb: default_max_total_mb(),
+            on_full: default_on_full(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct DedupConfigToml {
+    /// Enable the dedup window (default: false).
+    #[serde(default)]
+    pub enabled: bool,
+    /// Seconds to keep a key before eviction (default: 300).
+    #[serde(default = "default_dedup_window_seconds")]
+    pub window_seconds: u64,
+    /// Max number of live keys before evicting oldest (default: 100000).
+    #[serde(default = "default_dedup_max_keys")]
+    pub max_keys: usize,
+}
+
+impl Default for DedupConfigToml {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            window_seconds: default_dedup_window_seconds(),
+            max_keys: default_dedup_max_keys(),
+        }
+    }
+}
+
+fn default_mongo_uri() -> String {
+    "mongodb://localhost:27017".to_string()
+}
+fn default_mongo_database() -> String {
+    "market_data".to_string()
+}
+fn default_mongo_collection() -> String {
+    "crypto_envelopes".to_string()
+}
+fn default_mongo_max_retries() -> u32 {
+    3
+}
+fn default_mongo_retry_base_ms() -> u64 {
+    100
+}
+fn default_consecutive_failures_for_degraded() -> u32 {
+    3
+}
+fn default_spool_dir() -> String {
+    "/var/lib/crypto-collector/spool".to_string()
+}
+fn default_max_segment_mb() -> u64 {
+    64
+}
+fn default_max_total_mb() -> u64 {
+    1024
+}
+fn default_on_full() -> String {
+    "drop_ticker_depth_keep_trade".to_string()
+}
+fn default_dedup_window_seconds() -> u64 {
+    300
+}
+fn default_dedup_max_keys() -> usize {
+    100_000
 }
 
 // ---------------------------------------------------------------------------

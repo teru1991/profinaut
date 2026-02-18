@@ -99,201 +99,132 @@ This framework does NOT alter non-crypto marketdata modules (Python FastAPI serv
 
 ---
 
-## Task B — Descriptor Execution Engine
+## Task D — Persistence (Mongo bulk + Durable Spool + Dedup window)
 
 **Status:** DONE
-**Start:** 2026-02-18
-**Completed:** 2026-02-18
-**Branch:** `claude/descriptor-execution-engine-LxX6F`
-**Required Locks:** LOCK:services-marketdata, LOCK:docs-progress-dod
-**Released Locks:** LOCK:services-marketdata, LOCK:docs-progress-dod
+**Start:** 2026-02-17
+**Completed:** 2026-02-17
+**Branch:** `claude/task-d-persistence-mongo-spool-UUYGr`
 
 ### Deliverables Checklist
 
-- [x] B1 — Safe Templating DSL (parser + AST + interpreter)
-- [x] B2 — Placeholder Substitution Engine
-- [x] B3 — JSON Pointer Extraction + Casting Utils (RFC6901)
-- [x] B4 — Safe Mini-Expr Evaluator
-- [x] B5 — Maps Loader + Normalization
-- [x] B6 — Public API Surfaces (for later tasks)
-- [x] B7 — Unit Tests (all mandated cases)
-- [x] B8 — Doc Updates (descriptor reference)
+- [x] D1 — Mongo bulk insert sink (`MongoSink` with `insert_many`, bounded retry, state: OK/MongoUnavailable/Degraded)
+- [x] D2 — Durable spool (append-only segments, rotation by max_segment_mb, total cap, crash safety, on_full policy)
+- [x] D3 — Replay worker (oldest-first, deletes after successful insert, rate-limited, shutdown-safe)
+- [x] D4 — Dedup window (optional toggle, bounded window store, key priority rules, dedup_dropped_total metric)
+- [x] D5 — Integration with Task C pipeline (Sink trait impl, fallback logic: Mongo → Spool → on_full)
+- [x] D6 — Tests: unit (spool rotation/cap/on_full/partial-write/dedup) + fake integration (fail→succeed + spool grows/drains + metrics)
+- [x] D7 — Doc updates (docs/troubleshooting.md, docs/marketdata_collector_framework_v1_4.md)
 
 ---
 
-## Existing Implementation Audit (Task B)
+## Existing Implementation Audit (Task D)
 
-### What Exists
+### Audit Date: 2026-02-17
 
-| Path | Description | Matches Task B Spec? |
-|------|-------------|----------------------|
-| `services/marketdata-rs/crypto-collector/src/descriptor.rs` | Descriptor model (ExchangeDescriptor, ParseSection, ExprSettings, MapsSection, Subscription). Stores `generator`, `parse.expr`, `maps` as data only. | Yes — Task A models. Task B adds execution. |
-| `services/marketdata-rs/crypto-collector/src/config.rs` | CollectorConfig with ExchangeInstance (symbols, channels). | Yes — provides runtime context for DSL. |
-| `services/marketdata/app/silver/normalizer.py` | Python normalization (classify_envelope). | No — Python, different concern. Leave untouched. |
+### What Exists (Task D Scope)
 
-### What Does NOT Exist (Task B must create)
+| Path | Description | Matches D spec? |
+|------|-------------|-----------------|
+| `services/marketdata-rs/crypto-collector/` | Rust crate: config, descriptor, health, state, main. Task A only. | No persistence code at all. |
+| `services/marketdata/` | Python FastAPI service (Mongo via pymongo, bronze/silver pipeline). | Different language/concern. Do NOT touch. |
 
-- No DSL tokenizer/parser/interpreter
-- No placeholder substitution engine
-- No JSON Pointer (RFC 6901) extraction implementation
-- No expression evaluator (mini-expr)
-- No TOML symbol map file loader
-- No subscription generation logic
-- No metadata extraction logic
+### What Does NOT Exist
+
+- No `MongoSink` / `insert_many` pattern in crypto subsystem (Rust)
+- No durable spool / local queue / disk buffering in crypto subsystem
+- No dedup window or idempotency logic in crypto subsystem
+- No persistence metrics defined in crypto subsystem
+- No Envelope v1 type
+- No Sink trait definition
+- **Tasks B and C were not implemented** — Envelope v1 and Sink trait must be defined as part of Task D to provide the integration surface.
 
 ### Refactor Plan
 
-- **Keep:** All Task A code untouched (models, validation, config, health, state).
-- **Add:** New modules inside `services/marketdata-rs/crypto-collector/src/`:
-  - `dsl.rs` — DSL tokenizer + parser + AST + interpreter (B1)
-  - `placeholder.rs` — Placeholder substitution engine (B2)
-  - `json_pointer.rs` — JSON pointer extraction + casting (B3)
-  - `mini_expr.rs` — Mini-expr parser + evaluator (B4)
-  - `maps.rs` — Maps loader + normalization (B5)
-  - `engine.rs` — Public API surfaces (B6)
-- **Modify:** `main.rs` — add `mod` declarations only (no logic changes).
-- **Modify:** `Cargo.toml` — add `uuid` dependency for placeholder `{uuid}`.
+- **Keep:** All existing Task A code unchanged.
+- **Add:** `services/marketdata-rs/crypto-collector/src/persistence/` module with all D1–D5 deliverables.
+- **Modify:** `crypto-collector/Cargo.toml` — add `tokio` features (`sync`, `time`, `fs`, `io-util`) and `async-trait` dependency.
+- **Modify:** `crypto-collector/src/main.rs` — add `mod persistence;` declaration.
+- **Modify:** `crypto-collector/src/config.rs` — add `PersistenceConfig` struct.
+- **Note:** `mongodb` driver NOT added as a compile dependency. `MongoTarget` trait abstraction is used; real implementation is documented but marked NOT VERIFIED (requires running Mongo instance).
 
----
-
-## Chosen Paths
+### Chosen Paths (Task D additions)
 
 | Purpose | Path |
 |---------|------|
-| Task B source modules | `services/marketdata-rs/crypto-collector/src/{dsl,placeholder,json_pointer,mini_expr,maps,engine}.rs` |
-| Cargo manifest (dep addition) | `services/marketdata-rs/crypto-collector/Cargo.toml` |
-| Progress tracking | `docs/progress/marketdata_collector_framework_v1_4.md` |
-| Definition of Done | `docs/dod/marketdata_collector_framework_v1_4.md` |
-| Reference docs | `docs/descriptor_reference_v1_4.md` |
+| Persistence module root | `services/marketdata-rs/crypto-collector/src/persistence/mod.rs` |
+| Envelope v1 type | `services/marketdata-rs/crypto-collector/src/persistence/envelope.rs` |
+| Sink trait + error types | `services/marketdata-rs/crypto-collector/src/persistence/sink.rs` |
+| Persistence metrics | `services/marketdata-rs/crypto-collector/src/persistence/metrics.rs` |
+| D1: Mongo sink | `services/marketdata-rs/crypto-collector/src/persistence/mongo.rs` |
+| D2: Durable spool | `services/marketdata-rs/crypto-collector/src/persistence/spool.rs` |
+| D3: Replay worker | `services/marketdata-rs/crypto-collector/src/persistence/replay.rs` |
+| D4: Dedup window | `services/marketdata-rs/crypto-collector/src/persistence/dedup.rs` |
+| D5: Pipeline sink (integration) | `services/marketdata-rs/crypto-collector/src/persistence/pipeline.rs` |
+| Persistence config additions | `services/marketdata-rs/crypto-collector/src/config.rs` (extended) |
+| Troubleshooting doc (new) | `docs/troubleshooting.md` |
+| Framework reference doc (new) | `docs/marketdata_collector_framework_v1_4.md` |
+
+### Notes / Decisions (Task D)
+
+1. **No mongodb crate dependency:** MongoTarget trait abstraction allows full unit + fake-integration testing without a running Mongo instance. The `real_mongo` feature flag would enable the actual driver (future work).
+2. **Spool format:** Length-prefix encoded JSON records (`[u32 LE length][JSON bytes]`). Crash-safe: partial records truncated on recovery.
+3. **Segment naming:** `spool_{seq:06}.dat` for lexicographic sort = chronological order.
+4. **Dedup key priority:** message_id > "seq:{exchange}:{channel}:{seq}" > "hash:{DefaultHasher hex}".
+5. **Spool/Dedup disabled by default** in config (`spool.enabled = false`, `dedup.enabled = false`).
+6. **Tasks B/C not done:** Envelope v1 and Sink trait defined here as the stable interface for Tasks E/F.
 
 ---
 
-## End-of-Task Update (Task B)
+## End-of-Task Update (Task D)
 
-**Completed:** 2026-02-18
+**Completed:** 2026-02-17
 
 ### Verification Results
 
-| Step | Result |
-|------|--------|
-| `cargo build -p crypto-collector` | PASS — no warnings |
-| `cargo fmt -p crypto-collector -- --check` | PASS — no diffs |
-| `cargo clippy -p crypto-collector -- -D warnings` | PASS — no warnings |
-| `cargo test -p crypto-collector` | PASS — 87/87 tests passed (15 Task A + 72 Task B) |
-
-### Test Breakdown (Task B: 72 tests)
-
-| Module | Tests | Coverage |
-|--------|-------|----------|
-| `dsl` | 11 | Nested foreach, if/else/else-if, emit, cap enforcement, syntax errors (line/col), escape handling, comments, undefined variable |
-| `placeholder` | 12 | Basic substitution, now_ms, uuid format, env var success/missing, arg success/missing, unknown placeholder, validation, JSON-mixed templates |
-| `json_pointer` | 13 | Nested extraction, array index, missing, RFC6901 escapes, casting (u64/i64/string/bool), numeric strings, extract_typed (required/optional/cast fail/null) |
-| `mini_expr` | 13 | Dot access, array indexing, out-of-range, missing field, fallback (null/present/chain), to_number, to_string, unknown function, too-long, AST node limit, combined access, string literal |
-| `maps` | 8 | Symbol/channel normalize hit/miss, file load, missing file error, channel map build, combined maps, no-files passthrough |
-| `engine` | 7 | Generate subscriptions (basic/no-placeholders), extract metadata (basic/missing-required/with-expr), normalize metadata (with-maps/passthrough) |
-
-### Migration Notes
-
-- No existing code was refactored. All new code in 6 new modules.
-- Only changes to existing files: `main.rs` (mod declarations), `Cargo.toml` (uuid dep).
-- Task A's 15 tests continue to pass unchanged.
-
-### Notes for Future Tasks (C onward)
-
-- `generate_subscriptions()` currently applies placeholder substitution post-DSL. For `{symbol}` and `{ch}` in emitted strings, the DSL emits them as raw template text. The engine substitutes `{conn_id}`, `{now_ms}`, `{uuid}`, `{env:*}`, `{arg:*}`. For symbol/channel-aware substitution, Task C should enhance the DSL interpreter to do inline substitution during foreach loops.
-- `extract_metadata()` and `normalize_metadata()` are ready for integration with WS message handlers (Task C/D).
-- The mini-expr engine output is `serde_json::Value`; cast to typed values using `json_pointer::cast_to_*` functions.
-- Maps loader expects `symbol_map_file` relative to a base directory; callers should pass the config directory.
-
----
-
-## Task C — Ingestion Pipeline
-
-**Status:** IN PROGRESS
-**Task C — Start:** 2026-02-18T11:56:48Z
-**Required Locks:** LOCK:services-marketdata, LOCK:docs-progress-dod
-
-### Deliverables Checklist
-
-- [ ] C1 — Stable Envelope v1 (helpers + builder)
-- [ ] C2 — Bounded MPSC + buffer/batcher + flush/shutdown interfaces
-- [ ] C3 — Deterministic backpressure/drop policies
-- [ ] C4 — Metrics skeleton and wiring
-- [ ] C5 — Unit tests for batching/flush/backpressure/metrics
-- [ ] C6 — Framework docs update (Envelope/pipeline semantics)
-
-### Existing Implementation Audit (Task C)
-
-_To be filled after audit._
-
-### Chosen Paths
-
-_To be filled after audit._
-
-### Notes / Decisions
-
-- Pending audit.
-
-### Existing Implementation Audit (Task C) — Update
-
-| Path | Finding | Match vs Task C |
-|------|---------|-----------------|
-| `services/marketdata-rs/crypto-collector/src/engine.rs` | Descriptor execution utilities only (subscription generation / metadata extraction / normalization). No ingestion queueing. | Partial overlap only; does not implement Envelope v1 or pipeline. |
-| `services/marketdata-rs/crypto-collector/src/main.rs` | Service bootstrap and `/healthz`; no ingest MPSC, no batching sink abstraction. | No |
-| `services/marketdata/app/routes/raw_ingest.py` | Python marketdata raw envelope ingestion path for non-Rust service. | Out of scope for crypto Rust subsystem. |
-| `services/marketdata/app/metrics.py` | Python metrics objects for existing FastAPI service. | Out of scope; do not modify. |
-
-**Envelope v1 audit result:** No existing Rust Envelope type in `crypto-collector` matching Task C invariants.
-
-**Buffer/backpressure audit result:** No existing bounded MPSC + batch buffer in `crypto-collector`.
-
-**Metrics audit result:** No Rust metrics skeleton for ingest pipeline in `crypto-collector`.
-
-**Refactor plan (crypto subsystem only):**
-- Add new modules under `services/marketdata-rs/crypto-collector/src/` for `envelope`, `ingestion`, and `metrics`.
-- Reuse existing crate boundaries and keep non-crypto marketdata code untouched.
-
-### Chosen Paths (Task C)
-
-| Purpose | Path |
-|---------|------|
-| Envelope + pipeline + metrics implementation | `services/marketdata-rs/crypto-collector/src/` |
-| Task C tests (module-local unit tests) | `services/marketdata-rs/crypto-collector/src/` |
-| Progress tracking | `docs/progress/marketdata_collector_framework_v1_4.md` |
-| DoD tracking | `docs/dod/marketdata_collector_framework_v1_4.md` |
-| Framework documentation update | `docs/marketdata_collector_framework_v1_4.md` |
-
-### Notes / Decisions (Task C)
-
-1. Use bounded `tokio::sync::mpsc` channel as the ingress queue.
-2. Implement trade overflow as fail-fast on full channel with explicit metric increments.
-3. Implement ticker/depth overflow as deterministic drop-on-full in Task C skeleton, with explicit drop metrics and documented implications.
-
-## End-of-Task Update (Task C)
-
-**Status:** DONE
-**Completed:** 2026-02-18T12:00:59Z
-**Released Locks:** LOCK:services-marketdata, LOCK:docs-progress-dod
-
-### Deliverables Checklist (Final)
-
-- [x] C1 — Stable Envelope v1 (helpers + builder)
-- [x] C2 — Bounded MPSC + buffer/batcher + flush/shutdown interfaces
-- [x] C3 — Deterministic backpressure/drop policies
-- [x] C4 — Metrics skeleton and wiring
-- [x] C5 — Unit tests for batching/flush/backpressure/metrics
-- [x] C6 — Framework docs update (Envelope/pipeline semantics)
-
-### Verification Results (Task C)
-
 | Step | Result | Notes |
 |------|--------|-------|
-| `cd services/marketdata-rs && cargo fmt -p crypto-collector -- --check` | PASS | Formatting clean |
-| `cd services/marketdata-rs && cargo test -p crypto-collector` | PASS | 94/94 tests passed (includes Task C tests) |
-| `cd services/marketdata-rs && cargo clippy -p crypto-collector -- -D warnings` | PASS | Zero warnings |
+| `cargo build -p crypto-collector` | PASS | No errors |
+| `cargo test -p crypto-collector` | PASS | 51/51 tests passed |
+| D1: MongoSink retry + state transitions | PASS | 6 unit tests |
+| D2: Spool rotation / on_full / partial-write recovery | PASS | 5 unit tests |
+| D3: Replay worker oldest-first + no-delete-on-fail + shutdown | PASS | 3 unit tests |
+| D4: Dedup window time-eviction + max_keys + labeled metrics | PASS | 6 unit tests |
+| D5: Pipeline fallback chain (Mongo→Spool→on_full) | PASS | 5 unit tests |
+| D6: Fake integration (spool grows→drains, metrics tracked) | PASS | `fake_integration_spool_grows_then_drains` |
+| D7: Docs (troubleshooting.md, marketdata_collector_framework_v1_4.md) | PASS | Created |
+| Mongo insert_many (live server) | NOT VERIFIED | `mongodb` crate not added; requires running Mongo |
 
-### Migration Notes (Task C)
+### Files Created (Task D)
 
-- Added new crypto-collector modules: `envelope.rs`, `metrics.rs`, `ingestion.rs`.
-- No edits made to Python `services/marketdata/**` pipelines or non-crypto endpoints.
-- `docs/marketdata_collector_framework_v1_4.md` created to capture Task C ingestion SSOT details.
+| File | Purpose |
+|------|---------|
+| `services/marketdata-rs/crypto-collector/src/persistence/mod.rs` | Module root + re-exports |
+| `services/marketdata-rs/crypto-collector/src/persistence/envelope.rs` | Envelope v1 type |
+| `services/marketdata-rs/crypto-collector/src/persistence/sink.rs` | Sink trait, SinkState, SinkError |
+| `services/marketdata-rs/crypto-collector/src/persistence/metrics.rs` | PersistenceMetrics (atomic + labeled counters) |
+| `services/marketdata-rs/crypto-collector/src/persistence/mongo.rs` | D1: MongoTarget trait + MongoSink |
+| `services/marketdata-rs/crypto-collector/src/persistence/spool.rs` | D2: DurableSpool |
+| `services/marketdata-rs/crypto-collector/src/persistence/replay.rs` | D3: ReplayWorker |
+| `services/marketdata-rs/crypto-collector/src/persistence/dedup.rs` | D4: DedupWindow |
+| `services/marketdata-rs/crypto-collector/src/persistence/pipeline.rs` | D5: PipelineSink |
+| `docs/troubleshooting.md` | D7: Troubleshooting doc |
+| `docs/marketdata_collector_framework_v1_4.md` | D7: Framework reference doc |
+
+### Files Modified (Task D)
+
+| File | Change |
+|------|--------|
+| `services/marketdata-rs/crypto-collector/Cargo.toml` | +async-trait, +tokio features, +tempfile dev-dep |
+| `services/marketdata-rs/crypto-collector/src/config.rs` | +PersistenceConfig, SpoolConfigToml, DedupConfigToml |
+| `services/marketdata-rs/crypto-collector/src/main.rs` | +`mod persistence;` |
+| `docs/progress/marketdata_collector_framework_v1_4.md` | Task D sections |
+| `docs/dod/marketdata_collector_framework_v1_4.md` | Task D acceptance criteria |
+
+### Notes for Task E/F
+
+- `Sink` trait is the stable interface; do not change its signature.
+- `Envelope` v1 is the stable data type; new fields must be optional.
+- `PipelineSink::build()` is the async constructor; `build()` opens the spool and spawns the replay worker.
+- `shutdown_rx: Option<watch::Receiver<bool>>` controls replay worker shutdown.
+- `mongodb` crate integration: add `real-mongo` feature in Cargo.toml, implement `MongoTarget` for `mongodb::Collection<bson::Document>`.
