@@ -54,10 +54,14 @@ class MockRuntime:
                 self.reconnect_count += 1
                 self.last_reconnect_time = _now()
 
-            if self.scenario.mongo_down_ms > 0 and self._mongo_down_until_ms <= time.time() * 1000:
-                self._mongo_down_until_ms = time.time() * 1000 + self.scenario.mongo_down_ms
-
-            mongo_down = time.time() * 1000 < self._mongo_down_until_ms
+            current_time_ms = time.time() * 1000
+            if self.scenario.mongo_down_ms > 0:
+                if current_time_ms >= self._mongo_down_until_ms: # Mongo is currently UP or just recovered
+                    if self._mongo_down_until_ms > 0: # If it just recovered, reset to 0
+                        self._mongo_down_until_ms = 0
+                    elif self.scenario.disconnect_every > 0 and self._tick % self.scenario.disconnect_every == 0: # If up, and time to start new downtime
+                        self._mongo_down_until_ms = current_time_ms + self.scenario.mongo_down_ms
+            mongo_down = current_time_ms < self._mongo_down_until_ms
             if mongo_down:
                 self.spool_bytes += 512
                 self.spool_replay_backlog += 1
