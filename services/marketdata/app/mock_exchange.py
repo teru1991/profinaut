@@ -5,7 +5,7 @@ import json
 import os
 import random
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
