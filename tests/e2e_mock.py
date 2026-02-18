@@ -61,14 +61,21 @@ def test_e2e_mock_metrics_and_health() -> None:
         assert health["service"] == "marketdata"
         assert health["descriptors_loaded_count"] >= 1
 
-        m1 = requests.get(f"http://127.0.0.1:{port}/metrics", timeout=2)
+        try:
+            m1 = requests.get(f"http://127.0.0.1:{port}/metrics", timeout=2)
+        except requests.RequestException as exc:
+            raise AssertionError(f"failed to fetch initial metrics from http://127.0.0.1:{port}/metrics") from exc
         assert m1.status_code == 200
         before = _parse_metrics(m1.text)
 
         deadline = time.time() + 8
         after = before
         while time.time() < deadline:
-            m2 = requests.get(f"http://127.0.0.1:{port}/metrics", timeout=2)
+            try:
+                m2 = requests.get(f"http://127.0.0.1:{port}/metrics", timeout=2)
+            except requests.RequestException:
+                time.sleep(0.3)
+                continue
             after = _parse_metrics(m2.text)
             if after.get("ingest_messages_total", 0) > before.get("ingest_messages_total", 0):
                 break
