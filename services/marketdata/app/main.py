@@ -472,7 +472,7 @@ async def healthz() -> dict[str, Any]:
         "db_latency_ms": db_latency_ms,
         "degraded_reasons": degraded_reasons,
     }
-    payload.update(_mock_runtime.health())
+    payload["mock"] = _mock_runtime.health()
     return payload
 
 
