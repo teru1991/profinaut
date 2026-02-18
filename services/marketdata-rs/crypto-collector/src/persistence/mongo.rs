@@ -117,6 +117,8 @@ impl MongoSink {
     }
 
     /// Extract the first exchange label from a batch (for error metrics).
+    /// 注: この関数は、バッチ内のすべてのエンベロープが同じ取引所に属していると仮定しています。
+    /// バッチに複数の取引所からのメッセージが含まれている場合、エラーは最初のエンベロープの取引所のみに帰属されます。
     fn batch_exchange(batch: &[Envelope]) -> &str {
         batch.first().map(|e| e.exchange.as_str()).unwrap_or("unknown")
     }
