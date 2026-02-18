@@ -938,12 +938,12 @@ def _cli_parser() -> argparse.ArgumentParser:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=int(os.getenv("PORT", "18080")))
     parser.add_argument("--config", default="config/collector.toml")
-    parser.add_argument("--mock", action="store_true")
-    parser.add_argument("--mock-gap-every", type=int, default=0)
-    parser.add_argument("--mock-disconnect-every", type=int, default=0)
-    parser.add_argument("--mock-silence-ms", type=int, default=0)
-    parser.add_argument("--mock-mongo-down-ms", type=int, default=0)
-    parser.add_argument("--mock-binary-rate", type=float, default=0.0)
+    parser.add_argument("--mock", action="store_true", default=os.getenv("MOCK_ENABLED", "0").strip() == "1")
+    parser.add_argument("--mock-gap-every", type=int, default=int(os.getenv("MOCK_GAP_EVERY", "0")))
+    parser.add_argument("--mock-disconnect-every", type=int, default=int(os.getenv("MOCK_DISCONNECT_EVERY", "0")))
+    parser.add_argument("--mock-silence-ms", type=int, default=int(os.getenv("MOCK_SILENCE_MS", "0")))
+    parser.add_argument("--mock-mongo-down-ms", type=int, default=int(os.getenv("MOCK_MONGO_DOWN_MS", "0")))
+    parser.add_argument("--mock-binary-rate", type=float, default=float(os.getenv("MOCK_BINARY_RATE", "0.0")))
     return parser
 
 
