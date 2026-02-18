@@ -5,6 +5,9 @@
 
 mod config;
 mod descriptor;
+pub mod dsl;
+pub mod engine;
+mod envelope;
 mod health;
 mod persistence;
 mod state;
