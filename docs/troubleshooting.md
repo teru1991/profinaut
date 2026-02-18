@@ -123,3 +123,46 @@ enabled         = false
 window_seconds  = 300
 max_keys        = 100000
 ```
+
+---
+
+## Crypto Collector — Exchange Runtime (Task E)
+
+### Frequent reconnects / URL failover
+
+Symptoms:
+- `ws_connected` gauge flaps between 0 and 1.
+- Repeating connect/disconnect logs.
+
+Interpretation:
+- Runtime is applying exponential backoff with jitter.
+- After repeated failures on the current URL, it rotates to the next `ws.connections.urls` entry.
+
+Actions:
+1. Validate primary WS endpoint reachability and TLS chain.
+2. Confirm fallback URLs are valid and not blocked by firewall.
+3. Increase `read_timeout_ms` if exchange heartbeat cadence is lower than expected.
+
+### ACK timeout metric growth
+
+Metric: `subscribe_ack_timeout_total{exchange,connection}`
+
+Meaning:
+- Subscribe message was sent but matching ACK did not arrive before `timeout_ms`.
+- Runtime retried subscribe with bounded backoff.
+
+Actions:
+1. Verify `subscriptions.ack.field`/`value` JSON pointer matcher against actual exchange ACK payload.
+2. If multiplexed ACKs are used, set `correlation_pointer` to a stable request identifier.
+3. Increase `timeout_ms` if exchange ACK latency is intermittently high.
+
+### Time quality metrics interpretation
+
+Collected values:
+- `server_time presence ratio`: share of received messages carrying extractable server time.
+- `clock_skew_ms`: local clock minus server time.
+- `end_to_end_lag_ms`: non-negative transport/processing lag estimate.
+
+If skew drifts significantly:
+- verify host NTP synchronization,
+- compare across multiple exchanges to isolate local vs remote clock issues.

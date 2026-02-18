@@ -399,3 +399,32 @@ foreach(ch in channels) {
 
 See `config/crypto-collector/exchanges/example_v1_4.toml` for a complete
 example that validates against the v1.4 schema.
+
+## Task E Runtime Semantics (ACK / Failover / Signing)
+
+### ACK gating
+
+`subscriptions.ack` supports bounded ACK wait with optional correlation.
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `field` | string | Yes | — | JSON pointer path evaluated on incoming payload |
+| `value` | string | Yes | — | Expected value for ACK match |
+| `correlation_pointer` | string | No | — | Optional pointer to correlate ACK per subscribe request |
+| `timeout_ms` | u64 | No | 5000 | Timeout budget for bounded ACK wait |
+
+Policy:
+- If `correlation_pointer` is set, runtime waits until each generated subscribe request is acknowledged.
+- On timeout, `subscribe_ack_timeout_total{exchange,connection}` increments and subscribe is retried with backoff.
+
+### WS failover + reconnect
+
+- Runtime reconnect uses exponential backoff with jitter.
+- On repeated failures, URLs rotate through `ws.connections.urls` in order, cycling back to the first URL.
+- Reconnect order is always: `connect -> auth (if any) -> subscribe -> ack gating -> running`.
+
+### REST signing semantics
+
+- REST secret material must be sourced from environment variables only.
+- Descriptor/config may reference env key names, but must not embed secret literals.
+- If required env secret is missing, instance enters `DEGRADED` with clear error and signed REST calls are not attempted.
