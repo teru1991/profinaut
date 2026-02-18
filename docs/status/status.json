@@ -31,8 +31,9 @@
   "next_actions": [
     "Resolve/confirm open PR metadata (URL/branch/Required Locks) once GitHub CLI or remote metadata is available.",
     "DOC-FIX-GMO-000 は Draft保持。shared-docs lock は保持しない。",
-    "Execute DOC-GMO-API-001E (docs catalog) preflight and proceed in docs-only scope."
+    "Execute DOC-GMO-API-001E (docs catalog) preflight and proceed in docs-only scope.",
+    "PR creation for DOC-GMO-API-001E is unblocked (LOCK:shared-docs released in status SSOT)."
   ],
-  "last_updated": "2026-02-18T23:21:28Z",
-  "notes": "DOC-FIX-GMO-000 remains open as Draft while LOCK:shared-docs is explicitly released to unblock DOC-GMO-API-001E."
+  "last_updated": "2026-02-18T23:45:00Z",
+  "notes": "DOC-FIX-GMO-000 remains open as Draft while LOCK:shared-docs is explicitly released to unblock DOC-GMO-API-001E. PR creation is now enabled from Docs OS perspective."
 }
