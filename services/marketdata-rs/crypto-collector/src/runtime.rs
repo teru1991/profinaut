@@ -44,7 +44,7 @@ impl Default for ConnectionSnapshot {
 
 #[derive(Default)]
 pub struct StateRegistry {
-    inner: Mutex<HashMap<String, ConnectionSnapshot>>,
+    inner: tokio::sync::Mutex<HashMap<String, ConnectionSnapshot>>,
 }
 
 impl StateRegistry {
