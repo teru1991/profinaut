@@ -1,3 +1,10 @@
+# Sample configuration for marketdata collector mock mode
+# NOTE: This is an example configuration file. The actual runtime configuration
+# is primarily controlled via CLI arguments (--port, --mock, etc.) and environment
+# variables. The --config flag is currently not fully implemented for loading these
+# settings at runtime. If you run the service on a different port than 18181,
+# you will need to update the URLs in config/exchanges/mock_v4.toml accordingly.
+
 [run]
 http_port = 18181
 connector_instance_id = "mock-connector-1"

@@ -472,18 +472,33 @@ async def healthz() -> dict[str, Any]:
         "db_latency_ms": db_latency_ms,
         "degraded_reasons": degraded_reasons,
     }
-    payload["mock"] = _mock_runtime.health()
+    payload["mock"] = await _mock_runtime.health()
     return payload
 
 
 @app.get("/metrics")
 async def metrics() -> PlainTextResponse:
     metric_lines = []
-    for key, value in _mock_runtime.metrics().items():
+    metrics_data = await _mock_runtime.metrics()
+    for key, value in metrics_data.items():
+        metric_lines.append(f"# HELP {key} {_get_metric_description(key)}")
         metric_lines.append(f"# TYPE {key} gauge")
         metric_lines.append(f"{key} {value}")
     body = "\n".join(metric_lines) + "\n"
     return PlainTextResponse(content=body, media_type="text/plain; version=0.0.4")
+
+
+def _get_metric_description(key: str) -> str:
+    """Return human-readable description for a metric."""
+    descriptions = {
+        "ingest_messages_total": "Total number of messages ingested from the exchange",
+        "reconnect_count": "Number of reconnections to the exchange",
+        "spool_bytes": "Current size of the spool buffer in bytes",
+        "spool_segments": "Number of spool segments",
+        "spool_replay_backlog": "Number of messages waiting to be replayed from spool",
+        "dedup_dropped_total": "Total number of duplicate messages dropped",
+    }
+    return descriptions.get(key, "No description available")
 
 
 @app.get("/capabilities")
