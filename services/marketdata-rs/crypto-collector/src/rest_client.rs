@@ -60,14 +60,23 @@ impl RestClient {
         let mut last_err = String::new();
         for base in &self.cfg.base_urls {
             let url = format!("{}{}", base.trim_end_matches('/'), path);
-            for _attempt in 0..=self.cfg.max_retries {
+            for attempt in 0..=self.cfg.max_retries {
                 self.limiter.until_ready().await;
                 let req = self.http.request(method.clone(), &url);
                 let req = self.sign(req)?;
                 match req.send().await {
                     Ok(resp) if is_retryable(resp.status()) => {
                         last_err = format!("retryable status {}", resp.status());
-                        tokio::time::sleep(Duration::from_millis(20)).await;
+                        if attempt < self.cfg.max_retries {
+                            let mut backoff = crate::runtime::BackoffPolicy::seeded(
+                                20,   // base_ms
+                                1000, // cap_ms (1 second)
+                                100,  // jitter_ms
+                                rand::thread_rng().gen::<u64>(),
+                            );
+                            let delay = backoff.next_delay_ms(attempt);
+                            tokio::time::sleep(Duration::from_millis(delay)).await;
+                        }
                         continue;
                     }
                     Ok(resp) => {
@@ -75,7 +84,16 @@ impl RestClient {
                     }
                     Err(err) => {
                         last_err = err.to_string();
-                        tokio::time::sleep(Duration::from_millis(20)).await;
+                        if attempt < self.cfg.max_retries {
+                            let mut backoff = crate::runtime::BackoffPolicy::seeded(
+                                20,   // base_ms
+                                1000, // cap_ms (1 second)
+                                100,  // jitter_ms
+                                rand::thread_rng().gen::<u64>(),
+                            );
+                            let delay = backoff.next_delay_ms(attempt);
+                            tokio::time::sleep(Duration::from_millis(delay)).await;
+                        }
                     }
                 }
             }
