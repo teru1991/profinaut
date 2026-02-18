@@ -412,6 +412,11 @@ pub async fn read_all_records(path: &Path) -> Result<Vec<Envelope>, SinkError> {
             Err(e) => return Err(e.into()),
         }
         let len = u32::from_le_bytes(hdr) as usize;
+        let len = u32::from_le_bytes(hdr) as usize;
+        // レコード長が大きすぎる場合はエラーを返す
+        if len > 10 * 1024 * 1024 { // 例: 10MBの制限
+            return Err(SinkError::Other(format!("レコードが大きすぎます: {} バイト", len)));
+        }
         let mut body = vec![0u8; len];
         match file.read_exact(&mut body).await {
             Ok(_) => {}
