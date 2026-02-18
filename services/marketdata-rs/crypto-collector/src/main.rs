@@ -9,7 +9,15 @@ pub mod dsl;
 pub mod engine;
 mod envelope;
 mod health;
+mod ingestion;
+mod json_pointer;
+mod maps;
+mod metrics;
+mod mini_expr;
 mod persistence;
+mod placeholder;
+mod rest_client;
+mod runtime;
 mod state;
 
 use std::net::SocketAddr;

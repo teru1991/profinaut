@@ -141,6 +141,14 @@ pub struct Subscription {
 pub struct AckMatcher {
     pub field: String,
     pub value: String,
+    #[serde(default)]
+    pub correlation_pointer: Option<String>,
+    #[serde(default = "default_ack_timeout_ms")]
+    pub timeout_ms: u64,
+}
+
+fn default_ack_timeout_ms() -> u64 {
+    5_000
 }
 
 // --- Parse section ---

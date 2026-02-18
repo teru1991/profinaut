@@ -99,3 +99,35 @@
 - [x] D7: `docs/troubleshooting.md` created. `docs/marketdata_collector_framework_v1_4.md` created.
 - [x] Chosen Paths recorded in progress doc.
 - [x] No changes to non-crypto modules or forbidden paths.
+
+---
+
+## Task E — Exchange Runtime (WS + REST)
+
+### Acceptance Criteria
+
+- [x] E1: Supervisor scaffolding includes per-connection state snapshots and panic-isolation guard/restart hooks.
+- [x] E2: WS runtime helpers handle text/binary payload safety and reconnect helper policies (backoff/rotation).
+- [x] E3: Subscribe generation uses Task B DSL API and ACK gate supports bounded timeout/correlation flow.
+- [x] E4: Extraction/normalization uses Task B APIs and Envelope v1 emission helper integrates Task C sender + ws metric hooks.
+- [x] E5: Reconnect logic provides deterministic backoff+jitter and URL rotation failover.
+- [x] E6: REST client includes per-instance rate-limit, bounded retry for 429/5xx, base_url failover, and env-only secret requirement with missing-secret error path.
+- [x] E7: Time quality collector records presence ratio/skew/lag series.
+- [x] E8: Unit tests cover backoff determinism, URL rotation, ACK matcher/correlation, extraction+normalize.
+- [x] E9: Descriptor reference and troubleshooting docs updated for Task E semantics.
+
+### Verification Steps
+
+| Step | Command | Expected |
+|------|---------|----------|
+| Tests | `cd services/marketdata-rs && cargo test -p crypto-collector` | Passes with no real network dependencies |
+| Backoff determinism | Included in unit tests | Seeded RNG yields deterministic delays |
+| URL failover | Included in unit tests | Rotation sequence deterministic |
+| ACK gating | Included in unit tests | Matcher/correlation and timeout behavior verified |
+| Metadata normalization | Included in unit tests | Pointer/expr + maps outputs expected envelope metadata |
+
+### Verification Results
+
+| Step | Result | Notes |
+|------|--------|-------|
+| Task E test run | PASS | `cargo test -p crypto-collector` passed (136 tests). |

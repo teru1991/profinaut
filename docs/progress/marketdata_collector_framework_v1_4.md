@@ -228,3 +228,86 @@ This framework does NOT alter non-crypto marketdata modules (Python FastAPI serv
 - `PipelineSink::build()` is the async constructor; `build()` opens the spool and spawns the replay worker.
 - `shutdown_rx: Option<watch::Receiver<bool>>` controls replay worker shutdown.
 - `mongodb` crate integration: add `real-mongo` feature in Cargo.toml, implement `MongoTarget` for `mongodb::Collection<bson::Document>`.
+
+---
+
+## Task E — Exchange Runtime
+
+**Status:** IN PROGRESS
+**Task E — Start:** 2026-02-18T00:00:00Z
+
+### Deliverables Checklist
+
+- [ ] E1 — Exchange instance supervisor
+- [ ] E2 — Generic WS client (text+binary+keepalive+timeout)
+- [ ] E3 — Subscribe generation + ACK gating
+- [ ] E4 — Metadata extraction/normalize + Envelope emission
+- [ ] E5 — Smart reconnect + failover (WS)
+- [ ] E6 — Generic REST client (rate-limit+retry+signing+failover)
+- [ ] E7 — Time quality metrics (collect only)
+- [ ] E8 — Unit tests (no real network)
+- [ ] E9 — Doc updates
+
+### Existing Implementation Audit (Task E)
+
+- `services/marketdata-rs/crypto-collector/src/ingestion.rs`: existing batching pipeline + sender API from Task C; compatible and reused for envelope emission.
+- `services/marketdata-rs/crypto-collector/src/engine.rs`: Task B APIs exist for subscription generation + extraction/normalization; reused directly.
+- `services/marketdata-rs/crypto-collector/src/metrics.rs`: collector metrics existed but missing WS/ACK/runtime metrics; extended in-place.
+- `services/marketdata-rs/crypto-collector/src/persistence/*`: retry/backoff patterns exist in Mongo sink and replay worker; no WS/REST runtime implementation present.
+- No existing `tokio-tungstenite` or `reqwest` runtime modules in crypto collector path.
+
+Refactor/implementation plan (crypto subsystem only):
+- Keep existing Task B/C/D modules.
+- Add new runtime-focused modules under `src/` (`runtime.rs`, `rest_client.rs`) and integrate via module tree only.
+- Extend descriptor ACK shape to include correlation pointer + timeout while remaining backward compatible.
+
+### Chosen Paths
+
+- `services/marketdata-rs/crypto-collector/src/runtime.rs`
+- `services/marketdata-rs/crypto-collector/src/rest_client.rs`
+- `services/marketdata-rs/crypto-collector/src/metrics.rs`
+- `services/marketdata-rs/crypto-collector/src/descriptor.rs`
+- `services/marketdata-rs/crypto-collector/src/main.rs`
+- `services/marketdata-rs/crypto-collector/Cargo.toml`
+- `docs/progress/marketdata_collector_framework_v1_4.md`
+- `docs/dod/marketdata_collector_framework_v1_4.md`
+- `docs/descriptor_reference_v1_4.md`
+- `docs/troubleshooting.md`
+
+### Notes / Decisions
+
+- LOCK check (LOCK:services-marketdata, LOCK:docs-progress-dod): no conflict found in `docs/status/status.json` open PR lock list.
+
+### Task E — End Update
+
+**Completed:** 2026-02-18T00:00:00Z
+
+#### Verification Results
+
+- `cd services/marketdata-rs && cargo test -p crypto-collector` → PASS (136 passed, 0 failed, no network tests).
+
+#### Deliverables Status
+
+- [x] E1 — Exchange instance supervisor (state model + panic guard scaffolding)
+- [x] E2 — Generic WS runtime parsing utilities (text/binary-safe decode helpers)
+- [x] E3 — Subscribe generation + ACK gating primitives (bounded timeout wait)
+- [x] E4 — Metadata extraction/normalization to Envelope v1 + ingestion send helper
+- [x] E5 — Reconnect helpers (backoff+jitter, URL rotation failover)
+- [x] E6 — Generic REST client (rate limit, retries, failover loop, env-only signing rule)
+- [x] E7 — Time quality metrics collector struct (presence/skew/lag collection)
+- [x] E8 — Unit tests for deterministic backoff, URL rotation, ACK gating, extraction/normalize
+- [x] E9 — Docs updated (`descriptor_reference_v1_4.md`, `troubleshooting.md`)
+
+#### Task E Completion Summary (Chosen Paths)
+
+- `services/marketdata-rs/crypto-collector/Cargo.toml`
+- `services/marketdata-rs/crypto-collector/src/main.rs`
+- `services/marketdata-rs/crypto-collector/src/descriptor.rs`
+- `services/marketdata-rs/crypto-collector/src/metrics.rs`
+- `services/marketdata-rs/crypto-collector/src/runtime.rs`
+- `services/marketdata-rs/crypto-collector/src/rest_client.rs`
+- `services/marketdata-rs/crypto-collector/src/persistence/spool.rs` (compile fix surfaced by full-module test build)
+- `docs/progress/marketdata_collector_framework_v1_4.md`
+- `docs/dod/marketdata_collector_framework_v1_4.md`
+- `docs/descriptor_reference_v1_4.md`
+- `docs/troubleshooting.md`

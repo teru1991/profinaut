@@ -232,7 +232,6 @@ impl DurableSpool {
             self.current_seq
                 .store(next_seq, std::sync::atomic::Ordering::Release);
             *head = WriteHead { seq: next_seq, file, file_bytes: 0 };
-            *head = WriteHead { seq: next_seq, file, file_bytes: 0 };
             self.metrics.spool_segments.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         }
 
@@ -384,7 +383,8 @@ async fn recover_segment(path: &Path) -> Result<(File, u64), SinkError> {
             let f = std::fs::OpenOptions::new().write(true).open(path_clone)?;
             f.set_len(good_offset)
         })
-        .await??;
+        .await
+        .map_err(|e| SinkError::SpoolIo(std::io::Error::other(e.to_string())))??;
     }
 
     // Open for append at the clean position.

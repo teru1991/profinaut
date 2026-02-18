@@ -8,6 +8,12 @@ struct ExchangeChannelKey {
     channel: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct ExchangeConnectionKey {
+    exchange: String,
+    connection: String,
+}
+
 #[derive(Debug, Default)]
 pub struct Metrics {
     ingest_errors_total: Mutex<HashMap<String, Arc<AtomicU64>>>,
@@ -15,6 +21,8 @@ pub struct Metrics {
     drop_count: Mutex<HashMap<ExchangeChannelKey, Arc<AtomicU64>>>,
     trade_overflow_total: Mutex<HashMap<String, Arc<AtomicU64>>>,
     buffer_depth: Mutex<HashMap<String, Arc<AtomicI64>>>,
+    ws_connected: Mutex<HashMap<String, Arc<AtomicI64>>>,
+    subscribe_ack_timeout_total: Mutex<HashMap<ExchangeConnectionKey, Arc<AtomicU64>>>,
 }
 
 impl Metrics {
@@ -72,6 +80,29 @@ impl Metrics {
                 .clone()
         };
         gauge.store(depth as i64, Ordering::Relaxed);
+    }
+
+    pub fn set_ws_connected(&self, exchange: &str, connected: i64) {
+        let gauge = {
+            let mut map = self.ws_connected.lock().expect("poisoned");
+            map.entry(exchange.to_string())
+                .or_insert_with(|| Arc::new(AtomicI64::new(0)))
+                .clone()
+        };
+        gauge.store(connected, Ordering::Relaxed);
+    }
+
+    pub fn inc_subscribe_ack_timeout_total(&self, exchange: &str, connection: &str) {
+        let counter = {
+            let mut map = self.subscribe_ack_timeout_total.lock().expect("poisoned");
+            map.entry(ExchangeConnectionKey {
+                exchange: exchange.to_string(),
+                connection: connection.to_string(),
+            })
+            .or_insert_with(|| Arc::new(AtomicU64::new(0)))
+            .clone()
+        };
+        counter.fetch_add(1, Ordering::Relaxed);
     }
 
     #[cfg(test)]
