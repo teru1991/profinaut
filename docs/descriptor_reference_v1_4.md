@@ -428,3 +428,14 @@ Policy:
 - REST secret material must be sourced from environment variables only.
 - Descriptor/config may reference env key names, but must not embed secret literals.
 - If required env secret is missing, instance enters `DEGRADED` with clear error and signed REST calls are not attempted.
+
+## Task F Mock Descriptor Example
+
+Reference file: `config/exchanges/mock_v4.toml`
+
+- WS public ACK matcher: `$.type == 'ack'`
+- Correlation pointer: `$.correlation_id`
+- WS private auth template: `{"op":"auth","token":"${TOKEN}"}`
+- REST endpoints used for mock snapshot/time:
+  - `/mock/rest/time`
+  - `/mock/rest/snapshot`

@@ -311,3 +311,104 @@ Refactor/implementation plan (crypto subsystem only):
 - `docs/dod/marketdata_collector_framework_v1_4.md`
 - `docs/descriptor_reference_v1_4.md`
 - `docs/troubleshooting.md`
+
+---
+
+## Task F — Final Integration
+
+**Status:** IN PROGRESS
+**Task ID:** MDFW-1_4-F
+**Task F — Start:** 2026-02-18T13:18:29Z
+
+### Deliverables Checklist
+
+- [ ] F1 — /healthz and /metrics fully wired from runtime state
+- [ ] F2 — In-process mock exchange (WS public/private + REST)
+- [ ] F3 — Scenario controls (`--mock-gap-every`, `--mock-disconnect-every`, `--mock-silence-ms`, `--mock-mongo-down-ms`, `--mock-binary-rate`)
+- [ ] F4 — Sample config/descriptors/maps for mock E2E
+- [ ] F5 — E2E harness (`tests/e2e_mock.rs` equivalent scoped harness)
+- [ ] F6 — Final docs updated (framework, descriptor reference, troubleshooting, mongo setup)
+
+### Existing Implementation Audit (Task F)
+
+_TBD (to be filled immediately after audit)._ 
+
+### Chosen Paths
+
+_TBD (to be filled after audit)._ 
+
+### Notes / Decisions
+
+- Task F constrained to `services/marketdata/**` + allowed docs/config/test paths from task card.
+- Existing Rust crypto collector under `services/marketdata-rs/crypto-collector/` is outside the task-card allowed path list; Task F implementation for this run is scoped to the Python `services/marketdata/` subsystem and compatible harness/docs updates.
+
+### Existing Implementation Audit (Task F) — Findings
+
+- Existing HTTP endpoint patterns are implemented in `services/marketdata/app/main.py` and `services/marketdata/app/routes/health.py` with overlapping `/healthz` and `/capabilities` handling. `/metrics` Prometheus endpoint did not exist before Task F in this subsystem.
+- Metrics conventions existed as in-memory counters (`services/marketdata/app/metrics.py`) exposed only through JSON summaries; no Prometheus text export path existed.
+- Existing mock/test harness utilities existed in `services/marketdata/tests/fake_gmo_server.py` (REST + public WS) and pytest-based tests under `services/marketdata/tests/`; these patterns are reusable for in-process mock but lacked private WS auth gate and scenario controls.
+- Refactor decision for crypto-scoped final wiring in allowed paths:
+  - Keep existing service routes and extend `services/marketdata/app/main.py` for full `/healthz` + `/metrics` runtime wiring.
+  - Add dedicated in-process mock exchange module under `services/marketdata/app/mock_exchange.py`.
+  - Add E2E harness in top-level `tests/e2e_mock.py` to avoid changing existing service unit tests.
+
+### Chosen Paths
+
+| Purpose | Path |
+|---------|------|
+| HTTP wiring and runtime integration | `services/marketdata/app/main.py` |
+| In-process mock WS/REST + scenario runtime | `services/marketdata/app/mock_exchange.py` |
+| E2E harness | `tests/e2e_mock.py` |
+| Sample config/descriptors/maps | `config/collector.toml`, `config/exchanges/mock_v4.toml`, `config/exchanges/maps/mock_symbol_map.toml` |
+| Task progress + DoD | `docs/progress/marketdata_collector_framework_v1_4.md`, `docs/dod/marketdata_collector_framework_v1_4.md` |
+| Final docs | `docs/marketdata_collector_framework_v1_4.md`, `docs/descriptor_reference_v1_4.md`, `docs/troubleshooting.md`, `docs/mongo_setup.md` |
+
+### Notes / Decisions (Task F)
+
+- Because task-card allowed paths exclude `services/marketdata-rs/**`, Task F implementation is completed in `services/marketdata/**` using Python FastAPI runtime.
+- Scenario controls are surfaced as CLI flags mapped to env vars consumed by the in-process mock runtime.
+- E2E assertions use polling with bounded timeout and avoid fixed long sleeps to reduce flakiness.
+
+### Task F — End Update
+
+**Completed:** 2026-02-18T13:24:30Z
+**Status:** DONE (with noted repository-structure limitation for rust `cargo test --test e2e_mock` target)
+
+#### Deliverables Checklist (Final)
+
+- [x] F1 — /healthz and /metrics fully wired from runtime state
+- [x] F2 — In-process mock exchange (WS public/private + REST)
+- [x] F3 — Scenario controls implemented as CLI flags
+- [x] F4 — Sample config/descriptors/maps added
+- [x] F5 — E2E harness added (`tests/e2e_mock.py`)
+- [x] F6 — Final docs updated
+
+#### Verification Commands + Results
+
+- `python -m compileall services/marketdata/app` → PASS
+- `pytest tests/e2e_mock.py -q` → PASS
+- `cd services/marketdata-rs && cargo build` → PASS
+- `cd services/marketdata-rs && cargo test --test e2e_mock` → NOT VERIFIED (test target missing)
+- `cd services/marketdata-rs && cargo run -- --config config/collector.toml --mock` → PARTIAL (boots unrelated rust service)
+- `python -m services.marketdata.app.main --port 18181 --config config/collector.toml --mock --mock-disconnect-every 4 --mock-mongo-down-ms 1200` + curls:
+  - `/healthz` includes instance/connection/persistence/time-quality fields.
+  - `/metrics` exposes ingest/reconnect/spool/dedup gauges in Prometheus text.
+
+#### Task F Completion Summary
+
+- **Chosen Paths (exact):**
+  - `services/marketdata/app/main.py`
+  - `services/marketdata/app/mock_exchange.py`
+  - `services/marketdata/app/silver/normalizer.py` (startup import fix discovered during E2E)
+  - `tests/e2e_mock.py`
+  - `config/collector.toml`
+  - `config/exchanges/mock_v4.toml`
+  - `config/exchanges/maps/mock_symbol_map.toml`
+  - `docs/marketdata_collector_framework_v1_4.md`
+  - `docs/descriptor_reference_v1_4.md`
+  - `docs/troubleshooting.md`
+  - `docs/mongo_setup.md`
+  - `docs/progress/marketdata_collector_framework_v1_4.md`
+  - `docs/dod/marketdata_collector_framework_v1_4.md`
+- **Implemented:** extended health + prometheus metrics, in-process mock REST/WS (public/private auth/ack/ping-pong/binary), scenario controls, sample config/descriptor/map, polling-based E2E harness, and final docs.
+- **Known limitation / next step:** task-card required rust `e2e_mock` target does not exist in current repository path constraints (`services/marketdata/**`), so rust command-level verification remains not applicable in this run.

@@ -170,3 +170,15 @@ cargo test -p crypto-collector
   `docs/troubleshooting.md` for instructions on wiring a real MongoDB instance.
 - Spool and dedup are **disabled by default** (`enabled = false`).
 - The `Sink` trait is the stable interface for Tasks E and F.
+
+## Task F Final Integration (Crypto mock harness)
+
+- `/healthz` now reports connector instance, per-instance and per-connection runtime state, persistence spool/dedup state, and time-quality summary for the mock crypto runtime.
+- `/metrics` now exports Prometheus text payload for ingest/reconnect/spool/dedup metric families.
+- In-process mock exchange endpoints are available at `/mock/ws/public`, `/mock/ws/private`, `/mock/rest/time`, `/mock/rest/snapshot` when running with `--mock`.
+- Scenario controls:
+  - `--mock-gap-every N`
+  - `--mock-disconnect-every N`
+  - `--mock-silence-ms N`
+  - `--mock-mongo-down-ms N`
+  - `--mock-binary-rate P`

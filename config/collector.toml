@@ -1,0 +1,7 @@
+[run]
+http_port = 18181
+connector_instance_id = "mock-connector-1"
+
+[mock]
+enabled = true
+exchange_descriptor = "config/exchanges/mock_v4.toml"

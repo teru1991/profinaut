@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import argparse
 import contextlib
 import json
 import logging
@@ -19,6 +20,7 @@ from typing import Any
 
 import re
 import socket
+import uvicorn
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -31,8 +33,8 @@ from libs.observability import audit_event, error_envelope, request_id_middlewar
 from services.marketdata.app.bronze_store import BronzeStore, RawMetaRepository
 from services.marketdata.app.object_store import build_object_store_from_env
 from services.marketdata.app.gmo_ws_connector import GmoPublicWsConnector, GmoWsConfig
+from services.marketdata.app.mock_exchange import MockRuntime, MockScenario, build_router as build_mock_router
 from services.marketdata.app.db.repository import MarketDataMetaRepository
-from services.marketdata.app.routes.health import router as health_router
 from services.marketdata.app.routes.raw_ingest import ingest_raw_envelope, router as raw_ingest_router
 from services.marketdata.app.settings import load_settings
 
@@ -373,7 +375,6 @@ def _is_valid_rfc3339(ts: str) -> bool:
         return False
 app = FastAPI(title="profinaut-marketdata", version="0.1.0")
 app.add_middleware(request_id_middleware())
-app.include_router(health_router)
 app.include_router(raw_ingest_router)
 _poller = MarketDataPoller(PollerConfig())
 _object_store, _object_store_status = build_object_store_from_env()
@@ -383,6 +384,8 @@ _bronze_store: BronzeStore | None = None
 if _object_store is not None:
     _bronze_store = BronzeStore(_object_store, _raw_meta_repo)
 _gmo_ws_connector = GmoPublicWsConnector(GmoWsConfig())
+_mock_runtime = MockRuntime(MockScenario())
+app.include_router(build_mock_router(_mock_runtime))
 
 
 
@@ -421,8 +424,12 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 async def startup() -> None:
     app.state.poller_task = asyncio.create_task(_poller.run_forever())
     app.state.gmo_ws_task = None
+    app.state.mock_stop_event = asyncio.Event()
+    app.state.mock_task = None
     if _gmo_ws_connector.enabled:
         app.state.gmo_ws_task = asyncio.create_task(_gmo_ws_connector.run_forever())
+    if _mock_runtime.scenario.enabled:
+        app.state.mock_task = asyncio.create_task(_mock_runtime.run(app.state.mock_stop_event))
 
 
 @app.on_event("shutdown")
@@ -438,6 +445,14 @@ async def shutdown() -> None:
         ws_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await ws_task
+    mock_stop_event = getattr(app.state, "mock_stop_event", None)
+    if mock_stop_event is not None:
+        mock_stop_event.set()
+    mock_task = getattr(app.state, "mock_task", None)
+    if mock_task:
+        mock_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await mock_task
 
 
 async def _db_health_snapshot() -> tuple[bool, float | None, str | None]:
@@ -451,12 +466,24 @@ async def healthz() -> dict[str, Any]:
     if db_reason is not None:
         degraded_reasons.append(db_reason)
 
-    return {
+    payload = {
         "status": "degraded" if degraded_reasons else "ok",
         "db_ok": db_ok,
         "db_latency_ms": db_latency_ms,
         "degraded_reasons": degraded_reasons,
     }
+    payload.update(_mock_runtime.health())
+    return payload
+
+
+@app.get("/metrics")
+async def metrics() -> PlainTextResponse:
+    metric_lines = []
+    for key, value in _mock_runtime.metrics().items():
+        metric_lines.append(f"# TYPE {key} gauge")
+        metric_lines.append(f"{key} {value}")
+    body = "\n".join(metric_lines) + "\n"
+    return PlainTextResponse(content=body, media_type="text/plain; version=0.0.4")
 
 
 @app.get("/capabilities")
@@ -904,3 +931,33 @@ async def download_raw(raw_msg_id: str, request: Request):
     ndjson = "".join(json.dumps(item, separators=(",", ":"), sort_keys=True) + "\n" for item in payloads)
     headers = {"x-request-id": request_id}
     return PlainTextResponse(content=ndjson, media_type="application/x-ndjson", headers=headers)
+
+
+def _cli_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Marketdata service")
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=int(os.getenv("PORT", "18080")))
+    parser.add_argument("--config", default="config/collector.toml")
+    parser.add_argument("--mock", action="store_true")
+    parser.add_argument("--mock-gap-every", type=int, default=0)
+    parser.add_argument("--mock-disconnect-every", type=int, default=0)
+    parser.add_argument("--mock-silence-ms", type=int, default=0)
+    parser.add_argument("--mock-mongo-down-ms", type=int, default=0)
+    parser.add_argument("--mock-binary-rate", type=float, default=0.0)
+    return parser
+
+
+def main() -> int:
+    args = _cli_parser().parse_args()
+    _mock_runtime.scenario.enabled = bool(args.mock)
+    _mock_runtime.scenario.gap_every = int(args.mock_gap_every)
+    _mock_runtime.scenario.disconnect_every = int(args.mock_disconnect_every)
+    _mock_runtime.scenario.silence_ms = int(args.mock_silence_ms)
+    _mock_runtime.scenario.mongo_down_ms = int(args.mock_mongo_down_ms)
+    _mock_runtime.scenario.binary_rate = float(args.mock_binary_rate)
+    uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
