@@ -34,6 +34,14 @@
           "docs/marketdata_collector_framework_v1_4.md"
         ]
       }
+    },
+    "DOC-GMO-API-001E": {
+      "branch": "work",
+      "pr_urls": [],
+      "commit_shas": [],
+      "verification_evidence": [
+        "docs/status/progress-updates/2026-02-18_docfix-gmo-000_unlock.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, including GMO final-task prerequisite reference slots."

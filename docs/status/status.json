@@ -1,6 +1,6 @@
 {
   "base_branch": "main",
-  "active_task": "DOC-FIX-GMO-000",
+  "active_task": "DOC-GMO-API-001E",
   "owner": "codex",
   "state": "in_progress",
   "open_prs": [
@@ -22,18 +22,17 @@
       "locks": [
         "LOCK:shared-docs"
       ],
-      "status": "in_progress_local"
+      "status": "open_draft"
     }
   ],
   "locks_held": [
-    "LOCK:shared-docs (held by DOC-FIX-GMO-000 on branch work)",
     "LOCK:ci (holder unresolved; carried from prior status)"
   ],
   "next_actions": [
     "Resolve/confirm open PR metadata (URL/branch/Required Locks) once GitHub CLI or remote metadata is available.",
-    "LOCK state unresolved across concurrent work; GMO実装タスクは発行不可 until LOCK ownership is explicitly resolved in status.json.",
-    "GMO final tasks (4–8) 生成の前提：進捗票・GMOスコープ・UCEL v1.1.4準拠点の参照先をtrace-index.jsonで参照する。"
+    "DOC-FIX-GMO-000 は Draft保持。shared-docs lock は保持しない。",
+    "Execute DOC-GMO-API-001E (docs catalog) preflight and proceed in docs-only scope."
   ],
-  "last_updated": "2026-02-18T13:38:46Z",
-  "notes": "DOC-FIX-GMO-000 preflight run completed in docs-only mode; active_task/HANDOFF alignment enforced and shared-docs lock ownership made explicit."
+  "last_updated": "2026-02-18T23:21:28Z",
+  "notes": "DOC-FIX-GMO-000 remains open as Draft while LOCK:shared-docs is explicitly released to unblock DOC-GMO-API-001E."
 }
