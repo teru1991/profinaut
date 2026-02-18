@@ -3,10 +3,12 @@
   "what_done": [
     "DOC-FIX-GMO-000 PR は Draft/Open のまま維持した。",
     "status.json から LOCK:shared-docs を解放し、ロック起因のブロック文言を解除した。",
-    "active_task を DOC-GMO-API-001E に更新し、Docs OS の整合を同期した。"
+    "active_task を DOC-GMO-API-001E に更新し、Docs OS の整合を同期した。",
+    "status.json にて LOCK:shared-docs 非保持を確認し、PR作成可能状態に整えた。"
   ],
   "what_next": [
-    "DOC-GMO-API-001E を実行（docs catalog 更新）。"
+    "DOC-GMO-API-001E を実行（docs catalog 更新）。",
+    "DOC-GMO-API-001E の実装PRを作成する。"
   ],
   "open_pr": "",
   "locks_held": [],
