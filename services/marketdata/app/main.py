@@ -949,12 +949,31 @@ def _cli_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = _cli_parser().parse_args()
+    
+    # Load settings from the specified config file.
+    # This will override any globally loaded settings for the purpose of configuring mock runtime.
+    # Note: If other global components depend on _settings being loaded from args.config,
+    # a larger refactoring might be necessary to initialize them after args are parsed.
+    settings = load_settings(args.config) 
+
+    # Apply mock settings from the config file to the global _mock_runtime.scenario
+    if "mock" in settings:
+        mock_config = settings["mock"]
+        _mock_runtime.scenario.enabled = mock_config.get("enabled", _mock_runtime.scenario.enabled)
+        _mock_runtime.scenario.gap_every = mock_config.get("gap_every", _mock_runtime.scenario.gap_every)
+        _mock_runtime.scenario.disconnect_every = mock_config.get("disconnect_every", _mock_runtime.scenario.disconnect_every)
+        _mock_runtime.scenario.silence_ms = mock_config.get("silence_ms", _mock_runtime.scenario.silence_ms)
+        _mock_runtime.scenario.mongo_down_ms = mock_config.get("mongo_down_ms", _mock_runtime.scenario.mongo_down_ms)
+        _mock_runtime.scenario.binary_rate = mock_config.get("binary_rate", _mock_runtime.scenario.binary_rate)
+
+    # Override with CLI arguments, which take precedence over config file and environment variables
     _mock_runtime.scenario.enabled = bool(args.mock)
     _mock_runtime.scenario.gap_every = int(args.mock_gap_every)
     _mock_runtime.scenario.disconnect_every = int(args.mock_disconnect_every)
     _mock_runtime.scenario.silence_ms = int(args.mock_silence_ms)
     _mock_runtime.scenario.mongo_down_ms = int(args.mock_mongo_down_ms)
     _mock_runtime.scenario.binary_rate = float(args.mock_binary_rate)
+    
     uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
     return 0
 
