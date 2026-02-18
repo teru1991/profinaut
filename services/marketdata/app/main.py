@@ -937,7 +937,6 @@ def _cli_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Marketdata service")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=int(os.getenv("PORT", "18080")))
-    parser.add_argument("--config", default="config/collector.toml")
     parser.add_argument("--mock", action="store_true", default=os.getenv("MOCK_ENABLED", "0").strip() == "1")
     parser.add_argument("--mock-gap-every", type=int, default=int(os.getenv("MOCK_GAP_EVERY", "0")))
     parser.add_argument("--mock-disconnect-every", type=int, default=int(os.getenv("MOCK_DISCONNECT_EVERY", "0")))
