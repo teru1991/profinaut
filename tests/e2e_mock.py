@@ -24,11 +24,20 @@ def _poll_json(url: str, timeout_s: float = 10.0) -> dict:
 
 def _parse_metrics(text: str) -> dict[str, float]:
     metrics: dict[str, float] = {}
-    for line in text.splitlines():
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
         if not line or line.startswith("#"):
             continue
-        key, value = line.split(" ", 1)
-        metrics[key] = float(value)
+        parts = line.split(None, 1)
+        if len(parts) != 2:
+            # Skip malformed metric lines that do not have exactly two fields.
+            continue
+        key, value_str = parts
+        try:
+            metrics[key] = float(value_str)
+        except ValueError:
+            # Skip lines where the value is not a valid float.
+            continue
     return metrics
 
 
