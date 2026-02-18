@@ -182,7 +182,7 @@ fn default_consecutive_failures_for_degraded() -> u32 {
     3
 }
 fn default_spool_dir() -> String {
-    "/tmp/crypto-spool".to_string()
+    "/var/lib/crypto-collector/spool".to_string()
 }
 fn default_max_segment_mb() -> u64 {
     64
