@@ -5,7 +5,13 @@
 
 mod config;
 mod descriptor;
+pub mod dsl;
+pub mod engine;
 mod health;
+pub mod json_pointer;
+pub mod maps;
+pub mod mini_expr;
+pub mod placeholder;
 mod state;
 
 use std::net::SocketAddr;
