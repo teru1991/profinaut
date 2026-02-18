@@ -378,9 +378,12 @@ async fn recover_segment(path: &Path) -> Result<(File, u64), SinkError> {
     // If the file has extra bytes beyond good_offset, truncate it.
     let file_meta = tokio::fs::metadata(path).await?;
     if file_meta.len() != good_offset {
-        let f = std::fs::OpenOptions::new().write(true).open(path)?;
-        f.set_len(good_offset)?;
-        drop(f);
+        let path_clone = path.to_path_buf();
+        tokio::task::spawn_blocking(move || -> std::io::Result<()> {
+            let f = std::fs::OpenOptions::new().write(true).open(path_clone)?;
+            f.set_len(good_offset)
+        })
+        .await??;
     }
 
     // Open for append at the clean position.
