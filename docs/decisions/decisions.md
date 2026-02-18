@@ -7,3 +7,4 @@ Format: `YYYY-MM-DD: Decision / Rationale / Consequences`
 - 2026-02-17: docs canonical入口 is `docs/SSOT/README_AI.md` / Single entrypoint prevents SSOT ambiguity / AI and human operators start from one canonical path.
 - 2026-02-17: stopping requires `docs/handoff/HANDOFF.json` update / Multi-agent and interrupted work need explicit continuity state / No stop/handoff without handoff state refresh.
 - 2026-02-17: DOC-FIX-001 bootstrap completed / preflight docs missing/invalid / Created/repaired docs OS preflight SSOT files to unblock task generation and lock-safe execution.
+- 2026-02-18: DOC-FIX-GMO-000 preflight gate enforced / GMO final implementation tasks require lock-state certainty and traceable SSOT references / Block task issuance until LOCK conflicts are resolved and status open_prs are refreshed.

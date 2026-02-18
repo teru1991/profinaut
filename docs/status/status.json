@@ -1,28 +1,39 @@
 {
   "base_branch": "main",
-  "active_task": "CI-010-B",
+  "active_task": "DOC-FIX-GMO-000",
   "owner": "codex",
   "state": "in_progress",
   "open_prs": [
     {
       "pr_number": null,
-      "title": "TBD",
+      "title": "CI-010-B follow-up (status unknown)",
       "url": "",
       "branch": "",
       "locks": [
         "LOCK:ci"
       ],
       "status": "unknown"
+    },
+    {
+      "pr_number": null,
+      "title": "DOC-FIX-GMO-000 preflight docs alignment",
+      "url": "",
+      "branch": "work",
+      "locks": [
+        "LOCK:shared-docs"
+      ],
+      "status": "in_progress_local"
     }
   ],
   "locks_held": [
-    "LOCK:ci"
+    "LOCK:shared-docs (held by DOC-FIX-GMO-000 on branch work)",
+    "LOCK:ci (holder unresolved; carried from prior status)"
   ],
   "next_actions": [
-    "Validate dependency-review and security-supply-chain behavior on PR runs.",
-    "Verify blocking branch via workflow_dispatch for security-supply-chain.",
-    "Prepare CI-010 closure notes after run log confirmation."
+    "Resolve/confirm open PR metadata (URL/branch/Required Locks) once GitHub CLI or remote metadata is available.",
+    "LOCK state unresolved across concurrent work; GMO実装タスクは発行不可 until LOCK ownership is explicitly resolved in status.json.",
+    "GMO final tasks (4–8) 生成の前提：進捗票・GMOスコープ・UCEL v1.1.4準拠点の参照先をtrace-index.jsonで参照する。"
   ],
-  "last_updated": "2026-02-17T00:00:00Z",
-  "notes": "CI-010 preflight normalized status keys and lock declaration."
+  "last_updated": "2026-02-18T13:38:46Z",
+  "notes": "DOC-FIX-GMO-000 preflight run completed in docs-only mode; active_task/HANDOFF alignment enforced and shared-docs lock ownership made explicit."
 }
