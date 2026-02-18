@@ -94,3 +94,53 @@
 | JSON pointer optional | PASS | `extract_typed_optional_missing_returns_none` — returns None |
 | Mini-expr whitelist | PASS | `unknown_function_rejected` — "unknown_fn" rejected |
 | Mini-expr bounds | PASS | `expression_too_long` + `ast_node_limit` — both enforced |
+
+---
+
+## Task C — Ingestion Pipeline (Envelope v1 + MPSC + Buffer/Backpressure) + Metrics Skeleton
+
+### Acceptance Criteria
+
+- [ ] C1: Envelope v1 struct implemented exactly with fixed `envelope_version=1`, required fields, optional metadata fields, and helper(s) (`now_local_time_ns`, constructor/builder)
+- [ ] C2: Bounded MPSC ingestion path exists with stable interfaces (`IngestSender`, `BufferRunner`/`PipelineHandle`, `Sink` trait), batching by count or interval, plus `flush()` and `shutdown()`
+- [ ] C3: Deterministic backpressure policies implemented by channel (`trade`, `ticker`, `depth`) with documented behavior
+- [ ] C4: Metrics skeleton exists with required names/labels and is wired into ingest/buffer events
+- [ ] C5: Unit tests cover required cases (count/time batching, flush drain, ticker drops, trade overflow, ingest metrics)
+- [ ] C6: Framework v1.4 doc updated with Envelope invariants, batching behavior, and backpressure implications
+- [ ] Chosen Paths recorded in progress doc for Task C
+- [ ] No changes to non-crypto marketdata modules
+
+### Verification Steps
+
+| Step | Command | Expected |
+|------|---------|----------|
+| Unit tests | `cd services/marketdata-rs && cargo test -p crypto-collector` | All tests pass including Task C cases |
+| Formatting | `cd services/marketdata-rs && cargo fmt -p crypto-collector -- --check` | No diffs |
+| Linting | `cd services/marketdata-rs && cargo clippy -p crypto-collector -- -D warnings` | No warnings |
+
+### Verification Results
+
+| Step | Result | Notes |
+|------|--------|-------|
+| Unit tests | NOT VERIFIED | Pending implementation |
+| Formatting | NOT VERIFIED | Pending implementation |
+| Linting | NOT VERIFIED | Pending implementation |
+
+### Verification Results (Final)
+
+| Step | Result | Notes |
+|------|--------|-------|
+| Unit tests | PASS | `cargo test -p crypto-collector` passed (94 tests) |
+| Formatting | PASS | `cargo fmt -p crypto-collector -- --check` passed |
+| Linting | PASS | `cargo clippy -p crypto-collector -- -D warnings` passed |
+
+### Acceptance Checklist (Final)
+
+- [x] C1: Envelope v1 struct implemented exactly with fixed `envelope_version=1`, required fields, optional metadata fields, and helper(s) (`now_local_time_ns`, constructor/builder)
+- [x] C2: Bounded MPSC ingestion path exists with stable interfaces (`IngestSender`, `BufferRunner`/`PipelineHandle`, `Sink` trait), batching by count or interval, plus `flush()` and `shutdown()`
+- [x] C3: Deterministic backpressure policies implemented by channel (`trade`, `ticker`, `depth`) with documented behavior
+- [x] C4: Metrics skeleton exists with required names/labels and is wired into ingest/buffer events
+- [x] C5: Unit tests cover required cases (count/time batching, flush drain, ticker drops, trade overflow, ingest metrics)
+- [x] C6: Framework v1.4 doc updated with Envelope invariants, batching behavior, and backpressure implications
+- [x] Chosen Paths recorded in progress doc for Task C
+- [x] No changes to non-crypto marketdata modules
