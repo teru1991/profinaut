@@ -54,7 +54,7 @@ DASHBOARD_ADMIN_TOKEN=test-admin-token
 3. Check proxy:
 
 ```bash
-curl -i "http://localhost:3000/api/bots?page=1&page_size=50"
+curl -i "http://localhost:3001/api/bots?page=1&page_size=50"
 ```
 
 - With backend up: expect upstream status/body from `/bots` (typically `200` JSON).

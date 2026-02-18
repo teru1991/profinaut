@@ -89,7 +89,7 @@ services:
       ADMIN_TOKEN: ${ADMIN_TOKEN:-change-me-local-admin-token}
       DASHBOARD_API_URL: ${DASHBOARD_API_URL:-http://dashboard-api:8000}
     ports:
-      - "${WEB_PORT:-3000}:3000"
+      - "${WEB_PORT:-3001}:3001"
     volumes:
       - ./apps/web:/workspace
     depends_on:
