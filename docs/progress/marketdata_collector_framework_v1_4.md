@@ -204,3 +204,96 @@ This framework does NOT alter non-crypto marketdata modules (Python FastAPI serv
 - `extract_metadata()` and `normalize_metadata()` are ready for integration with WS message handlers (Task C/D).
 - The mini-expr engine output is `serde_json::Value`; cast to typed values using `json_pointer::cast_to_*` functions.
 - Maps loader expects `symbol_map_file` relative to a base directory; callers should pass the config directory.
+
+---
+
+## Task C — Ingestion Pipeline
+
+**Status:** IN PROGRESS
+**Task C — Start:** 2026-02-18T11:56:48Z
+**Required Locks:** LOCK:services-marketdata, LOCK:docs-progress-dod
+
+### Deliverables Checklist
+
+- [ ] C1 — Stable Envelope v1 (helpers + builder)
+- [ ] C2 — Bounded MPSC + buffer/batcher + flush/shutdown interfaces
+- [ ] C3 — Deterministic backpressure/drop policies
+- [ ] C4 — Metrics skeleton and wiring
+- [ ] C5 — Unit tests for batching/flush/backpressure/metrics
+- [ ] C6 — Framework docs update (Envelope/pipeline semantics)
+
+### Existing Implementation Audit (Task C)
+
+_To be filled after audit._
+
+### Chosen Paths
+
+_To be filled after audit._
+
+### Notes / Decisions
+
+- Pending audit.
+
+### Existing Implementation Audit (Task C) — Update
+
+| Path | Finding | Match vs Task C |
+|------|---------|-----------------|
+| `services/marketdata-rs/crypto-collector/src/engine.rs` | Descriptor execution utilities only (subscription generation / metadata extraction / normalization). No ingestion queueing. | Partial overlap only; does not implement Envelope v1 or pipeline. |
+| `services/marketdata-rs/crypto-collector/src/main.rs` | Service bootstrap and `/healthz`; no ingest MPSC, no batching sink abstraction. | No |
+| `services/marketdata/app/routes/raw_ingest.py` | Python marketdata raw envelope ingestion path for non-Rust service. | Out of scope for crypto Rust subsystem. |
+| `services/marketdata/app/metrics.py` | Python metrics objects for existing FastAPI service. | Out of scope; do not modify. |
+
+**Envelope v1 audit result:** No existing Rust Envelope type in `crypto-collector` matching Task C invariants.
+
+**Buffer/backpressure audit result:** No existing bounded MPSC + batch buffer in `crypto-collector`.
+
+**Metrics audit result:** No Rust metrics skeleton for ingest pipeline in `crypto-collector`.
+
+**Refactor plan (crypto subsystem only):**
+- Add new modules under `services/marketdata-rs/crypto-collector/src/` for `envelope`, `ingestion`, and `metrics`.
+- Reuse existing crate boundaries and keep non-crypto marketdata code untouched.
+
+### Chosen Paths (Task C)
+
+| Purpose | Path |
+|---------|------|
+| Envelope + pipeline + metrics implementation | `services/marketdata-rs/crypto-collector/src/` |
+| Task C tests (module-local unit tests) | `services/marketdata-rs/crypto-collector/src/` |
+| Progress tracking | `docs/progress/marketdata_collector_framework_v1_4.md` |
+| DoD tracking | `docs/dod/marketdata_collector_framework_v1_4.md` |
+| Framework documentation update | `docs/marketdata_collector_framework_v1_4.md` |
+
+### Notes / Decisions (Task C)
+
+1. Use bounded `tokio::sync::mpsc` channel as the ingress queue.
+2. Implement trade overflow as fail-fast on full channel with explicit metric increments.
+3. Implement ticker/depth overflow as deterministic drop-on-full in Task C skeleton, with explicit drop metrics and documented implications.
+
+## End-of-Task Update (Task C)
+
+**Status:** DONE
+**Completed:** 2026-02-18T12:00:59Z
+**Released Locks:** LOCK:services-marketdata, LOCK:docs-progress-dod
+
+### Deliverables Checklist (Final)
+
+- [x] C1 — Stable Envelope v1 (helpers + builder)
+- [x] C2 — Bounded MPSC + buffer/batcher + flush/shutdown interfaces
+- [x] C3 — Deterministic backpressure/drop policies
+- [x] C4 — Metrics skeleton and wiring
+- [x] C5 — Unit tests for batching/flush/backpressure/metrics
+- [x] C6 — Framework docs update (Envelope/pipeline semantics)
+
+### Verification Results (Task C)
+
+| Step | Result | Notes |
+|------|--------|-------|
+| `cd services/marketdata-rs && cargo fmt -p crypto-collector -- --check` | PASS | Formatting clean |
+| `cd services/marketdata-rs && cargo test -p crypto-collector` | PASS | 94/94 tests passed (includes Task C tests) |
+| `cd services/marketdata-rs && cargo clippy -p crypto-collector -- -D warnings` | PASS | Zero warnings |
+
+### Migration Notes (Task C)
+
+- Added new crypto-collector modules: `envelope.rs`, `metrics.rs`, `ingestion.rs`.
+- No edits made to Python `services/marketdata/**` pipelines or non-crypto endpoints.
+- `docs/marketdata_collector_framework_v1_4.md` created to capture Task C ingestion SSOT details.
