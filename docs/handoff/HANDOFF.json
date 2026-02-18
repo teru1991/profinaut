@@ -1,25 +1,26 @@
 {
-  "active_task": "CI-010-B",
+  "active_task": "DOC-FIX-GMO-000",
   "what_done": [
-    "Added .github/dependency-review.yml and wired dependency-review workflow config-file to enforce fail-on-severity: high.",
-    "Updated security-supply-chain workflow to run Trivy non-blocking on pull_request and blocking on schedule/workflow_dispatch.",
-    "Hardened scripts/security/artifact_guard.sh to pass cleanly when changed-file set is empty.",
-    "Appended CI-010-B hardening and verification notes to docs/audits/ci-workflows-audit.md."
+    "Preflight must-read sequence executed: README_AI → status.json → HANDOFF.json → decisions.md → trace-index.json.",
+    "Validated status.json required keys and corrected active_task/open_prs/locks_held/next_actions/last_updated for GMO preflight context.",
+    "Synced HANDOFF active_task with status active_task and recorded shared-docs lock hold for this task.",
+    "Prepared GMO final task generation reference slot mapping in docs/status/trace-index.json."
   ],
   "what_next": [
-    "Validate in PR checks that Dependency Review enforces configured policy and that Trivy findings are warn-only on pull_request.",
-    "Run workflow_dispatch for security-supply-chain to verify blocking branch fails on HIGH/CRITICAL findings.",
-    "If regressions appear, apply rollback plan by reverting supply-chain Trivy split and dependency-review config wiring."
+    "After lock ownership is resolved against remote PR data, issue GMO final implementation task split (4–8).",
+    "Populate concrete PR URLs and branches when GitHub metadata is reachable.",
+    "Keep LOCK:shared-docs held only until this docs preflight PR is merged."
   ],
   "open_pr": "",
   "locks_held": [
-    "LOCK:ci"
+    "LOCK:shared-docs"
   ],
-  "errors": [],
+  "errors": [
+    "GitHub CLI is unavailable in this environment (`gh: command not found`), so open PR URLs could not be refreshed directly."
+  ],
   "commands_next": [
-    "gh workflow run security-supply-chain.yml",
-    "gh run list --workflow security-supply-chain.yml --limit 5",
-    "gh run view --log <run-id>",
-    "gh pr checks <pr-number>"
+    "gh pr list --state open --json number,title,url,headRefName",
+    "jq . docs/status/status.json",
+    "jq . docs/handoff/HANDOFF.json"
   ]
 }
