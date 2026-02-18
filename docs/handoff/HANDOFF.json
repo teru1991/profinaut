@@ -1,26 +1,21 @@
 {
-  "active_task": "DOC-FIX-GMO-000",
+  "active_task": "DOC-GMO-API-001E",
   "what_done": [
-    "Preflight must-read sequence executed: README_AI → status.json → HANDOFF.json → decisions.md → trace-index.json.",
-    "Validated status.json required keys and corrected active_task/open_prs/locks_held/next_actions/last_updated for GMO preflight context.",
-    "Synced HANDOFF active_task with status active_task and recorded shared-docs lock hold for this task.",
-    "Prepared GMO final task generation reference slot mapping in docs/status/trace-index.json."
+    "DOC-FIX-GMO-000 PR は Draft/Open のまま維持した。",
+    "status.json から LOCK:shared-docs を解放し、ロック起因のブロック文言を解除した。",
+    "active_task を DOC-GMO-API-001E に更新し、Docs OS の整合を同期した。"
   ],
   "what_next": [
-    "After lock ownership is resolved against remote PR data, issue GMO final implementation task split (4–8).",
-    "Populate concrete PR URLs and branches when GitHub metadata is reachable.",
-    "Keep LOCK:shared-docs held only until this docs preflight PR is merged."
+    "DOC-GMO-API-001E を実行（docs catalog 更新）。"
   ],
   "open_pr": "",
-  "locks_held": [
-    "LOCK:shared-docs"
-  ],
+  "locks_held": [],
   "errors": [
-    "GitHub CLI is unavailable in this environment (`gh: command not found`), so open PR URLs could not be refreshed directly."
+    "なし"
   ],
   "commands_next": [
-    "gh pr list --state open --json number,title,url,headRefName",
-    "jq . docs/status/status.json",
-    "jq . docs/handoff/HANDOFF.json"
+    "Read preflight docs in order (README_AI → status.json → HANDOFF.json → decisions.md → trace-index.json).",
+    "Start DOC-GMO-API-001E in docs-only mode.",
+    "git diff --name-only"
   ]
 }
