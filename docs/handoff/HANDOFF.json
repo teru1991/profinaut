@@ -4,13 +4,15 @@
     "GitHub reality (default branch / PR #140 / PR #152) を確認し、status.json と trace-index.json を同期した。",
     "status.json の base_branch を master へ修正し、open_prs に #140/#152 の URL/branch/locks/status を反映した。",
     "LOCK:ci の holder unresolved を『ci実装タスク発行ブロック』として明文化した。",
-    "PR #140 をマージせずクローズして新基盤へ再統合する方針を decisions.md に記録した。"
+    "PR #140 をマージせずクローズして新基盤へ再統合する方針を decisions.md に記録した。",
+    "PR #140 closed（no-merge, closed_at=2026-02-19T07:36:07Z）をSSOT（status/trace/decisions）へ反映した。"
   ],
   "what_next": [
     "DOC-FIX-EXCH-000 の docs-only PR を作成してマージする。",
     "PR #140 は close-without-merge を実施し、必要差分は EXCH-LIB-CORE 系の新PRで再実装する。",
     "LOCK:ci の保有者/状態を解決するまで、ci変更を含む実装タスクは発行しない。",
-    "本タスク完了後、次候補タスクを EXCH-LIB-CORE-001 に切り替える。"
+    "本タスク完了後、次候補タスクを EXCH-LIB-CORE-001 に切り替える。",
+    "UCEL基盤タスク（PR #140再実装枠）を起票する。"
   ],
   "open_pr": "",
   "locks_held": [
