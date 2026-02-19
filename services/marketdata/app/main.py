@@ -37,6 +37,7 @@ from services.marketdata.app.mock_exchange import MockRuntime, MockScenario, bui
 from services.marketdata.app.db.repository import MarketDataMetaRepository
 from services.marketdata.app.routes.raw_ingest import ingest_raw_envelope, router as raw_ingest_router
 from services.marketdata.app.settings import load_settings
+from services.marketdata.app.registry import CatalogValidationError, VenueRegistry, load_venue_registry
 
 logger = logging.getLogger("marketdata")
 if not logger.handlers:
@@ -46,6 +47,9 @@ if not logger.handlers:
 logger.setLevel(logging.INFO)
 SERVICE_NAME = "marketdata"
 
+_registry: VenueRegistry | None = None
+_registry_error: str | None = None
+_registry_venue = os.getenv("MARKETDATA_REGISTRY_VENUE", "gmocoin").strip().lower()
 
 _ALLOWED_EXCHANGES = {"gmo"}
 _SYMBOL_PATTERN = re.compile(r"^[A-Z0-9_/:.-]{3,32}$")
@@ -422,6 +426,14 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 @app.on_event("startup")
 async def startup() -> None:
+    global _registry, _registry_error
+    try:
+        _registry = load_venue_registry(_registry_venue)
+        _registry_error = None
+    except CatalogValidationError as exc:
+        _registry_error = str(exc)
+        raise RuntimeError(f"registry bootstrap failed: {_registry_error}") from exc
+
     app.state.poller_task = asyncio.create_task(_poller.run_forever())
     app.state.gmo_ws_task = None
     app.state.mock_stop_event = asyncio.Event()
@@ -466,11 +478,16 @@ async def healthz() -> dict[str, Any]:
     if db_reason is not None:
         degraded_reasons.append(db_reason)
 
+    if _registry_error is not None:
+        degraded_reasons.append(f"REGISTRY_INVALID:{_registry_error}")
+
     payload = {
         "status": "degraded" if degraded_reasons else "ok",
         "db_ok": db_ok,
         "db_latency_ms": db_latency_ms,
         "degraded_reasons": degraded_reasons,
+        "registry_ok": _registry_error is None and _registry is not None,
+        "registry_venue": _registry_venue,
     }
     payload["mock"] = _mock_runtime.health()
     return payload
@@ -519,6 +536,13 @@ async def get_capabilities() -> dict[str, Any]:
         "degraded_reason": degraded_reason,
         "degraded_reasons": degraded_reasons,
         "generated_at": datetime.now(UTC).isoformat(),
+        "registry": {
+            "venue": _registry.venue if _registry else _registry_venue,
+            "catalog_path": _registry.catalog_path if _registry else None,
+            "connections_total": len(_registry.connections) if _registry else 0,
+            "capabilities": _registry.capabilities if _registry else {},
+            "error": _registry_error,
+        },
     }
 
 
