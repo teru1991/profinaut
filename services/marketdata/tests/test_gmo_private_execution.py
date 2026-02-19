@@ -4,15 +4,16 @@ import logging
 
 import pytest
 
-from services.marketdata.app.gmo_private_execution import (
+from services.marketdata.app.gmo_private_execution import FailoverPolicy, GmoPrivateExecutionAdapter, KeyPool, KeyRef
+from services.marketdata.app.ucel_core import (
+    CoreError,
     DictSecretRefResolver,
-    FailoverPolicy,
-    GmoPrivateExecutionAdapter,
-    KeyPool,
-    KeyRef,
+    ErrorCode,
+    ExecuteContext,
+    OpName,
     ResolvedSecret,
+    RuntimePolicy,
 )
-from services.marketdata.app.ucel_core import CoreError, ErrorCode, ExecuteContext, OpName, RuntimePolicy
 
 
 @pytest.fixture

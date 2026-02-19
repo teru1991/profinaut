@@ -25,6 +25,11 @@ class ErrorCode(str, Enum):
     INTERNAL_ERROR = "INTERNAL_ERROR"
 
 
+FEATURE_EXECUTION = "execution"
+FEATURE_LIVE_TRADING = "live-trading"
+FEATURE_WITHDRAW = "withdraw"
+
+
 class CoreError(Exception):
     def __init__(self, code: ErrorCode, message: str, *, details: dict[str, Any] | None = None) -> None:
         super().__init__(message)
@@ -158,6 +163,7 @@ class RuntimePolicy:
     allowed_ops: frozenset[OpName] | None = None
     policy_id: str | None = None
     failover_policy: str | None = None
+    required_features: frozenset[str] = field(default_factory=frozenset)
 
 
 @dataclass(frozen=True)
@@ -171,6 +177,30 @@ class ExecuteContext:
     features: frozenset[str] = field(default_factory=frozenset)
     live_trading: bool = False
     policy: RuntimePolicy | None = None
+
+
+@dataclass(frozen=True)
+class ResolvedSecret:
+    api_key: str
+    api_secret: str
+    passphrase: str | None = None
+
+
+class SecretRefResolver(ABC):
+    @abstractmethod
+    def resolve(self, secret_ref: str) -> ResolvedSecret:
+        raise NotImplementedError
+
+
+class DictSecretRefResolver(SecretRefResolver):
+    def __init__(self, secrets: dict[str, ResolvedSecret]) -> None:
+        self._secrets = dict(secrets)
+
+    def resolve(self, secret_ref: str) -> ResolvedSecret:
+        value = self._secrets.get(secret_ref)
+        if value is None:
+            raise CoreError(ErrorCode.MISSING_AUTH, "secret_ref not found")
+        return value
 
 
 class Exchange(ABC):
@@ -208,6 +238,14 @@ class Exchange(ABC):
                 ErrorCode.NOT_ALLOWED_OP,
                 f"Operation '{op.value}' is blocked by runtime policy",
                 details={"policy_id": ctx.policy.policy_id, "failover_policy": ctx.policy.failover_policy},
+            )
+
+        if ctx.policy and ctx.policy.required_features and not ctx.policy.required_features.issubset(ctx.features):
+            missing = sorted(ctx.policy.required_features - ctx.features)
+            raise CoreError(
+                ErrorCode.FEATURE_DISABLED,
+                f"Operation '{op.value}' blocked by feature gate",
+                details={"missing_features": missing},
             )
 
         if OP_SPECS[op].requires_auth and not (ctx.has_auth or ctx.secret_ref):

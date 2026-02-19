@@ -17,6 +17,32 @@ class CatalogValidationError(RuntimeError):
     pass
 
 
+CATALOG_OP_SNAPSHOT: dict[str, OpName] = {
+    "crypto.public.rest.ticker.get": OpName.FETCH_TICKER,
+    "crypto.public.rest.trades.get": OpName.FETCH_TRADES,
+    "crypto.public.rest.orderbooks.get": OpName.FETCH_ORDERBOOK_SNAPSHOT,
+    "crypto.public.ws.ticker.update": OpName.SUBSCRIBE_TICKER,
+    "crypto.public.ws.trades.update": OpName.SUBSCRIBE_TRADES,
+    "crypto.public.ws.orderbooks.update": OpName.SUBSCRIBE_ORDERBOOK,
+    "crypto.private.rest.assets.get": OpName.FETCH_BALANCES,
+    "crypto.private.rest.order.post": OpName.PLACE_ORDER,
+    "crypto.private.rest.cancelorder.post": OpName.CANCEL_ORDER,
+    "crypto.private.rest.activeorders.get": OpName.FETCH_ORDERS,
+    "crypto.private.rest.executions.get": OpName.FETCH_FILLS,
+}
+
+IMPLEMENTED_OPS: frozenset[OpName] = frozenset(
+    {
+        OpName.FETCH_TICKER,
+        OpName.FETCH_TRADES,
+        OpName.FETCH_ORDERBOOK_SNAPSHOT,
+        OpName.SUBSCRIBE_TICKER,
+        OpName.SUBSCRIBE_TRADES,
+        OpName.SUBSCRIBE_ORDERBOOK,
+    }
+)
+
+
 @dataclass(frozen=True)
 class ConnectionPolicy:
     allowed_ops: frozenset[OpName] | None = None
@@ -76,29 +102,16 @@ def _ensure_required(record: dict[str, Any], required: tuple[str, ...], path: st
             raise CatalogValidationError(f"{path}.{field} must be non-empty string")
 
 
-def _map_op(source: str, record_id: str, operation: str | None) -> OpName | None:
-    text = f"{record_id} {operation or ''}".lower()
-    if "ticker" in text:
-        return OpName.FETCH_TICKER if source == "rest" else OpName.SUBSCRIBE_TICKER
-    if "trade" in text or "execution" in text:
-        return OpName.FETCH_TRADES if source == "rest" else OpName.SUBSCRIBE_TRADES
-    if "orderbook" in text or "orderbooks" in text:
-        return OpName.FETCH_ORDERBOOK_SNAPSHOT if source == "rest" else OpName.SUBSCRIBE_ORDERBOOK
-    if "balance" in text or "asset" in text:
-        return OpName.FETCH_BALANCE
-    return None
-
-
-def _is_supported(op: OpName | None) -> bool:
-    implemented = {
-        OpName.FETCH_TICKER,
-        OpName.FETCH_TRADES,
-        OpName.FETCH_ORDERBOOK_SNAPSHOT,
-        OpName.SUBSCRIBE_TICKER,
-        OpName.SUBSCRIBE_TRADES,
-        OpName.SUBSCRIBE_ORDERBOOK,
-    }
-    return op in implemented
+def _map_op(record: dict[str, Any], *, record_id: str, path: str) -> OpName | None:
+    explicit = record.get("ucel_op")
+    if explicit is not None:
+        if not isinstance(explicit, str):
+            raise CatalogValidationError(f"{path}.ucel_op must be string")
+        try:
+            return OpName(explicit)
+        except ValueError as exc:
+            raise CatalogValidationError(f"{path}.ucel_op must be one of UCEL ops") from exc
+    return CATALOG_OP_SNAPSHOT.get(record_id)
 
 
 def _coerce_allowed_ops(raw_ops: list[str] | None, connection_id: str) -> frozenset[OpName] | None:
@@ -181,7 +194,7 @@ def load_venue_registry(venue: str) -> VenueRegistry:
                 raise CatalogValidationError(f"{path}.visibility must be public/private")
 
             _validate_typed_fields(record, path)
-            op = _map_op(source=source, record_id=record_id, operation=record.get("operation"))
+            op = _map_op(record, record_id=record_id, path=path)
             policy = policy_overrides.get(record_id)
             default_allowed_ops = frozenset({op}) if op is not None else None
 
@@ -192,7 +205,7 @@ def load_venue_registry(venue: str) -> VenueRegistry:
                     source=source,
                     op=op,
                     requires_auth=visibility == "private",
-                    supported=_is_supported(op),
+                    supported=op in IMPLEMENTED_OPS,
                     allowed_ops=policy.allowed_ops if policy else default_allowed_ops,
                     failover_policy=policy.failover_policy if policy else None,
                     key_scope=policy.key_scope if policy else None,
