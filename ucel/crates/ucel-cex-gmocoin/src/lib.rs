@@ -342,8 +342,8 @@ impl Exchange for GmoCoinRestAdapter {
         "gmo_coin"
     }
 
-    fn execute(&self, _op: OpName) -> Result<(), UcelError> {
-        Ok(())
+    fn execute(&self, op: OpName) -> Result<(), UcelError> {
+        Err(UcelError::new(ErrorCode::NotSupported, format!("op {} not implemented", op)))
     }
 }
 
