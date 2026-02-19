@@ -1,0 +1,98 @@
+{
+  "exchange": "bitget",
+  "generated_from": {
+    "sources_md": "docs/exchanges/bitget/sources.md",
+    "last_checked_at": "2026-02-19",
+    "notes": "Official docs only. Runtime limitation: direct access to www.bitget.com returned HTTP 403 via execution proxy, so endpoint/channel extraction is pending."
+  },
+  "rest_endpoints": [
+    {
+      "id": "other.public.rest.nav.blocked",
+      "domain": "other",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "unknown",
+      "path": "unknown",
+      "version": "unknown",
+      "operation": "not_applicable_due_to_source_access_failure",
+      "auth": { "type": "none" },
+      "params": {
+        "query": [
+          { "name": "unknown", "type": "object<k:string,v:any>", "required": false }
+        ],
+        "path": [
+          { "name": "unknown", "type": "object<k:string,v:any>", "required": false }
+        ],
+        "body": [
+          { "name": "unknown", "type": "object<k:string,v:any>", "required": false }
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          { "name": "unknown", "type": "object<k:string,v:any>", "required": false }
+        ]
+      },
+      "errors": { "shape": "object" },
+      "rate_limit": "unknown",
+      "notes": "Official docs navigation could not be fetched in this runtime (HTTP 403 via proxy).",
+      "source_url": "https://www.bitget.com/api-doc/common/intro"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "other.public.ws.nav.blocked",
+      "domain": "other",
+      "visibility": "public",
+      "ws_url": "unknown",
+      "version": "unknown",
+      "channel": "common",
+      "subscribe_template": "{\"op\":\"subscribe\",\"args\":[]}",
+      "unsubscribe_template": "{\"op\":\"unsubscribe\",\"args\":[]}",
+      "message": {
+        "shape": "object",
+        "fields": [
+          { "name": "unknown", "type": "object<k:string,v:any>", "required": false }
+        ]
+      },
+      "heartbeat": { "type": "other" },
+      "auth": { "type": "other" },
+      "restrictions": "unknown",
+      "notes": "Official WebSocket pages could not be fetched in this runtime (HTTP 403 via proxy).",
+      "source_url": "https://www.bitget.com/api-doc/common/websocket-intro"
+    }
+  ],
+  "fix_feeds": [
+    {
+      "id": "other.public.fix.not_applicable",
+      "domain": "other",
+      "visibility": "public",
+      "fix_host": "not_applicable",
+      "fix_port": "not_applicable",
+      "version": "unknown",
+      "session": "unknown",
+      "auth": { "type": "none" },
+      "flow_summary": "not_applicable",
+      "message_types": "not_applicable",
+      "fields_summary": "not_applicable",
+      "heartbeat": { "type": "none" },
+      "restrictions": "unknown",
+      "notes": "No reachable official FIX documentation was found from the required entry points in this runtime.",
+      "source_url": "https://www.bitget.com/api-doc/common/intro"
+    }
+  ],
+  "data_feeds": [
+    {
+      "id": "data.other.unknown.unknown",
+      "kind": "not_applicable",
+      "url_pattern": "not_applicable",
+      "format": "unknown",
+      "compression": "unknown",
+      "update_freq": "unknown",
+      "retention": "unknown",
+      "schema_summary": "not_applicable",
+      "notes": "No reachable official data distribution documentation was found from the required entry points in this runtime.",
+      "source_url": "https://www.bitget.com/api-doc/common/intro"
+    }
+  ]
+}
