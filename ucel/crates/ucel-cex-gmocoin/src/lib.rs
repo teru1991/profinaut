@@ -272,9 +272,9 @@ impl GmoCoinRestAdapter {
             })?;
 
         let ctx = RequestContext {
-            trace_id: "trace".into(),
-            request_id: "req".into(),
-            run_id: "run".into(),
+            trace_id: Uuid::new_v4().to_string().into(),
+            request_id: Uuid::new_v4().to_string().into(),
+            run_id: Uuid::new_v4().to_string().into(),
             op: OpName::FetchStatus,
             venue: "gmocoin".into(),
             policy_id: "default".into(),
