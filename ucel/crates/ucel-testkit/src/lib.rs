@@ -196,17 +196,14 @@ mod tests {
     }
 
     #[test]
-    fn coverage_gate_is_warn_only_in_task_1() {
+    fn coverage_gate_is_strict_and_has_no_gaps() {
         let manifest_path =
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/gmocoin.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
         assert_eq!(manifest.venue, "gmocoin");
-        assert!(!manifest.strict);
+        assert!(manifest.strict);
 
         let gaps = evaluate_coverage_gate(&manifest);
-        assert!(!gaps.is_empty());
-        if !manifest.strict {
-            eprintln!("[coverage-gate][warn-only] unresolved coverage: {gaps:?}");
-        }
+        assert!(gaps.is_empty(), "strict coverage gate must have no gaps: {gaps:?}");
     }
 }
