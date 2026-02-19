@@ -1,16 +1,14 @@
 {
-  "active_task": "DOC-GATE-TASKB-001",
+  "active_task": "EXCH-AUDIT-POSTB-000",
   "what_done": [
-    "GitHub reality (default branch / PR #140 / PR #152) を確認し、status.json と trace-index.json を同期した。",
-    "status.json の base_branch を master へ修正し、open_prs に #140/#152 の URL/branch/locks/status を反映した。",
-    "LOCK:ci の holder unresolved を『ci実装タスク発行ブロック』として明文化した。",
-    "PR #140 をマージせずクローズして新基盤へ再統合する方針を decisions.md に記録した。",
-    "PR #140 closed（no-merge, closed_at=2026-02-19T07:36:07Z）をSSOT（status/trace/decisions）へ反映した。"
+    "Task B（MD-DESC-B-005 / PR #156 merged）後の services/marketdata 実態を監査し、UCEL系レイヤ重複の有無を棚卸しした。",
+    "gmo_adapter 相当の別実装は未検出で、現行は main.py の REST poller + gmo_ws_connector.py の2導線構成であることを確認した。",
+    "descriptor/dsl/engine は descriptor_dsl.py に一本化され、テストは parser系(test_descriptor_dsl.py)とE2E系(test_descriptor_engine_e2e.py)で責務分離されていることを記録した。",
+    "重複疑い（object_store 2系統・health endpoint 2系統）は次タスクで参照先一本化→段階廃止する方針を decisions に固定した。",
+    "status/trace/handoff/decisions を EXCH-AUDIT-POSTB-000 の状態へ同期した。"
   ],
   "what_next": [
-    "TASK B（Descriptor Execution Engine）を発行して着手する。",
-    "UCEL基盤タスク（PR #140 再実装枠）を TASK B の依存として進行管理する。",
-    "LOCK:ci の保有者/状態を解決するまで、ci変更を含む実装タスクは発行しない。"
+    "UCEL-CORE-POSTB-001 を開始し、重複疑い箇所の参照導線を単一路へ寄せる（削除は後続タスクで実施）。"
   ],
   "open_pr": "",
   "locks_held": [
@@ -22,7 +20,7 @@
   "commands_next": [
     "python -c \"import json; json.load(open('docs/status/status.json'))\"",
     "python -c \"import json; json.load(open('docs/status/trace-index.json'))\"",
-    "git diff -- docs/status/status.json docs/status/trace-index.json docs/handoff/HANDOFF.json docs/decisions/decisions.md docs/status/progress-updates/2026-02-19_doc-fix-exch-000.md"
+    "git diff -- docs/audits/2026-02-19_exch-audit-postb-000.md docs/status/status.json docs/status/trace-index.json docs/handoff/HANDOFF.json docs/decisions/decisions.md"
   ],
-  "updated_at": "2026-02-19T07:36:25Z"
+  "updated_at": "2026-02-19T08:30:00Z"
 }

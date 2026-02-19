@@ -1,16 +1,17 @@
 {
   "base_branch": "master",
-  "active_task": "AUDIT-DUP-EXCH-000",
+  "active_task": "EXCH-AUDIT-POSTB-000",
   "owner": "codex",
   "state": "in_progress",
   "open_prs": [],
   "locks_held": [
-    "LOCK:ci (holder unresolved; no active PR metadata found; task issuance touching ci remains blocked until holder is identified or lock is explicitly released)"
+    "LOCK:shared-docs"
   ],
   "next_actions": [
-    "TASK B（Descriptor Execution Engine）発行可。PR #140 は close(no-merge) 済み、PR #156 は merged 済み。",
-    "UCEL基盤での再実装タスクを TASK B として発行し、services-marketdata ロック競合が無いことを維持する。"
+    "UCEL-CORE-POSTB-001 を起票し、marketdata 実装は descriptor_dsl.py + execute_descriptor() を唯一の実行導線として拡張する。",
+    "重複候補（app/object_store.py と app/storage/object_store.py、main.py と routes/health.py の health 実装）は「参照先一本化→段階的廃止」で処理する。",
+    "PR #140 系の差分は close-without-merge 方針を維持し、必要要素のみ新規 UCEL 系 PR へ取り込む。"
   ],
-  "last_updated": "2026-02-19T07:36:25Z",
-  "notes": "DOC-GATE-TASKB-001: GitHub reality synced (#140 closed no-merge, #156 merged) and TASK B gate decision recorded."
+  "last_updated": "2026-02-19T08:30:00Z",
+  "notes": "EXCH-AUDIT-POSTB-000: Task B merged after PR #156; post-TaskB duplicate/module audit captured and UCEL follow-up lane fixed."
 }
