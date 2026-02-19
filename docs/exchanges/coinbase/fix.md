@@ -1,0 +1,10 @@
+# FIX Catalog (Official) — Coinbase
+
+If FIX is not officially documented for a given surface in available official pages, row is marked `not_applicable` with evidence URL.
+
+| id | fix_host | fix_port | version | session | auth.type | flow.summary | message.types | fields.summary | heartbeat.type | restrictions | notes | source_url |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| exchange.crypto.private.fix.order_entry.discoverability | not_applicable | not_applicable | not_applicable | order-entry | signed | Exchange welcome page indicates FIX as part of Exchange API family | not_applicable | not_applicable | other | production values are defined on dedicated FIX pages linked from Exchange docs | FIX order-entry/message-level details should be expanded from dedicated Exchange FIX pages | https://docs.cdp.coinbase.com/exchange/introduction/welcome |
+| exchange.crypto.public.fix.market_data.discoverability | not_applicable | not_applicable | not_applicable | market-data | none | Exchange welcome page indicates FIX market-data availability | not_applicable | not_applicable | other | production values are defined on dedicated FIX pages linked from Exchange docs | FIX market-data message-level details should be expanded from dedicated Exchange FIX pages | https://docs.cdp.coinbase.com/exchange/introduction/welcome |
+| intx.crypto.private.fix.discoverability | not_applicable | not_applicable | not_applicable | not_applicable | other | INTX welcome page is root for FIX availability discovery | not_applicable | not_applicable | other | evaluate dedicated INTX FIX pages from official nav when available | no dedicated INTX FIX page URL was available in this run context | https://docs.cdp.coinbase.com/international-exchange/introduction/welcome |
+| advanced.crypto.private.fix.not_applicable.current_scope | not_applicable | not_applicable | not_applicable | not_applicable | none | Advanced Trade docs root focuses on REST/WS | not_applicable | not_applicable | none | not_applicable | no Advanced Trade FIX surface was documented in the provided official roots | https://docs.cdp.coinbase.com/coinbase-app/advanced-trade-apis/overview |
