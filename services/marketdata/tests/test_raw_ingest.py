@@ -76,17 +76,16 @@ def test_raw_ingest_stores_bronze_and_db(monkeypatch, tmp_path: Path) -> None:
     assert body["dup_suspect"] is False
     assert body["degraded"] is False
     assert len(body["raw_msg_id"]) == 26
-    assert body["object_key"].startswith("bronze/source=ws_public/venue=gmo/market=spot/date=2026-02-16/hour=00/part-")
+    assert body["object_key"].startswith("bronze/crypto/gmo/2026/02/16/00/part-")
 
-    files = list(bronze_root.rglob("*.jsonl"))
+    files = list(bronze_root.rglob("*.jsonl.gz"))
     assert len(files) == 1
-    line = files[0].read_text(encoding="utf-8").strip().splitlines()[0]
+    import gzip
+    line = gzip.decompress(files[0].read_bytes()).decode("utf-8").strip().splitlines()[0]
     stored = json.loads(line)
-    assert stored["tenant_id"] == "tenant-a"
-    assert stored["payload_json"] == req["payload_json"]
-    assert stored["payload_hash"] == _canonical_payload_hash(req["payload_json"])
-    assert stored["quality_json"]["dup_suspect"] is False
-    assert stored["quality_json"]["event_ts_quality"] == "missing"
+    assert stored["payload"] == req["payload_json"]
+    assert stored["meta"]["quality"]["dup_suspect"] is False
+    assert stored["meta"]["quality"]["event_ts_quality"] == "missing"
 
     conn = sqlite3.connect(db_file)
     row = conn.execute("SELECT raw_msg_id, object_key, payload_hash, quality_json FROM raw_ingest_meta").fetchone()
