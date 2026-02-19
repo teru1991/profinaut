@@ -127,23 +127,20 @@ pub fn load_coverage_manifest(path: &Path) -> Result<CoverageManifest, Box<dyn s
 
 pub fn evaluate_coverage_gate(manifest: &CoverageManifest) -> HashMap<String, Vec<String>> {
     let mut missing = HashMap::new();
-    let mut implementation_gaps = Vec::new();
-    let mut test_gaps = Vec::new();
 
     for entry in &manifest.entries {
         if !entry.implemented {
-            implementation_gaps.push(entry.id.clone());
+            missing
+                .entry("implemented".to_string())
+                .or_default()
+                .push(entry.id.clone());
         }
         if !entry.tested {
-            test_gaps.push(entry.id.clone());
+            missing
+                .entry("tested".to_string())
+                .or_default()
+                .push(entry.id.clone());
         }
-    }
-
-    if !implementation_gaps.is_empty() {
-        missing.insert("implemented".to_string(), implementation_gaps);
-    }
-    if !test_gaps.is_empty() {
-        missing.insert("tested".to_string(), test_gaps);
     }
 
     missing
