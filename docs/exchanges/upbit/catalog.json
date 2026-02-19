@@ -1,0 +1,464 @@
+{
+  "exchange": "upbit",
+  "generated_from": {
+    "sources_md": "docs/exchanges/upbit/sources.md",
+    "last_checked_at": "2026-02-19",
+    "notes": "Official docs only. Coverage: REST (Quotation/Exchange), WebSocket channels, changelog diffs."
+  },
+  "rest_endpoints": [
+    {
+      "id": "quotation.public.rest.markets.list",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/market/all",
+      "operation": "List Trading Pairs",
+      "domain": "quotation",
+      "visibility": "public",
+      "auth": { "type": "none" },
+      "fields": [
+        { "name": "market", "type": "string", "required": true },
+        { "name": "korean_name", "type": "string", "required": true },
+        { "name": "english_name", "type": "string", "required": true },
+        { "name": "market_warning", "type": "string", "required": false }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "quotation.public.rest.ticker.pairs",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/ticker",
+      "operation": "Get Tickers by Markets",
+      "domain": "quotation",
+      "visibility": "public",
+      "auth": { "type": "none" },
+      "fields": [
+        { "name": "market", "type": "string", "required": true },
+        { "name": "trade_price", "type": "float", "required": true },
+        { "name": "timestamp", "type": "int(ms)", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "quotation.public.rest.trades.recent",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/trades/ticks",
+      "operation": "List Recent Trades",
+      "domain": "quotation",
+      "visibility": "public",
+      "auth": { "type": "none" },
+      "fields": [
+        { "name": "trade_price", "type": "float", "required": true },
+        { "name": "trade_volume", "type": "float", "required": true },
+        { "name": "trade_timestamp", "type": "int(ms)", "required": false }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "quotation.public.rest.orderbook.snapshot",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/orderbook",
+      "operation": "Get Orderbook",
+      "domain": "quotation",
+      "visibility": "public",
+      "auth": { "type": "none" },
+      "fields": [
+        { "name": "market", "type": "string", "required": true },
+        { "name": "orderbook_units", "type": "array<object>", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "quotation.public.rest.candles.minutes",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/candles/minutes/{unit}",
+      "operation": "Minute Candles",
+      "domain": "quotation",
+      "visibility": "public",
+      "auth": { "type": "none" },
+      "fields": [
+        { "name": "candle_date_time_utc", "type": "string", "required": true },
+        { "name": "opening_price", "type": "float", "required": true },
+        { "name": "trade_price", "type": "float", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "quotation.public.rest.candles.days",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/candles/days",
+      "operation": "Day Candles",
+      "domain": "quotation",
+      "visibility": "public",
+      "auth": { "type": "none" },
+      "fields": [
+        { "name": "trade_price", "type": "float", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "quotation.public.rest.candles.weeks",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/candles/weeks",
+      "operation": "Week Candles",
+      "domain": "quotation",
+      "visibility": "public",
+      "auth": { "type": "none" },
+      "fields": [
+        { "name": "trade_price", "type": "float", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "quotation.public.rest.candles.months",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/candles/months",
+      "operation": "Month Candles",
+      "domain": "quotation",
+      "visibility": "public",
+      "auth": { "type": "none" },
+      "fields": [
+        { "name": "trade_price", "type": "float", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "quotation.public.rest.candles.years",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/candles/years",
+      "operation": "Year Candles",
+      "domain": "quotation",
+      "visibility": "public",
+      "auth": { "type": "none" },
+      "fields": [
+        { "name": "trade_price", "type": "float", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "exchange.private.rest.accounts.list",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/accounts",
+      "operation": "List Balances",
+      "domain": "exchange",
+      "visibility": "private",
+      "auth": { "type": "signed" },
+      "fields": [
+        { "name": "currency", "type": "string", "required": true },
+        { "name": "balance", "type": "string(decimal)", "required": true },
+        { "name": "locked", "type": "string(decimal)", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "exchange.private.rest.orders.create",
+      "method": "POST",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/orders",
+      "operation": "Create Order",
+      "domain": "exchange",
+      "visibility": "private",
+      "auth": { "type": "signed" },
+      "fields": [
+        { "name": "uuid", "type": "string", "required": true },
+        { "name": "state", "type": "string", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "exchange.private.rest.orders.cancel",
+      "method": "DELETE",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/order",
+      "operation": "Cancel Order",
+      "domain": "exchange",
+      "visibility": "private",
+      "auth": { "type": "signed" },
+      "fields": [
+        { "name": "uuid", "type": "string", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "exchange.private.rest.orders.open",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/orders/open",
+      "operation": "Open Orders",
+      "domain": "exchange",
+      "visibility": "private",
+      "auth": { "type": "signed" },
+      "fields": [
+        { "name": "uuid", "type": "string", "required": true },
+        { "name": "state", "type": "string", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "exchange.private.rest.orders.closed",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/orders/closed",
+      "operation": "Closed Orders",
+      "domain": "exchange",
+      "visibility": "private",
+      "auth": { "type": "signed" },
+      "fields": [
+        { "name": "uuid", "type": "string", "required": true },
+        { "name": "trades_count", "type": "int", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "exchange.private.rest.orders.chance",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/orders/chance",
+      "operation": "Order Chance",
+      "domain": "exchange",
+      "visibility": "private",
+      "auth": { "type": "signed" },
+      "fields": [
+        { "name": "market", "type": "object", "required": true },
+        { "name": "bid_account", "type": "object", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "exchange.private.rest.withdraws.list",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/withdraws",
+      "operation": "List Withdrawals",
+      "domain": "exchange",
+      "visibility": "private",
+      "auth": { "type": "signed" },
+      "fields": [
+        { "name": "uuid", "type": "string", "required": true },
+        { "name": "state", "type": "string", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "exchange.private.rest.withdraws.coin",
+      "method": "POST",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/withdraws/coin",
+      "operation": "Withdraw Digital Asset",
+      "domain": "exchange",
+      "visibility": "private",
+      "auth": { "type": "signed" },
+      "fields": [
+        { "name": "uuid", "type": "string", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "exchange.private.rest.deposits.list",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/deposits",
+      "operation": "List Deposits",
+      "domain": "exchange",
+      "visibility": "private",
+      "auth": { "type": "signed" },
+      "fields": [
+        { "name": "uuid", "type": "string", "required": true },
+        { "name": "state", "type": "string", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "exchange.private.rest.deposits.address",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/deposits/coin_address",
+      "operation": "Get Deposit Address",
+      "domain": "exchange",
+      "visibility": "private",
+      "auth": { "type": "signed" },
+      "fields": [
+        { "name": "deposit_address", "type": "string", "required": true },
+        { "name": "secondary_address", "type": "string|null", "required": false }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "exchange.private.rest.travelrule.vasps",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/travel_rule/vasps",
+      "operation": "List Travel Rule VASPs",
+      "domain": "exchange",
+      "visibility": "private",
+      "auth": { "type": "signed" },
+      "fields": [
+        { "name": "vasp_name", "type": "string", "required": true },
+        { "name": "vasp_code", "type": "string", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "exchange.private.rest.service.walletstatus",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/status/wallet",
+      "operation": "Wallet Status",
+      "domain": "exchange",
+      "visibility": "private",
+      "auth": { "type": "signed" },
+      "fields": [
+        { "name": "currency", "type": "string", "required": true },
+        { "name": "wallet_state", "type": "string", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    },
+    {
+      "id": "exchange.private.rest.keys.list",
+      "method": "GET",
+      "base_url": "https://api.upbit.com",
+      "path": "/v1/api_keys",
+      "operation": "API Key List",
+      "domain": "exchange",
+      "visibility": "private",
+      "auth": { "type": "signed" },
+      "fields": [
+        { "name": "access_key", "type": "string", "required": true },
+        { "name": "expire_at", "type": "string(iso8601)", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "quotation.public.ws.ticker.stream",
+      "domain": "quotation",
+      "visibility": "public",
+      "channel": "ticker",
+      "ws_url": "wss://api.upbit.com/websocket/v1",
+      "auth": { "type": "none" },
+      "heartbeat": { "type": "ping-pong" },
+      "fields": [
+        { "name": "code", "type": "string", "required": true },
+        { "name": "trade_price", "type": "float", "required": true },
+        { "name": "timestamp", "type": "int(ms)", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference/websocket-guide"
+    },
+    {
+      "id": "quotation.public.ws.trade.stream",
+      "domain": "quotation",
+      "visibility": "public",
+      "channel": "trade",
+      "ws_url": "wss://api.upbit.com/websocket/v1",
+      "auth": { "type": "none" },
+      "heartbeat": { "type": "ping-pong" },
+      "fields": [
+        { "name": "trade_price", "type": "float", "required": true },
+        { "name": "trade_volume", "type": "float", "required": true },
+        { "name": "trade_timestamp", "type": "int(ms)", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference/websocket-guide"
+    },
+    {
+      "id": "quotation.public.ws.orderbook.stream",
+      "domain": "quotation",
+      "visibility": "public",
+      "channel": "orderbook",
+      "ws_url": "wss://api.upbit.com/websocket/v1",
+      "auth": { "type": "none" },
+      "heartbeat": { "type": "ping-pong" },
+      "fields": [
+        { "name": "orderbook_units", "type": "array<object>", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference/websocket-guide"
+    },
+    {
+      "id": "quotation.public.ws.candle.stream",
+      "domain": "quotation",
+      "visibility": "public",
+      "channel": "candle",
+      "ws_url": "wss://api.upbit.com/websocket/v1",
+      "auth": { "type": "none" },
+      "heartbeat": { "type": "ping-pong" },
+      "fields": [
+        { "name": "candle_date_time_utc", "type": "string", "required": true },
+        { "name": "trade_price", "type": "float", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference/websocket-guide"
+    },
+    {
+      "id": "other.public.ws.subscription.list",
+      "domain": "other",
+      "visibility": "public",
+      "channel": "list_subscriptions",
+      "ws_url": "wss://api.upbit.com/websocket/v1",
+      "auth": { "type": "none" },
+      "heartbeat": { "type": "ping-pong" },
+      "fields": [
+        { "name": "channels", "type": "array<object>", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference/list-subscriptions"
+    },
+    {
+      "id": "exchange.private.ws.myordertrade.stream",
+      "domain": "exchange",
+      "visibility": "private",
+      "channel": "myOrder",
+      "ws_url": "wss://api.upbit.com/websocket/v1/private",
+      "auth": { "type": "signed" },
+      "heartbeat": { "type": "ping-pong" },
+      "fields": [
+        { "name": "order_uuid", "type": "string", "required": true },
+        { "name": "state", "type": "string", "required": true },
+        { "name": "trade_uuid", "type": "string|null", "required": false }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference/websocket-guide"
+    },
+    {
+      "id": "exchange.private.ws.myasset.stream",
+      "domain": "exchange",
+      "visibility": "private",
+      "channel": "myAsset",
+      "ws_url": "wss://api.upbit.com/websocket/v1/private",
+      "auth": { "type": "signed" },
+      "heartbeat": { "type": "ping-pong" },
+      "fields": [
+        { "name": "currency", "type": "string", "required": true },
+        { "name": "balance", "type": "string(decimal)", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/reference/websocket-guide"
+    }
+  ],
+  "fix_feeds": [
+    {
+      "id": "other.public.fix.not_applicable",
+      "domain": "other",
+      "visibility": "public",
+      "auth": { "type": "none" },
+      "heartbeat": { "type": "none" },
+      "fields": [
+        { "name": "status", "type": "string", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/"
+    }
+  ],
+  "data_feeds": [
+    {
+      "id": "data.other.not_applicable.json",
+      "kind": "not_applicable",
+      "fields": [
+        { "name": "status", "type": "string", "required": true }
+      ],
+      "source_url": "https://global-docs.upbit.com/"
+    }
+  ]
+}
