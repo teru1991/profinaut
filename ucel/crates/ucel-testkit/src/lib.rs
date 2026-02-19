@@ -126,7 +126,7 @@ pub fn load_coverage_manifest(path: &Path) -> Result<CoverageManifest, Box<dyn s
 }
 
 pub fn evaluate_coverage_gate(manifest: &CoverageManifest) -> HashMap<String, Vec<String>> {
-    let mut missing = HashMap::new();
+    let mut missing: HashMap<String, Vec<String>> = HashMap::new();
 
     for entry in &manifest.entries {
         if !entry.implemented {
