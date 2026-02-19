@@ -1,0 +1,14 @@
+{
+  "identities": [
+    {
+      "name": "profinaut-local",
+      "credentials": [
+        {
+          "accessKey": "__OBJECTSTORE_ACCESS_KEY__",
+          "secretKey": "__OBJECTSTORE_SECRET_KEY__"
+        }
+      ],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 version: "3.9"
 
-name: profinaut
+name: profinaut-dataplat
 
 services:
   postgres:
@@ -8,92 +8,117 @@ services:
     container_name: profinaut-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-profinaut}
-      POSTGRES_USER: ${POSTGRES_USER:-profinaut}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-profinaut}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./infra/init/postgres:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-profinaut} -d ${POSTGRES_DB:-profinaut}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 20s
+    mem_limit: ${POSTGRES_MEM_LIMIT}
+    cpus: ${POSTGRES_CPUS}
 
-  dashboard-api:
-    image: python:3.12-slim
-    container_name: profinaut-dashboard-api
-    working_dir: /workspace
-    command: [
-      "sh",
-      "-c",
-      "pip install -r requirements.txt && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
-    ]
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: profinaut-clickhouse
+    restart: unless-stopped
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://profinaut:profinaut@postgres:5432/profinaut}
-      ADMIN_TOKEN: ${ADMIN_TOKEN:-change-me-local-admin-token}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
     ports:
-      - "${DASHBOARD_API_PORT:-8000}:8000"
+      - "127.0.0.1:${CLICKHOUSE_HTTP_PORT}:8123"
+      - "127.0.0.1:${CLICKHOUSE_NATIVE_PORT}:9000"
     volumes:
-      - ./services/dashboard-api:/workspace
+      - clickhouse_data:/var/lib/clickhouse
+      - ./infra/init/clickhouse:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "clickhouse-client --host 127.0.0.1 --user ${CLICKHOUSE_USER} --password ${CLICKHOUSE_PASSWORD} --query 'SELECT 1' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 8s
+      retries: 20
+      start_period: 30s
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    mem_limit: ${CLICKHOUSE_MEM_LIMIT}
+    cpus: ${CLICKHOUSE_CPUS}
+
+  valkey:
+    image: valkey/valkey:7.2-alpine
+    container_name: profinaut-valkey
+    restart: unless-stopped
+    command: ["valkey-server", "--appendonly", "yes", "--requirepass", "${VALKEY_PASSWORD}"]
+    ports:
+      - "127.0.0.1:${VALKEY_PORT}:6379"
+    volumes:
+      - valkey_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli -a \"${VALKEY_PASSWORD}\" --no-auth-warning ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    mem_limit: ${VALKEY_MEM_LIMIT}
+    cpus: ${VALKEY_CPUS}
+
+  seaweedfs:
+    image: chrislusf/seaweedfs:3.74
+    container_name: profinaut-seaweedfs
+    restart: unless-stopped
+    environment:
+      OBJECTSTORE_ACCESS_KEY: ${OBJECTSTORE_ACCESS_KEY}
+      OBJECTSTORE_SECRET_KEY: ${OBJECTSTORE_SECRET_KEY}
+    entrypoint: ["/bin/sh", "/init/seaweedfs-entrypoint.sh"]
+    ports:
+      - "127.0.0.1:${SEAWEEDFS_FILER_PORT}:8888"
+      - "127.0.0.1:${SEAWEEDFS_S3_PORT}:8333"
+      - "127.0.0.1:${SEAWEEDFS_MASTER_PORT}:9333"
+    volumes:
+      - seaweedfs_data:/data
+      - ./infra/init/objectstore/s3-config.tmpl.json:/etc/seaweedfs/s3-config.tmpl.json:ro
+      - ./infra/init/objectstore/seaweedfs-entrypoint.sh:/init/seaweedfs-entrypoint.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9333/cluster/status >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+    mem_limit: ${OBJECTSTORE_MEM_LIMIT}
+    cpus: ${OBJECTSTORE_CPUS}
+
+  objectstore-init:
+    image: amazon/aws-cli:2.17.44
+    container_name: profinaut-objectstore-init
     depends_on:
-      postgres:
+      seaweedfs:
         condition: service_healthy
-
-  execution:
-    image: python:3.12-slim
-    container_name: profinaut-execution
-    working_dir: /workspace
-    command: [
-      "sh",
-      "-c",
-      "pip install -r requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8001"
-    ]
     environment:
-      EXECUTION_LIVE_ENABLED: ${EXECUTION_LIVE_ENABLED:-false}
-      ALLOWED_SYMBOLS: ${ALLOWED_SYMBOLS:-BTC/USDT,BTC_JPY}
-      ALLOWED_EXCHANGES: ${ALLOWED_EXCHANGES:-binance,gmo}
-      GMO_API_BASE_URL: ${GMO_API_BASE_URL:-}
-      GMO_API_KEY: ${GMO_API_KEY:-}
-      GMO_API_SECRET: ${GMO_API_SECRET:-}
-    ports:
-      - "${EXECUTION_PORT:-8001}:8001"
+      AWS_ACCESS_KEY_ID: ${OBJECTSTORE_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${OBJECTSTORE_SECRET_KEY}
+      AWS_DEFAULT_REGION: ${OBJECTSTORE_REGION}
+      OBJECTSTORE_ENDPOINT: http://seaweedfs:8333
+      OBJECTSTORE_BUCKETS: ${OBJECTSTORE_BUCKETS}
+    entrypoint: ["/bin/sh", "/init/objectstore-bootstrap.sh"]
     volumes:
-      - ./services/execution:/workspace
-
-  marketdata:
-    image: python:3.12-slim
-    container_name: profinaut-marketdata
-    working_dir: /workspace
-    command: [
-      "sh",
-      "-c",
-      "pip install -r requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8002"
-    ]
-    environment:
-      GMO_MARKETDATA_BASE_URL: ${GMO_MARKETDATA_BASE_URL:-https://api.coin.z.com/public/v1}
-      MARKETDATA_SYMBOL: ${MARKETDATA_SYMBOL:-BTC_JPY}
-      MARKETDATA_POLL_INTERVAL_SECONDS: ${MARKETDATA_POLL_INTERVAL_SECONDS:-2}
-    ports:
-      - "${MARKETDATA_PORT:-8002}:8002"
-    volumes:
-      - ./services/marketdata:/workspace
-
-  web:
-    image: node:20-alpine
-    container_name: profinaut-web
-    working_dir: /workspace
-    command: ["sh", "-c", "npm install && npm run dev"]
-    environment:
-      ADMIN_TOKEN: ${ADMIN_TOKEN:-change-me-local-admin-token}
-      DASHBOARD_API_URL: ${DASHBOARD_API_URL:-http://dashboard-api:8000}
-    ports:
-      - "${WEB_PORT:-3001}:3001"
-    volumes:
-      - ./apps/web:/workspace
-    depends_on:
-      - dashboard-api
+      - ./infra/init/objectstore/objectstore-bootstrap.sh:/init/objectstore-bootstrap.sh:ro
+    restart: "no"
 
 volumes:
   postgres_data:
+  clickhouse_data:
+  valkey_data:
+  seaweedfs_data:
