@@ -1,0 +1,5406 @@
+{
+  "exchange": "bybit",
+  "generated_from": {
+    "sources_md": "docs/exchanges/bybit/sources.md",
+    "last_checked_at": "2026-02-19",
+    "notes": "Official Bybit V5 docs catalog from bybit-exchange/docs (REST API Explorer + V5 WebSocket + V5 changelog)."
+  },
+  "rest_endpoints": [
+    {
+      "id": "bybit.private.rest.account.fee-rate",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/account/fee-rate",
+      "version": "v5",
+      "operation": "Get Fee Rate",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "baseCoin",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=account",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/account/fee-rate"
+    },
+    {
+      "id": "bybit.private.rest.account.set-spot-hedge",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/account/set-hedging-mode",
+      "version": "v5",
+      "operation": "Set Spot Hedging",
+      "market_scope": [
+        "Spot"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=account",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/account/set-spot-hedge"
+    },
+    {
+      "id": "bybit.private.rest.account.transaction-log",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/account/transaction-log",
+      "version": "v5",
+      "operation": "Get Transaction Log",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "accountType",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "currency",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "baseCoin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=account",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/account/transaction-log"
+    },
+    {
+      "id": "bybit.private.rest.asset.asset-info",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/transfer/query-asset-info",
+      "version": "v5",
+      "operation": "Get Asset Info (Spot)",
+      "market_scope": [
+        "Spot"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "accountType",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "coin",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/asset-info"
+    },
+    {
+      "id": "bybit.public.rest.market.instrument",
+      "service": "v5",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/market/instruments-info",
+      "version": "v5",
+      "operation": "Get Instrument Info",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "baseCoin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=market",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/market/instrument"
+    },
+    {
+      "id": "bybit.public.rest.market.kline",
+      "service": "v5",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/market/kline",
+      "version": "v5",
+      "operation": "Get Kline",
+      "market_scope": [
+        "Spot",
+        "Derivatives"
+      ],
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "interval",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "end",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=market",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/market/kline"
+    },
+    {
+      "id": "bybit.public.rest.market.mark-kline",
+      "service": "v5",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/market/mark-price-kline",
+      "version": "v5",
+      "operation": "Get Mark Price Kline",
+      "market_scope": [
+        "Spot",
+        "Derivatives"
+      ],
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "interval",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "end",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=market",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/market/mark-kline"
+    },
+    {
+      "id": "bybit.public.rest.market.orderbook",
+      "service": "v5",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/market/orderbook",
+      "version": "v5",
+      "operation": "Get Orderbook",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=market",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/market/orderbook"
+    },
+    {
+      "id": "bybit.public.rest.market.recent-trade",
+      "service": "v5",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/market/recent-trade",
+      "version": "v5",
+      "operation": "Get Public Recent Trading History",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "baseCoin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "optionType",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=market",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/market/recent-trade"
+    },
+    {
+      "id": "bybit.public.rest.market.tickers",
+      "service": "v5",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/market/tickers",
+      "version": "v5",
+      "operation": "Get Tickers",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "baseCoin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "expDate",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=market",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/market/tickers"
+    },
+    {
+      "id": "bybit.private.rest.position.execution",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/execution/list",
+      "version": "v5",
+      "operation": "Get Execution (2 years)",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "baseCoin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "orderId",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "orderLinkId",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "execType",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=position",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/position/execution"
+    },
+    {
+      "id": "bybit.private.rest.trade.order-list",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/order/history",
+      "version": "v5",
+      "operation": "Get Order History (2 years)",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "baseCoin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "orderId",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "orderLinkId",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "orderStatus",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "orderFilter",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=trade",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/trade/order-list"
+    },
+    {
+      "id": "bybit.private.rest.trade.open-order",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/order/realtime",
+      "version": "v5",
+      "operation": "Get Open Orders (real-time)",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "baseCoin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "settleCoin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "orderId",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "orderLinkId",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "orderFilter",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "openOnly",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=trade",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/trade/open-order"
+    },
+    {
+      "id": "bybit.private.rest.trade.query-spot-quota",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/order/spot-borrow-check",
+      "version": "v5",
+      "operation": "Get Borrow Quota (Spot)",
+      "market_scope": [
+        "Spot"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "side",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=trade",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/trade/query-spot-quota"
+    },
+    {
+      "id": "bybit.private.rest.asset.delivery",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/delivery-record",
+      "version": "v5",
+      "operation": "Get Delivery Record",
+      "market_scope": [
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "expDate",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/delivery"
+    },
+    {
+      "id": "bybit.private.rest.asset.settlement",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/settlement-record",
+      "version": "v5",
+      "operation": "Get USDC Session Settlement",
+      "market_scope": [
+        "Derivatives"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/settlement"
+    },
+    {
+      "id": "bybit.public.rest.market.long-short-ratio",
+      "service": "v5",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/market/account-ratio",
+      "version": "v5",
+      "operation": "Get Long Short Ratio",
+      "market_scope": [
+        "Derivatives"
+      ],
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "period",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=market",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/market/long-short-ratio"
+    },
+    {
+      "id": "bybit.public.rest.market.delivery-price",
+      "service": "v5",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/market/delivery-price",
+      "version": "v5",
+      "operation": "Get Delivery Price",
+      "market_scope": [
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "baseCoin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=market",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/market/delivery-price"
+    },
+    {
+      "id": "bybit.public.rest.market.history-fund-rate",
+      "service": "v5",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/market/funding/history",
+      "version": "v5",
+      "operation": "Get Funding Rate History",
+      "market_scope": [
+        "Derivatives"
+      ],
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=market",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/market/history-fund-rate"
+    },
+    {
+      "id": "bybit.public.rest.market.index-kline",
+      "service": "v5",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/market/index-price-kline",
+      "version": "v5",
+      "operation": "Get Index Price Kline",
+      "market_scope": [
+        "Derivatives"
+      ],
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "interval",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "end",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=market",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/market/index-kline"
+    },
+    {
+      "id": "bybit.public.rest.market.open-interest",
+      "service": "v5",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/market/open-interest",
+      "version": "v5",
+      "operation": "Get Open Interest",
+      "market_scope": [
+        "Derivatives"
+      ],
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "intervalTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=market",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/market/open-interest"
+    },
+    {
+      "id": "bybit.public.rest.market.premium-index-kline",
+      "service": "v5",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/market/premium-index-price-kline",
+      "version": "v5",
+      "operation": "Get Premium Index Price Kline",
+      "market_scope": [
+        "Derivatives"
+      ],
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "interval",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "end",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=market",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/market/premium-index-kline"
+    },
+    {
+      "id": "bybit.public.rest.market.risk-limit",
+      "service": "v5",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/market/risk-limit",
+      "version": "v5",
+      "operation": "Get Risk Limit",
+      "market_scope": [
+        "Derivatives"
+      ],
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=market",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/market/risk-limit"
+    },
+    {
+      "id": "bybit.private.rest.position.close-pnl",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/position/closed-pnl",
+      "version": "v5",
+      "operation": "Get Closed PnL",
+      "market_scope": [
+        "Derivatives"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=position",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/position/close-pnl"
+    },
+    {
+      "id": "bybit.private.rest.position.position-info",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/position/list",
+      "version": "v5",
+      "operation": "Get Position Info",
+      "market_scope": [
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "baseCoin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "settleCoin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=position",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/position/position-info"
+    },
+    {
+      "id": "bybit.public.rest.market.iv",
+      "service": "v5",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/market/historical-volatility",
+      "version": "v5",
+      "operation": "Get Historical Volatility",
+      "market_scope": [
+        "Options"
+      ],
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "category",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "baseCoin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "period",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=market",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/market/iv"
+    },
+    {
+      "id": "bybit.private.rest.account.borrow-history",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/account/borrow-history",
+      "version": "v5",
+      "operation": "Get Borrow History",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "currency",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=account",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/account/borrow-history"
+    },
+    {
+      "id": "bybit.private.rest.account.coin-greeks",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/account/coin-greeks",
+      "version": "v5",
+      "operation": "Get Coin Greeks",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "baseCoin",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=account",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/account/coin-greeks"
+    },
+    {
+      "id": "bybit.private.rest.account.collateral-info",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/account/collateral-info",
+      "version": "v5",
+      "operation": "Get Collateral Info",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "currency",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=account",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/account/collateral-info"
+    },
+    {
+      "id": "bybit.private.rest.account.account-info",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/account/info",
+      "version": "v5",
+      "operation": "Get Account Info",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=account",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/account/account-info"
+    },
+    {
+      "id": "bybit.private.rest.account.set-collateral",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/account/set-collateral-switch",
+      "version": "v5",
+      "operation": "Set Collateral Coin",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=account",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/account/set-collateral"
+    },
+    {
+      "id": "bybit.private.rest.account.set-margin-mode",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/account/set-margin-mode",
+      "version": "v5",
+      "operation": "Set Margin Mode",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=account",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/account/set-margin-mode"
+    },
+    {
+      "id": "bybit.private.rest.account.upgrade-unified-account",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/account/upgrade-to-uta",
+      "version": "v5",
+      "operation": "Upgrade to Unified Account",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=account",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/account/upgrade-unified-account"
+    },
+    {
+      "id": "bybit.private.rest.account.wallet",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/account/wallet-balance",
+      "version": "v5",
+      "operation": "Get Wallet Balance",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "accountType",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "coin",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=account",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/account/wallet"
+    },
+    {
+      "id": "bybit.private.rest.asset.coin-info",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/coin/query-info",
+      "version": "v5",
+      "operation": "Get Coin Info",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "coin",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/coin-info"
+    },
+    {
+      "id": "bybit.private.rest.asset.set-deposit-acct",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/deposit/deposit-to-account",
+      "version": "v5",
+      "operation": "Set Deposit Account",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/set-deposit-acct"
+    },
+    {
+      "id": "bybit.private.rest.asset.master-deposit-addr",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/deposit/query-address",
+      "version": "v5",
+      "operation": "Get Master Deposit Address",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "coin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "chainType",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/master-deposit-addr"
+    },
+    {
+      "id": "bybit.private.rest.asset.deposit-coin-spec",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/deposit/query-allowed-list",
+      "version": "v5",
+      "operation": "Get Allowed Deposit Coin Info",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "coin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "chain",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/deposit-coin-spec"
+    },
+    {
+      "id": "bybit.private.rest.asset.internal-deposit-record",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/deposit/query-internal-record",
+      "version": "v5",
+      "operation": "Get Internal Deposit Records (off-chain)",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "coin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/internal-deposit-record"
+    },
+    {
+      "id": "bybit.private.rest.asset.deposit-record",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/deposit/query-record",
+      "version": "v5",
+      "operation": "Get Deposit Record (on-chain)",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "coin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/deposit-record"
+    },
+    {
+      "id": "bybit.private.rest.asset.sub-deposit-addr",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/deposit/query-sub-member-address",
+      "version": "v5",
+      "operation": "Get Sub Deposit Address",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "coin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "chainType",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "subMemberId",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/sub-deposit-addr"
+    },
+    {
+      "id": "bybit.private.rest.asset.sub-deposit-record",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/deposit/query-sub-member-record",
+      "version": "v5",
+      "operation": "Get Sub Account Deposit Records (on-chain)",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "subMemberId",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "coin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/sub-deposit-record"
+    },
+    {
+      "id": "bybit.private.rest.asset.exchange",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/exchange/order-record",
+      "version": "v5",
+      "operation": "Get Coin Exchange Records",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "fromCoin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "toCoin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/exchange"
+    },
+    {
+      "id": "bybit.private.rest.asset.create-inter-transfer",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/transfer/inter-transfer",
+      "version": "v5",
+      "operation": "Create Internal Transfer",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/create-inter-transfer"
+    },
+    {
+      "id": "bybit.private.rest.asset.account-coin-balance",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/transfer/query-account-coin-balance",
+      "version": "v5",
+      "operation": "Get Single Coin Balance",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "memberId",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "accountType",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "coin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "withBonus",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "withTransferSafeAmount",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/account-coin-balance"
+    },
+    {
+      "id": "bybit.private.rest.asset.all-balance",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/transfer/query-account-coins-balance",
+      "version": "v5",
+      "operation": "Get All Coins Balance",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "memberId",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "accountType",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "coin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "withBonus",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/all-balance"
+    },
+    {
+      "id": "bybit.private.rest.asset.inter-transfer-list",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/transfer/query-inter-transfer-list",
+      "version": "v5",
+      "operation": "Get Internal Transfer Records",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "transferId",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "coin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/inter-transfer-list"
+    },
+    {
+      "id": "bybit.private.rest.asset.sub-uid-list",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/transfer/query-sub-member-list",
+      "version": "v5",
+      "operation": "Get Sub UID",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/sub-uid-list"
+    },
+    {
+      "id": "bybit.private.rest.asset.transferable-coin",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/transfer/query-transfer-coin-list",
+      "version": "v5",
+      "operation": "Get Transferable Coin",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "fromAccountType",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "toAccountType",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/transferable-coin"
+    },
+    {
+      "id": "bybit.private.rest.asset.unitransfer-list",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/transfer/query-universal-transfer-list",
+      "version": "v5",
+      "operation": "Get Universal Transfer Records",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "transferId",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "coin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/unitransfer-list"
+    },
+    {
+      "id": "bybit.private.rest.asset.unitransfer",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/transfer/universal-transfer",
+      "version": "v5",
+      "operation": "Create Universal Transfer",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/unitransfer"
+    },
+    {
+      "id": "bybit.private.rest.asset.withdraw-record",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/asset/withdraw/query-record",
+      "version": "v5",
+      "operation": "Get Withdraw Records",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "withdrawID",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "coin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "withdrawType",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=asset",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/asset/withdraw-record"
+    },
+    {
+      "id": "bybit.public.rest.market.insurance",
+      "service": "v5",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/market/insurance",
+      "version": "v5",
+      "operation": "Get Insurance",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "coin",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=market",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/market/insurance"
+    },
+    {
+      "id": "bybit.public.rest.market.time",
+      "service": "v5",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/market/time",
+      "version": "v5",
+      "operation": "Get Bybit Server Time",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=market",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/market/time"
+    },
+    {
+      "id": "bybit.private.rest.position.manual-add-margin",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/position/add-margin",
+      "version": "v5",
+      "operation": "Add Or Reduce Margin",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=position",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/position/manual-add-margin"
+    },
+    {
+      "id": "bybit.private.rest.position.auto-add-margin",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/position/set-auto-add-margin",
+      "version": "v5",
+      "operation": "Set Auto Add Margin",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=position",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/position/auto-add-margin"
+    },
+    {
+      "id": "bybit.private.rest.position.leverage",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/position/set-leverage",
+      "version": "v5",
+      "operation": "Set Leverage",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=position",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/position/leverage"
+    },
+    {
+      "id": "bybit.private.rest.position.set-risk-limit",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/position/set-risk-limit",
+      "version": "v5",
+      "operation": "Set Risk Limit",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=position",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/position/set-risk-limit"
+    },
+    {
+      "id": "bybit.private.rest.position.tpsl-mode",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/position/set-tpsl-mode",
+      "version": "v5",
+      "operation": "Set TP/SL Mode",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=position",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/position/tpsl-mode"
+    },
+    {
+      "id": "bybit.private.rest.position.cross-isolate",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/position/switch-isolated",
+      "version": "v5",
+      "operation": "Switch Cross/Isolated Margin",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=position",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/position/cross-isolate"
+    },
+    {
+      "id": "bybit.private.rest.position.position-mode",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/position/switch-mode",
+      "version": "v5",
+      "operation": "Switch Position Mode",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=position",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/position/position-mode"
+    },
+    {
+      "id": "bybit.private.rest.position.trading-stop",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/position/trading-stop",
+      "version": "v5",
+      "operation": "Set Trading Stop",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=position",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/position/trading-stop"
+    },
+    {
+      "id": "bybit.private.rest.spot-margin-uta.vip-margin",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/spot-margin-trade/data",
+      "version": "v5",
+      "operation": "Get VIP Margin Data",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "vipLevel",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "currency",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=spot-margin-uta",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/spot-margin-uta/vip-margin"
+    },
+    {
+      "id": "bybit.private.rest.spot-margin-uta.set-leverage",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/spot-margin-trade/set-leverage",
+      "version": "v5",
+      "operation": "Set Leverage",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=spot-margin-uta",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/spot-margin-uta/set-leverage"
+    },
+    {
+      "id": "bybit.private.rest.spot-margin-uta.status",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/spot-margin-trade/state",
+      "version": "v5",
+      "operation": "Get Status And Leverage",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=spot-margin-uta",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/spot-margin-uta/status"
+    },
+    {
+      "id": "bybit.private.rest.spot-margin-uta.switch-mode",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/spot-margin-trade/switch-mode",
+      "version": "v5",
+      "operation": "Toggle Margin Trade",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=spot-margin-uta",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/spot-margin-uta/switch-mode"
+    },
+    {
+      "id": "bybit.private.rest.trade.amend-order",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/order/amend",
+      "version": "v5",
+      "operation": "Amend Order",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=trade",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/trade/amend-order"
+    },
+    {
+      "id": "bybit.private.rest.trade.batch-amend",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/order/amend-batch",
+      "version": "v5",
+      "operation": "Batch Amend Order",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=trade",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/trade/batch-amend"
+    },
+    {
+      "id": "bybit.private.rest.trade.cancel-order",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/order/cancel",
+      "version": "v5",
+      "operation": "Cancel Order",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=trade",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/trade/cancel-order"
+    },
+    {
+      "id": "bybit.private.rest.trade.cancel-all",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/order/cancel-all",
+      "version": "v5",
+      "operation": "Cancel All Orders",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=trade",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/trade/cancel-all"
+    },
+    {
+      "id": "bybit.private.rest.trade.batch-cancel",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/order/cancel-batch",
+      "version": "v5",
+      "operation": "Batch Cancel Order",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=trade",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/trade/batch-cancel"
+    },
+    {
+      "id": "bybit.private.rest.trade.create-order",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/order/create",
+      "version": "v5",
+      "operation": "Place Order",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=trade",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/trade/create-order"
+    },
+    {
+      "id": "bybit.private.rest.trade.batch-place",
+      "service": "v5",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/order/create-batch",
+      "version": "v5",
+      "operation": "Batch Place Order",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=trade",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/trade/batch-place"
+    },
+    {
+      "id": "bybit.private.rest.user.affiliate-info",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/user/aff-customer-info",
+      "version": "v5",
+      "operation": "Get Affiliate User Info",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "uid",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=user",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/user/affiliate-info"
+    },
+    {
+      "id": "bybit.private.rest.user.wallet-type",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/user/get-member-type",
+      "version": "v5",
+      "operation": "Get UID Wallet Type",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "memberIds",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=user",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/user/wallet-type"
+    },
+    {
+      "id": "bybit.private.rest.user.apikey-info",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/user/query-api",
+      "version": "v5",
+      "operation": "Get API Key Information",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=user",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/user/apikey-info"
+    },
+    {
+      "id": "bybit.private.rest.user.list-sub-apikeys",
+      "service": "v5",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bybit.com",
+      "path": "/v5/user/sub-apikeys",
+      "version": "v5",
+      "operation": "Get Sub Account All API Keys",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "subMemberId",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "retCode",
+            "type": "number",
+            "required": true
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "retMsg, retExtInfo, time also returned"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See V5 error code catalog"
+      },
+      "rate_limit": {
+        "notes": "See V5 rate-limit docs"
+      },
+      "notes": "category=user",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/user/list-sub-apikeys"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "bybit.public.ws.public.orderbook",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "orderbook.{depth}.{symbol}",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "none"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "orderbook snapshot+delta stream",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/public/orderbook"
+    },
+    {
+      "id": "bybit.public.ws.public.orderbook-rpi",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "orderbook.1.{symbol}",
+      "market_scope": [
+        "Spot"
+      ],
+      "auth": {
+        "type": "none"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "RPI orderbook topic",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/public/orderbook-rpi"
+    },
+    {
+      "id": "bybit.public.ws.public.trade",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "publicTrade.{symbol}",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "none"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "public trade prints",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/public/trade"
+    },
+    {
+      "id": "bybit.public.ws.public.ticker",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "tickers.{symbol}",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "none"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "ticker stream with per-market push frequency",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/public/ticker"
+    },
+    {
+      "id": "bybit.public.ws.public.kline",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "kline.{interval}.{symbol}",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "none"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "candlestick stream",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/public/kline"
+    },
+    {
+      "id": "bybit.public.ws.public.liquidation",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "allLiquidation.{symbol}",
+      "market_scope": [
+        "Derivatives"
+      ],
+      "auth": {
+        "type": "none"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "all liquidation stream",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/public/all-liquidation"
+    },
+    {
+      "id": "bybit.public.ws.public.adl-alert",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "adl.{symbol}",
+      "market_scope": [
+        "Derivatives"
+      ],
+      "auth": {
+        "type": "none"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "adl alert stream",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/public/adl-alert"
+    },
+    {
+      "id": "bybit.public.ws.public.insurance-pool",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "insurance.{coin}",
+      "market_scope": [
+        "Derivatives"
+      ],
+      "auth": {
+        "type": "none"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "insurance pool updates",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/public/insurance-pool"
+    },
+    {
+      "id": "bybit.public.ws.public.order-price-limit",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "priceLimit.{symbol}",
+      "market_scope": [
+        "Derivatives"
+      ],
+      "auth": {
+        "type": "none"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "order price limit updates",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/public/order-price-limit"
+    },
+    {
+      "id": "bybit.private.ws.private.order",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "order",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "api-key+sign"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "private order updates",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/private/order"
+    },
+    {
+      "id": "bybit.private.ws.private.execution",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "execution",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "api-key+sign"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "private execution updates",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/private/execution"
+    },
+    {
+      "id": "bybit.private.ws.private.fast-execution",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "execution.fast",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "api-key+sign"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "low-latency execution stream",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/private/fast-execution"
+    },
+    {
+      "id": "bybit.private.ws.private.position",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "position",
+      "market_scope": [
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "api-key+sign"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "private position updates",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/private/position"
+    },
+    {
+      "id": "bybit.private.ws.private.wallet",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "wallet",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "api-key+sign"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "wallet balance updates",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/private/wallet"
+    },
+    {
+      "id": "bybit.private.ws.private.greek",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "greeks",
+      "market_scope": [
+        "Options"
+      ],
+      "auth": {
+        "type": "api-key+sign"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "option greek updates",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/private/greek"
+    },
+    {
+      "id": "bybit.private.ws.private.dcp",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "dcp",
+      "market_scope": [
+        "Derivatives"
+      ],
+      "auth": {
+        "type": "api-key+sign"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "disconnect-cancel-all notice",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/private/dcp"
+    },
+    {
+      "id": "bybit.private.ws.trade.guideline",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "trade service op=*",
+      "market_scope": [
+        "Spot",
+        "Derivatives",
+        "Options"
+      ],
+      "auth": {
+        "type": "api-key+sign"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "websocket order entry guideline",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/trade/guideline"
+    },
+    {
+      "id": "bybit.public.ws.system.status",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "system.status",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "none"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "system-level status broadcast",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/system/system-status"
+    },
+    {
+      "id": "bybit.public.ws.common.auth",
+      "ws_url": "wss://stream.bybit.com/v5/public/{market}|/private|/trade",
+      "version": "v5",
+      "channel": "auth",
+      "market_scope": [
+        "Common"
+      ],
+      "auth": {
+        "type": "api-key+sign"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "topic",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "notes": "authentication flow for private/trade sockets",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/wss-authentication"
+    }
+  ],
+  "data_feeds": [
+    {
+      "id": "bybit.data.market.ws.public",
+      "kind": "market-data-stream",
+      "url_pattern": "wss://stream.bybit.com/v5/public/{spot|linear|inverse|option}",
+      "format": "json",
+      "compression": "none",
+      "update_freq": "real-time",
+      "retention": "session-lifetime",
+      "schema": {
+        "summary": "topic,type,ts,data envelope"
+      },
+      "notes": "public market channels",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/public/orderbook"
+    },
+    {
+      "id": "bybit.data.account.ws.private",
+      "kind": "account-stream",
+      "url_pattern": "wss://stream.bybit.com/v5/private",
+      "format": "json",
+      "compression": "none",
+      "update_freq": "real-time",
+      "retention": "session-lifetime",
+      "schema": {
+        "summary": "topic,creationTime,data"
+      },
+      "notes": "auth required",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/private/order"
+    },
+    {
+      "id": "bybit.data.trade.ws.trade",
+      "kind": "order-entry-stream",
+      "url_pattern": "wss://stream.bybit.com/v5/trade",
+      "format": "json",
+      "compression": "none",
+      "update_freq": "request-response",
+      "retention": "session-lifetime",
+      "schema": {
+        "summary": "op,reqId,args,retCode,retMsg,data"
+      },
+      "notes": "trade ws service",
+      "source_url": "https://bybit-exchange.github.io/docs/v5/websocket/trade/guideline"
+    }
+  ]
+}
