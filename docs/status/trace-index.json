@@ -37,12 +37,36 @@
     },
     "DOC-GMO-API-001E": {
       "branch": "work",
-      "pr_urls": [],
+      "pr_urls": [
+        "https://github.com/teru1991/profinaut/pull/152"
+      ],
       "commit_shas": [],
       "verification_evidence": [
         "docs/status/progress-updates/2026-02-18_docfix-gmo-000_unlock.md"
+      ],
+      "tracking_prs": [
+        152
       ]
+    },
+    "DOC-FIX-EXCH-000": {
+      "branch": "work",
+      "pr_urls": [],
+      "commit_shas": [],
+      "verification_evidence": [
+        "docs/status/progress-updates/2026-02-19_doc-fix-exch-000.md",
+        "docs/status/status.json",
+        "docs/handoff/HANDOFF.json",
+        "docs/decisions/decisions.md"
+      ],
+      "tracking_prs": [
+        140,
+        152
+      ],
+      "pr_slots": {
+        "pr_140": "https://github.com/teru1991/profinaut/pull/140",
+        "pr_152": "https://github.com/teru1991/profinaut/pull/152"
+      }
     }
   },
-  "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, including GMO final-task prerequisite reference slots."
+  "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, with GitHub-tracked PR references for exchange/docs synchronization tasks."
 }
