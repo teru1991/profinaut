@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 import urllib.parse
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -12,33 +11,20 @@ from typing import Any, Callable
 from services.marketdata.app.logging import scrub_sensitive_fields
 from services.marketdata.app.registry import load_venue_registry
 from services.marketdata.app.transport import HttpTransportClient
-from services.marketdata.app.ucel_core import Capabilities, CoreError, ErrorCode, Exchange, ExecuteContext, OpName
+from services.marketdata.app.ucel_core import (
+    FEATURE_EXECUTION,
+    FEATURE_LIVE_TRADING,
+    Capabilities,
+    CoreError,
+    ErrorCode,
+    Exchange,
+    ExecuteContext,
+    OpName,
+    ResolvedSecret,
+    SecretRefResolver,
+)
 
 logger = logging.getLogger("marketdata.gmo_private")
-
-
-@dataclass(frozen=True)
-class ResolvedSecret:
-    api_key: str
-    api_secret: str
-    passphrase: str | None = None
-
-
-class SecretRefResolver(ABC):
-    @abstractmethod
-    def resolve(self, secret_ref: str) -> ResolvedSecret:
-        raise NotImplementedError
-
-
-class DictSecretRefResolver(SecretRefResolver):
-    def __init__(self, secrets: dict[str, ResolvedSecret]) -> None:
-        self._secrets = dict(secrets)
-
-    def resolve(self, secret_ref: str) -> ResolvedSecret:
-        value = self._secrets.get(secret_ref)
-        if value is None:
-            raise CoreError(ErrorCode.MISSING_AUTH, "secret_ref not found")
-        return value
 
 
 @dataclass(frozen=True)
@@ -161,10 +147,10 @@ class GmoPrivateExecutionAdapter(Exchange):
         )
 
     def _execute_impl(self, op: OpName, params: dict[str, Any], ctx: ExecuteContext) -> Any:
-        if "execution" not in ctx.features:
+        if FEATURE_EXECUTION not in ctx.features:
             raise CoreError(ErrorCode.FEATURE_DISABLED, "execution feature disabled")
 
-        if "live-trading" not in ctx.features or not ctx.live_trading:
+        if FEATURE_LIVE_TRADING not in ctx.features or not ctx.live_trading:
             self._audit("gmo_preflight_reject", op, ctx, ErrorCode.DRY_RUN_ONLY, key_id=None, scope="trade")
             raise CoreError(ErrorCode.DRY_RUN_ONLY, "live-trading override required")
 
