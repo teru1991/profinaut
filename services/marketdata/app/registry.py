@@ -92,6 +92,8 @@ def _map_op(source: str, record_id: str, operation: str | None) -> OpName | None
 def _is_supported(op: OpName | None) -> bool:
     implemented = {
         OpName.FETCH_TICKER,
+        OpName.FETCH_TRADES,
+        OpName.FETCH_ORDERBOOK_SNAPSHOT,
         OpName.SUBSCRIBE_TICKER,
         OpName.SUBSCRIBE_TRADES,
         OpName.SUBSCRIBE_ORDERBOOK,
