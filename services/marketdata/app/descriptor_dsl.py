@@ -87,6 +87,42 @@ class ExecutionContext:
     run_id: str | None = None
 
 
+@dataclass(frozen=True)
+class ExecContext:
+    values: dict[str, Any]
+    trace_id: str | None = None
+    request_id: str | None = None
+    run_id: str | None = None
+
+
+@dataclass(frozen=True)
+class ExecMetrics:
+    steps: int
+    output_bytes: int
+    loops: int
+    emits: int
+
+
+@dataclass(frozen=True)
+class ExecResult:
+    output: str
+    metrics: ExecMetrics
+
+
+class ExecError(Exception):
+    def __init__(self, *, error_code: str, message: str, details: dict[str, Any] | None = None) -> None:
+        super().__init__(message)
+        self.error_code = error_code
+        self.message = message
+        self.details = details or {}
+
+    def to_dict(self) -> dict[str, Any]:
+        payload = {"error_code": self.error_code, "message": self.message}
+        if self.details:
+            payload["details"] = self.details
+        return payload
+
+
 class _Executor:
     def __init__(self, *, ast: Ast, context: ExecutionContext, limits: ExecutionLimits) -> None:
         self._ast = ast
@@ -96,6 +132,7 @@ class _Executor:
         self._output: list[str] = []
         self._output_bytes = 0
         self._emit_count = 0
+        self._loop_iters = 0
         self._scope_stack: list[dict[str, Any]] = [dict(context.values)]
 
     def run(self) -> str:
@@ -136,6 +173,7 @@ class _Executor:
             loop_count = 0
             for item in iterable_value:
                 loop_count += 1
+                self._loop_iters += 1
                 if loop_count > self._limits.max_loop_iters:
                     raise DslError("DSL_EXEC_LIMIT", "Loop iteration limit exceeded", line=node.line, column=node.column)
                 self._scope_stack.append({var_name: item})
@@ -154,6 +192,8 @@ class _Executor:
             return expr.value
         if expr.kind == "Expr":
             return self._resolve_path(expr)
+        if expr.kind == "JsonPointer":
+            return self._resolve_json_pointer(expr)
         if expr.kind == "UnaryOp":
             operand = self._eval_expr(expr.value["operand"])
             if expr.value["op"] == "not":
@@ -186,7 +226,7 @@ class _Executor:
     def _resolve_path_expr(self, path: list[str], line: int, column: int) -> Any:
         base = self._lookup_var(path[0])
         if base is _MISSING:
-            raise DslError("DSL_EXEC_ERROR", f"Unknown variable '{path[0]}'", line=line, column=column)
+            raise DslError("DSL_UNKNOWN_PLACEHOLDER", f"Unknown placeholder '{path[0]}'", line=line, column=column)
         current = base
         for segment in path[1:]:
             if isinstance(current, dict) and segment in current:
@@ -194,6 +234,22 @@ class _Executor:
                 continue
             raise DslError("DSL_EXEC_ERROR", f"Path not found: {'.'.join(path)}", line=line, column=column)
         return current
+
+    def _resolve_json_pointer(self, expr: Expr) -> Any:
+        pointer = expr.value["pointer"]
+        root = self._context.values.get("payload", self._context.values)
+        resolved = get_json_pointer(root, pointer)
+        if resolved is None:
+            raise DslError("DSL_INVALID_POINTER", f"Pointer not found: {pointer}", line=expr.line, column=expr.column)
+        return resolved
+
+    def metrics(self) -> ExecMetrics:
+        return ExecMetrics(
+            steps=self._steps,
+            output_bytes=self._output_bytes,
+            loops=self._loop_iters,
+            emits=self._emit_count,
+        )
 
     def _lookup_var(self, name: str) -> Any:
         for scope in reversed(self._scope_stack):
@@ -837,6 +893,24 @@ def evaluate(source: str, *, context: ExecutionContext | None = None, limits: Ex
     ast = parse(tokenize(source))
     validate_ast(ast)
     return execute_ast(ast, context=context, limits=limits)
+
+
+def execute_descriptor(template: str, ctx: ExecContext, *, limits: ExecutionLimits | None = None) -> ExecResult:
+    exec_limits = limits or ExecutionLimits()
+    exec_ctx = ExecutionContext(
+        values=ctx.values,
+        trace_id=ctx.trace_id,
+        request_id=ctx.request_id,
+        run_id=ctx.run_id,
+    )
+    try:
+        ast = parse(tokenize(template))
+        validate_ast(ast)
+        executor = _Executor(ast=ast, context=exec_ctx, limits=exec_limits)
+        output = executor.run()
+        return ExecResult(output=output, metrics=executor.metrics())
+    except DslError as exc:
+        raise ExecError(error_code=exc.code, message=exc.message, details=exc.to_dict()) from exc
 
 
 def _truthy(value: Any) -> bool:
