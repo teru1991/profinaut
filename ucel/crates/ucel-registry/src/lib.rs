@@ -120,7 +120,8 @@ pub fn capabilities_from_catalog(name: &str, entries: &[CatalogEntry]) -> Capabi
         }
     }
     Capabilities {
-        schema_version: "1.1.4".into(),
+198:pub struct Capabilities {
+199:    pub schema_version: String,
         kind: "exchange".into(),
         name: name.into(),
         marketdata: MarketDataCapabilities { rest: has_rest, ws: has_ws },
