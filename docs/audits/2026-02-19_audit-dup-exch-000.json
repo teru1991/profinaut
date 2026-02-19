@@ -1,0 +1,77 @@
+{
+  "task_id": "AUDIT-DUP-EXCH-000",
+  "generated_at": "2026-02-19T07:30:00Z",
+  "mode": "audit-only",
+  "lock_mode": {
+    "required": [
+      "LOCK:shared-docs"
+    ],
+    "observed_conflict": "LOCK:services-marketdata",
+    "services_marketdata_edit_mode": "read-only"
+  },
+  "findings": [
+    {
+      "id": "FIND-001",
+      "exchange": "gmo/gmocoin",
+      "component": "Adapter/Facade",
+      "paths": [
+        "services/marketdata/app/main.py",
+        "services/marketdata/app/routes/raw_ingest.py",
+        "services/marketdata/app/gmo_ws_connector.py"
+      ],
+      "prs": [140],
+      "severity": "high",
+      "action": "Merge"
+    },
+    {
+      "id": "FIND-002",
+      "exchange": "gmo/gmocoin",
+      "component": "HTTP client + WS connector",
+      "paths": [
+        "services/marketdata/app/main.py",
+        "services/marketdata/app/gmo_ws_connector.py"
+      ],
+      "prs": [140],
+      "severity": "medium",
+      "action": "Move"
+    },
+    {
+      "id": "FIND-003",
+      "exchange": "gmo/gmocoin",
+      "component": "Docs catalog duplication",
+      "paths": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "docs/exchanges/gmocoin/rest-api.md",
+        "docs/exchanges/gmocoin/websocket.md"
+      ],
+      "prs": [152],
+      "severity": "medium",
+      "action": "Keep"
+    },
+    {
+      "id": "FIND-004",
+      "exchange": "gmo/gmocoin",
+      "component": "Config/descriptor導線",
+      "paths": [
+        "services/marketdata/app/main.py",
+        "services/marketdata/app/routes/raw_ingest.py",
+        "docs/exchanges/gmocoin/catalog.json"
+      ],
+      "prs": [140, 152],
+      "severity": "high",
+      "action": "Move"
+    },
+    {
+      "id": "FIND-005",
+      "exchange": "service-common",
+      "component": "API layer (health/capabilities)",
+      "paths": [
+        "services/marketdata/app/main.py",
+        "services/marketdata/app/routes/health.py"
+      ],
+      "prs": [],
+      "severity": "low",
+      "action": "Deprecate"
+    }
+  ]
+}
