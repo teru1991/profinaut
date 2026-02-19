@@ -1,0 +1,5452 @@
+{
+  "exchange": "bitmex",
+  "generated_from": {
+    "sources_md": "docs/exchanges/bitmex/sources.md",
+    "last_checked_at": "2026-02-19",
+    "notes": "Official docs only; REST generated from BitMEX official swagger/API explorer model. Some BitMEX-hosted pages were not directly retrievable from this environment; URLs retained as official source of truth."
+  },
+  "rest_endpoints": [
+    {
+      "id": "public.rest.address.address-new",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/address",
+      "version": "v1",
+      "operation": "Creates a new saved address.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Address",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Address",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.address.address-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/address",
+      "version": "v1",
+      "operation": "Get your addresses.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Address",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.announcement.announcement-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/announcement",
+      "version": "v1",
+      "operation": "Get site announcements.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "columns",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Announcement",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.announcement.announcement-geturgent",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/announcement/urgent",
+      "version": "v1",
+      "operation": "Get urgent (banner) announcements.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Announcement",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.apikey.apikey-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/apiKey",
+      "version": "v1",
+      "operation": "Get your API Keys.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "reverse",
+            "type": "bool",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=APIKey",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.chat.chat-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/chat",
+      "version": "v1",
+      "operation": "Get chat messages.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "reverse",
+            "type": "bool",
+            "required": false
+          },
+          {
+            "name": "channelID",
+            "type": "float",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Chat",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.chat.chat-new",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/chat",
+      "version": "v1",
+      "operation": "Send a chat message.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Chat",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Chat",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.chat.chat-getchannels",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/chat/channels",
+      "version": "v1",
+      "operation": "Get available channels.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Chat",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.chat.chat-getconnected",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/chat/connected",
+      "version": "v1",
+      "operation": "Get connected users.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "ConnectedUsers",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Chat",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.chat.chat-getpinnedmessage",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/chat/pinned",
+      "version": "v1",
+      "operation": "Get pinned message for a channel.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "channelID",
+            "type": "float",
+            "required": true
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "PinnedMessage",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Chat",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.execution.execution-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/execution",
+      "version": "v1",
+      "operation": "Get all raw executions for your account.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "filter",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "columns",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "reverse",
+            "type": "bool",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string(iso8601)",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string(iso8601)",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Execution",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.execution.execution-gettradehistory",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/execution/tradeHistory",
+      "version": "v1",
+      "operation": "Get all balance-affecting executions.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "targetAccountId",
+            "type": "float",
+            "required": false
+          },
+          {
+            "name": "targetAccountIds",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "filter",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "columns",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "reverse",
+            "type": "bool",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string(iso8601)",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string(iso8601)",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Execution",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.funding.funding-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/funding",
+      "version": "v1",
+      "operation": "Get funding history.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "filter",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "columns",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "reverse",
+            "type": "bool",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string(iso8601)",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string(iso8601)",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Funding",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.globalnotification.globalnotification-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/globalNotification",
+      "version": "v1",
+      "operation": "Get your current GlobalNotifications.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=GlobalNotification",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.guild.guild-new",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/guild",
+      "version": "v1",
+      "operation": "Creates a new guild",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Guild",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Guild",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.guild.guild-edit",
+      "visibility": "public",
+      "method": "PUT",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/guild",
+      "version": "v1",
+      "operation": "Edit guild new guild",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Guild",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Guild",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.guild.guild-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/guild",
+      "version": "v1",
+      "operation": "Get all guilds",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Guild",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.guild.guild-archive",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/guild/archive",
+      "version": "v1",
+      "operation": "Archive a guild",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Guild",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.guild.guild-join",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/guild/join",
+      "version": "v1",
+      "operation": "Request to Join a private guild or join a public guild",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Guild",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.guild.guild-kick",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/guild/kick",
+      "version": "v1",
+      "operation": "Kick member from guild",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Guild",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.guild.guild-leave",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/guild/leave",
+      "version": "v1",
+      "operation": "Leave guild or cancel guild join request",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Guild",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.guild.guild-sharetrades",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/guild/shareTrades",
+      "version": "v1",
+      "operation": "Toggle share trades for your account, which controls whether your guild members can see your orders and positions in their UI",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Guild",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.instrument.instrument-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/instrument",
+      "version": "v1",
+      "operation": "Get instruments.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "filter",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "columns",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "reverse",
+            "type": "bool",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string(iso8601)",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string(iso8601)",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Instrument",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.instrument.instrument-getactive",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/instrument/active",
+      "version": "v1",
+      "operation": "Get all active instruments and instruments that have expired in <24hrs.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Instrument",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.instrument.instrument-getactiveandindices",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/instrument/activeAndIndices",
+      "version": "v1",
+      "operation": "Helper method. Gets all active instruments and all indices. This is a join of the result of /indices and /active.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Instrument",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.instrument.instrument-getactiveintervals",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/instrument/activeIntervals",
+      "version": "v1",
+      "operation": "Return all active contract series and interval pairs.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "InstrumentInterval",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Instrument",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.instrument.instrument-getcompositeindex",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/instrument/compositeIndex",
+      "version": "v1",
+      "operation": "Show constituent parts of an index.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "filter",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "columns",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "reverse",
+            "type": "bool",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string(iso8601)",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string(iso8601)",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Instrument",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.instrument.instrument-getindices",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/instrument/indices",
+      "version": "v1",
+      "operation": "Get all price indices.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Instrument",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.instrument.instrument-getusdvolume",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/instrument/usdVolume",
+      "version": "v1",
+      "operation": "Get a summary of exchange statistics in USD.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "columns",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Instrument",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.insurance.insurance-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/insurance",
+      "version": "v1",
+      "operation": "Get insurance fund history.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "filter",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "columns",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "reverse",
+            "type": "bool",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string(iso8601)",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string(iso8601)",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Insurance",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.leaderboard.leaderboard-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/leaderboard",
+      "version": "v1",
+      "operation": "Get current leaderboard.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "method",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Leaderboard",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.leaderboard.leaderboard-getname",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/leaderboard/name",
+      "version": "v1",
+      "operation": "Get your alias on the leaderboard.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Leaderboard",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.liquidation.liquidation-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/liquidation",
+      "version": "v1",
+      "operation": "Get liquidation orders.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "filter",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "columns",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "reverse",
+            "type": "bool",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string(iso8601)",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string(iso8601)",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Liquidation",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.order.order-getorders",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/order",
+      "version": "v1",
+      "operation": "Get your orders.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "filter",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "columns",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "reverse",
+            "type": "bool",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string(iso8601)",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string(iso8601)",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Order",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.order.order-new",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/order",
+      "version": "v1",
+      "operation": "Create a new order.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Order",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Order",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.order.order-amend",
+      "visibility": "public",
+      "method": "PUT",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/order",
+      "version": "v1",
+      "operation": "Amend the quantity or price of an open order.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Order",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Order",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.order.order-cancel",
+      "visibility": "public",
+      "method": "DELETE",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/order",
+      "version": "v1",
+      "operation": "Cancel order(s). Send multiple order IDs to cancel in bulk.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Order",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.order.order-cancelall",
+      "visibility": "public",
+      "method": "DELETE",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/order/all",
+      "version": "v1",
+      "operation": "Cancels all of your orders.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Order",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.order.order-cancelallafter",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/order/cancelAllAfter",
+      "version": "v1",
+      "operation": "Automatically cancel all your orders after a specified timeout.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Order",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.order.order-closeposition",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/order/closePosition",
+      "version": "v1",
+      "operation": "Close a position. [Deprecated, use POST /order with execInst: 'Close']",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Order",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Order",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.orderbook.orderbook-getl2",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/orderBook/L2",
+      "version": "v1",
+      "operation": "Get current orderbook in vertical format.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "depth",
+            "type": "int",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=OrderBook",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.porl.porl-getnonce",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/porl/nonce",
+      "version": "v1",
+      "operation": "Get your Proof of Reserves nonce and data.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Porl",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Porl",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.porl.porl-getsnapshots",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/porl/snapshots",
+      "version": "v1",
+      "operation": "Get Proof of Reserves historical snapshots",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Porl",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.position.position-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/position",
+      "version": "v1",
+      "operation": "Get your positions.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "filter",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "columns",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Position",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.position.position-isolatemargin",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/position/isolate",
+      "version": "v1",
+      "operation": "Enable isolated margin or cross margin per-position.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Position",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Position",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.position.position-updateleverage",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/position/leverage",
+      "version": "v1",
+      "operation": "Choose leverage for a position.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Position",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Position",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.position.position-updaterisklimit",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/position/riskLimit",
+      "version": "v1",
+      "operation": "Update your risk limit.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Position",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Position",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.position.position-transferisolatedmargin",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/position/transferMargin",
+      "version": "v1",
+      "operation": "Transfer equity in or out of a position.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Position",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Position",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.quote.quote-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/quote",
+      "version": "v1",
+      "operation": "Get Quotes.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "filter",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "columns",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "reverse",
+            "type": "bool",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string(iso8601)",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string(iso8601)",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Quote",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.quote.quote-getbucketed",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/quote/bucketed",
+      "version": "v1",
+      "operation": "Get previous quotes in time buckets.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "binSize",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "partial",
+            "type": "bool",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "filter",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "columns",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "reverse",
+            "type": "bool",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string(iso8601)",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string(iso8601)",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Quote",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.schema.schema-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/schema",
+      "version": "v1",
+      "operation": "Get model schemata for data objects returned by this API.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "model",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Schema",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.schema.schema-websockethelp",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/schema/websocketHelp",
+      "version": "v1",
+      "operation": "Returns help text & subject list for websocket usage.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Schema",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.settlement.settlement-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/settlement",
+      "version": "v1",
+      "operation": "Get settlement history.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "filter",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "columns",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "reverse",
+            "type": "bool",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string(iso8601)",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string(iso8601)",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Settlement",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.stats.stats-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/stats",
+      "version": "v1",
+      "operation": "Get exchange-wide and per-series turnover and volume statistics.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Stats",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.stats.stats-history",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/stats/history",
+      "version": "v1",
+      "operation": "Get historical exchange-wide and per-series turnover and volume statistics.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Stats",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.stats.stats-historyusd",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/stats/historyUSD",
+      "version": "v1",
+      "operation": "Get a summary of exchange statistics in USD.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Stats",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.trade.trade-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/trade",
+      "version": "v1",
+      "operation": "Get Trades.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "filter",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "columns",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "reverse",
+            "type": "bool",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string(iso8601)",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string(iso8601)",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Trade",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.trade.trade-getbucketed",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/trade/bucketed",
+      "version": "v1",
+      "operation": "Get previous trades in time buckets.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "binSize",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "partial",
+            "type": "bool",
+            "required": false
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "filter",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "columns",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "reverse",
+            "type": "bool",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string(iso8601)",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string(iso8601)",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Trade",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user",
+      "version": "v1",
+      "operation": "Get your user model.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "User",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-createsubaccount",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/addSubaccount",
+      "version": "v1",
+      "operation": "Creates a new sub-account.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getaffiliatestatus",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/affiliateStatus",
+      "version": "v1",
+      "operation": "Get your current affiliate/referral status.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "currency",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Affiliate",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-cancelwithdrawal",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/cancelWithdrawal",
+      "version": "v1",
+      "operation": "Cancel a withdrawal.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Transaction",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-checkreferralcode",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/checkReferralCode",
+      "version": "v1",
+      "operation": "Check if a referral code is valid.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "referralCode",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getcommission",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/commission",
+      "version": "v1",
+      "operation": "Get your account's commission status.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "UserCommissionsBySymbol",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-communicationtoken",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/communicationToken",
+      "version": "v1",
+      "operation": "Register your communication token for mobile clients",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-confirm",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/confirmEmail",
+      "version": "v1",
+      "operation": "Confirm your email address with a token.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "AccessToken",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-confirmwithdrawal",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/confirmWithdrawal",
+      "version": "v1",
+      "operation": "Confirm a withdrawal.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Transaction",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getcsa",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/csa",
+      "version": "v1",
+      "operation": "Get your account's CSA status.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "CollateralSupportAgreement",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getdepositaddress",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/depositAddress",
+      "version": "v1",
+      "operation": "Get a deposit address.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "currency",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "network",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getdepositaddressinformation",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/depositAddressInformation",
+      "version": "v1",
+      "operation": "Get a deposit address.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "currency",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "network",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "DepositAddress",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getexecutionhistory",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/executionHistory",
+      "version": "v1",
+      "operation": "Get the execution history by day.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "timestamp",
+            "type": "string(iso8601)",
+            "required": true
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getwallettransferaccounts",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/getWalletTransferAccounts",
+      "version": "v1",
+      "operation": "Get the list of accounts you can transfer funds between.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-logout",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/logout",
+      "version": "v1",
+      "operation": "Log out of BitMEX.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getmargin",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/margin",
+      "version": "v1",
+      "operation": "Get your account's margin status. Send a currency of \"all\" to receive an array of all supported currencies.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "currency",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Margin",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-savepreferences",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/preferences",
+      "version": "v1",
+      "operation": "Save user preferences.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "User",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getquotefillratio",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/quoteFillRatio",
+      "version": "v1",
+      "operation": "Get 7 days worth of Quote Fill Ratio statistics.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "targetAccountId",
+            "type": "float",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "QuoteFillRatio",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getquotevalueratio",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/quoteValueRatio",
+      "version": "v1",
+      "operation": "Get Quote Value Ratio statistics over the last 3 days",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "targetAccountId",
+            "type": "float",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "QuoteValueRatio",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-requestwithdrawal",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/requestWithdrawal",
+      "version": "v1",
+      "operation": "Request a withdrawal to an external wallet.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Transaction",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getstaking",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/staking",
+      "version": "v1",
+      "operation": "Get the current user staking amount.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "currency",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getstakinginstruments",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/staking/instruments",
+      "version": "v1",
+      "operation": "List staking instruments",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "currency",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getstakingtiers",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/staking/tiers",
+      "version": "v1",
+      "operation": "List staking tiers for a given currency",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "currency",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-gettradingvolume",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/tradingVolume",
+      "version": "v1",
+      "operation": "Get your 30 days USD average trading volume",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getunstakingrequests",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/unstakingRequests",
+      "version": "v1",
+      "operation": "Get the current user unstaking requests",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "status",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-createunstakingrequests",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/unstakingRequests",
+      "version": "v1",
+      "operation": "Create unstaking request",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-deleteunstakingrequests",
+      "visibility": "public",
+      "method": "DELETE",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/unstakingRequests",
+      "version": "v1",
+      "operation": "Cancel unstaking request",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-updatesubaccount",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/updateSubaccount",
+      "version": "v1",
+      "operation": "Updates the sub-account name.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getwallet",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/wallet",
+      "version": "v1",
+      "operation": "Get your current wallet information.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "currency",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Wallet",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getwallethistory",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/walletHistory",
+      "version": "v1",
+      "operation": "Get a history of all of your wallet transactions (deposits, withdrawals, PNL).",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "currency",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "float",
+            "required": false
+          },
+          {
+            "name": "start",
+            "type": "float",
+            "required": false
+          },
+          {
+            "name": "targetAccountId",
+            "type": "float",
+            "required": false
+          },
+          {
+            "name": "reverse",
+            "type": "bool",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-getwalletsummary",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/walletSummary",
+      "version": "v1",
+      "operation": "Get a summary of all of your wallet transactions (deposits, withdrawals, PNL).",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "currency",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "startTime",
+            "type": "string(iso8601)",
+            "required": false
+          },
+          {
+            "name": "endTime",
+            "type": "string(iso8601)",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-wallettransfer",
+      "visibility": "public",
+      "method": "POST",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/walletTransfer",
+      "version": "v1",
+      "operation": "Execute a transfer to a paired account.",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "Transaction",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.user.user-cancelpendingwithdrawal",
+      "visibility": "public",
+      "method": "DELETE",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/user/withdrawal",
+      "version": "v1",
+      "operation": "Cancel pending withdrawal",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=User",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.useraffiliates.useraffiliates-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/userAffiliates",
+      "version": "v1",
+      "operation": "Get user's affiliates to a given depth",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "depth",
+            "type": "float",
+            "required": false
+          },
+          {
+            "name": "targetAccountId",
+            "type": "float",
+            "required": false
+          },
+          {
+            "name": "selectUserId",
+            "type": "float",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=UserAffiliates",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.userevent.userevent-get",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/userEvent",
+      "version": "v1",
+      "operation": "Get your user events",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "count",
+            "type": "float",
+            "required": false
+          },
+          {
+            "name": "startId",
+            "type": "float",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=UserEvent",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.wallet.wallet-getassetsconfig",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/wallet/assets",
+      "version": "v1",
+      "operation": "Get Assets Config",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Wallet",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    },
+    {
+      "id": "public.rest.wallet.wallet-getnetworksconfig",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://www.bitmex.com/api/v1",
+      "path": "/wallet/networks",
+      "version": "v1",
+      "operation": "Get Networks Config",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": [
+          {
+            "name": "result",
+            "type": "object|array",
+            "required": false
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": {
+        "notes": "See official API rate limit docs"
+      },
+      "notes": "tag=Wallet",
+      "source_url": "https://www.bitmex.com/api/explorer/"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "public.ws.announcement.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "announcement",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"announcement\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"announcement\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.chat.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "chat",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"chat\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"chat\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.connected.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "connected",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"connected\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"connected\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.funding.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "funding",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"funding\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"funding\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.instrument.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "instrument",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"instrument\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"instrument\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.insurance.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "insurance",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"insurance\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"insurance\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.liquidation.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "liquidation",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"liquidation\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"liquidation\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.orderbook10.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "orderBook10",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"orderBook10\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"orderBook10\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.orderbookl2.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "orderBookL2",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"orderBookL2\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"orderBookL2\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.orderbookl2_25.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "orderBookL2_25",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"orderBookL2_25\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"orderBookL2_25\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.quote.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "quote",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"quote\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"quote\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.quotebin1m.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "quoteBin1m",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"quoteBin1m\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"quoteBin1m\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.quotebin5m.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "quoteBin5m",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"quoteBin5m\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"quoteBin5m\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.quotebin1h.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "quoteBin1h",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"quoteBin1h\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"quoteBin1h\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.quotebin1d.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "quoteBin1d",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"quoteBin1d\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"quoteBin1d\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.settlement.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "settlement",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"settlement\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"settlement\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.trade.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "trade",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"trade\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"trade\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.tradebin1m.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "tradeBin1m",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"tradeBin1m\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"tradeBin1m\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.tradebin5m.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "tradeBin5m",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"tradeBin5m\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"tradeBin5m\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.tradebin1h.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "tradeBin1h",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"tradeBin1h\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"tradeBin1h\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.tradebin1d.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "tradeBin1d",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"tradeBin1d\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"tradeBin1d\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "private.ws.execution.subscribe",
+      "visibility": "private",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "execution",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"execution\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"execution\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "signed"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "private.ws.margin.subscribe",
+      "visibility": "private",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "margin",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"margin\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"margin\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "signed"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "private.ws.order.subscribe",
+      "visibility": "private",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "order",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"order\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"order\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "signed"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "private.ws.position.subscribe",
+      "visibility": "private",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "position",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"position\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"position\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "signed"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "private.ws.transact.subscribe",
+      "visibility": "private",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "transact",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"transact\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"transact\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "signed"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "private.ws.wallet.subscribe",
+      "visibility": "private",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "wallet",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"wallet\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"wallet\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "signed"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "private.ws.affiliate.subscribe",
+      "visibility": "private",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "affiliate",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"affiliate\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"affiliate\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "signed"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "public.ws.publicnotifications.subscribe",
+      "visibility": "public",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "publicNotifications",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"publicNotifications\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"publicNotifications\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    },
+    {
+      "id": "private.ws.privatenotifications.subscribe",
+      "visibility": "private",
+      "ws_url": "wss://ws.bitmex.com/realtime",
+      "version": "realtime",
+      "channel": "privateNotifications",
+      "subscribe": {
+        "template": "{\"op\":\"subscribe\",\"args\":[\"privateNotifications\" ]}"
+      },
+      "unsubscribe": {
+        "template": "{\"op\":\"unsubscribe\",\"args\":[\"privateNotifications\" ]}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "table",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "action",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": false
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "signed"
+      },
+      "restrictions": "symbol-scoped topics use <channel>:<symbol>",
+      "notes": "Diff actions include partial/insert/update/delete per WS docs",
+      "source_url": "https://www.bitmex.com/app/wsAPI"
+    }
+  ],
+  "fix_feeds": [
+    {
+      "id": "public.fix.na",
+      "visibility": "public",
+      "fix_host": "not_applicable",
+      "fix_port": "not_applicable",
+      "version": "",
+      "session": "",
+      "auth": {
+        "type": "other"
+      },
+      "flow_summary": "",
+      "message_types": "",
+      "fields_summary": "",
+      "heartbeat": {
+        "type": "none"
+      },
+      "restrictions": "official FIX specification page not found via reachable official API navigation",
+      "notes": "No official FIX spec page confirmed from available official navigation in this run.",
+      "source_url": "https://www.bitmex.com/app/apiOverview"
+    }
+  ],
+  "data_feeds": [
+    {
+      "id": "data.other.none.na",
+      "kind": "other",
+      "url_pattern": "not_applicable",
+      "format": "not_applicable",
+      "compression": "not_applicable",
+      "update_freq": "not_applicable",
+      "retention": "not_applicable",
+      "schema_summary": "not_applicable",
+      "notes": "No official historical data dump/file-distribution page confirmed in reachable official docs for this run.",
+      "source_url": "https://www.bitmex.com/app/apiOverview"
+    }
+  ]
+}
