@@ -1,0 +1,121 @@
+{
+  "exchange": "okx",
+  "generated_from": {
+    "sources_md": "docs/exchanges/okx/sources.md",
+    "last_checked_at": "2026-02-19",
+    "notes": "Official OKX docs endpoints were not reachable from this environment (HTTP CONNECT 403), so entries are initialized as blocked doc references only."
+  },
+  "rest_endpoints": [
+    {
+      "id": "okx.rest.overview",
+      "visibility": "public",
+      "instType": "ALL",
+      "method": "GET",
+      "path_or_doc": "doc-ref",
+      "summary": "API v5 REST overview",
+      "auth": "none",
+      "rate_limit": "doc",
+      "source_url": "https://www.okx.com/docs-v5/en/",
+      "status": "blocked"
+    },
+    {
+      "id": "okx.rest.auth",
+      "visibility": "private",
+      "instType": "ALL",
+      "method": "GET",
+      "path_or_doc": "doc-ref",
+      "summary": "REST authentication",
+      "auth": "apiKey/sign",
+      "rate_limit": "doc",
+      "source_url": "https://www.okx.com/docs-v5/en/#overview-rest-authentication",
+      "status": "blocked"
+    },
+    {
+      "id": "okx.rest.public",
+      "visibility": "public",
+      "instType": "SPOT/SWAP/FUTURES/OPTION",
+      "method": "GET",
+      "path_or_doc": "doc-family",
+      "summary": "Public Data/Market Data families",
+      "auth": "none",
+      "rate_limit": "per endpoint",
+      "source_url": "https://www.okx.com/docs-v5/en/",
+      "status": "blocked"
+    },
+    {
+      "id": "okx.rest.private",
+      "visibility": "private",
+      "instType": "SPOT/SWAP/FUTURES/OPTION",
+      "method": "GET/POST",
+      "path_or_doc": "doc-family",
+      "summary": "Account/Trade/Funding families",
+      "auth": "apiKey/sign",
+      "rate_limit": "per endpoint",
+      "source_url": "https://www.okx.com/docs-v5/en/",
+      "status": "blocked"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "okx.ws.overview",
+      "visibility": "public",
+      "instType": "ALL",
+      "channel_or_doc": "doc-ref",
+      "summary": "WebSocket overview",
+      "auth": "none",
+      "source_url": "https://www.okx.com/docs-v5/en/#overview-websocket-overview",
+      "status": "blocked"
+    },
+    {
+      "id": "okx.ws.public",
+      "visibility": "public",
+      "instType": "SPOT/SWAP/FUTURES/OPTION",
+      "channel_or_doc": "channels family",
+      "summary": "Public channels",
+      "auth": "none",
+      "source_url": "https://www.okx.com/docs-v5/en/",
+      "status": "blocked"
+    },
+    {
+      "id": "okx.ws.private",
+      "visibility": "private",
+      "instType": "SPOT/SWAP/FUTURES/OPTION",
+      "channel_or_doc": "channels family",
+      "summary": "Private channels",
+      "auth": "apiKey/sign",
+      "source_url": "https://www.okx.com/docs-v5/en/",
+      "status": "blocked"
+    }
+  ],
+  "data_feeds": [
+    {
+      "id": "okx.data.public-rest",
+      "feed_type": "market-data",
+      "transport": "REST",
+      "instType": "SPOT/SWAP/FUTURES/OPTION",
+      "coverage": "Public market/public data endpoints",
+      "source_url": "https://www.okx.com/docs-v5/en/",
+      "status": "blocked"
+    },
+    {
+      "id": "okx.data.public-ws",
+      "feed_type": "market-data",
+      "transport": "WebSocket",
+      "instType": "SPOT/SWAP/FUTURES/OPTION",
+      "coverage": "Public channels",
+      "source_url": "https://www.okx.com/docs-v5/en/",
+      "status": "blocked"
+    }
+  ],
+  "diffs": [
+    {
+      "date": "n/a",
+      "change_type": "blocked",
+      "affected_area": "changelog/log_en",
+      "market_scope": "ALL",
+      "summary": "Changelog text was not retrievable due to HTTP CONNECT 403.",
+      "action_required": "Re-run extraction in a network environment that can access okx.com.",
+      "source_url": "https://www.okx.com/docs-v5/log_en/"
+    }
+  ]
+}
