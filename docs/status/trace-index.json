@@ -184,11 +184,13 @@
       ]
     },
     "DOC-DATAPLATFORM-SSOT-002-FREE": {
-      "branch": "work",
+      "branch": "codex/create-data-platform-ssot-documentation",
       "pr_urls": [
-        "TBD (created via make_pr for this commit)"
+        "https://github.com/teru1991/profinaut/pull/190"
       ],
-      "commit_shas": [],
+      "commit_shas": [
+        "b55956b"
+      ],
       "verification_evidence": [
         "docs/data-platform/README.md",
         "docs/data-platform/architecture.md",
