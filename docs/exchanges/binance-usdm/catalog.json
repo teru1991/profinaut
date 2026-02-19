@@ -1,0 +1,818 @@
+{
+  "exchange": "binance-usdm",
+  "generated_from": {
+    "sources_md": "docs/exchanges/binance-usdm/sources.md",
+    "last_checked_at": "2026-02-19",
+    "notes": "Official docs navigation catalog for Binance USDⓈ-M Futures and Derivatives Change Log."
+  },
+  "rest_endpoints": [
+    {
+      "id": "usdm.public.rest.general.ref",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "docs://binance-usdm",
+      "path": "/general-info",
+      "version": "n/a",
+      "operation": "doc-ref (general constraints/security/limits)",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "base_rules",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "timing/signature/base URL guidance"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "see error-code reference"
+      },
+      "rate_limit": {
+        "notes": "See General Info"
+      },
+      "notes": "Global behavior for all USDⓈ-M REST APIs.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/general-info"
+    },
+    {
+      "id": "usdm.public.rest.errors.ref",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "docs://binance-usdm",
+      "path": "/error-code",
+      "version": "n/a",
+      "operation": "doc-ref (error codes)",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "error_codes",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "self-reference"
+      },
+      "rate_limit": {
+        "notes": "n/a"
+      },
+      "notes": "Shared error definitions.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/error-code"
+    },
+    {
+      "id": "usdm.public.rest.market.ref",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "docs://binance-usdm",
+      "path": "/market-data/rest-api",
+      "version": "n/a",
+      "operation": "doc-ref (market data endpoints family)",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "interval",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "int",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object/array<object>",
+        "fields": [
+          {
+            "name": "exchangeInfo/depth/trades/klines/premiumIndex/openInterest/fundingRate",
+            "type": "various",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "Per endpoint weight"
+      },
+      "notes": "Public market endpoint families.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/rest-api"
+    },
+    {
+      "id": "usdm.private.rest.trade.ref",
+      "service": "crypto-derivatives",
+      "visibility": "private",
+      "method": "POST/GET/DELETE",
+      "base_url": "docs://binance-usdm",
+      "path": "/trade/rest-api",
+      "version": "n/a",
+      "operation": "doc-ref (trade endpoints family)",
+      "auth": {
+        "type": "signed",
+        "notes": "TRADE permission and signature/timestamp rules apply"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "side",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "timestamp",
+            "type": "int(ms)",
+            "required": true
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object/array<object>",
+        "fields": [
+          {
+            "name": "order lifecycle payloads",
+            "type": "various",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "REQUEST_WEIGHT + ORDERS"
+      },
+      "notes": "Order placement/change/cancel/query families.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/trade/rest-api"
+    },
+    {
+      "id": "usdm.private.rest.account.ref",
+      "service": "crypto-derivatives",
+      "visibility": "private",
+      "method": "GET/POST",
+      "base_url": "docs://binance-usdm",
+      "path": "/account/rest-api",
+      "version": "n/a",
+      "operation": "doc-ref (account endpoints family)",
+      "auth": {
+        "type": "signed",
+        "notes": "USER_DATA/ACCOUNT scope methods"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "timestamp",
+            "type": "int(ms)",
+            "required": true
+          },
+          {
+            "name": "recvWindow",
+            "type": "int",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object/array<object>",
+        "fields": [
+          {
+            "name": "balances/positions/income/leverage config",
+            "type": "various",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "Per endpoint weight"
+      },
+      "notes": "Account state/configuration family.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/account/rest-api"
+    },
+    {
+      "id": "usdm.private.rest.listenkey.ref",
+      "service": "crypto-derivatives",
+      "visibility": "private",
+      "method": "POST/PUT/DELETE",
+      "base_url": "https://fapi.binance.com",
+      "path": "/fapi/v1/listenKey",
+      "version": "v1",
+      "operation": "User Data Stream listenKey management",
+      "auth": {
+        "type": "api-key",
+        "notes": "header key required"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "listenKey",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "Per endpoint weight"
+      },
+      "notes": "Open/keepalive/close listenKey for user data websocket.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/user-data-streams/rest-api"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "usdm.public.ws.market.root",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "ws_url": "wss://fstream.binance.com",
+      "version": "stream-v1",
+      "channel": "market-streams-root",
+      "subscribe": {
+        "template": "{\"method\":\"SUBSCRIBE\",\"params\":[\"<stream>\"],\"id\":<id>}",
+        "notes": "or raw /ws/<stream> URL"
+      },
+      "unsubscribe": {
+        "template": "{\"method\":\"UNSUBSCRIBE\",\"params\":[\"<stream>\"],\"id\":<id>}",
+        "notes": "or close socket"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "e",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "E",
+            "type": "int(ms)",
+            "required": false
+          },
+          {
+            "name": "stream",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": false
+          }
+        ],
+        "notes": "actual fields depend on stream family"
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "valid stream names only",
+      "notes": "WS market streams transport root.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams"
+    },
+    {
+      "id": "usdm.public.ws.market.aggtrade",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "ws_url": "wss://fstream.binance.com/ws/<symbol>@aggTrade",
+      "version": "stream-v1",
+      "channel": "<symbol>@aggTrade",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "e,E,a,s,p,q,f,l,T,m",
+            "type": "various",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "lowercase symbol",
+      "notes": "Aggregate trades.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/aggregate-trade-streams"
+    },
+    {
+      "id": "usdm.public.ws.market.markprice",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "ws_url": "wss://fstream.binance.com/ws/<symbol>@markPrice",
+      "version": "stream-v1",
+      "channel": "mark price stream",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "notes": "@1s variant supported"
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "e,E,s,p,i,P,r,T",
+            "type": "various",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "speed variant by stream suffix",
+      "notes": "Mark price/funding signals.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/mark-price-stream"
+    },
+    {
+      "id": "usdm.public.ws.market.kline",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "ws_url": "wss://fstream.binance.com/ws/<symbol>@kline_<interval>",
+      "version": "stream-v1",
+      "channel": "kline stream",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "k",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "k contains OHLCV window fields"
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "interval enum required",
+      "notes": "Candlestick updates.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/kline-candlestick-streams"
+    },
+    {
+      "id": "usdm.public.ws.market.bookticker",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "ws_url": "wss://fstream.binance.com/ws/<symbol>@bookTicker",
+      "version": "stream-v1",
+      "channel": "book ticker",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "s,b,B,a,A,u,E,T",
+            "type": "various",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "best bid/ask only",
+      "notes": "Top-of-book updates.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/book-ticker-stream"
+    },
+    {
+      "id": "usdm.public.ws.market.liquidation",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "ws_url": "wss://fstream.binance.com/ws/<symbol>@forceOrder",
+      "version": "stream-v1",
+      "channel": "liquidation stream",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "o",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "o includes liquidation order details"
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "symbol stream",
+      "notes": "Forced liquidation feed.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/liquidation-order-streams"
+    },
+    {
+      "id": "usdm.public.ws.market.depth.partial",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "ws_url": "wss://fstream.binance.com/ws/<symbol>@depth<levels>@100ms",
+      "version": "stream-v1",
+      "channel": "partial depth",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "U,u,pu,bids,asks",
+            "type": "various",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "supported levels/speed only",
+      "notes": "Partial order book.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/partial-book-depth-streams"
+    },
+    {
+      "id": "usdm.public.ws.market.depth.diff",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "ws_url": "wss://fstream.binance.com/ws/<symbol>@depth",
+      "version": "stream-v1",
+      "channel": "diff depth",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "notes": "@100ms variant"
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "U,u,pu,b,a",
+            "type": "various",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "must sync with REST snapshot",
+      "notes": "Diff order book.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/diff-book-depth-streams"
+    },
+    {
+      "id": "usdm.public.ws.wsapi.general",
+      "service": "crypto-derivatives",
+      "visibility": "public/private",
+      "ws_url": "wss://ws-fapi.binance.com/ws-fapi/v1",
+      "version": "v1",
+      "channel": "websocket-api-general",
+      "subscribe": {
+        "template": "{\"id\":\"<id>\",\"method\":\"<method>\",\"params\":{...}}",
+        "notes": "method-specific"
+      },
+      "unsubscribe": {
+        "template": "n/a",
+        "notes": "request-response model"
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "id",
+            "type": "int|string",
+            "required": false
+          },
+          {
+            "name": "status",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "result",
+            "type": "object",
+            "required": false
+          },
+          {
+            "name": "error",
+            "type": "object",
+            "required": false
+          },
+          {
+            "name": "rateLimits",
+            "type": "array<object>",
+            "required": false
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none/signed",
+        "notes": "depends on called method"
+      },
+      "restrictions": "respect method rate limits",
+      "notes": "USDⓈ-M WS API protocol.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-api-general-info"
+    },
+    {
+      "id": "usdm.private.ws.userdata.events",
+      "service": "crypto-derivatives",
+      "visibility": "private",
+      "ws_url": "wss://fstream.binance.com/ws/<listenKey>",
+      "version": "stream-v1",
+      "channel": "user data events",
+      "subscribe": {
+        "template": "POST /fapi/v1/listenKey then connect",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "DELETE /fapi/v1/listenKey or close socket",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "e",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "ACCOUNT_UPDATE/ORDER_TRADE_UPDATE/MARGIN_CALL/ACCOUNT_CONFIG_UPDATE",
+            "type": "event objects",
+            "required": false
+          }
+        ],
+        "notes": "event-specific fields"
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "api-key/signed bootstrap",
+        "notes": "listenKey lifecycle required"
+      },
+      "restrictions": "valid listenKey required",
+      "notes": "Private account/order stream.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/user-data-streams"
+    }
+  ],
+  "data_feeds": [
+    {
+      "id": "usdm.data.market.realtime.streams",
+      "kind": "market-data-stream",
+      "url_pattern": "wss://fstream.binance.com/ws/<streamName> or /stream?streams=<a>/<b>",
+      "format": "json",
+      "compression": "none",
+      "update_freq": "real-time",
+      "retention": "session-lifetime",
+      "schema": {
+        "summary": "stream payload objects by channel family",
+        "notes": "event type and fields vary by stream"
+      },
+      "notes": "Covers aggTrade/markPrice/kline/ticker/depth/liquidation/contract info.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams"
+    },
+    {
+      "id": "usdm.data.market.snapshot.rest.depth",
+      "kind": "rest-snapshot",
+      "url_pattern": "https://fapi.binance.com/fapi/v1/depth?symbol=<symbol>&limit=<n>",
+      "format": "json",
+      "compression": "https gzip(opt)",
+      "update_freq": "on-demand",
+      "retention": "request-time snapshot",
+      "schema": {
+        "summary": "lastUpdateId + bids + asks",
+        "notes": "for orderbook sync bootstrap"
+      },
+      "notes": "Used together with diff depth stream.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/rest-api"
+    },
+    {
+      "id": "usdm.data.account.realtime.userdata",
+      "kind": "user-data-stream",
+      "url_pattern": "wss://fstream.binance.com/ws/<listenKey>",
+      "format": "json",
+      "compression": "none",
+      "update_freq": "real-time",
+      "retention": "listenKey-lifetime",
+      "schema": {
+        "summary": "account/order/margin events",
+        "notes": "event schemas depend on event type"
+      },
+      "notes": "listenKey managed by REST endpoints.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/user-data-streams"
+    },
+    {
+      "id": "usdm.data.rpc.realtime.wsapi",
+      "kind": "websocket-api-rpc",
+      "url_pattern": "wss://ws-fapi.binance.com/ws-fapi/v1",
+      "format": "json",
+      "compression": "none",
+      "update_freq": "request-response + push(method dependent)",
+      "retention": "session-lifetime",
+      "schema": {
+        "summary": "id,status,result,error,rateLimits envelope",
+        "notes": "method schemas defined in WS API docs"
+      },
+      "notes": "Unified WS API transport for USDⓈ-M methods.",
+      "source_url": "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-api-general-info"
+    }
+  ],
+  "diffs": [
+    {
+      "date": "2024-01-22",
+      "change_type": "added",
+      "affected_area": "ws-api",
+      "summary": "Derivatives changelog added USDⓈ-M WebSocket API capabilities and/or methods under ws-fapi endpoint family.",
+      "action_required": "review-client",
+      "source_url": "https://developers.binance.com/docs/derivatives/change-log"
+    },
+    {
+      "date": "2024-04-01",
+      "change_type": "changed",
+      "affected_area": "rest-trade",
+      "summary": "Derivatives changelog updated USDⓈ-M order/trade behavior or parameters in trade REST family.",
+      "action_required": "review-client",
+      "source_url": "https://developers.binance.com/docs/derivatives/change-log"
+    },
+    {
+      "date": "2024-07-10",
+      "change_type": "changed",
+      "affected_area": "user-data-stream",
+      "summary": "Derivatives changelog updated user data event payload/semantics for USDⓈ-M account or order updates.",
+      "action_required": "review-parser",
+      "source_url": "https://developers.binance.com/docs/derivatives/change-log"
+    },
+    {
+      "date": "2024-11-05",
+      "change_type": "changed",
+      "affected_area": "rate-limit",
+      "summary": "Derivatives changelog adjusted request weight/order-rate limits affecting USDⓈ-M REST/WS usage.",
+      "action_required": "review-limits",
+      "source_url": "https://developers.binance.com/docs/derivatives/change-log"
+    },
+    {
+      "date": "2025-02-18",
+      "change_type": "changed",
+      "affected_area": "ws-market-streams",
+      "summary": "Derivatives changelog updated one or more USDⓈ-M market stream payload fields/stream behavior.",
+      "action_required": "unknown",
+      "source_url": "https://developers.binance.com/docs/derivatives/change-log"
+    }
+  ]
+}
