@@ -1,5 +1,5 @@
 venue: gmocoin
-strict: false
+strict: true
 entries:
 - id: crypto.public.rest.status.get
   implemented: true
@@ -92,38 +92,38 @@ entries:
   implemented: true
   tested: true
 - id: crypto.public.ws.ticker.update
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: crypto.public.ws.trades.update
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: crypto.public.ws.orderbooks.update
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: crypto.private.ws.executionevents.update
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: crypto.private.ws.orderevents.update
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: crypto.private.ws.positionevents.update
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: fx.public.ws.ticker.update
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: fx.public.ws.trades.update
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: fx.public.ws.orderbooks.update
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: fx.private.ws.executionevents.update
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: fx.private.ws.orderevents.update
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: fx.private.ws.positionevents.update
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
