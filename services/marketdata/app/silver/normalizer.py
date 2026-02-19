@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from services.marketdata.app.db.repository import MarketDataMetaRepository
-from services.marketdata.app.metrics import quality_gate_metrics
+from services.marketdata.app.metrics import ingest_metrics, quality_gate_metrics
 from services.marketdata.app.silver.orderbook import OrderbookEngine
 
 ORDERBOOK_GAP = "ORDERBOOK_GAP"
@@ -139,7 +139,7 @@ def _insert_trade(repo: MarketDataMetaRepository, envelope: dict[str, Any], payl
     if instrument_id is None:
         instrument_id = envelope.get("market_id") or payload.get("symbol")
 
-    repo.insert_md_trade(
+    inserted = repo.insert_md_trade(
         raw_msg_id=str(envelope["raw_msg_id"]),
         venue_id=None if envelope.get("venue_id") is None else str(envelope.get("venue_id")),
         market_id=None if envelope.get("market_id") is None else str(envelope.get("market_id")),

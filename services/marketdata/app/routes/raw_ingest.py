@@ -200,8 +200,14 @@ def ingest_raw_envelope(body: dict[str, Any], *, settings: ServiceSettings | Non
     envelope["quality_json"] = quality_json
 
     writer = _get_bronze_writer()
-    object_key = writer.append(envelope)
-    writer.close()
+    try:
+        object_key = writer.append(envelope)
+    except ValueError as exc:
+        ingest_metrics.record_failure()
+        reason = str(exc).lower()
+        if "secret" in reason:
+            return 400, {"error": "SECRET_REJECTED", "reason": "DENYLIST_MATCH"}
+        return 400, {"error": "SCHEMA_REJECTED", "reason": "SCHEMA_GATE_FAILED"}
 
     repo.insert_raw_ingest_meta(
         RawIngestMeta(
@@ -247,8 +253,33 @@ def ingest_raw_envelope(body: dict[str, Any], *, settings: ServiceSettings | Non
     }
 
 
+
+
+def _bronze_metrics_text() -> str:
+    writer = _get_bronze_writer()
+    health = writer.health()
+    metrics = dict(writer.metrics)
+    metrics["queue_depth"] = health["queue_depth"]
+    metrics["spool_bytes"] = health["spool_bytes"]
+    if health.get("last_success_ts"):
+        try:
+            metrics["last_success_ts"] = _parse_rfc3339(str(health["last_success_ts"])) .timestamp()
+        except Exception:
+            metrics["last_success_ts"] = 0
+    else:
+        metrics["last_success_ts"] = 0
+    lines = [f"{k} {v}" for k, v in metrics.items()]
+    return "\n".join(lines) + "\n"
+
+
 @router.post("/raw/ingest")
 async def raw_ingest(request: Request) -> JSONResponse:
     body = await request.json()
     status_code, payload = ingest_raw_envelope(body)
     return JSONResponse(status_code=status_code, content=payload)
+
+
+@router.get("/bronze/healthz")
+def bronze_healthz() -> dict[str, Any]:
+    writer = _get_bronze_writer()
+    return writer.health()

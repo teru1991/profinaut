@@ -35,9 +35,14 @@ from services.marketdata.app.object_store import build_object_store_from_env
 from services.marketdata.app.gmo_ws_connector import GmoPublicWsConnector, GmoWsConfig
 from services.marketdata.app.mock_exchange import MockRuntime, MockScenario, build_router as build_mock_router
 from services.marketdata.app.db.repository import MarketDataMetaRepository
-from services.marketdata.app.routes.raw_ingest import ingest_raw_envelope, router as raw_ingest_router
+from services.marketdata.app.routes.raw_ingest import (
+    _get_bronze_writer,
+    ingest_raw_envelope,
+    router as raw_ingest_router,
+)
 from services.marketdata.app.settings import load_settings
 from services.marketdata.app.registry import CatalogValidationError, VenueRegistry, load_venue_registry
+from services.marketdata.app.metrics import ingest_metrics
 
 logger = logging.getLogger("marketdata")
 if not logger.handlers:
@@ -481,6 +486,10 @@ async def healthz() -> dict[str, Any]:
     if _registry_error is not None:
         degraded_reasons.append(f"REGISTRY_INVALID:{_registry_error}")
 
+    bronze_health = _get_bronze_writer().health()
+    if bronze_health.get("degraded"):
+        degraded_reasons.append("BRONZE_WRITER_DEGRADED")
+
     payload = {
         "status": "degraded" if degraded_reasons else "ok",
         "db_ok": db_ok,
@@ -488,6 +497,7 @@ async def healthz() -> dict[str, Any]:
         "degraded_reasons": degraded_reasons,
         "registry_ok": _registry_error is None and _registry is not None,
         "registry_venue": _registry_venue,
+        "bronze": bronze_health,
     }
     payload["mock"] = _mock_runtime.health()
     return payload
@@ -499,6 +509,20 @@ async def metrics() -> PlainTextResponse:
     for key, value in _mock_runtime.metrics().items():
         metric_lines.append(f"# TYPE {key} gauge")
         metric_lines.append(f"{key} {value}")
+
+    writer = _get_bronze_writer()
+    writer_health = writer.health()
+    bronze_metrics = dict(writer.metrics)
+    bronze_metrics["queue_depth"] = writer_health["queue_depth"]
+    bronze_metrics["spool_bytes"] = writer_health["spool_bytes"]
+    if writer_health.get("last_success_ts"):
+        bronze_metrics["last_success_ts"] = datetime.fromisoformat(str(writer_health["last_success_ts"]).replace("Z", "+00:00")).timestamp()
+    else:
+        bronze_metrics["last_success_ts"] = 0
+    for key, value in bronze_metrics.items():
+        metric_lines.append(f"# TYPE {key} gauge")
+        metric_lines.append(f"{key} {value}")
+
     body = "\n".join(metric_lines) + "\n"
     return PlainTextResponse(content=body, media_type="text/plain; version=0.0.4")
 
@@ -536,6 +560,7 @@ async def get_capabilities() -> dict[str, Any]:
         "degraded_reason": degraded_reason,
         "degraded_reasons": degraded_reasons,
         "generated_at": datetime.now(UTC).isoformat(),
+        "ingest_stats": ingest_metrics.summary(),
         "registry": {
             "venue": _registry.venue if _registry else _registry_venue,
             "catalog_path": _registry.catalog_path if _registry else None,
