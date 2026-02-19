@@ -1,6 +1,6 @@
 {
   "base_branch": "master",
-  "active_task": "RUST-UCEL-PREFLIGHT-000",
+  "active_task": "DOC-DATAPLATFORM-SSOT-002-FREE",
   "owner": "codex",
   "state": "in_progress",
   "open_prs": [],
@@ -8,8 +8,9 @@
     "LOCK:shared-docs"
   ],
   "next_actions": [
-    "RUST-UCEL-IMPL-001 を起票し、Option A（repo ルート ucel/ 独立workspace）で Rust UCEL 実装を開始する。"
+    "Review and circulate the new data-platform SSOT + ADR set for implementation tasking.",
+    "Implement Bronze->Silver->Gold contracts following docs/data-platform/storage-contracts.md."
   ],
-  "last_updated": "2026-02-19T10:45:00Z",
-  "notes": "RUST-UCEL-PREFLIGHT-000 completed: Rust assets/exchanges catalog audited and UCEL layout decision fixed to Option A."
+  "last_updated": "2026-02-19T12:30:00Z",
+  "notes": "Data platform SSOT docs established with free OSS-only stack (SeaweedFS/RustFS, Iceberg, ClickHouse, PostgreSQL, Valkey, DuckDB)."
 }

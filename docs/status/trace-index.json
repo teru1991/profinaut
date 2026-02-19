@@ -182,6 +182,48 @@
       "locks": [
         "LOCK:shared-docs"
       ]
+    },
+    "DOC-DATAPLATFORM-SSOT-002-FREE": {
+      "branch": "work",
+      "pr_urls": [
+        "TBD (created via make_pr for this commit)"
+      ],
+      "commit_shas": [],
+      "verification_evidence": [
+        "docs/data-platform/README.md",
+        "docs/data-platform/architecture.md",
+        "docs/data-platform/storage-contracts.md",
+        "docs/data-platform/lakehouse-layout.md",
+        "docs/data-platform/serving-stores.md",
+        "docs/data-platform/data-quality.md",
+        "docs/data-platform/security-and-secrets.md",
+        "docs/data-platform/ops-runbook.md",
+        "docs/data-platform/adrs/ADR-0001-lakehouse-iceberg.md",
+        "docs/data-platform/adrs/ADR-0002-object-storage-seaweedfs.md",
+        "docs/data-platform/adrs/ADR-0003-serving-stores-clickhouse-postgres-valkey.md",
+        "docs/data-platform/adrs/ADR-0004-canonical-ids-dedupe.md",
+        "docs/data-platform/adrs/ADR-0005-secrets-non-persistence.md",
+        "docs/status/progress-updates/2026-02-19_doc-dataplatform-ssot-002-free.md",
+        "docs/status/status.json",
+        "docs/handoff/HANDOFF.json",
+        "docs/decisions/decisions.md"
+      ],
+      "locks": [
+        "LOCK:shared-docs"
+      ],
+      "policy_constraints": {
+        "licenses": [
+          "Apache-2.0",
+          "BSD",
+          "MIT",
+          "PostgreSQL License",
+          "LGPL"
+        ],
+        "not_adopted": [
+          "MinIO",
+          "Redis"
+        ]
+      }
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
