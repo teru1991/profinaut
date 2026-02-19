@@ -4,7 +4,8 @@
     "Created data platform SSOT docs for Raw-first Bronze -> Silver -> Gold -> Serving.",
     "Fixed technology selection to free OSS only and documented explicit non-adoption of MinIO/Redis.",
     "Added ADRs for Iceberg, object storage choice, serving stores, dedupe IDs, and secrets non-persistence.",
-    "Aligned Docs OS preflight by making status.json and HANDOFF.json active_task consistent."
+    "Aligned Docs OS preflight by making status.json and HANDOFF.json active_task consistent.",
+    "DOC-FIX-DATAPLATFORM-TRACE-001: corrected preflight/trace metadata by keeping status.json active_task as canonical and finalizing PR #190 linkage in trace-index."
   ],
   "what_next": [
     "Share docs/data-platform/** with implementation owners and open implementation tasks referencing these contracts.",
@@ -23,5 +24,5 @@
     "python -c \"import json; json.load(open('docs/status/trace-index.json'))\"",
     "git diff --name-only"
   ],
-  "updated_at": "2026-02-19T12:30:00Z"
+  "updated_at": "2026-02-19T14:15:00Z"
 }
