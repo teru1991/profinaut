@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 import re
 from typing import Any
 
@@ -67,6 +68,145 @@ class AstNode:
 @dataclass(frozen=True)
 class Ast:
     root: AstNode
+
+
+@dataclass(frozen=True)
+class ExecutionLimits:
+    max_output_bytes: int = 1_000_000
+    max_steps: int = 2_000_000
+    max_loop_iters: int = 100_000
+    max_string_len: int = 1_000_000
+
+
+@dataclass(frozen=True)
+class ExecutionContext:
+    values: dict[str, Any]
+    trace_id: str | None = None
+    request_id: str | None = None
+    run_id: str | None = None
+
+
+class _Executor:
+    def __init__(self, *, ast: Ast, context: ExecutionContext, limits: ExecutionLimits) -> None:
+        self._ast = ast
+        self._context = context
+        self._limits = limits
+        self._steps = 0
+        self._output: list[str] = []
+        self._output_bytes = 0
+        self._scope_stack: list[dict[str, Any]] = [dict(context.values)]
+
+    def run(self) -> str:
+        self._exec_node(self._ast.root)
+        return "".join(self._output)
+
+    def _exec_node(self, node: AstNode) -> None:
+        self._step(node)
+        if node.kind == "Program":
+            self._exec_node(node.data["body"])
+            return
+        if node.kind == "Seq":
+            for item in node.data["items"]:
+                self._exec_node(item)
+            return
+        if node.kind == "Text":
+            self._append_output(self._eval_expr(node.data["value"]))
+            return
+        if node.kind == "Emit":
+            self._append_output(_to_string(self._eval_expr(node.data["expr"])))
+            return
+        if node.kind == "If":
+            cond_value = self._eval_expr(node.data["condition"])
+            branch = node.data["then"] if _truthy(cond_value) else node.data["else"]
+            if branch is not None:
+                self._exec_node(branch)
+            return
+        if node.kind == "Foreach":
+            iterable_value = self._eval_expr(node.data["iterable"])
+            if not isinstance(iterable_value, list):
+                raise DslError(
+                    "DSL_TYPE_MISMATCH",
+                    "foreach iterable must evaluate to an array",
+                    line=node.line,
+                    column=node.column,
+                )
+            var_name = node.data["var"]
+            loop_count = 0
+            for item in iterable_value:
+                loop_count += 1
+                if loop_count > self._limits.max_loop_iters:
+                    raise DslError("DSL_EXEC_LIMIT", "Loop iteration limit exceeded", line=node.line, column=node.column)
+                self._scope_stack.append({var_name: item})
+                try:
+                    self._exec_node(node.data["body"])
+                finally:
+                    self._scope_stack.pop()
+            return
+        raise DslError("DSL_EXEC_ERROR", f"Unsupported AST node '{node.kind}'", line=node.line, column=node.column)
+
+    def _eval_expr(self, expr: Expr) -> Any:
+        self._step(expr)
+        if expr.kind == "String":
+            return self._resolve_string(expr)
+        if expr.kind in {"Number", "Bool", "Null"}:
+            return expr.value
+        if expr.kind == "Expr":
+            return self._resolve_path(expr)
+        if expr.kind == "MapLiteral":
+            return {entry["key"]: self._eval_expr(entry["value"]) for entry in expr.value}
+        raise DslError("DSL_EXEC_ERROR", f"Unsupported expression '{expr.kind}'", line=expr.line, column=expr.column)
+
+    def _resolve_string(self, expr: Expr) -> str:
+        text = expr.value["text"]
+        placeholders = expr.value["placeholders"]
+        for placeholder in placeholders:
+            resolved = self._resolve_path_expr(placeholder.split("."), expr.line, expr.column)
+            text = text.replace("{{" + placeholder + "}}", _to_string(resolved))
+            text = text.replace("{{ " + placeholder + " }}", _to_string(resolved))
+        if len(text) > self._limits.max_string_len:
+            raise DslError("DSL_EXEC_LIMIT", "String length exceeds limit", line=expr.line, column=expr.column)
+        return text
+
+    def _resolve_path(self, expr: Expr) -> Any:
+        return self._resolve_path_expr(expr.value["path"], expr.line, expr.column)
+
+    def _resolve_path_expr(self, path: list[str], line: int, column: int) -> Any:
+        base = self._lookup_var(path[0])
+        if base is _MISSING:
+            raise DslError("DSL_EXEC_ERROR", f"Unknown variable '{path[0]}'", line=line, column=column)
+        current = base
+        for segment in path[1:]:
+            if isinstance(current, dict) and segment in current:
+                current = current[segment]
+                continue
+            raise DslError("DSL_EXEC_ERROR", f"Path not found: {'.'.join(path)}", line=line, column=column)
+        return current
+
+    def _lookup_var(self, name: str) -> Any:
+        for scope in reversed(self._scope_stack):
+            if name in scope:
+                return scope[name]
+        return _MISSING
+
+    def _append_output(self, value: str) -> None:
+        value_bytes = len(value.encode("utf-8"))
+        new_size = self._output_bytes + value_bytes
+        if new_size > self._limits.max_output_bytes:
+            raise DslError("DSL_OUTPUT_LIMIT", "Output buffer limit exceeded")
+        self._output.append(value)
+        self._output_bytes = new_size
+
+    def _step(self, source: AstNode | Expr) -> None:
+        self._steps += 1
+        if self._steps > self._limits.max_steps:
+            raise DslError("DSL_EXEC_LIMIT", "Execution step limit exceeded", line=source.line, column=source.column)
+
+
+class _Missing:
+    pass
+
+
+_MISSING = _Missing()
 
 
 _KEYWORDS = {
@@ -531,3 +671,41 @@ def _string_expr_from_token(tok: Token) -> Expr:
         line=tok.line,
         column=tok.column,
     )
+
+
+def execute_ast(ast: Ast, *, context: ExecutionContext | None = None, limits: ExecutionLimits | None = None) -> str:
+    exec_ctx = context or ExecutionContext(values={})
+    exec_limits = limits or ExecutionLimits()
+    return _Executor(ast=ast, context=exec_ctx, limits=exec_limits).run()
+
+
+def evaluate(source: str, *, context: ExecutionContext | None = None, limits: ExecutionLimits | None = None) -> str:
+    ast = parse(tokenize(source))
+    validate_ast(ast)
+    return execute_ast(ast, context=context, limits=limits)
+
+
+def _truthy(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        return value != ""
+    if isinstance(value, (list, dict)):
+        return len(value) > 0
+    raise DslError("DSL_TYPE_MISMATCH", f"Unsupported condition type '{type(value).__name__}'")
+
+
+def _to_string(value: Any) -> str:
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float, str)):
+        return str(value)
+    if isinstance(value, (list, dict)):
+        return json.dumps(value, separators=(",", ":"), ensure_ascii=False)
+    raise DslError("DSL_TYPE_MISMATCH", f"Value cannot be stringified: {type(value).__name__}")
