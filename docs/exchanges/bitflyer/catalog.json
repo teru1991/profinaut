@@ -1,0 +1,1779 @@
+{
+  "exchange": "bitflyer",
+  "generated_at": "2026-02-19",
+  "rest_endpoints": [
+    {
+      "id": "crypto.public.rest.markets.get",
+      "segment": "crypto",
+      "access": "public",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/getmarkets",
+      "version": "v1",
+      "operation": "Get markets",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": "product_code(opt):string",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "product_code(req):string; market_type(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "public bucket (see rate-limit doc)",
+      "notes": "market_type=FX appears in catalog; used for both crypto and FX discovery",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getmarkets"
+    },
+    {
+      "id": "crypto.public.rest.ticker.get",
+      "segment": "crypto",
+      "access": "public",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/getticker",
+      "version": "v1",
+      "operation": "Get ticker",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": "product_code(req):string",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "product_code(req):string; timestamp(req):string(iso8601); tick_id(req):number; best_bid(req):number; best_ask(req):number; ltp(req):number; volume(req):number; volume_by_product(req):number"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "public bucket (see rate-limit doc)",
+      "notes": "latest market snapshot",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getticker"
+    },
+    {
+      "id": "crypto.public.rest.board.get",
+      "segment": "crypto",
+      "access": "public",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/getboard",
+      "version": "v1",
+      "operation": "Get order book",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": "product_code(req):string",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "mid_price(req):number; bids(req):array<object>; asks(req):array<object>"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "public bucket (see rate-limit doc)",
+      "notes": "full board snapshot at request time",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getboard"
+    },
+    {
+      "id": "crypto.public.rest.executions.get",
+      "segment": "crypto",
+      "access": "public",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/getexecutions",
+      "version": "v1",
+      "operation": "Get public executions",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": "product_code(req):string; count(opt):int; before(opt):long; after(opt):long",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "id(req):long; side(req):string; price(req):number; size(req):number; exec_date(req):string(iso8601); buy_child_order_acceptance_id(req):string; sell_child_order_acceptance_id(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "public bucket (see rate-limit doc)",
+      "notes": "public trade history",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getexecutions"
+    },
+    {
+      "id": "crypto.public.rest.boardstate.get",
+      "segment": "crypto",
+      "access": "public",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/getboardstate",
+      "version": "v1",
+      "operation": "Get board state",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": "product_code(req):string",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "health(req):string; state(req):string; data(opt):object"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "public bucket (see rate-limit doc)",
+      "notes": "engine state snapshot",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getboardstate"
+    },
+    {
+      "id": "crypto.public.rest.health.get",
+      "segment": "crypto",
+      "access": "public",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/gethealth",
+      "version": "v1",
+      "operation": "Get market health",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": "product_code(req):string",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "status(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "public bucket (see rate-limit doc)",
+      "notes": "simplified health endpoint",
+      "source_url": "https://bf-lightning-api.readme.io/docs/gethealth"
+    },
+    {
+      "id": "crypto.public.rest.chats.get",
+      "segment": "crypto",
+      "access": "public",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/getchats",
+      "version": "v1",
+      "operation": "Get chat messages",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": "from_date(opt):string(iso8601)",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "nickname(req):string; message(req):string; date(req):string(iso8601)"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "public bucket (see rate-limit doc)",
+      "notes": "public chat stream history",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getchats"
+    },
+    {
+      "id": "crypto.private.rest.permissions.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getpermissions",
+      "version": "v1",
+      "operation": "Get API key permissions",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<string>",
+        "fields": "permission(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "authorization scope discovery",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getpermissions"
+    },
+    {
+      "id": "crypto.private.rest.balance.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getbalance",
+      "version": "v1",
+      "operation": "Get account balances",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "currency_code(req):string; amount(req):number; available(req):number"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "spot balances",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getbalance"
+    },
+    {
+      "id": "crypto.private.rest.collateral.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getcollateral",
+      "version": "v1",
+      "operation": "Get collateral summary",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "collateral(req):number; open_position_pnl(req):number; require_collateral(req):number; keep_rate(req):number"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "margin summary",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getcollateral"
+    },
+    {
+      "id": "crypto.private.rest.collateralaccounts.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getcollateralaccounts",
+      "version": "v1",
+      "operation": "Get collateral accounts",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "currency_code(req):string; amount(req):number"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "collateral by currency",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getcollateralaccounts"
+    },
+    {
+      "id": "crypto.private.rest.addresses.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getaddresses",
+      "version": "v1",
+      "operation": "Get deposit addresses",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "type(req):string; currency_code(req):string; address(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "crypto deposit address list",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getaddresses"
+    },
+    {
+      "id": "crypto.private.rest.coinins.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getcoinins",
+      "version": "v1",
+      "operation": "Get coin deposits",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "count(opt):int; before(opt):long; after(opt):long",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "id(req):long; order_id(req):string; currency_code(req):string; amount(req):number; status(req):string; event_date(req):string(iso8601)"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "crypto deposit history",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getcoinins"
+    },
+    {
+      "id": "crypto.private.rest.coinouts.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getcoinouts",
+      "version": "v1",
+      "operation": "Get coin withdrawals",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "count(opt):int; before(opt):long; after(opt):long",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "id(req):long; order_id(req):string; currency_code(req):string; amount(req):number; fee(req):number; status(req):string; event_date(req):string(iso8601)"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "crypto withdrawal history",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getcoinouts"
+    },
+    {
+      "id": "crypto.private.rest.coinout.post",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "POST",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/sendcoin",
+      "version": "v1",
+      "operation": "Send coin",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "currency_code(req):string; amount(req):number; address(req):string; additional_fee(opt):number"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "message(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "submits outbound crypto transfer",
+      "source_url": "https://bf-lightning-api.readme.io/docs/sendcoin"
+    },
+    {
+      "id": "crypto.private.rest.bankaccounts.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getbankaccounts",
+      "version": "v1",
+      "operation": "Get bank accounts",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "id(req):long; is_verified(req):boolean; bank_name(req):string; branch_name(req):string; account_type(req):string; account_number(req):string; account_name(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "registered fiat withdrawal destinations",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getbankaccounts"
+    },
+    {
+      "id": "crypto.private.rest.deposits.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getdeposits",
+      "version": "v1",
+      "operation": "Get fiat deposits",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "count(opt):int; before(opt):long; after(opt):long",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "id(req):long; order_id(req):string; currency_code(req):string; amount(req):number; status(req):string; event_date(req):string(iso8601)"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "fiat deposit history",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getdeposits"
+    },
+    {
+      "id": "crypto.private.rest.withdraw.post",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "POST",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/withdraw",
+      "version": "v1",
+      "operation": "Withdraw fiat",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "currency_code(req):string; bank_account_id(req):long; amount(req):number; code(opt):string"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "message(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "fiat transfer request",
+      "source_url": "https://bf-lightning-api.readme.io/docs/withdraw"
+    },
+    {
+      "id": "crypto.private.rest.withdrawals.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getwithdrawals",
+      "version": "v1",
+      "operation": "Get fiat withdrawals",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "count(opt):int; before(opt):long; after(opt):long",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "id(req):long; order_id(req):string; currency_code(req):string; amount(req):number; status(req):string; event_date(req):string(iso8601)"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "fiat withdrawal history",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getwithdrawals"
+    },
+    {
+      "id": "crypto.private.rest.childorder.send.post",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "POST",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/sendchildorder",
+      "version": "v1",
+      "operation": "Send child order",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "product_code(req):string; child_order_type(req):string; side(req):string; price(cond):number; size(req):number; minute_to_expire(opt):int; time_in_force(opt):string"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "child_order_acceptance_id(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "spot/fx individual order",
+      "source_url": "https://bf-lightning-api.readme.io/docs/sendchildorder"
+    },
+    {
+      "id": "crypto.private.rest.childorder.cancel.post",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "POST",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/cancelchildorder",
+      "version": "v1",
+      "operation": "Cancel child order",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "product_code(req):string; child_order_id(cond):string; child_order_acceptance_id(cond):string"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "message(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "cancel by order ID or acceptance ID",
+      "source_url": "https://bf-lightning-api.readme.io/docs/cancelchildorder"
+    },
+    {
+      "id": "crypto.private.rest.parentorder.send.post",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "POST",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/sendparentorder",
+      "version": "v1",
+      "operation": "Send parent order",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "order_method(req):string; minute_to_expire(opt):int; time_in_force(opt):string; parameters(req):array<object>"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "parent_order_acceptance_id(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "IFD/OCO/IFDOCO",
+      "source_url": "https://bf-lightning-api.readme.io/docs/sendparentorder"
+    },
+    {
+      "id": "crypto.private.rest.parentorder.cancel.post",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "POST",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/cancelparentorder",
+      "version": "v1",
+      "operation": "Cancel parent order",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "product_code(req):string; parent_order_id(cond):string; parent_order_acceptance_id(cond):string"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "message(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "cancel special order",
+      "source_url": "https://bf-lightning-api.readme.io/docs/cancelparentorder"
+    },
+    {
+      "id": "crypto.private.rest.childorders.cancelall.post",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "POST",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/cancelallchildorders",
+      "version": "v1",
+      "operation": "Cancel all child orders",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "product_code(req):string"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "message(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "bulk cancel by product",
+      "source_url": "https://bf-lightning-api.readme.io/docs/cancelallchildorders"
+    },
+    {
+      "id": "crypto.private.rest.childorders.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getchildorders",
+      "version": "v1",
+      "operation": "Get child orders",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "product_code(opt):string; child_order_state(opt):string; child_order_id(opt):string; child_order_acceptance_id(opt):string; count(opt):int; before(opt):long; after(opt):long",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "id(req):long; child_order_id(req):string; product_code(req):string; side(req):string; child_order_type(req):string; average_price(req):number; size(req):number; child_order_state(req):string; child_order_date(req):string(iso8601)"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "order and status history",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getchildorders"
+    },
+    {
+      "id": "crypto.private.rest.parentorders.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getparentorders",
+      "version": "v1",
+      "operation": "Get parent orders",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "product_code(opt):string; parent_order_state(opt):string; parent_order_id(opt):string; parent_order_acceptance_id(opt):string; count(opt):int; before(opt):long; after(opt):long",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "id(req):long; parent_order_id(req):string; product_code(req):string; parent_order_type(req):string; parent_order_state(req):string; parent_order_date(req):string(iso8601)"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "special order summary list",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getparentorders"
+    },
+    {
+      "id": "crypto.private.rest.parentorder.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getparentorder",
+      "version": "v1",
+      "operation": "Get parent order detail",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "parent_order_id(cond):string; parent_order_acceptance_id(cond):string",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "parameter_index(req):int; product_code(req):string; side(req):string; condition_type(req):string; size(req):number; price(opt):number; trigger_price(opt):number"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "leg parameters for a parent order",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getparentorder"
+    },
+    {
+      "id": "crypto.private.rest.executions.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getexecutions",
+      "version": "v1",
+      "operation": "Get private executions",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "product_code(opt):string; child_order_id(opt):string; child_order_acceptance_id(opt):string; count(opt):int; before(opt):long; after(opt):long",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "id(req):long; side(req):string; price(req):number; size(req):number; commission(req):number; swap_point_accumulate(req):number; exec_date(req):string(iso8601); child_order_id(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "fills of own account",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getexecutions-me"
+    },
+    {
+      "id": "crypto.private.rest.positions.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getpositions",
+      "version": "v1",
+      "operation": "Get positions",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "product_code(req):string; count(opt):int; before(opt):long; after(opt):long",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "product_code(req):string; side(req):string; price(req):number; size(req):number; commission(req):number; swap_point_accumulate(req):number; require_collateral(req):number; open_date(req):string(iso8601); leverage(req):number; pnl(req):number"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "primarily used for FX/CFD products",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getpositions"
+    },
+    {
+      "id": "crypto.private.rest.collateralhistory.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getcollateralhistory",
+      "version": "v1",
+      "operation": "Get collateral history",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "count(opt):int; before(opt):long; after(opt):long",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "id(req):long; currency_code(req):string; amount(req):number; reason_code(req):string; date(req):string(iso8601)"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "margin movement history",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getcollateralhistory"
+    },
+    {
+      "id": "crypto.private.rest.tradingcommission.get",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/gettradingcommission",
+      "version": "v1",
+      "operation": "Get trading commission",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "product_code(req):string",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "commission_rate(req):number"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "fee tier lookup by product",
+      "source_url": "https://bf-lightning-api.readme.io/docs/gettradingcommission"
+    },
+    {
+      "id": "fx.public.rest.markets.get",
+      "segment": "fx",
+      "access": "public",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/getmarkets",
+      "version": "v1",
+      "operation": "Get FX markets",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": "product_code(opt):string",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "product_code(req):string; market_type(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "public bucket (see rate-limit doc)",
+      "notes": "filter market_type=FX or product_code=FX_BTC_JPY",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getmarkets"
+    },
+    {
+      "id": "fx.public.rest.ticker.get",
+      "segment": "fx",
+      "access": "public",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/getticker",
+      "version": "v1",
+      "operation": "Get FX ticker",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": "product_code(req):string(FX_*)",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "product_code(req):string; best_bid(req):number; best_ask(req):number; ltp(req):number; volume(req):number"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "public bucket (see rate-limit doc)",
+      "notes": "same endpoint, FX product code",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getticker"
+    },
+    {
+      "id": "fx.public.rest.board.get",
+      "segment": "fx",
+      "access": "public",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/getboard",
+      "version": "v1",
+      "operation": "Get FX order book",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": "product_code(req):string(FX_*)",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "mid_price(req):number; bids(req):array<object>; asks(req):array<object>"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "public bucket (see rate-limit doc)",
+      "notes": "same path with FX product",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getboard"
+    },
+    {
+      "id": "fx.public.rest.executions.get",
+      "segment": "fx",
+      "access": "public",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/getexecutions",
+      "version": "v1",
+      "operation": "Get FX public executions",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": "product_code(req):string(FX_*); count(opt):int; before(opt):long; after(opt):long",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "id(req):long; side(req):string; price(req):number; size(req):number; exec_date(req):string(iso8601)"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "public bucket (see rate-limit doc)",
+      "notes": "same path with FX product",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getexecutions"
+    },
+    {
+      "id": "fx.public.rest.boardstate.get",
+      "segment": "fx",
+      "access": "public",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/getboardstate",
+      "version": "v1",
+      "operation": "Get FX board state",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": "product_code(req):string(FX_*)",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "health(req):string; state(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "public bucket (see rate-limit doc)",
+      "notes": "same endpoint supports FX product",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getboardstate"
+    },
+    {
+      "id": "fx.public.rest.health.get",
+      "segment": "fx",
+      "access": "public",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/gethealth",
+      "version": "v1",
+      "operation": "Get FX health",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": "product_code(req):string(FX_*)",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "status(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "public bucket (see rate-limit doc)",
+      "notes": "same endpoint supports FX product",
+      "source_url": "https://bf-lightning-api.readme.io/docs/gethealth"
+    },
+    {
+      "id": "fx.private.rest.childorder.send.post",
+      "segment": "fx",
+      "access": "private",
+      "protocol": "rest",
+      "method": "POST",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/sendchildorder",
+      "version": "v1",
+      "operation": "Send FX child order",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "product_code(req):string(FX_*); child_order_type(req):string; side(req):string; price(cond):number; size(req):number; minute_to_expire(opt):int; time_in_force(opt):string"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "child_order_acceptance_id(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "set FX product code in payload",
+      "source_url": "https://bf-lightning-api.readme.io/docs/sendchildorder"
+    },
+    {
+      "id": "fx.private.rest.childorder.cancel.post",
+      "segment": "fx",
+      "access": "private",
+      "protocol": "rest",
+      "method": "POST",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/cancelchildorder",
+      "version": "v1",
+      "operation": "Cancel FX child order",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "product_code(req):string(FX_*); child_order_id(cond):string; child_order_acceptance_id(cond):string"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "message(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "FX order cancellation",
+      "source_url": "https://bf-lightning-api.readme.io/docs/cancelchildorder"
+    },
+    {
+      "id": "fx.private.rest.childorders.cancelall.post",
+      "segment": "fx",
+      "access": "private",
+      "protocol": "rest",
+      "method": "POST",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/cancelallchildorders",
+      "version": "v1",
+      "operation": "Cancel all FX child orders",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "product_code(req):string(FX_*)"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "message(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "FX bulk cancel",
+      "source_url": "https://bf-lightning-api.readme.io/docs/cancelallchildorders"
+    },
+    {
+      "id": "fx.private.rest.childorders.get",
+      "segment": "fx",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getchildorders",
+      "version": "v1",
+      "operation": "Get FX child orders",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "product_code(req):string(FX_*); child_order_state(opt):string; count(opt):int; before(opt):long; after(opt):long",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "id(req):long; child_order_id(req):string; side(req):string; average_price(req):number; size(req):number; child_order_state(req):string"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "FX order history",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getchildorders"
+    },
+    {
+      "id": "fx.private.rest.executions.get",
+      "segment": "fx",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getexecutions",
+      "version": "v1",
+      "operation": "Get FX private executions",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "product_code(req):string(FX_*); child_order_id(opt):string; child_order_acceptance_id(opt):string; count(opt):int; before(opt):long; after(opt):long",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "id(req):long; side(req):string; price(req):number; size(req):number; commission(req):number; swap_point_accumulate(req):number"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "own FX fills",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getexecutions-me"
+    },
+    {
+      "id": "fx.private.rest.positions.get",
+      "segment": "fx",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getpositions",
+      "version": "v1",
+      "operation": "Get FX positions",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "product_code(req):string(FX_*); count(opt):int; before(opt):long; after(opt):long",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "product_code(req):string; side(req):string; price(req):number; size(req):number; leverage(req):number; pnl(req):number"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "active FX position list",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getpositions"
+    },
+    {
+      "id": "fx.private.rest.collateral.get",
+      "segment": "fx",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getcollateral",
+      "version": "v1",
+      "operation": "Get FX collateral summary",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "collateral(req):number; open_position_pnl(req):number; require_collateral(req):number; keep_rate(req):number"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "risk metrics for FX account",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getcollateral"
+    },
+    {
+      "id": "fx.private.rest.collateralhistory.get",
+      "segment": "fx",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/getcollateralhistory",
+      "version": "v1",
+      "operation": "Get FX collateral history",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "count(opt):int; before(opt):long; after(opt):long",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "array<object>",
+        "fields": "id(req):long; amount(req):number; reason_code(req):string; date(req):string(iso8601)"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "collateral events in FX/margin",
+      "source_url": "https://bf-lightning-api.readme.io/docs/getcollateralhistory"
+    },
+    {
+      "id": "fx.private.rest.tradingcommission.get",
+      "segment": "fx",
+      "access": "private",
+      "protocol": "rest",
+      "method": "GET",
+      "base_url": "https://api.bitflyer.com",
+      "path": "/v1/me/gettradingcommission",
+      "version": "v1",
+      "operation": "Get FX commission",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "product_code(req):string(FX_*)",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "commission_rate(req):number"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "private bucket (see rate-limit doc)",
+      "notes": "commission for FX product",
+      "source_url": "https://bf-lightning-api.readme.io/docs/gettradingcommission"
+    },
+    {
+      "id": "other.rest.auth.spec",
+      "segment": "other",
+      "access": "rest",
+      "protocol": "rest",
+      "method": "N/A",
+      "base_url": "https://api.bitflyer.com",
+      "path": "N/A",
+      "version": "v1",
+      "operation": "Authentication spec",
+      "auth": {
+        "type": "signed-hmac-sha256"
+      },
+      "params": {
+        "query": "ACCESS-KEY(req):string; ACCESS-TIMESTAMP(req):number; ACCESS-SIGN(req):string",
+        "path": "-",
+        "body": "prehash=reqTimestamp+method+path+body"
+      },
+      "response": {
+        "shape": "text/spec",
+        "fields": "header and signature requirements"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "N/A",
+      "notes": "applies to all private REST calls",
+      "source_url": "https://bf-lightning-api.readme.io/docs/auth"
+    },
+    {
+      "id": "other.rest.error.model",
+      "segment": "other",
+      "access": "rest",
+      "protocol": "rest",
+      "method": "N/A",
+      "base_url": "https://api.bitflyer.com",
+      "path": "N/A",
+      "version": "v1",
+      "operation": "API error model",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "object",
+        "fields": "status(req):int; error_message(req):string; data(opt):object"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "N/A",
+      "notes": "canonical error payload description",
+      "source_url": "https://bf-lightning-api.readme.io/docs/api-error-message"
+    },
+    {
+      "id": "other.rest.rate_limit",
+      "segment": "other",
+      "access": "rest",
+      "protocol": "rest",
+      "method": "N/A",
+      "base_url": "https://api.bitflyer.com",
+      "path": "N/A",
+      "version": "v1",
+      "operation": "Rate limit policy",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "text/spec",
+        "fields": "public:500 req/5min/IP; private:500 req/5min/key; order endpoints have tighter caps"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "see rate-limit section",
+      "notes": "include special limits for large orders and new accounts",
+      "source_url": "https://bf-lightning-api.readme.io/docs/rate-limit"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "crypto.public.ws.ticker",
+      "segment": "crypto",
+      "access": "public",
+      "protocol": "ws",
+      "ws_url": "wss://ws.lightstream.bitflyer.com/json-rpc",
+      "version": "json-rpc 2.0",
+      "channel": "lightning_ticker_{product_code}",
+      "subscribe": {
+        "template": "{\"method\":\"subscribe\",\"params\":{\"channel\":\"lightning_ticker_BTC_JPY\"}}"
+      },
+      "unsubscribe": {
+        "template": "{\"method\":\"unsubscribe\",\"params\":{\"channel\":\"lightning_ticker_BTC_JPY\"}}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": "channel(req):string; message(req):object(ticker fields)"
+      },
+      "heartbeat": {
+        "type": "none documented"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "product_code must be listed in /v1/getmarkets",
+      "notes": "realtime ticker updates",
+      "source_url": "https://bf-lightning-api.readme.io/docs/realtime-ticker"
+    },
+    {
+      "id": "crypto.public.ws.executions",
+      "segment": "crypto",
+      "access": "public",
+      "protocol": "ws",
+      "ws_url": "wss://ws.lightstream.bitflyer.com/json-rpc",
+      "version": "json-rpc 2.0",
+      "channel": "lightning_executions_{product_code}",
+      "subscribe": {
+        "template": "{\"method\":\"subscribe\",\"params\":{\"channel\":\"lightning_executions_BTC_JPY\"}}"
+      },
+      "unsubscribe": {
+        "template": "{\"method\":\"unsubscribe\",\"params\":{\"channel\":\"lightning_executions_BTC_JPY\"}}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": "channel(req):string; message(req):array<object execution>"
+      },
+      "heartbeat": {
+        "type": "none documented"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "product_code must be listed in /v1/getmarkets",
+      "notes": "realtime trade tape",
+      "source_url": "https://bf-lightning-api.readme.io/docs/realtime-executions"
+    },
+    {
+      "id": "crypto.public.ws.board",
+      "segment": "crypto",
+      "access": "public",
+      "protocol": "ws",
+      "ws_url": "wss://ws.lightstream.bitflyer.com/json-rpc",
+      "version": "json-rpc 2.0",
+      "channel": "lightning_board_{product_code}",
+      "subscribe": {
+        "template": "{\"method\":\"subscribe\",\"params\":{\"channel\":\"lightning_board_BTC_JPY\"}}"
+      },
+      "unsubscribe": {
+        "template": "{\"method\":\"unsubscribe\",\"params\":{\"channel\":\"lightning_board_BTC_JPY\"}}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": "channel(req):string; message(req):object(board diff: bids/asks/mid_price)"
+      },
+      "heartbeat": {
+        "type": "none documented"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "recommended to combine with snapshot channel",
+      "notes": "incremental board updates",
+      "source_url": "https://bf-lightning-api.readme.io/docs/realtime-board"
+    },
+    {
+      "id": "crypto.public.ws.board_snapshot",
+      "segment": "crypto",
+      "access": "public",
+      "protocol": "ws",
+      "ws_url": "wss://ws.lightstream.bitflyer.com/json-rpc",
+      "version": "json-rpc 2.0",
+      "channel": "lightning_board_snapshot_{product_code}",
+      "subscribe": {
+        "template": "{\"method\":\"subscribe\",\"params\":{\"channel\":\"lightning_board_snapshot_BTC_JPY\"}}"
+      },
+      "unsubscribe": {
+        "template": "{\"method\":\"unsubscribe\",\"params\":{\"channel\":\"lightning_board_snapshot_BTC_JPY\"}}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": "channel(req):string; message(req):object(full board snapshot)"
+      },
+      "heartbeat": {
+        "type": "none documented"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "initial sync channel for order book",
+      "notes": "snapshot then diff pattern",
+      "source_url": "https://bf-lightning-api.readme.io/docs/realtime-board-snapshot"
+    },
+    {
+      "id": "crypto.private.ws.child_order_events",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "ws",
+      "ws_url": "wss://ws.lightstream.bitflyer.com/json-rpc",
+      "version": "json-rpc 2.0",
+      "channel": "child_order_events",
+      "subscribe": {
+        "template": "{\"method\":\"auth\",\"params\":{\"api_key\":\"<key>\",\"timestamp\":1234567890,\"nonce\":\"<nonce>\",\"signature\":\"<sign>\"}} then {\"method\":\"subscribe\",\"params\":{\"channel\":\"child_order_events\"}}"
+      },
+      "unsubscribe": {
+        "template": "{\"method\":\"unsubscribe\",\"params\":{\"channel\":\"child_order_events\"}}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": "channel(req):string; message(req):array<object event>"
+      },
+      "heartbeat": {
+        "type": "none documented"
+      },
+      "auth": {
+        "type": "api_key+hmac signature"
+      },
+      "restrictions": "requires successful auth before subscribe",
+      "notes": "own child-order lifecycle events",
+      "source_url": "https://bf-lightning-api.readme.io/docs/realtime-child-order-events"
+    },
+    {
+      "id": "crypto.private.ws.parent_order_events",
+      "segment": "crypto",
+      "access": "private",
+      "protocol": "ws",
+      "ws_url": "wss://ws.lightstream.bitflyer.com/json-rpc",
+      "version": "json-rpc 2.0",
+      "channel": "parent_order_events",
+      "subscribe": {
+        "template": "{\"method\":\"auth\",\"params\":{\"api_key\":\"<key>\",\"timestamp\":1234567890,\"nonce\":\"<nonce>\",\"signature\":\"<sign>\"}} then {\"method\":\"subscribe\",\"params\":{\"channel\":\"parent_order_events\"}}"
+      },
+      "unsubscribe": {
+        "template": "{\"method\":\"unsubscribe\",\"params\":{\"channel\":\"parent_order_events\"}}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": "channel(req):string; message(req):array<object event>"
+      },
+      "heartbeat": {
+        "type": "none documented"
+      },
+      "auth": {
+        "type": "api_key+hmac signature"
+      },
+      "restrictions": "requires successful auth before subscribe",
+      "notes": "own parent-order lifecycle events",
+      "source_url": "https://bf-lightning-api.readme.io/docs/realtime-parent-order-events"
+    },
+    {
+      "id": "fx.public.ws.ticker",
+      "segment": "fx",
+      "access": "public",
+      "protocol": "ws",
+      "ws_url": "wss://ws.lightstream.bitflyer.com/json-rpc",
+      "version": "json-rpc 2.0",
+      "channel": "lightning_ticker_FX_BTC_JPY",
+      "subscribe": {
+        "template": "{\"method\":\"subscribe\",\"params\":{\"channel\":\"lightning_ticker_FX_BTC_JPY\"}}"
+      },
+      "unsubscribe": {
+        "template": "{\"method\":\"unsubscribe\",\"params\":{\"channel\":\"lightning_ticker_FX_BTC_JPY\"}}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": "channel(req):string; message(req):object(ticker fields)"
+      },
+      "heartbeat": {
+        "type": "none documented"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "FX_BTC_JPY must exist in product list",
+      "notes": "FX realtime ticker",
+      "source_url": "https://bf-lightning-api.readme.io/docs/realtime-ticker"
+    },
+    {
+      "id": "fx.public.ws.executions",
+      "segment": "fx",
+      "access": "public",
+      "protocol": "ws",
+      "ws_url": "wss://ws.lightstream.bitflyer.com/json-rpc",
+      "version": "json-rpc 2.0",
+      "channel": "lightning_executions_FX_BTC_JPY",
+      "subscribe": {
+        "template": "{\"method\":\"subscribe\",\"params\":{\"channel\":\"lightning_executions_FX_BTC_JPY\"}}"
+      },
+      "unsubscribe": {
+        "template": "{\"method\":\"unsubscribe\",\"params\":{\"channel\":\"lightning_executions_FX_BTC_JPY\"}}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": "channel(req):string; message(req):array<object execution>"
+      },
+      "heartbeat": {
+        "type": "none documented"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "FX_BTC_JPY must exist in product list",
+      "notes": "FX realtime executions",
+      "source_url": "https://bf-lightning-api.readme.io/docs/realtime-executions"
+    },
+    {
+      "id": "fx.public.ws.board",
+      "segment": "fx",
+      "access": "public",
+      "protocol": "ws",
+      "ws_url": "wss://ws.lightstream.bitflyer.com/json-rpc",
+      "version": "json-rpc 2.0",
+      "channel": "lightning_board_FX_BTC_JPY",
+      "subscribe": {
+        "template": "{\"method\":\"subscribe\",\"params\":{\"channel\":\"lightning_board_FX_BTC_JPY\"}}"
+      },
+      "unsubscribe": {
+        "template": "{\"method\":\"unsubscribe\",\"params\":{\"channel\":\"lightning_board_FX_BTC_JPY\"}}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": "channel(req):string; message(req):object(board diff)"
+      },
+      "heartbeat": {
+        "type": "none documented"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "use with board snapshot channel",
+      "notes": "FX realtime order book diff",
+      "source_url": "https://bf-lightning-api.readme.io/docs/realtime-board"
+    },
+    {
+      "id": "fx.public.ws.board_snapshot",
+      "segment": "fx",
+      "access": "public",
+      "protocol": "ws",
+      "ws_url": "wss://ws.lightstream.bitflyer.com/json-rpc",
+      "version": "json-rpc 2.0",
+      "channel": "lightning_board_snapshot_FX_BTC_JPY",
+      "subscribe": {
+        "template": "{\"method\":\"subscribe\",\"params\":{\"channel\":\"lightning_board_snapshot_FX_BTC_JPY\"}}"
+      },
+      "unsubscribe": {
+        "template": "{\"method\":\"unsubscribe\",\"params\":{\"channel\":\"lightning_board_snapshot_FX_BTC_JPY\"}}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": "channel(req):string; message(req):object(full board snapshot)"
+      },
+      "heartbeat": {
+        "type": "none documented"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "use for FX order book initialization",
+      "notes": "FX realtime order book snapshot",
+      "source_url": "https://bf-lightning-api.readme.io/docs/realtime-board-snapshot"
+    },
+    {
+      "id": "fx.private.ws.child_order_events",
+      "segment": "fx",
+      "access": "private",
+      "protocol": "ws",
+      "ws_url": "wss://ws.lightstream.bitflyer.com/json-rpc",
+      "version": "json-rpc 2.0",
+      "channel": "child_order_events",
+      "subscribe": {
+        "template": "{\"method\":\"auth\",\"params\":{\"api_key\":\"<key>\",\"timestamp\":1234567890,\"nonce\":\"<nonce>\",\"signature\":\"<sign>\"}} then {\"method\":\"subscribe\",\"params\":{\"channel\":\"child_order_events\"}}"
+      },
+      "unsubscribe": {
+        "template": "{\"method\":\"unsubscribe\",\"params\":{\"channel\":\"child_order_events\"}}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": "channel(req):string; message(req):array<object event with FX product_code>"
+      },
+      "heartbeat": {
+        "type": "none documented"
+      },
+      "auth": {
+        "type": "api_key+hmac signature"
+      },
+      "restrictions": "payload may include multiple products; filter by product_code=FX_BTC_JPY client-side",
+      "notes": "private FX order events on shared channel",
+      "source_url": "https://bf-lightning-api.readme.io/docs/realtime-child-order-events"
+    },
+    {
+      "id": "fx.private.ws.parent_order_events",
+      "segment": "fx",
+      "access": "private",
+      "protocol": "ws",
+      "ws_url": "wss://ws.lightstream.bitflyer.com/json-rpc",
+      "version": "json-rpc 2.0",
+      "channel": "parent_order_events",
+      "subscribe": {
+        "template": "{\"method\":\"auth\",\"params\":{\"api_key\":\"<key>\",\"timestamp\":1234567890,\"nonce\":\"<nonce>\",\"signature\":\"<sign>\"}} then {\"method\":\"subscribe\",\"params\":{\"channel\":\"parent_order_events\"}}"
+      },
+      "unsubscribe": {
+        "template": "{\"method\":\"unsubscribe\",\"params\":{\"channel\":\"parent_order_events\"}}"
+      },
+      "message": {
+        "shape": "object",
+        "fields": "channel(req):string; message(req):array<object event with FX product_code>"
+      },
+      "heartbeat": {
+        "type": "none documented"
+      },
+      "auth": {
+        "type": "api_key+hmac signature"
+      },
+      "restrictions": "payload may include multiple products; filter by product_code=FX_BTC_JPY client-side",
+      "notes": "private FX parent-order events on shared channel",
+      "source_url": "https://bf-lightning-api.readme.io/docs/realtime-parent-order-events"
+    }
+  ],
+  "data_feeds": [
+    {
+      "id": "bitflyer.data.bulk.not_documented",
+      "kind": "bulk-dataset",
+      "url_pattern": "not documented",
+      "format": "n/a",
+      "compression": "n/a",
+      "update_freq": "n/a",
+      "retention": "n/a",
+      "schema_summary": "n/a",
+      "notes": "Official docs in listed sources only describe request/response APIs (REST + Realtime WS); no standalone historical/bulk dump endpoint documented.",
+      "source_url": "https://bf-lightning-api.readme.io/"
+    }
+  ]
+}
