@@ -119,7 +119,46 @@
       "locks": [
         "LOCK:shared-docs"
       ]
+    },
+    "PROGRESS-AUDIT-000": {
+      "branch": "work",
+      "pr_urls": [],
+      "commit_shas": [],
+      "verification_evidence": [
+        "docs/status/progress-updates/2026-02-19_progress-audit-000.md",
+        "docs/status/status.json",
+        "docs/handoff/HANDOFF.json",
+        "docs/decisions/decisions.md"
+      ],
+      "tracking_prs": [
+        140,
+        156,
+        164,
+        166,
+        167,
+        169,
+        171,
+        172,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179
+      ],
+      "pr_slots": {
+        "task_a_pr": "https://github.com/teru1991/profinaut/pull/156",
+        "task_a_status": "merged",
+        "legacy_pr_140": "https://github.com/teru1991/profinaut/pull/140",
+        "legacy_pr_140_status": "closed(no-merge)",
+        "task_b_chain": "164/166/167/169/171 merged",
+        "postb_chain": "172/174/175/176/177/178/179 merged",
+        "next_task": "POSTB-NEXT-001"
+      },
+      "locks": [
+        "LOCK:shared-docs"
+      ]
     }
   },
-  "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, with GitHub-tracked PR references for exchange/docs synchronization tasks."
+  "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
 }
