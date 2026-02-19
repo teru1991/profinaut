@@ -1,17 +1,20 @@
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use tokio::sync::mpsc;
 use ucel_core::{ErrorCode, OpName, UcelError};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HttpRequest {
     pub path: String,
     pub method: String,
-    pub body: Option<String>,
+    pub body: Option<Bytes>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HttpResponse {
     pub status: u16,
-    pub body: String,
+    pub body: Bytes,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -37,8 +40,56 @@ pub struct RequestContext {
 }
 
 pub trait Transport {
-    fn send_http(&self, req: HttpRequest, ctx: RequestContext) -> Result<HttpResponse, UcelError>;
-    fn connect_ws(&self, req: WsConnectRequest, ctx: RequestContext) -> Result<WsStream, UcelError>;
+    async fn send_http(
+        &self,
+        req: HttpRequest,
+        ctx: RequestContext,
+    ) -> Result<HttpResponse, UcelError>;
+    async fn connect_ws(
+        &self,
+        req: WsConnectRequest,
+        ctx: RequestContext,
+    ) -> Result<WsStream, UcelError>;
+}
+
+#[derive(Debug)]
+pub struct WsBackpressure {
+    tx: mpsc::Sender<Bytes>,
+    rx: mpsc::Receiver<Bytes>,
+}
+
+impl WsBackpressure {
+    pub fn with_capacity(capacity: usize) -> Self {
+        let (tx, rx) = mpsc::channel(capacity);
+        Self { tx, rx }
+    }
+
+    pub fn sender(&self) -> mpsc::Sender<Bytes> {
+        self.tx.clone()
+    }
+
+    pub async fn recv(&mut self) -> Option<Bytes> {
+        self.rx.recv().await
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct SubscriptionBook {
+    subscriptions: HashMap<String, String>,
+}
+
+impl SubscriptionBook {
+    pub fn upsert(&mut self, channel_key: String, symbol: String) {
+        self.subscriptions.insert(channel_key, symbol);
+    }
+
+    pub fn remove(&mut self, channel_key: &str) {
+        self.subscriptions.remove(channel_key);
+    }
+
+    pub fn len(&self) -> usize {
+        self.subscriptions.len()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -71,7 +122,9 @@ pub fn next_retry_delay_ms(policy: &RetryPolicy, attempt: u32, retry_after_ms: O
             return delay.min(policy.max_delay_ms);
         }
     }
-    let exp = policy.base_delay_ms.saturating_mul(2u64.saturating_pow(attempt));
+    let exp = policy
+        .base_delay_ms
+        .saturating_mul(2u64.saturating_pow(attempt));
     (exp + policy.jitter_ms).min(policy.max_delay_ms)
 }
 
@@ -117,7 +170,10 @@ mod tests {
     #[test]
     fn retry_classification_matches_policy() {
         assert_eq!(classify_error(&ErrorCode::Timeout), RetryClass::Retryable);
-        assert_eq!(classify_error(&ErrorCode::InvalidOrder), RetryClass::NonRetryable);
+        assert_eq!(
+            classify_error(&ErrorCode::InvalidOrder),
+            RetryClass::NonRetryable
+        );
     }
 
     #[test]
@@ -160,5 +216,26 @@ mod tests {
             requires_auth: false,
         };
         assert!(enforce_auth_boundary(&ctx).is_ok());
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn bounded_ws_channel_enforces_backpressure() {
+        let mut queue = WsBackpressure::with_capacity(1);
+        let sender = queue.sender();
+
+        sender.try_send(Bytes::from_static(b"msg1")).unwrap();
+        assert!(sender.try_send(Bytes::from_static(b"msg2")).is_err());
+
+        let msg = queue.recv().await.unwrap();
+        assert_eq!(msg, Bytes::from_static(b"msg1"));
+    }
+
+    #[test]
+    fn subscription_book_updates_in_o1_map() {
+        let mut book = SubscriptionBook::default();
+        book.upsert("ticker:BTC".into(), "BTC".into());
+        book.upsert("ticker:ETH".into(), "ETH".into());
+        book.remove("ticker:BTC");
+        assert_eq!(book.len(), 1);
     }
 }

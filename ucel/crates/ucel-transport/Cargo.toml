@@ -6,3 +6,5 @@ edition = "2021"
 [dependencies]
 ucel-core = { path = "../ucel-core" }
 serde = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
+bytes = { workspace = true }

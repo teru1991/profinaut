@@ -7,3 +7,5 @@ edition = "2021"
 ucel-core = { path = "../ucel-core" }
 ucel-transport = { path = "../ucel-transport" }
 serde = { workspace = true }
+serde_yaml = { workspace = true }
+ucel-registry = { path = "../ucel-registry" }

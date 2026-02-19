@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use thiserror::Error;
 
+pub type Decimal = f64;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Envelope<T> {
     pub schema_version: String,
@@ -106,6 +108,12 @@ pub type Balances = Vec<Balance>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Error)]
 pub enum ErrorCode {
+    #[error("CATALOG_INVALID")]
+    CatalogInvalid,
+    #[error("CATALOG_DUPLICATE_ID")]
+    CatalogDuplicateId,
+    #[error("CATALOG_MISSING_FIELD")]
+    CatalogMissingField,
     #[error("NOT_SUPPORTED")]
     NotSupported,
     #[error("NOT_ALLOWED_OP")]
@@ -165,32 +173,58 @@ impl UcelError {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum OpName {
     FetchTicker,
+    FetchStatus,
     FetchTrades,
+    FetchKlines,
     FetchOrderbookSnapshot,
     SubscribeTicker,
     SubscribeTrades,
     SubscribeOrderbook,
+    SubscribeExecutionEvents,
+    SubscribeOrderEvents,
+    SubscribePositionEvents,
+    CreateWsAuthToken,
+    ExtendWsAuthToken,
     PlaceOrder,
+    AmendOrder,
     CancelOrder,
     FetchBalances,
+    FetchMarginStatus,
     FetchOpenOrders,
+    FetchLatestExecutions,
     FetchFills,
+    FetchOpenPositions,
+    FetchPositionSummary,
+    ClosePositionByOrder,
 }
 
 impl fmt::Display for OpName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let canonical = match self {
             OpName::FetchTicker => "fetch_ticker",
+            OpName::FetchStatus => "fetch_status",
             OpName::FetchTrades => "fetch_trades",
+            OpName::FetchKlines => "fetch_klines",
             OpName::FetchOrderbookSnapshot => "fetch_orderbook_snapshot",
             OpName::SubscribeTicker => "subscribe_ticker",
             OpName::SubscribeTrades => "subscribe_trades",
             OpName::SubscribeOrderbook => "subscribe_orderbook",
+            OpName::SubscribeExecutionEvents => "subscribe_execution_events",
+            OpName::SubscribeOrderEvents => "subscribe_order_events",
+            OpName::SubscribePositionEvents => "subscribe_position_events",
+            OpName::CreateWsAuthToken => "create_ws_auth_token",
+            OpName::ExtendWsAuthToken => "extend_ws_auth_token",
             OpName::PlaceOrder => "place_order",
+            OpName::AmendOrder => "amend_order",
             OpName::CancelOrder => "cancel_order",
             OpName::FetchBalances => "fetch_balances",
+            OpName::FetchMarginStatus => "fetch_margin_status",
             OpName::FetchOpenOrders => "fetch_open_orders",
+            OpName::FetchLatestExecutions => "fetch_latest_executions",
             OpName::FetchFills => "fetch_fills",
+            OpName::FetchOpenPositions => "fetch_open_positions",
+            OpName::FetchPositionSummary => "fetch_position_summary",
+            OpName::ClosePositionByOrder => "close_position_by_order",
         };
         write!(f, "{canonical}")
     }
@@ -336,7 +370,10 @@ impl fmt::Debug for ResolvedSecret {
 
 impl fmt::Display for ResolvedSecret {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "ResolvedSecret(api_key=***, api_secret=***, passphrase=***)")
+        write!(
+            f,
+            "ResolvedSecret(api_key=***, api_secret=***, passphrase=***)"
+        )
     }
 }
 
