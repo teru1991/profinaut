@@ -1,0 +1,2230 @@
+{
+  "exchange": "gmocoin",
+  "generated_from": {
+    "sources_md": "docs/exchanges/gmocoin/sources.md",
+    "last_checked_at": "2026-02-18",
+    "notes": "Official docs only. JP/EN covered."
+  },
+  "rest_endpoints": [
+    {
+      "id": "crypto.public.rest.status.get",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/public/v1/status",
+      "version": "v1",
+      "operation": "Get service status",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "status",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "responsetime",
+            "type": "string(iso8601)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/public/getStatus"
+    },
+    {
+      "id": "crypto.public.rest.ticker.get",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/public/v1/ticker",
+      "version": "v1",
+      "operation": "Get ticker",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "ask",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "bid",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "timestamp",
+            "type": "string(iso8601)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/public/getTicker"
+    },
+    {
+      "id": "crypto.public.rest.orderbooks.get",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/public/v1/orderbooks",
+      "version": "v1",
+      "operation": "Get order book",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "asks",
+            "type": "array<object>",
+            "required": true
+          },
+          {
+            "name": "bids",
+            "type": "array<object>",
+            "required": true
+          },
+          {
+            "name": "timestamp",
+            "type": "string(iso8601)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/public/getOrderbooks"
+    },
+    {
+      "id": "crypto.public.rest.trades.get",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/public/v1/trades",
+      "version": "v1",
+      "operation": "Get recent trades",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "page",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "list",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/public/getTrades"
+    },
+    {
+      "id": "crypto.public.rest.klines.get",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/public/v1/klines",
+      "version": "v1",
+      "operation": "Get candlesticks",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "interval",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "date",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/public/getKlines"
+    },
+    {
+      "id": "crypto.private.rest.wsauth.post",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.coin.z.com",
+      "path": "/private/v1/ws-auth",
+      "version": "v1",
+      "operation": "Create WS auth token",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          {
+            "name": "timestamp",
+            "type": "int(ms)",
+            "required": true
+          },
+          {
+            "name": "nonce",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "token",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/private/postWsAuth"
+    },
+    {
+      "id": "crypto.private.rest.wsauth.extend.put",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "PUT",
+      "base_url": "https://api.coin.z.com",
+      "path": "/private/v1/ws-auth",
+      "version": "v1",
+      "operation": "Extend WS auth token",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          {
+            "name": "token",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "timestamp",
+            "type": "int(ms)",
+            "required": true
+          },
+          {
+            "name": "nonce",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "status",
+            "type": "int",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/private/putWsAuth"
+    },
+    {
+      "id": "crypto.private.rest.assets.get",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/private/v1/account/assets",
+      "version": "v1",
+      "operation": "Get account assets",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "assets",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/private/getAssets"
+    },
+    {
+      "id": "crypto.private.rest.margin.get",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/private/v1/account/margin",
+      "version": "v1",
+      "operation": "Get margin status",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "actualProfitLoss",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "availableAmount",
+            "type": "string(decimal)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/private/getMargin"
+    },
+    {
+      "id": "crypto.private.rest.activeorders.get",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/private/v1/activeOrders",
+      "version": "v1",
+      "operation": "Get active orders",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "page",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "list",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/private/getActiveOrders"
+    },
+    {
+      "id": "crypto.private.rest.executions.get",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/private/v1/executions",
+      "version": "v1",
+      "operation": "Get execution history",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "page",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "list",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/private/getExecutions"
+    },
+    {
+      "id": "crypto.private.rest.latestexecutions.get",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/private/v1/latestExecutions",
+      "version": "v1",
+      "operation": "Get latest execution per order",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "list",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/private/getLatestExecutions"
+    },
+    {
+      "id": "crypto.private.rest.order.post",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.coin.z.com",
+      "path": "/private/v1/order",
+      "version": "v1",
+      "operation": "Create order",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "side",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "executionType",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "timeInForce",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "size",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "price",
+            "type": "string(decimal)",
+            "required": false
+          }
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "orderId",
+            "type": "int|string",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/private/postOrder"
+    },
+    {
+      "id": "crypto.private.rest.changeorder.post",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.coin.z.com",
+      "path": "/private/v1/changeOrder",
+      "version": "v1",
+      "operation": "Amend order",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          {
+            "name": "orderId",
+            "type": "int|string",
+            "required": true
+          },
+          {
+            "name": "price",
+            "type": "string(decimal)",
+            "required": false
+          },
+          {
+            "name": "size",
+            "type": "string(decimal)",
+            "required": false
+          }
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "orderId",
+            "type": "int|string",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/private/postChangeOrder"
+    },
+    {
+      "id": "crypto.private.rest.cancelorder.post",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.coin.z.com",
+      "path": "/private/v1/cancelOrder",
+      "version": "v1",
+      "operation": "Cancel order",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          {
+            "name": "orderId",
+            "type": "int|string",
+            "required": true
+          }
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "orderId",
+            "type": "int|string",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/private/postCancelOrder"
+    },
+    {
+      "id": "crypto.private.rest.openpositions.get",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/private/v1/openPositions",
+      "version": "v1",
+      "operation": "Get open positions",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "page",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "list",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/private/getOpenPositions"
+    },
+    {
+      "id": "crypto.private.rest.positionsummary.get",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/private/v1/positionSummary",
+      "version": "v1",
+      "operation": "Get position summary",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "side",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "list",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/private/getPositionSummary"
+    },
+    {
+      "id": "crypto.private.rest.closeorder.post",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.coin.z.com",
+      "path": "/private/v1/closeOrder",
+      "version": "v1",
+      "operation": "Close position by order",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "side",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "size",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "positionId",
+            "type": "int|string",
+            "required": true
+          }
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "orderId",
+            "type": "int|string",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/private/postCloseOrder"
+    },
+    {
+      "id": "fx.public.rest.status.get",
+      "service": "fx",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/fx/public/v1/status",
+      "version": "v1",
+      "operation": "Get FX API status",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "status",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "responsetime",
+            "type": "string(iso8601)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/public/getStatus"
+    },
+    {
+      "id": "fx.public.rest.ticker.get",
+      "service": "fx",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/fx/public/v1/ticker",
+      "version": "v1",
+      "operation": "Get FX ticker",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "ask",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "bid",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "timestamp",
+            "type": "string(iso8601)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/public/getTicker"
+    },
+    {
+      "id": "fx.public.rest.orderbooks.get",
+      "service": "fx",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/fx/public/v1/orderbooks",
+      "version": "v1",
+      "operation": "Get FX order book",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "asks",
+            "type": "array<object>",
+            "required": true
+          },
+          {
+            "name": "bids",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/public/getOrderbooks"
+    },
+    {
+      "id": "fx.public.rest.trades.get",
+      "service": "fx",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/fx/public/v1/trades",
+      "version": "v1",
+      "operation": "Get FX trades",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "page",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "list",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/public/getTrades"
+    },
+    {
+      "id": "fx.public.rest.klines.get",
+      "service": "fx",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/fx/public/v1/klines",
+      "version": "v1",
+      "operation": "Get FX klines",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "interval",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "date",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/public/getKlines"
+    },
+    {
+      "id": "fx.private.rest.wsauth.post",
+      "service": "fx",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.coin.z.com",
+      "path": "/fx/private/v1/ws-auth",
+      "version": "v1",
+      "operation": "Create FX WS auth token",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          {
+            "name": "timestamp",
+            "type": "int(ms)",
+            "required": true
+          },
+          {
+            "name": "nonce",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "token",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/private/postWsAuth"
+    },
+    {
+      "id": "fx.private.rest.assets.get",
+      "service": "fx",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/fx/private/v1/account/assets",
+      "version": "v1",
+      "operation": "Get FX account assets",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "assets",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/private/getAssets"
+    },
+    {
+      "id": "fx.private.rest.activeorders.get",
+      "service": "fx",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/fx/private/v1/activeOrders",
+      "version": "v1",
+      "operation": "Get FX active orders",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "page",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "list",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/private/getActiveOrders"
+    },
+    {
+      "id": "fx.private.rest.order.post",
+      "service": "fx",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.coin.z.com",
+      "path": "/fx/private/v1/order",
+      "version": "v1",
+      "operation": "Create FX order",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "side",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "executionType",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "size",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "price",
+            "type": "string(decimal)",
+            "required": false
+          }
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "orderId",
+            "type": "int|string",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/private/postOrder"
+    },
+    {
+      "id": "fx.private.rest.cancelorder.post",
+      "service": "fx",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.coin.z.com",
+      "path": "/fx/private/v1/cancelOrder",
+      "version": "v1",
+      "operation": "Cancel FX order",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          {
+            "name": "orderId",
+            "type": "int|string",
+            "required": true
+          }
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "orderId",
+            "type": "int|string",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/private/postCancelOrder"
+    },
+    {
+      "id": "fx.private.rest.openpositions.get",
+      "service": "fx",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.coin.z.com",
+      "path": "/fx/private/v1/openPositions",
+      "version": "v1",
+      "operation": "Get FX open positions",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "page",
+            "type": "int",
+            "required": false
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "list",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/private/getOpenPositions"
+    },
+    {
+      "id": "fx.private.rest.closeorder.post",
+      "service": "fx",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.coin.z.com",
+      "path": "/fx/private/v1/closeOrder",
+      "version": "v1",
+      "operation": "Close FX position",
+      "auth": {
+        "type": "signed",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "side",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "size",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "positionId",
+            "type": "int|string",
+            "required": true
+          }
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "orderId",
+            "type": "int|string",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "docs reference"
+      },
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/private/postCloseOrder"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "crypto.public.ws.ticker.update",
+      "service": "crypto",
+      "visibility": "public",
+      "ws_url": "wss://api.coin.z.com/ws/public/v1",
+      "version": "v1",
+      "channel": "ticker",
+      "subscribe": {
+        "template": "{\"command\":\"subscribe\",\"channel\":\"ticker\",\"symbol\":\"<symbol>\"}",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "{\"command\":\"unsubscribe\",\"channel\":\"ticker\",\"symbol\":\"<symbol>\"}",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "ask",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "bid",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "timestamp",
+            "type": "string(iso8601)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "symbol required",
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/ws/ticker"
+    },
+    {
+      "id": "crypto.public.ws.trades.update",
+      "service": "crypto",
+      "visibility": "public",
+      "ws_url": "wss://api.coin.z.com/ws/public/v1",
+      "version": "v1",
+      "channel": "trades",
+      "subscribe": {
+        "template": "{\"command\":\"subscribe\",\"channel\":\"trades\",\"symbol\":\"<symbol>\"}",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "{\"command\":\"unsubscribe\",\"channel\":\"trades\",\"symbol\":\"<symbol>\"}",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "side",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "price",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "size",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "timestamp",
+            "type": "string(iso8601)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "symbol required",
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/ws/trades"
+    },
+    {
+      "id": "crypto.public.ws.orderbooks.update",
+      "service": "crypto",
+      "visibility": "public",
+      "ws_url": "wss://api.coin.z.com/ws/public/v1",
+      "version": "v1",
+      "channel": "orderbooks",
+      "subscribe": {
+        "template": "{\"command\":\"subscribe\",\"channel\":\"orderbooks\",\"symbol\":\"<symbol>\"}",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "{\"command\":\"unsubscribe\",\"channel\":\"orderbooks\",\"symbol\":\"<symbol>\"}",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "asks",
+            "type": "array<object>",
+            "required": true
+          },
+          {
+            "name": "bids",
+            "type": "array<object>",
+            "required": true
+          },
+          {
+            "name": "timestamp",
+            "type": "string(iso8601)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "symbol required",
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/ws/orderbooks"
+    },
+    {
+      "id": "crypto.private.ws.executionevents.update",
+      "service": "crypto",
+      "visibility": "private",
+      "ws_url": "wss://api.coin.z.com/ws/private/v1/{token}",
+      "version": "v1",
+      "channel": "executionEvents",
+      "subscribe": {
+        "template": "{\"command\":\"subscribe\",\"channel\":\"executionEvents\"}",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "{\"command\":\"unsubscribe\",\"channel\":\"executionEvents\"}",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "orderId",
+            "type": "int|string",
+            "required": true
+          },
+          {
+            "name": "executionId",
+            "type": "int|string",
+            "required": true
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "size",
+            "type": "string(decimal)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "token",
+        "notes": ""
+      },
+      "restrictions": "valid ws-auth token required",
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/privateWebsocket/executionEvents"
+    },
+    {
+      "id": "crypto.private.ws.orderevents.update",
+      "service": "crypto",
+      "visibility": "private",
+      "ws_url": "wss://api.coin.z.com/ws/private/v1/{token}",
+      "version": "v1",
+      "channel": "orderEvents",
+      "subscribe": {
+        "template": "{\"command\":\"subscribe\",\"channel\":\"orderEvents\"}",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "{\"command\":\"unsubscribe\",\"channel\":\"orderEvents\"}",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "orderId",
+            "type": "int|string",
+            "required": true
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "token",
+        "notes": ""
+      },
+      "restrictions": "valid ws-auth token required",
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/privateWebsocket/orderEvents"
+    },
+    {
+      "id": "crypto.private.ws.positionevents.update",
+      "service": "crypto",
+      "visibility": "private",
+      "ws_url": "wss://api.coin.z.com/ws/private/v1/{token}",
+      "version": "v1",
+      "channel": "positionEvents",
+      "subscribe": {
+        "template": "{\"command\":\"subscribe\",\"channel\":\"positionEvents\"}",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "{\"command\":\"unsubscribe\",\"channel\":\"positionEvents\"}",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "positionId",
+            "type": "int|string",
+            "required": true
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "side",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "size",
+            "type": "string(decimal)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "token",
+        "notes": ""
+      },
+      "restrictions": "leveraged account only",
+      "notes": "",
+      "source_url": "https://api.coin.z.com/docs/#/privateWebsocket/positionEvents"
+    },
+    {
+      "id": "fx.public.ws.ticker.update",
+      "service": "fx",
+      "visibility": "public",
+      "ws_url": "wss://api.coin.z.com/fx/ws/public/v1",
+      "version": "v1",
+      "channel": "ticker",
+      "subscribe": {
+        "template": "{\"command\":\"subscribe\",\"channel\":\"ticker\",\"symbol\":\"<symbol>\"}",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "{\"command\":\"unsubscribe\",\"channel\":\"ticker\",\"symbol\":\"<symbol>\"}",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "ask",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "bid",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "timestamp",
+            "type": "string(iso8601)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "symbol required",
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/ws/ticker"
+    },
+    {
+      "id": "fx.public.ws.trades.update",
+      "service": "fx",
+      "visibility": "public",
+      "ws_url": "wss://api.coin.z.com/fx/ws/public/v1",
+      "version": "v1",
+      "channel": "trades",
+      "subscribe": {
+        "template": "{\"command\":\"subscribe\",\"channel\":\"trades\",\"symbol\":\"<symbol>\"}",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "{\"command\":\"unsubscribe\",\"channel\":\"trades\",\"symbol\":\"<symbol>\"}",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "side",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "price",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "size",
+            "type": "string(decimal)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "symbol required",
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/ws/trades"
+    },
+    {
+      "id": "fx.public.ws.orderbooks.update",
+      "service": "fx",
+      "visibility": "public",
+      "ws_url": "wss://api.coin.z.com/fx/ws/public/v1",
+      "version": "v1",
+      "channel": "orderbooks",
+      "subscribe": {
+        "template": "{\"command\":\"subscribe\",\"channel\":\"orderbooks\",\"symbol\":\"<symbol>\"}",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "{\"command\":\"unsubscribe\",\"channel\":\"orderbooks\",\"symbol\":\"<symbol>\"}",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "asks",
+            "type": "array<object>",
+            "required": true
+          },
+          {
+            "name": "bids",
+            "type": "array<object>",
+            "required": true
+          },
+          {
+            "name": "timestamp",
+            "type": "string(iso8601)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "symbol required",
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/ws/orderbooks"
+    },
+    {
+      "id": "fx.private.ws.executionevents.update",
+      "service": "fx",
+      "visibility": "private",
+      "ws_url": "wss://api.coin.z.com/fx/ws/private/v1/{token}",
+      "version": "v1",
+      "channel": "executionEvents",
+      "subscribe": {
+        "template": "{\"command\":\"subscribe\",\"channel\":\"executionEvents\"}",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "{\"command\":\"unsubscribe\",\"channel\":\"executionEvents\"}",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "orderId",
+            "type": "int|string",
+            "required": true
+          },
+          {
+            "name": "executionId",
+            "type": "int|string",
+            "required": true
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "size",
+            "type": "string(decimal)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "token",
+        "notes": ""
+      },
+      "restrictions": "valid ws-auth token required",
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/privateWebsocket/executionEvents"
+    },
+    {
+      "id": "fx.private.ws.orderevents.update",
+      "service": "fx",
+      "visibility": "private",
+      "ws_url": "wss://api.coin.z.com/fx/ws/private/v1/{token}",
+      "version": "v1",
+      "channel": "orderEvents",
+      "subscribe": {
+        "template": "{\"command\":\"subscribe\",\"channel\":\"orderEvents\"}",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "{\"command\":\"unsubscribe\",\"channel\":\"orderEvents\"}",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "orderId",
+            "type": "int|string",
+            "required": true
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "token",
+        "notes": ""
+      },
+      "restrictions": "valid ws-auth token required",
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/privateWebsocket/orderEvents"
+    },
+    {
+      "id": "fx.private.ws.positionevents.update",
+      "service": "fx",
+      "visibility": "private",
+      "ws_url": "wss://api.coin.z.com/fx/ws/private/v1/{token}",
+      "version": "v1",
+      "channel": "positionEvents",
+      "subscribe": {
+        "template": "{\"command\":\"subscribe\",\"channel\":\"positionEvents\"}",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "{\"command\":\"unsubscribe\",\"channel\":\"positionEvents\"}",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "positionId",
+            "type": "int|string",
+            "required": true
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "side",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "size",
+            "type": "string(decimal)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "token",
+        "notes": ""
+      },
+      "restrictions": "margin account required",
+      "notes": "",
+      "source_url": "https://api.coin.z.com/fxdocs/#/privateWebsocket/positionEvents"
+    }
+  ],
+  "data_feeds": [
+    {
+      "id": "data.snapshots.daily.csv.gz",
+      "kind": "snapshots",
+      "url_pattern": "https://api.coin.z.com/data/{market}/{dataset}/{YYYY}/{MM}/{DD}/{file}.csv.gz",
+      "format": "csv",
+      "compression": "gzip",
+      "update_freq": "daily",
+      "retention": "official listing retention",
+      "schema": {
+        "summary": "Trade/book/ticker snapshots by market/date",
+        "notes": ""
+      },
+      "notes": "Data portal hosts downloadable historical files for crypto/fx datasets.",
+      "source_url": "https://api.coin.z.com/data/"
+    }
+  ]
+}
