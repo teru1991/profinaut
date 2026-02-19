@@ -1,0 +1,737 @@
+{
+  "exchange": "binance",
+  "generated_from": {
+    "sources_md": "docs/exchanges/binance/sources.md",
+    "last_checked_at": "2026-02-19",
+    "notes": "Official docs only. Spot Trading coverage (REST/Streams/WS API/User Data/SBE/FIX)."
+  },
+  "rest_endpoints": [
+    {
+      "id": "crypto.public.rest.ping.get",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.binance.com",
+      "path": "/api/v3/ping",
+      "version": "v3",
+      "operation": "Test connectivity",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [],
+        "notes": "empty object"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "Weight: 1"
+      },
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/rest-api/market-data-endpoints"
+    },
+    {
+      "id": "crypto.public.rest.time.get",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.binance.com",
+      "path": "/api/v3/time",
+      "version": "v3",
+      "operation": "Get server time",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "serverTime",
+            "type": "int(ms)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "Weight: 1"
+      },
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/rest-api/market-data-endpoints"
+    },
+    {
+      "id": "crypto.public.rest.exchangeinfo.get",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.binance.com",
+      "path": "/api/v3/exchangeInfo",
+      "version": "v3",
+      "operation": "Exchange/symbol metadata",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "symbols",
+            "type": "array<object>",
+            "required": true
+          },
+          {
+            "name": "rateLimits",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "Weight varies by params"
+      },
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/rest-api/market-data-endpoints"
+    },
+    {
+      "id": "crypto.private.rest.order.post",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.binance.com",
+      "path": "/api/v3/order",
+      "version": "v3",
+      "operation": "Place new order",
+      "auth": {
+        "type": "signed",
+        "notes": "TRADE permission"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "side",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "timestamp",
+            "type": "int(ms)",
+            "required": true
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "orderId",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "transactTime",
+            "type": "int(ms)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "Order count + weight rules apply"
+      },
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/rest-api/trading-endpoints"
+    },
+    {
+      "id": "crypto.private.rest.account.get",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.binance.com",
+      "path": "/api/v3/account",
+      "version": "v3",
+      "operation": "Account information",
+      "auth": {
+        "type": "signed",
+        "notes": "USER_DATA permission"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "timestamp",
+            "type": "int(ms)",
+            "required": true
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "canTrade",
+            "type": "bool",
+            "required": true
+          },
+          {
+            "name": "balances",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "Weight: 20"
+      },
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/rest-api/account-endpoints"
+    },
+    {
+      "id": "crypto.private.rest.listenkey.post",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.binance.com",
+      "path": "/api/v3/userDataStream",
+      "version": "v3",
+      "operation": "Start user data stream (legacy)",
+      "auth": {
+        "type": "api-key",
+        "notes": "legacy listenKey flow"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "listenKey",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "Weight: 1"
+      },
+      "notes": "See changelog for migration to WebSocket API subscriptions",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/rest-api/user-data-stream-endpoints"
+    },
+    {
+      "id": "crypto.public.rest.docs.enums.ref",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "docs://binance-spot",
+      "path": "/rest-api/enum-definitions",
+      "version": "n/a",
+      "operation": "doc-ref",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "enums",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "n/a"
+      },
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/rest-api/enum-definitions"
+    },
+    {
+      "id": "crypto.public.rest.docs.filters.ref",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "docs://binance-spot",
+      "path": "/rest-api/filters",
+      "version": "n/a",
+      "operation": "doc-ref",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "filters",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "n/a"
+      },
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/rest-api/filters"
+    },
+    {
+      "id": "other.public.rest.changelog.ref",
+      "service": "other",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "docs://binance-spot",
+      "path": "/changelog",
+      "version": "n/a",
+      "operation": "doc-ref",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "entries",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "n/a"
+      },
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/changelog"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "crypto.public.ws.trades.trade",
+      "service": "crypto",
+      "visibility": "public",
+      "ws_url": "wss://stream.binance.com:9443/ws/<symbol>@trade",
+      "version": "stream-v3",
+      "channel": "<symbol>@trade",
+      "subscribe": {
+        "template": "auto on connect (raw stream URL)",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "close socket",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "e",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "E",
+            "type": "int(ms)",
+            "required": true
+          },
+          {
+            "name": "p",
+            "type": "string(decimal)",
+            "required": true
+          },
+          {
+            "name": "q",
+            "type": "string(decimal)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": "20s ping from server on stream endpoints"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "symbol lowercase",
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams"
+    },
+    {
+      "id": "crypto.private.ws.userdata.executionreport",
+      "service": "crypto",
+      "visibility": "private",
+      "ws_url": "wss://stream.binance.com:9443/ws/<listenKey>",
+      "version": "stream-v3",
+      "channel": "executionReport",
+      "subscribe": {
+        "template": "POST /api/v3/userDataStream -> connect listenKey",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "DELETE /api/v3/userDataStream",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "e",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "E",
+            "type": "int(ms)",
+            "required": true
+          },
+          {
+            "name": "s",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "X",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "T",
+            "type": "int(ms)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "api-key",
+        "notes": "listenKey lifecycle endpoints"
+      },
+      "restrictions": "legacy listenKey flow",
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/user-data-stream"
+    },
+    {
+      "id": "crypto.public.ws.wsapi.time",
+      "service": "crypto",
+      "visibility": "public",
+      "ws_url": "wss://ws-api.binance.com/ws-api/v3",
+      "version": "v3",
+      "channel": "time",
+      "subscribe": {
+        "template": "{\"id\":\"<id>\",\"method\":\"time\"}",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "n/a",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "id",
+            "type": "int|string",
+            "required": true
+          },
+          {
+            "name": "status",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "result.serverTime",
+            "type": "int(ms)",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "request-response",
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/websocket-api/general-api-information"
+    },
+    {
+      "id": "crypto.private.ws.wsapi.order.place",
+      "service": "crypto",
+      "visibility": "private",
+      "ws_url": "wss://ws-api.binance.com/ws-api/v3",
+      "version": "v3",
+      "channel": "order.place",
+      "subscribe": {
+        "template": "{\"id\":\"<id>\",\"method\":\"order.place\",\"params\":{\"apiKey\":\"...\",\"timestamp\":0,\"signature\":\"...\"}}",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "n/a",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "status",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "result.orderId",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "result.symbol",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "signed",
+        "notes": "request security signing"
+      },
+      "restrictions": "trading permission required",
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/websocket-api/trading-requests"
+    },
+    {
+      "id": "other.public.ws.sbe.marketdata",
+      "service": "other",
+      "visibility": "public",
+      "ws_url": "udp+tcp (see docs)",
+      "version": "sbe",
+      "channel": "sbe-market-data",
+      "subscribe": {
+        "template": "session/login per spec",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "session logout",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "templateId",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "payload",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "binary schema-driven"
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": ""
+      },
+      "auth": {
+        "type": "other",
+        "notes": "onboarding-specific"
+      },
+      "restrictions": "schema and gateway coordination",
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/sbe-market-data-streams"
+    }
+  ],
+  "data_feeds": [
+    {
+      "id": "data.market.realtime.json",
+      "kind": "market-data-stream",
+      "url_pattern": "wss://stream.binance.com:9443/ws/<streamName>",
+      "format": "json",
+      "compression": "none",
+      "update_freq": "real-time",
+      "retention": "session-lifetime",
+      "schema": {
+        "summary": "trade/depth/bookTicker/kline event objects",
+        "notes": ""
+      },
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams"
+    },
+    {
+      "id": "data.account.realtime.json",
+      "kind": "user-data-stream",
+      "url_pattern": "wss://stream.binance.com:9443/ws/<listenKey>",
+      "format": "json",
+      "compression": "none",
+      "update_freq": "real-time",
+      "retention": "listenKey or ws-api subscription lifetime",
+      "schema": {
+        "summary": "outboundAccountPosition/balanceUpdate/executionReport payloads",
+        "notes": ""
+      },
+      "notes": "legacy listenKey channel",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/user-data-stream"
+    },
+    {
+      "id": "data.market.realtime.sbe",
+      "kind": "market-data-stream",
+      "url_pattern": "SBE gateway endpoints per docs",
+      "format": "sbe(binary)",
+      "compression": "none",
+      "update_freq": "real-time",
+      "retention": "session-lifetime",
+      "schema": {
+        "summary": "SBE message header + template payloads",
+        "notes": ""
+      },
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/sbe-market-data-streams"
+    },
+    {
+      "id": "data.tradeevents.session.fix",
+      "kind": "drop-copy",
+      "url_pattern": "FIX Drop Copy endpoint per docs",
+      "format": "fix(tag-value)",
+      "compression": "tls",
+      "update_freq": "real-time",
+      "retention": "session-lifetime",
+      "schema": {
+        "summary": "ExecutionReport and session-level FIX messages",
+        "notes": ""
+      },
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/fix-api/drop-copy"
+    },
+    {
+      "id": "data.market.snapshot.json",
+      "kind": "rest-snapshot",
+      "url_pattern": "https://api.binance.com/api/v3/depth?symbol=<symbol>&limit=<n>",
+      "format": "json",
+      "compression": "https gzip(opt)",
+      "update_freq": "on-demand",
+      "retention": "request-time snapshot",
+      "schema": {
+        "summary": "snapshot object with lastUpdateId,bids,asks",
+        "notes": ""
+      },
+      "notes": "",
+      "source_url": "https://developers.binance.com/docs/binance-spot-api-docs/rest-api/market-data-endpoints"
+    }
+  ]
+}
