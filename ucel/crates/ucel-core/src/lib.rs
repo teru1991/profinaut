@@ -33,9 +33,9 @@ pub struct Quality {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TickerSnapshot {
-    pub bid: f64,
-    pub ask: f64,
-    pub last: f64,
+    pub bid: Decimal,
+    pub ask: Decimal,
+    pub last: Decimal,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
