@@ -1,0 +1,9 @@
+[package]
+name = "ucel-testkit"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ucel-core = { path = "../ucel-core" }
+ucel-transport = { path = "../ucel-transport" }
+serde = { workspace = true }
