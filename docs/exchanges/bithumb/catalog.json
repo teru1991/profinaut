@@ -1,0 +1,161 @@
+{
+  "exchange": "bithumb",
+  "generated_from": {
+    "sources_md": "docs/exchanges/bithumb/sources.md",
+    "last_checked_at": "2026-02-19",
+    "notes": "Official docs only, including REST public/private, WS public/private/common, and changelog diffs."
+  },
+  "rest_endpoints": [
+    {
+      "id": "openapi.public.rest.market.list",
+      "domain": "openapi",
+      "visibility": "public",
+      "method": "GET",
+      "path": "/v1/market/all",
+      "auth": {"type": "none"},
+      "fields": [
+        {"name": "isDetails", "type": "bool", "required": false}
+      ],
+      "source_url": "https://apidocs.bithumb.com/reference/%EB%A7%88%EC%BC%93%EC%BD%94%EB%93%9C-%EC%A1%B0%ED%9A%8C"
+    },
+    {
+      "id": "openapi.public.rest.ticker.list",
+      "domain": "openapi",
+      "visibility": "public",
+      "method": "GET",
+      "path": "/v1/ticker",
+      "auth": {"type": "none"},
+      "fields": [{"name": "markets", "type": "string", "required": true}],
+      "source_url": "https://apidocs.bithumb.com/reference/%EC%8B%9C%EC%84%B8-%ED%98%84%EC%9E%AC%EA%B0%80ticker-%EC%A1%B0%ED%9A%8C"
+    },
+    {
+      "id": "openapi.public.rest.orderbook.snapshot",
+      "domain": "openapi",
+      "visibility": "public",
+      "method": "GET",
+      "path": "/v1/orderbook",
+      "auth": {"type": "none"},
+      "fields": [{"name": "markets", "type": "string", "required": true}],
+      "source_url": "https://apidocs.bithumb.com/reference/%EC%8B%9C%EC%84%B8-%ED%98%B8%EA%B0%80-%EC%A0%95%EB%B3%B4orderbook-%EC%A1%B0%ED%9A%8C"
+    },
+    {
+      "id": "openapi.private.rest.account.all",
+      "domain": "openapi",
+      "visibility": "private",
+      "method": "GET",
+      "path": "/v1/accounts",
+      "auth": {"type": "signed"},
+      "fields": [],
+      "source_url": "https://apidocs.bithumb.com/reference/%EC%A0%84%EC%B2%B4-%EA%B3%84%EC%A2%8C-%EC%A1%B0%ED%9A%8C"
+    },
+    {
+      "id": "openapi.private.rest.order.create",
+      "domain": "openapi",
+      "visibility": "private",
+      "method": "POST",
+      "path": "/v1/orders",
+      "auth": {"type": "signed"},
+      "fields": [
+        {"name": "market", "type": "string", "required": true},
+        {"name": "side", "type": "string", "required": true},
+        {"name": "ord_type", "type": "string", "required": true}
+      ],
+      "source_url": "https://apidocs.bithumb.com/reference/%EC%A3%BC%EB%AC%B8%ED%95%98%EA%B8%B0"
+    },
+    {
+      "id": "openapi.private.rest.order.cancel",
+      "domain": "openapi",
+      "visibility": "private",
+      "method": "DELETE",
+      "path": "/v1/order",
+      "auth": {"type": "signed"},
+      "fields": [{"name": "uuid", "type": "string", "required": true}],
+      "source_url": "https://apidocs.bithumb.com/reference/%EC%A3%BC%EB%AC%B8-%EC%B7%A8%EC%86%8C-%EC%A0%91%EC%88%98"
+    },
+    {
+      "id": "openapi.private.rest.algo.twap.create",
+      "domain": "openapi",
+      "visibility": "private",
+      "method": "POST",
+      "path": "/v1/algo/orders/twap",
+      "auth": {"type": "signed"},
+      "fields": [
+        {"name": "market", "type": "string", "required": true},
+        {"name": "total_amount", "type": "string(decimal)", "required": true}
+      ],
+      "source_url": "https://apidocs.bithumb.com/reference/twap-%EC%A3%BC%EB%AC%B8-%EC%9A%94%EC%B2%AD"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "openapi.public.ws.ticker.snapshot",
+      "domain": "openapi",
+      "visibility": "public",
+      "channel": "ticker",
+      "heartbeat": {"type": "ping-pong"},
+      "auth": {"type": "none"},
+      "fields": [
+        {"name": "type", "type": "string", "required": true},
+        {"name": "content", "type": "object", "required": true}
+      ],
+      "source_url": "https://apidocs.bithumb.com/reference/%ED%98%84%EC%9E%AC%EA%B0%80-ticker"
+    },
+    {
+      "id": "openapi.public.ws.trade.snapshot",
+      "domain": "openapi",
+      "visibility": "public",
+      "channel": "trade",
+      "heartbeat": {"type": "ping-pong"},
+      "auth": {"type": "none"},
+      "fields": [
+        {"name": "type", "type": "string", "required": true},
+        {"name": "content", "type": "array<object>", "required": true}
+      ],
+      "source_url": "https://apidocs.bithumb.com/reference/%EC%B2%B4%EA%B2%B0-trade"
+    },
+    {
+      "id": "openapi.private.ws.myorder.update",
+      "domain": "openapi",
+      "visibility": "private",
+      "channel": "myOrder",
+      "heartbeat": {"type": "ping-pong"},
+      "auth": {"type": "signed"},
+      "fields": [
+        {"name": "token", "type": "string", "required": true},
+        {"name": "content", "type": "array<object>", "required": true}
+      ],
+      "source_url": "https://apidocs.bithumb.com/reference/%EB%82%B4-%EC%A3%BC%EB%AC%B8-%EB%B0%8F-%EC%B2%B4%EA%B2%B0-myorder"
+    },
+    {
+      "id": "openapi.private.ws.myasset.update",
+      "domain": "openapi",
+      "visibility": "private",
+      "channel": "myAsset",
+      "heartbeat": {"type": "ping-pong"},
+      "auth": {"type": "signed"},
+      "fields": [
+        {"name": "token", "type": "string", "required": true},
+        {"name": "content", "type": "array<object>", "required": true}
+      ],
+      "source_url": "https://apidocs.bithumb.com/reference/%EB%82%B4-%EC%9E%90%EC%82%B0-myasset"
+    }
+  ],
+  "fix_feeds": [
+    {
+      "id": "openapi.other.fix.not_applicable",
+      "domain": "other",
+      "visibility": "public",
+      "auth": {"type": "none"},
+      "fields": [],
+      "source_url": "https://apidocs.bithumb.com/"
+    }
+  ],
+  "data_feeds": [
+    {
+      "id": "data.other.not_applicable.none",
+      "auth": {"type": "none"},
+      "fields": [],
+      "source_url": "https://apidocs.bithumb.com/"
+    }
+  ]
+}
