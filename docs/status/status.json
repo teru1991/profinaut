@@ -12,7 +12,9 @@
       "locks": [
         "LOCK:services-marketdata"
       ],
-      "status": "open"
+      "status": "closed",
+      "closed_reason": "no-merge",
+      "closed_at": "2026-02-19T07:36:07Z"
     },
     {
       "pr_number": 152,
@@ -29,10 +31,9 @@
     "LOCK:ci (holder unresolved; no active PR metadata found; task issuance touching ci remains blocked until holder is identified or lock is explicitly released)"
   ],
   "next_actions": [
-    "AUDIT-DUP-EXCH-000 findings(FIND-001..005)に基づき、FIXタスクを起票して実装修正(additive/deprecate/move)へ進む。",
-    "最優先は GMO 識別子/allowed_ops 相当descriptorのSSOT化（FIND-001, FIND-004）。",
-    "LOCK:services-marketdata 競合解消後に実装変更を開始し、競合中はread-only監査運用を継続する。"
+    "PR #140 は close 済み。UCEL基盤で再実装する。",
+    "PR #156 は docs-only のため（必要なら）先に整合コミット→マージ。"
   ],
-  "last_updated": "2026-02-19T07:35:00Z",
+  "last_updated": "2026-02-19T07:36:07Z",
   "notes": "AUDIT-DUP-EXCH-000 completed: duplicate exchange implementation/docs candidates triaged with evidence and FIX-ready actions."
 }

@@ -64,7 +64,11 @@
       ],
       "pr_slots": {
         "pr_140": "https://github.com/teru1991/profinaut/pull/140",
-        "pr_152": "https://github.com/teru1991/profinaut/pull/152"
+        "pr_152": "https://github.com/teru1991/profinaut/pull/152",
+        "pr_140_status": "closed(no-merge)",
+        "pr_140_closed_at": "2026-02-19T07:36:07Z",
+        "ucel_reimplementation_task": "TODO:UCEL-BASE-REIMPLEMENT-140",
+        "ucel_reimplementation_pr": "TBD"
       }
     },
     "AUDIT-DUP-EXCH-000": {
