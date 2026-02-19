@@ -6,6 +6,8 @@ import urllib.error
 from email.message import Message
 from typing import Any
 
+import pytest
+
 from services.marketdata.app.gmo_public_marketdata import GmoPublicMarketDataAdapter
 from services.marketdata.app.transport import HttpTransportClient, RetryPolicy, WsTransportClient
 from services.marketdata.app.ucel_core import ExecuteContext
@@ -217,3 +219,31 @@ def test_secret_sanitize_framework_masks_secret_values() -> None:
     assert sanitized["safe"] == "ok"
     assert "k-123" not in json.dumps(sanitized)
     assert "s-123" not in json.dumps(sanitized)
+
+
+def test_private_execution_429_retry_after_failover_scenario() -> None:
+    from services.marketdata.app.gmo_private_execution import FailoverPolicy, KeyPool, KeyRef
+    from services.marketdata.app.ucel_core import ErrorCode
+
+    now = {"ms": 100}
+    pool = KeyPool(
+        keys=[KeyRef(key_id="a", secret_ref="x", scope="trade"), KeyRef(key_id="b", secret_ref="y", scope="trade")],
+        failover_policy=FailoverPolicy(max_attempts=2, cooldown_ms=10, respect_retry_after=True),
+        now_ms_fn=lambda: now["ms"],
+    )
+    pool.mark_failure(key_id="a", error_code=ErrorCode.RATE_LIMITED, retry_after_ms=50)
+    assert pool.select(required_scope="trade").key_id == "b"
+    now["ms"] = 200
+    assert pool.select(required_scope="trade").key_id in {"a", "b"}
+
+
+def test_private_execution_scope_guard_scenario() -> None:
+    from services.marketdata.app.gmo_private_execution import FailoverPolicy, KeyPool, KeyRef
+    from services.marketdata.app.ucel_core import CoreError
+
+    pool = KeyPool(
+        keys=[KeyRef(key_id="t", secret_ref="x", scope="trade")],
+        failover_policy=FailoverPolicy(),
+    )
+    with pytest.raises(CoreError):
+        pool.select(required_scope="withdraw")

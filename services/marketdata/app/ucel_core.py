@@ -14,6 +14,8 @@ class ErrorCode(str, Enum):
     NOT_SUPPORTED = "NOT_SUPPORTED"
     NOT_ALLOWED_OP = "NOT_ALLOWED_OP"
     MISSING_AUTH = "MISSING_AUTH"
+    FEATURE_DISABLED = "FEATURE_DISABLED"
+    DRY_RUN_ONLY = "DRY_RUN_ONLY"
     RATE_LIMITED = "RATE_LIMITED"
     AUTH_FAILED = "AUTH_FAILED"
     PERMISSION_DENIED = "PERMISSION_DENIED"
@@ -115,6 +117,11 @@ class OpName(str, Enum):
     SUBSCRIBE_TRADES = "subscribe_trades"
     SUBSCRIBE_ORDERBOOK = "subscribe_orderbook"
     FETCH_BALANCE = "fetch_balance"
+    FETCH_BALANCES = "fetch_balances"
+    PLACE_ORDER = "place_order"
+    CANCEL_ORDER = "cancel_order"
+    FETCH_ORDERS = "fetch_orders"
+    FETCH_FILLS = "fetch_fills"
 
 
 @dataclass(frozen=True)
@@ -130,6 +137,11 @@ OP_SPECS: dict[OpName, OpSpec] = {
     OpName.SUBSCRIBE_TRADES: OpSpec(requires_auth=False),
     OpName.SUBSCRIBE_ORDERBOOK: OpSpec(requires_auth=False),
     OpName.FETCH_BALANCE: OpSpec(requires_auth=True),
+    OpName.FETCH_BALANCES: OpSpec(requires_auth=True),
+    OpName.PLACE_ORDER: OpSpec(requires_auth=True),
+    OpName.CANCEL_ORDER: OpSpec(requires_auth=True),
+    OpName.FETCH_ORDERS: OpSpec(requires_auth=True),
+    OpName.FETCH_FILLS: OpSpec(requires_auth=True),
 }
 
 
@@ -153,6 +165,10 @@ class ExecuteContext:
     request_id: str | None = None
     run_id: str | None = None
     has_auth: bool = False
+    secret_ref: str | None = None
+    actor_id: str | None = None
+    features: frozenset[str] = field(default_factory=frozenset)
+    live_trading: bool = False
     policy: RuntimePolicy | None = None
 
 
@@ -193,7 +209,7 @@ class Exchange(ABC):
                 details={"policy_id": ctx.policy.policy_id, "failover_policy": ctx.policy.failover_policy},
             )
 
-        if OP_SPECS[op].requires_auth and not ctx.has_auth:
+        if OP_SPECS[op].requires_auth and not (ctx.has_auth or ctx.secret_ref):
             raise CoreError(
                 ErrorCode.MISSING_AUTH,
                 f"Operation '{op.value}' requires authentication",
