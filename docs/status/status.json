@@ -1,6 +1,6 @@
 {
   "base_branch": "master",
-  "active_task": "PROGRESS-AUDIT-000",
+  "active_task": "RUST-UCEL-PREFLIGHT-000",
   "owner": "codex",
   "state": "in_progress",
   "open_prs": [],
@@ -8,8 +8,8 @@
     "LOCK:shared-docs"
   ],
   "next_actions": [
-    "POSTB-NEXT-001（TASK C: GMO private execution hardening）のタスクカードを起票し、PR #179 で追加された private execution 導線の本番運用チェック（権限/鍵failover/429系）を証跡化する。"
+    "RUST-UCEL-IMPL-001 を起票し、Option A（repo ルート ucel/ 独立workspace）で Rust UCEL 実装を開始する。"
   ],
-  "last_updated": "2026-02-19T09:47:32Z",
-  "notes": "PROGRESS-AUDIT-000: GitHub API reality synced with Docs OS; Task A/B and postB chain through PR #179 confirmed merged."
+  "last_updated": "2026-02-19T10:45:00Z",
+  "notes": "RUST-UCEL-PREFLIGHT-000 completed: Rust assets/exchanges catalog audited and UCEL layout decision fixed to Option A."
 }
