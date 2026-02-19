@@ -1,0 +1,454 @@
+{
+  "exchange": "coinbase",
+  "generated_from": {
+    "sources_md": "docs/exchanges/coinbase/sources.md",
+    "last_checked_at": "2026-02-19",
+    "notes": "Official docs only. Coverage roots across Advanced Trade + Exchange + International Exchange, including REST/WS/FIX discoverability and changelog roots."
+  },
+  "rest_endpoints": [
+    {
+      "id": "advanced.crypto.public.rest.reference.introduction",
+      "method": "GET",
+      "base_url": "https://api.coinbase.com",
+      "path": "/api/v3/brokerage/*",
+      "version": "v3",
+      "operation": "Advanced Trade public REST catalog root",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": []
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "documented in official REST reference",
+      "notes": "API reference introduction row used as root entry.",
+      "source_url": "https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/rest-api/introduction"
+    },
+    {
+      "id": "advanced.crypto.private.rest.reference.introduction",
+      "method": "GET",
+      "base_url": "https://api.coinbase.com",
+      "path": "/api/v3/brokerage/*",
+      "version": "v3",
+      "operation": "Advanced Trade private REST catalog root",
+      "auth": {
+        "type": "jwt"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": []
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "documented in official REST reference",
+      "notes": "Private endpoints require authentication per official docs.",
+      "source_url": "https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/rest-api/introduction"
+    },
+    {
+      "id": "exchange.crypto.public.rest.reference.introduction",
+      "method": "GET",
+      "base_url": "https://api.exchange.coinbase.com",
+      "path": "/*",
+      "version": "v1",
+      "operation": "Exchange public REST catalog root",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": []
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "documented in official REST reference",
+      "notes": "Public resources root.",
+      "source_url": "https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/introduction"
+    },
+    {
+      "id": "exchange.crypto.private.rest.reference.introduction",
+      "method": "GET",
+      "base_url": "https://api.exchange.coinbase.com",
+      "path": "/*",
+      "version": "v1",
+      "operation": "Exchange private REST catalog root",
+      "auth": {
+        "type": "signed"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": []
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "documented in official REST reference",
+      "notes": "Private trading/account resources root.",
+      "source_url": "https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/introduction"
+    },
+    {
+      "id": "intx.crypto.public.rest.reference.welcome",
+      "method": "GET",
+      "base_url": "not_applicable",
+      "path": "not_applicable",
+      "version": "not_applicable",
+      "operation": "INTX REST public discoverability root",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": []
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "not_applicable",
+      "notes": "INTX welcome root for REST discovery.",
+      "source_url": "https://docs.cdp.coinbase.com/international-exchange/introduction/welcome"
+    },
+    {
+      "id": "intx.crypto.private.rest.reference.welcome",
+      "method": "GET",
+      "base_url": "not_applicable",
+      "path": "not_applicable",
+      "version": "not_applicable",
+      "operation": "INTX REST private discoverability root",
+      "auth": {
+        "type": "api-key"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": []
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "not_applicable",
+      "notes": "INTX welcome root for private REST discovery.",
+      "source_url": "https://docs.cdp.coinbase.com/international-exchange/introduction/welcome"
+    },
+    {
+      "id": "other.other.public.rest.docs.root",
+      "method": "GET",
+      "base_url": "https://docs.cdp.coinbase.com",
+      "path": "/",
+      "version": "n/a",
+      "operation": "documentation root",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": []
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "n/a",
+      "notes": "Cross-surface docs root.",
+      "source_url": "https://docs.cdp.coinbase.com"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "advanced.crypto.public.ws.reference.channels",
+      "ws_url": "wss://advanced-trade-ws.coinbase.com",
+      "version": "v1",
+      "channel": "official channel set",
+      "subscribe_template": "{\"type\":\"subscribe\",\"channel\":\"<channel>\",\"product_ids\":[\"<product_id>\"]}",
+      "unsubscribe_template": "{\"type\":\"unsubscribe\",\"channel\":\"<channel>\",\"product_ids\":[\"<product_id>\"]}",
+      "message": {
+        "shape": "object",
+        "fields": []
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "per-channel constraints in official docs",
+      "notes": "Advanced Trade public channel root.",
+      "source_url": "https://docs.cdp.coinbase.com/coinbase-app/advanced-trade-apis/websocket/websocket-channels"
+    },
+    {
+      "id": "advanced.crypto.private.ws.reference.guide",
+      "ws_url": "wss://advanced-trade-ws-user.coinbase.com",
+      "version": "v1",
+      "channel": "user/order channels",
+      "subscribe_template": "{\"type\":\"subscribe\",\"channel\":\"<channel>\",\"jwt\":\"<token>\"}",
+      "unsubscribe_template": "{\"type\":\"unsubscribe\",\"channel\":\"<channel>\"}",
+      "message": {
+        "shape": "object",
+        "fields": []
+      },
+      "heartbeat": {
+        "type": "ping-pong"
+      },
+      "auth": {
+        "type": "jwt"
+      },
+      "restrictions": "authenticated subscription required",
+      "notes": "Advanced Trade private stream root.",
+      "source_url": "https://docs.cdp.coinbase.com/coinbase-app/advanced-trade-apis/guides/websocket"
+    },
+    {
+      "id": "exchange.crypto.public.ws.reference.overview",
+      "ws_url": "wss://ws-feed.exchange.coinbase.com",
+      "version": "n/a",
+      "channel": "official channel set",
+      "subscribe_template": "{\"type\":\"subscribe\",\"channels\":[\"<channel>\"],\"product_ids\":[\"<product_id>\"]}",
+      "unsubscribe_template": "{\"type\":\"unsubscribe\",\"channels\":[\"<channel>\"],\"product_ids\":[\"<product_id>\"]}",
+      "message": {
+        "shape": "object",
+        "fields": []
+      },
+      "heartbeat": {
+        "type": "server-push"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "per-channel restrictions in Exchange WS docs",
+      "notes": "Exchange WS overview root.",
+      "source_url": "https://docs.cdp.coinbase.com/exchange/websocket-feed/overview"
+    },
+    {
+      "id": "exchange.crypto.private.ws.not_applicable.current_scope",
+      "ws_url": "not_applicable",
+      "version": "not_applicable",
+      "channel": "not_applicable",
+      "subscribe_template": "not_applicable",
+      "unsubscribe_template": "not_applicable",
+      "message": {
+        "shape": "object",
+        "fields": []
+      },
+      "heartbeat": {
+        "type": "none"
+      },
+      "auth": {
+        "type": "other"
+      },
+      "restrictions": "not_applicable",
+      "notes": "Placeholder until dedicated authenticated Exchange WS page URLs are expanded.",
+      "source_url": "https://docs.cdp.coinbase.com/exchange/websocket-feed/overview"
+    },
+    {
+      "id": "intx.crypto.public.ws.reference.overview",
+      "ws_url": "not_applicable",
+      "version": "n/a",
+      "channel": "official channel set",
+      "subscribe_template": "object",
+      "unsubscribe_template": "object",
+      "message": {
+        "shape": "object",
+        "fields": []
+      },
+      "heartbeat": {
+        "type": "server-push"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "per-channel restrictions in INTX WS docs",
+      "notes": "INTX WS overview root.",
+      "source_url": "https://docs.cdp.coinbase.com/international-exchange/websocket-feed/websocket-overview"
+    },
+    {
+      "id": "intx.crypto.private.ws.reference.welcome",
+      "ws_url": "not_applicable",
+      "version": "n/a",
+      "channel": "private stream discoverability",
+      "subscribe_template": "object",
+      "unsubscribe_template": "object",
+      "message": {
+        "shape": "object",
+        "fields": []
+      },
+      "heartbeat": {
+        "type": "other"
+      },
+      "auth": {
+        "type": "token"
+      },
+      "restrictions": "not_applicable",
+      "notes": "INTX welcome root for private stream discoverability.",
+      "source_url": "https://docs.cdp.coinbase.com/international-exchange/introduction/welcome"
+    },
+    {
+      "id": "other.crypto.public.ws.common.protocol",
+      "ws_url": "not_applicable",
+      "version": "n/a",
+      "channel": "n/a",
+      "subscribe_template": "n/a",
+      "unsubscribe_template": "n/a",
+      "message": {
+        "shape": "object",
+        "fields": []
+      },
+      "heartbeat": {
+        "type": "other"
+      },
+      "auth": {
+        "type": "other"
+      },
+      "restrictions": "see per-surface docs",
+      "notes": "Common placeholder row.",
+      "source_url": "https://docs.cdp.coinbase.com"
+    },
+    {
+      "id": "other.other.public.ws.docs.root",
+      "ws_url": "https://docs.cdp.coinbase.com",
+      "version": "n/a",
+      "channel": "docs-root",
+      "subscribe_template": "n/a",
+      "unsubscribe_template": "n/a",
+      "message": {
+        "shape": "object",
+        "fields": []
+      },
+      "heartbeat": {
+        "type": "none"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "n/a",
+      "notes": "Docs hub reference row.",
+      "source_url": "https://docs.cdp.coinbase.com"
+    }
+  ],
+  "fix_feeds": [
+    {
+      "id": "exchange.crypto.private.fix.order_entry.discoverability",
+      "fix_host": "not_applicable",
+      "fix_port": "not_applicable",
+      "version": "not_applicable",
+      "session": "order-entry",
+      "auth": {
+        "type": "signed"
+      },
+      "flow_summary": "Exchange welcome page indicates FIX family coverage.",
+      "message_types": [],
+      "fields": [],
+      "heartbeat": {
+        "type": "other"
+      },
+      "restrictions": "values on dedicated FIX pages",
+      "notes": "Discoverability root row.",
+      "source_url": "https://docs.cdp.coinbase.com/exchange/introduction/welcome"
+    },
+    {
+      "id": "exchange.crypto.public.fix.market_data.discoverability",
+      "fix_host": "not_applicable",
+      "fix_port": "not_applicable",
+      "version": "not_applicable",
+      "session": "market-data",
+      "auth": {
+        "type": "none"
+      },
+      "flow_summary": "Exchange welcome page indicates FIX market data coverage.",
+      "message_types": [],
+      "fields": [],
+      "heartbeat": {
+        "type": "other"
+      },
+      "restrictions": "values on dedicated FIX pages",
+      "notes": "Discoverability root row.",
+      "source_url": "https://docs.cdp.coinbase.com/exchange/introduction/welcome"
+    },
+    {
+      "id": "intx.crypto.private.fix.discoverability",
+      "fix_host": "not_applicable",
+      "fix_port": "not_applicable",
+      "version": "not_applicable",
+      "session": "not_applicable",
+      "auth": {
+        "type": "other"
+      },
+      "flow_summary": "INTX welcome page used to determine FIX availability.",
+      "message_types": [],
+      "fields": [],
+      "heartbeat": {
+        "type": "other"
+      },
+      "restrictions": "not_applicable",
+      "notes": "No dedicated INTX FIX URL captured in this run.",
+      "source_url": "https://docs.cdp.coinbase.com/international-exchange/introduction/welcome"
+    },
+    {
+      "id": "advanced.crypto.private.fix.not_applicable.current_scope",
+      "fix_host": "not_applicable",
+      "fix_port": "not_applicable",
+      "version": "not_applicable",
+      "session": "not_applicable",
+      "auth": {
+        "type": "none"
+      },
+      "flow_summary": "Advanced Trade root focuses on REST/WS.",
+      "message_types": [],
+      "fields": [],
+      "heartbeat": {
+        "type": "none"
+      },
+      "restrictions": "not_applicable",
+      "notes": "No Advanced Trade FIX surface documented in provided roots.",
+      "source_url": "https://docs.cdp.coinbase.com/coinbase-app/advanced-trade-apis/overview"
+    }
+  ],
+  "data_feeds": [
+    {
+      "id": "data.other.unknown.other",
+      "kind": "not_applicable",
+      "url_pattern": "not_applicable",
+      "format": "not_applicable",
+      "compression": "not_applicable",
+      "update_freq": "not_applicable",
+      "retention": "not_applicable",
+      "schema_summary": "not_applicable",
+      "notes": "No dedicated historical file distribution page confirmed from provided roots.",
+      "source_url": "https://docs.cdp.coinbase.com"
+    }
+  ]
+}
