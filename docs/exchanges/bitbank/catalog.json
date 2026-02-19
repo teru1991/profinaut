@@ -1,0 +1,2033 @@
+{
+  "exchange": "bitbank",
+  "generated_from": {
+    "sources_md": "docs/exchanges/bitbank/sources.md",
+    "last_checked_at": "2026-02-19",
+    "notes": "Official docs only. JP/EN covered."
+  },
+  "rest_endpoints": [
+    {
+      "id": "crypto.public.rest.market.ticker",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://public.bitbank.cc",
+      "path": "/{pair}/ticker",
+      "version": "v1",
+      "operation": "Get ticker",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [
+          {
+            "name": "pair",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md for shared error code shape where applicable."
+      },
+      "rate_limit": {
+        "notes": "Documented in official docs only where stated."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-api.md"
+    },
+    {
+      "id": "crypto.public.rest.market.tickers",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://public.bitbank.cc",
+      "path": "/tickers",
+      "version": "v1",
+      "operation": "Get all tickers",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md for shared error code shape where applicable."
+      },
+      "rate_limit": {
+        "notes": "Documented in official docs only where stated."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-api.md"
+    },
+    {
+      "id": "crypto.public.rest.market.tickers-jpy",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://public.bitbank.cc",
+      "path": "/tickers_jpy",
+      "version": "v1",
+      "operation": "Get all JPY pair tickers",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md for shared error code shape where applicable."
+      },
+      "rate_limit": {
+        "notes": "Documented in official docs only where stated."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-api.md"
+    },
+    {
+      "id": "crypto.public.rest.market.depth",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://public.bitbank.cc",
+      "path": "/{pair}/depth",
+      "version": "v1",
+      "operation": "Get depth",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [
+          {
+            "name": "pair",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md for shared error code shape where applicable."
+      },
+      "rate_limit": {
+        "notes": "Documented in official docs only where stated."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-api.md"
+    },
+    {
+      "id": "crypto.public.rest.market.transactions",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://public.bitbank.cc",
+      "path": "/{pair}/transactions/{YYYYMMDD}",
+      "version": "v1",
+      "operation": "Get transactions",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [
+          {
+            "name": "pair",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "YYYYMMDD",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md for shared error code shape where applicable."
+      },
+      "rate_limit": {
+        "notes": "Documented in official docs only where stated."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-api.md"
+    },
+    {
+      "id": "crypto.public.rest.market.candlestick",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://public.bitbank.cc",
+      "path": "/{pair}/candlestick/{candle-type}/{YYYY}",
+      "version": "v1",
+      "operation": "Get candlestick",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [
+          {
+            "name": "pair",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "candle-type",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "YYYY",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md for shared error code shape where applicable."
+      },
+      "rate_limit": {
+        "notes": "Documented in official docs only where stated."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-api.md"
+    },
+    {
+      "id": "crypto.public.rest.market.circuit-break-info",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://public.bitbank.cc",
+      "path": "/{pair}/circuit_break_info",
+      "version": "v1",
+      "operation": "Get circuit break info",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [
+          {
+            "name": "pair",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md for shared error code shape where applicable."
+      },
+      "rate_limit": {
+        "notes": "Documented in official docs only where stated."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-api.md"
+    },
+    {
+      "id": "crypto.public.rest.spot.status",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/spot/status",
+      "version": "v1",
+      "operation": "Get spot status",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md for shared error code shape where applicable."
+      },
+      "rate_limit": {
+        "notes": "Documented in official docs only where stated."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.public.rest.spot.pairs",
+      "service": "crypto",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/spot/pairs",
+      "version": "v1",
+      "operation": "Get spot pairs",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object<k:string,v:any>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md for shared error code shape where applicable."
+      },
+      "rate_limit": {
+        "notes": "Documented in official docs only where stated."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.user.assets",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/assets",
+      "version": "v1",
+      "operation": "user assets",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.order.get",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/spot/order",
+      "version": "v1",
+      "operation": "order get",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.order.create",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/spot/order",
+      "version": "v1",
+      "operation": "order create",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.order.cancel",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/spot/cancel_order",
+      "version": "v1",
+      "operation": "order cancel",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.order.cancel-multiple",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/spot/cancel_orders",
+      "version": "v1",
+      "operation": "order cancel-multiple",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.order.fetch-multiple",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/spot/orders_info",
+      "version": "v1",
+      "operation": "order fetch-multiple",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.order.active-orders",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/spot/active_orders",
+      "version": "v1",
+      "operation": "order active-orders",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.margin.status",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/margin/status",
+      "version": "v1",
+      "operation": "margin status",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.margin.positions",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/margin/positions",
+      "version": "v1",
+      "operation": "margin positions",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.trade.history",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/spot/trade_history",
+      "version": "v1",
+      "operation": "trade history",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.deposit.history",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/deposit_history",
+      "version": "v1",
+      "operation": "deposit history",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.deposit.unconfirmed",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/unconfirmed_deposits",
+      "version": "v1",
+      "operation": "deposit unconfirmed",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.deposit.originators",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/deposit_originators",
+      "version": "v1",
+      "operation": "deposit originators",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.deposit.confirm",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/confirm_deposits",
+      "version": "v1",
+      "operation": "deposit confirm",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.deposit.confirm-all",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/confirm_deposits_all",
+      "version": "v1",
+      "operation": "deposit confirm-all",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.withdrawal.accounts",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/withdrawal_account",
+      "version": "v1",
+      "operation": "withdrawal accounts",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.withdrawal.request",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/request_withdrawal",
+      "version": "v1",
+      "operation": "withdrawal request",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.withdrawal.history",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/withdrawal_history",
+      "version": "v1",
+      "operation": "withdrawal history",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    },
+    {
+      "id": "crypto.private.rest.stream.subscribe",
+      "service": "crypto",
+      "visibility": "private",
+      "method": "GET",
+      "base_url": "https://api.bitbank.cc/v1",
+      "path": "/user/subscribe",
+      "version": "v1",
+      "operation": "stream subscribe",
+      "auth": {
+        "type": "signed",
+        "notes": "ACCESS-* signature headers required."
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "int",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "Detailed fields vary by endpoint; see official docs."
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "See errors.md."
+      },
+      "rate_limit": {
+        "notes": "See Rate limit in rest-api.md."
+      },
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/rest-api.md"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "crypto.public.ws.market.ticker",
+      "service": "crypto",
+      "visibility": "public",
+      "ws_url": "wss://stream.bitbank.cc/socket.io/?EIO=4&transport=websocket",
+      "version": "socket.io v4",
+      "channel": "ticker_{pair}",
+      "subscribe": {
+        "template": "42[\"join-room\",\"ticker_{pair}\"]",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "42[\"leave-room\",\"ticker_{pair}\"]",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "room_name",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "message",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": "socket.io ping/pong"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "pair must be listed in pairs.md",
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-stream.md"
+    },
+    {
+      "id": "crypto.public.ws.market.transactions",
+      "service": "crypto",
+      "visibility": "public",
+      "ws_url": "wss://stream.bitbank.cc/socket.io/?EIO=4&transport=websocket",
+      "version": "socket.io v4",
+      "channel": "transactions_{pair}",
+      "subscribe": {
+        "template": "42[\"join-room\",\"transactions_{pair}\"]",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "42[\"leave-room\",\"transactions_{pair}\"]",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "room_name",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "message",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": "socket.io ping/pong"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "pair must be listed in pairs.md",
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-stream.md"
+    },
+    {
+      "id": "crypto.public.ws.market.depth-diff",
+      "service": "crypto",
+      "visibility": "public",
+      "ws_url": "wss://stream.bitbank.cc/socket.io/?EIO=4&transport=websocket",
+      "version": "socket.io v4",
+      "channel": "depth_diff_{pair}",
+      "subscribe": {
+        "template": "42[\"join-room\",\"depth_diff_{pair}\"]",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "42[\"leave-room\",\"depth_diff_{pair}\"]",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "room_name",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "message",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": "socket.io ping/pong"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "pair must be listed in pairs.md",
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-stream.md"
+    },
+    {
+      "id": "crypto.public.ws.market.depth-whole",
+      "service": "crypto",
+      "visibility": "public",
+      "ws_url": "wss://stream.bitbank.cc/socket.io/?EIO=4&transport=websocket",
+      "version": "socket.io v4",
+      "channel": "depth_whole_{pair}",
+      "subscribe": {
+        "template": "42[\"join-room\",\"depth_whole_{pair}\"]",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "42[\"leave-room\",\"depth_whole_{pair}\"]",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "room_name",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "message",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": "socket.io ping/pong"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "pair must be listed in pairs.md",
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-stream.md"
+    },
+    {
+      "id": "crypto.public.ws.market.circuit-break-info",
+      "service": "crypto",
+      "visibility": "public",
+      "ws_url": "wss://stream.bitbank.cc/socket.io/?EIO=4&transport=websocket",
+      "version": "socket.io v4",
+      "channel": "circuit_break_info_{pair}",
+      "subscribe": {
+        "template": "42[\"join-room\",\"circuit_break_info_{pair}\"]",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "42[\"leave-room\",\"circuit_break_info_{pair}\"]",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "room_name",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "message",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": "socket.io ping/pong"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "pair must be listed in pairs.md",
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/public-stream.md"
+    },
+    {
+      "id": "crypto.private.ws.user.stream.asset-update",
+      "service": "crypto",
+      "visibility": "private",
+      "ws_url": "PubNub subscribe endpoint (tokenized)",
+      "version": "PubNub",
+      "channel": "{channel_from_/user/subscribe}",
+      "subscribe": {
+        "template": "SDK subscribe with channel+token from /user/subscribe",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "SDK unsubscribe",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "message",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "message.method",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "message.params",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": "message.method value identifies event type"
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": "handled by PubNub SDK"
+      },
+      "auth": {
+        "type": "token",
+        "notes": "token returned by REST /user/subscribe"
+      },
+      "restrictions": "requires API key and signed REST call to get channel/token",
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/private-stream.md"
+    },
+    {
+      "id": "crypto.private.ws.user.stream.spot-order-new",
+      "service": "crypto",
+      "visibility": "private",
+      "ws_url": "PubNub subscribe endpoint (tokenized)",
+      "version": "PubNub",
+      "channel": "{channel_from_/user/subscribe}",
+      "subscribe": {
+        "template": "SDK subscribe with channel+token from /user/subscribe",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "SDK unsubscribe",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "message",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "message.method",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "message.params",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": "message.method value identifies event type"
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": "handled by PubNub SDK"
+      },
+      "auth": {
+        "type": "token",
+        "notes": "token returned by REST /user/subscribe"
+      },
+      "restrictions": "requires API key and signed REST call to get channel/token",
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/private-stream.md"
+    },
+    {
+      "id": "crypto.private.ws.user.stream.spot-order",
+      "service": "crypto",
+      "visibility": "private",
+      "ws_url": "PubNub subscribe endpoint (tokenized)",
+      "version": "PubNub",
+      "channel": "{channel_from_/user/subscribe}",
+      "subscribe": {
+        "template": "SDK subscribe with channel+token from /user/subscribe",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "SDK unsubscribe",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "message",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "message.method",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "message.params",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": "message.method value identifies event type"
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": "handled by PubNub SDK"
+      },
+      "auth": {
+        "type": "token",
+        "notes": "token returned by REST /user/subscribe"
+      },
+      "restrictions": "requires API key and signed REST call to get channel/token",
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/private-stream.md"
+    },
+    {
+      "id": "crypto.private.ws.user.stream.spot-order-invalidation",
+      "service": "crypto",
+      "visibility": "private",
+      "ws_url": "PubNub subscribe endpoint (tokenized)",
+      "version": "PubNub",
+      "channel": "{channel_from_/user/subscribe}",
+      "subscribe": {
+        "template": "SDK subscribe with channel+token from /user/subscribe",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "SDK unsubscribe",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "message",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "message.method",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "message.params",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": "message.method value identifies event type"
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": "handled by PubNub SDK"
+      },
+      "auth": {
+        "type": "token",
+        "notes": "token returned by REST /user/subscribe"
+      },
+      "restrictions": "requires API key and signed REST call to get channel/token",
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/private-stream.md"
+    },
+    {
+      "id": "crypto.private.ws.user.stream.spot-trade",
+      "service": "crypto",
+      "visibility": "private",
+      "ws_url": "PubNub subscribe endpoint (tokenized)",
+      "version": "PubNub",
+      "channel": "{channel_from_/user/subscribe}",
+      "subscribe": {
+        "template": "SDK subscribe with channel+token from /user/subscribe",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "SDK unsubscribe",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "message",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "message.method",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "message.params",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": "message.method value identifies event type"
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": "handled by PubNub SDK"
+      },
+      "auth": {
+        "type": "token",
+        "notes": "token returned by REST /user/subscribe"
+      },
+      "restrictions": "requires API key and signed REST call to get channel/token",
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/private-stream.md"
+    },
+    {
+      "id": "crypto.private.ws.user.stream.dealer-order-new",
+      "service": "crypto",
+      "visibility": "private",
+      "ws_url": "PubNub subscribe endpoint (tokenized)",
+      "version": "PubNub",
+      "channel": "{channel_from_/user/subscribe}",
+      "subscribe": {
+        "template": "SDK subscribe with channel+token from /user/subscribe",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "SDK unsubscribe",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "message",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "message.method",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "message.params",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": "message.method value identifies event type"
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": "handled by PubNub SDK"
+      },
+      "auth": {
+        "type": "token",
+        "notes": "token returned by REST /user/subscribe"
+      },
+      "restrictions": "requires API key and signed REST call to get channel/token",
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/private-stream.md"
+    },
+    {
+      "id": "crypto.private.ws.user.stream.withdrawal",
+      "service": "crypto",
+      "visibility": "private",
+      "ws_url": "PubNub subscribe endpoint (tokenized)",
+      "version": "PubNub",
+      "channel": "{channel_from_/user/subscribe}",
+      "subscribe": {
+        "template": "SDK subscribe with channel+token from /user/subscribe",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "SDK unsubscribe",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "message",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "message.method",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "message.params",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": "message.method value identifies event type"
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": "handled by PubNub SDK"
+      },
+      "auth": {
+        "type": "token",
+        "notes": "token returned by REST /user/subscribe"
+      },
+      "restrictions": "requires API key and signed REST call to get channel/token",
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/private-stream.md"
+    },
+    {
+      "id": "crypto.private.ws.user.stream.deposit",
+      "service": "crypto",
+      "visibility": "private",
+      "ws_url": "PubNub subscribe endpoint (tokenized)",
+      "version": "PubNub",
+      "channel": "{channel_from_/user/subscribe}",
+      "subscribe": {
+        "template": "SDK subscribe with channel+token from /user/subscribe",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "SDK unsubscribe",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "message",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "message.method",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "message.params",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": "message.method value identifies event type"
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": "handled by PubNub SDK"
+      },
+      "auth": {
+        "type": "token",
+        "notes": "token returned by REST /user/subscribe"
+      },
+      "restrictions": "requires API key and signed REST call to get channel/token",
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/private-stream.md"
+    },
+    {
+      "id": "crypto.private.ws.user.stream.margin-position-update",
+      "service": "crypto",
+      "visibility": "private",
+      "ws_url": "PubNub subscribe endpoint (tokenized)",
+      "version": "PubNub",
+      "channel": "{channel_from_/user/subscribe}",
+      "subscribe": {
+        "template": "SDK subscribe with channel+token from /user/subscribe",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "SDK unsubscribe",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "message",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "message.method",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "message.params",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": "message.method value identifies event type"
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": "handled by PubNub SDK"
+      },
+      "auth": {
+        "type": "token",
+        "notes": "token returned by REST /user/subscribe"
+      },
+      "restrictions": "requires API key and signed REST call to get channel/token",
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/private-stream.md"
+    },
+    {
+      "id": "crypto.private.ws.user.stream.margin-payable-update",
+      "service": "crypto",
+      "visibility": "private",
+      "ws_url": "PubNub subscribe endpoint (tokenized)",
+      "version": "PubNub",
+      "channel": "{channel_from_/user/subscribe}",
+      "subscribe": {
+        "template": "SDK subscribe with channel+token from /user/subscribe",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "SDK unsubscribe",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "message",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "message.method",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "message.params",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": "message.method value identifies event type"
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": "handled by PubNub SDK"
+      },
+      "auth": {
+        "type": "token",
+        "notes": "token returned by REST /user/subscribe"
+      },
+      "restrictions": "requires API key and signed REST call to get channel/token",
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/private-stream.md"
+    },
+    {
+      "id": "crypto.private.ws.user.stream.margin-notice-update",
+      "service": "crypto",
+      "visibility": "private",
+      "ws_url": "PubNub subscribe endpoint (tokenized)",
+      "version": "PubNub",
+      "channel": "{channel_from_/user/subscribe}",
+      "subscribe": {
+        "template": "SDK subscribe with channel+token from /user/subscribe",
+        "notes": ""
+      },
+      "unsubscribe": {
+        "template": "SDK unsubscribe",
+        "notes": ""
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "message",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "message.method",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "message.params",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": "message.method value identifies event type"
+      },
+      "heartbeat": {
+        "type": "server-push",
+        "notes": "handled by PubNub SDK"
+      },
+      "auth": {
+        "type": "token",
+        "notes": "token returned by REST /user/subscribe"
+      },
+      "restrictions": "requires API key and signed REST call to get channel/token",
+      "notes": "",
+      "source_url": "https://github.com/bitbankinc/bitbank-api-docs/blob/master/private-stream.md"
+    }
+  ],
+  "data_feeds": []
+}
