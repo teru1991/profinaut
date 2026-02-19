@@ -34,14 +34,14 @@ id | ws_url | version | channel | subscribe.template | unsubscribe.template | me
 
 | id | ws_url | version | channel | subscribe.template | unsubscribe.template | message.shape | message.fields | heartbeat.type | auth.type | restrictions | notes | source_url |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| futures.public.ws.v1.market.ticker.subscribe | wss://futures.kraken.com/ws/v1 | other | ticker | {"event":"subscribe","feed":"ticker","product_ids":["PI_XBTUSD"]} | {"event":"unsubscribe","feed":"ticker","product_ids":["PI_XBTUSD"]} | object | feed(req),product_id(req):string,bid/ask(opt):string(decimal) | ping-pong | none | periodic ping required to keep connection alive | futures market data ticker | https://docs.kraken.com/api/docs/futures-api/websocket/ticker |
-| futures.public.ws.v1.market.book.subscribe | wss://futures.kraken.com/ws/v1 | other | book | {"event":"subscribe","feed":"book","product_ids":["PI_XBTUSD"]} | {"event":"unsubscribe","feed":"book","product_ids":["PI_XBTUSD"]} | object | feed(req),product_id(req),bids/asks(req):array<object> | ping-pong | none | message rates depend on feed/update mode | futures L2 book feed | https://docs.kraken.com/api/docs/futures-api/websocket/book |
+| futures.public.ws.other.market.ticker.subscribe | wss://futures.kraken.com/ws/v1 | other | ticker | {"event":"subscribe","feed":"ticker","product_ids":["PI_XBTUSD"]} | {"event":"unsubscribe","feed":"ticker","product_ids":["PI_XBTUSD"]} | object | feed(req),product_id(req):string,bid/ask(opt):string(decimal) | ping-pong | none | periodic ping required to keep connection alive | futures market data ticker | https://docs.kraken.com/api/docs/futures-api/websocket/ticker |
+| futures.public.ws.other.market.book.subscribe | wss://futures.kraken.com/ws/v1 | other | book | {"event":"subscribe","feed":"book","product_ids":["PI_XBTUSD"]} | {"event":"unsubscribe","feed":"book","product_ids":["PI_XBTUSD"]} | object | feed(req),product_id(req),bids/asks(req):array<object> | ping-pong | none | message rates depend on feed/update mode | futures L2 book feed | https://docs.kraken.com/api/docs/futures-api/websocket/book |
 
 ## 6) Futures Private WS
 
 | id | ws_url | version | channel | subscribe.template | unsubscribe.template | message.shape | message.fields | heartbeat.type | auth.type | restrictions | notes | source_url |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| futures.private.ws.v1.account.open_positions.subscribe | wss://futures.kraken.com/ws/v1 | other | open_positions | {"event":"subscribe","feed":"open_positions","api_key":"<api_key>","original_challenge":"<challenge>","signed_challenge":"<signed>"} | {"event":"unsubscribe","feed":"open_positions"} | object | feed(req),account(req):string,positions(req):array<object> | ping-pong | signed | requires challenge signing flow | private futures account stream | https://docs.kraken.com/api/docs/futures-api/websocket/open-positions |
+| futures.private.ws.other.account.open_positions.subscribe | wss://futures.kraken.com/ws/v1 | other | open_positions | {"event":"subscribe","feed":"open_positions","api_key":"<api_key>","original_challenge":"<challenge>","signed_challenge":"<signed>"} | {"event":"unsubscribe","feed":"open_positions"} | object | feed(req),account(req):string,positions(req):array<object> | ping-pong | signed | requires challenge signing flow | private futures account stream | https://docs.kraken.com/api/docs/futures-api/websocket/open-positions |
 
 ## 7) WS Common（protocol/auth/limits等）
 

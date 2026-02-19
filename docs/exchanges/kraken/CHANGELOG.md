@@ -1,7 +1,8 @@
 # CHANGELOG (docs/exchanges/kraken)
 
 ## 2026-02-19
-- Initialized Kraken official-docs catalog directory with SSOT files: `README.md`, `sources.md`, `rest-api.md`, `websocket.md`, `fix.md`, `data.md`, `diffs.md`, `catalog.json`, `templates.md`.
-- Added Spot/Futures REST, Spot WS v1/v2, Futures WS, and FIX coverage rows with official source URLs.
-- Added official changelog diff scaffold (`diffs.md`) and machine-readable catalog (`catalog.json`).
+- Expanded `sources.md` to include explicit official URL evidence across Spot/Futures REST, Spot WS v1/v2, Futures WS, FIX, auth/errors/rate-limits, and changelog categories.
+- Normalized WS/FIX IDs to the required naming format (including `ws.other` for Futures WS versioning and hyphenated session/message naming in FIX IDs).
+- Rebuilt `catalog.json` so the machine-readable SSOT reflects the markdown endpoint/channel/feed catalog with required field metadata.
+- Kept `diffs.md` as official-only placeholder with explicit environment limitation note because docs.kraken.com was inaccessible (proxy 403) during this run.
 - Check date: 2026-02-19.
