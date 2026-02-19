@@ -1,5 +1,5 @@
 {
-  "active_task": "DOC-FIX-EXCH-000",
+  "active_task": "DOC-GATE-TASKB-001",
   "what_done": [
     "GitHub reality (default branch / PR #140 / PR #152) を確認し、status.json と trace-index.json を同期した。",
     "status.json の base_branch を master へ修正し、open_prs に #140/#152 の URL/branch/locks/status を反映した。",
@@ -8,11 +8,9 @@
     "PR #140 closed（no-merge, closed_at=2026-02-19T07:36:07Z）をSSOT（status/trace/decisions）へ反映した。"
   ],
   "what_next": [
-    "DOC-FIX-EXCH-000 の docs-only PR を作成してマージする。",
-    "PR #140 は close-without-merge を実施し、必要差分は EXCH-LIB-CORE 系の新PRで再実装する。",
-    "LOCK:ci の保有者/状態を解決するまで、ci変更を含む実装タスクは発行しない。",
-    "本タスク完了後、次候補タスクを EXCH-LIB-CORE-001 に切り替える。",
-    "UCEL基盤タスク（PR #140再実装枠）を起票する。"
+    "TASK B（Descriptor Execution Engine）を発行して着手する。",
+    "UCEL基盤タスク（PR #140 再実装枠）を TASK B の依存として進行管理する。",
+    "LOCK:ci の保有者/状態を解決するまで、ci変更を含む実装タスクは発行しない。"
   ],
   "open_pr": "",
   "locks_held": [
@@ -25,5 +23,6 @@
     "python -c \"import json; json.load(open('docs/status/status.json'))\"",
     "python -c \"import json; json.load(open('docs/status/trace-index.json'))\"",
     "git diff -- docs/status/status.json docs/status/trace-index.json docs/handoff/HANDOFF.json docs/decisions/decisions.md docs/status/progress-updates/2026-02-19_doc-fix-exch-000.md"
-  ]
+  ],
+  "updated_at": "2026-02-19T07:36:25Z"
 }

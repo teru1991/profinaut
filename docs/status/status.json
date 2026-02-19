@@ -3,37 +3,14 @@
   "active_task": "AUDIT-DUP-EXCH-000",
   "owner": "codex",
   "state": "in_progress",
-  "open_prs": [
-    {
-      "pr_number": 140,
-      "title": "marketdata: finalize GMO adapter safety boundaries (ops SSOT, auth & allowed_ops guards)",
-      "url": "https://github.com/teru1991/profinaut/pull/140",
-      "branch": "codex/finalize-gmo-adapter-core-boundaries",
-      "locks": [
-        "LOCK:services-marketdata"
-      ],
-      "status": "closed",
-      "closed_reason": "no-merge",
-      "closed_at": "2026-02-19T07:36:07Z"
-    },
-    {
-      "pr_number": 152,
-      "title": "Codex-generated pull request",
-      "url": "https://github.com/teru1991/profinaut/pull/152",
-      "branch": "codex/create-bybit-docs-complete-catalog",
-      "locks": [
-        "LOCK:shared-docs"
-      ],
-      "status": "closed"
-    }
-  ],
+  "open_prs": [],
   "locks_held": [
     "LOCK:ci (holder unresolved; no active PR metadata found; task issuance touching ci remains blocked until holder is identified or lock is explicitly released)"
   ],
   "next_actions": [
-    "PR #140 は close 済み。UCEL基盤で再実装する。",
-    "PR #156 は docs-only のため（必要なら）先に整合コミット→マージ。"
+    "TASK B（Descriptor Execution Engine）発行可。PR #140 は close(no-merge) 済み、PR #156 は merged 済み。",
+    "UCEL基盤での再実装タスクを TASK B として発行し、services-marketdata ロック競合が無いことを維持する。"
   ],
-  "last_updated": "2026-02-19T07:36:07Z",
-  "notes": "AUDIT-DUP-EXCH-000 completed: duplicate exchange implementation/docs candidates triaged with evidence and FIX-ready actions."
+  "last_updated": "2026-02-19T07:36:25Z",
+  "notes": "DOC-GATE-TASKB-001: GitHub reality synced (#140 closed no-merge, #156 merged) and TASK B gate decision recorded."
 }

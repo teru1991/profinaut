@@ -60,15 +60,17 @@
       ],
       "tracking_prs": [
         140,
-        152
+        156
       ],
       "pr_slots": {
         "pr_140": "https://github.com/teru1991/profinaut/pull/140",
-        "pr_152": "https://github.com/teru1991/profinaut/pull/152",
         "pr_140_status": "closed(no-merge)",
         "pr_140_closed_at": "2026-02-19T07:36:07Z",
         "ucel_reimplementation_task": "TODO:UCEL-BASE-REIMPLEMENT-140",
-        "ucel_reimplementation_pr": "TBD"
+        "ucel_reimplementation_pr": "TBD",
+        "pr_156": "https://github.com/teru1991/profinaut/pull/156",
+        "pr_156_status": "merged",
+        "pr_156_merged_at": "2026-02-19T07:36:25Z"
       }
     },
     "AUDIT-DUP-EXCH-000": {
@@ -82,7 +84,7 @@
       ],
       "tracking_prs": [
         140,
-        152
+        156
       ],
       "locks": [
         "LOCK:shared-docs",
