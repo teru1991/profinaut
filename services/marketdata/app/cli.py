@@ -2,9 +2,16 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import UTC, datetime
+from pathlib import Path
 
 from services.marketdata.app.backfill import run_backfill_ohlcv
 from services.marketdata.app.replay import run_replay
+from services.marketdata.app.silver.iceberg_pipeline import run_recompute
+
+
+def _parse_ts(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -35,6 +42,15 @@ def _build_parser() -> argparse.ArgumentParser:
     ohlcv.add_argument("--symbol", default=None, help="Upstream symbol (default from env)")
     ohlcv.add_argument("--max-pages-per-run", type=int, default=5)
     ohlcv.add_argument("--state-path", default="services/marketdata/.state/ohlcv_backfill_cursor.json")
+
+    recompute = subparsers.add_parser("silver-recompute", help="Recompute Silver Iceberg outputs from Bronze")
+    recompute.add_argument("--bronze-root", required=True, help="Bronze root directory")
+    recompute.add_argument("--silver-root", required=True, help="Silver output root directory")
+    recompute.add_argument("--from-ts", required=True, help="RFC3339 start timestamp")
+    recompute.add_argument("--to-ts", required=True, help="RFC3339 end timestamp")
+    recompute.add_argument("--venue", default=None, help="Venue filter")
+    recompute.add_argument("--event-type", action="append", default=[], help="Repeatable event type filter")
+    recompute.add_argument("--symbol", action="append", default=[], help="Repeatable symbol filter")
 
     return parser
 
@@ -91,6 +107,19 @@ def main() -> int:
             cursor_file=args.state_path,
         )
         print(json.dumps(summary.__dict__, separators=(",", ":"), ensure_ascii=False))
+        return 0
+
+    if args.command == "silver-recompute":
+        report = run_recompute(
+            bronze_root=Path(args.bronze_root),
+            silver_root=Path(args.silver_root),
+            start=_parse_ts(args.from_ts),
+            end=_parse_ts(args.to_ts),
+            venue=args.venue,
+            symbols=tuple(args.symbol or []),
+            event_types=tuple(args.event_type or []),
+        )
+        print(json.dumps(report.__dict__, separators=(",", ":"), ensure_ascii=False, sort_keys=True))
         return 0
 
     parser.error(f"Unsupported command: {args.command}")

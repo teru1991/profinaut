@@ -103,3 +103,66 @@ class QualityGateMetrics:
 
 
 quality_gate_metrics = QualityGateMetrics()
+
+
+class NormalizationMetrics:
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._bronze_read_total = 0
+        self._silver_write_total = 0
+        self._parse_fail_total = 0
+        self._rejection_total = 0
+        self._late_arrival_total = 0
+        self._seq_gap_total = 0
+        self._silver_by_table: dict[str, int] = {}
+
+    def record_bronze_read(self) -> None:
+        with self._lock:
+            self._bronze_read_total += 1
+
+    def record_silver_write(self, table_name: str) -> None:
+        with self._lock:
+            self._silver_write_total += 1
+            self._silver_by_table[table_name] = int(self._silver_by_table.get(table_name, 0)) + 1
+
+    def record_parse_fail(self) -> None:
+        with self._lock:
+            self._parse_fail_total += 1
+
+    def record_rejection(self, _: str) -> None:
+        with self._lock:
+            self._rejection_total += 1
+
+    def record_late_arrival(self) -> None:
+        with self._lock:
+            self._late_arrival_total += 1
+
+    def record_seq_gap(self) -> None:
+        with self._lock:
+            self._seq_gap_total += 1
+
+    def summary(self) -> dict[str, object]:
+        with self._lock:
+            return {
+                "bronze_read_total": self._bronze_read_total,
+                "silver_write_total": self._silver_write_total,
+                "parse_fail_total": self._parse_fail_total,
+                "rejection_total": self._rejection_total,
+                "late_arrival_total": self._late_arrival_total,
+                "seq_gap_total": self._seq_gap_total,
+                "silver_by_table": dict(self._silver_by_table),
+                "anomaly_total": self._rejection_total,
+            }
+
+    def reset_for_tests(self) -> None:
+        with self._lock:
+            self._bronze_read_total = 0
+            self._silver_write_total = 0
+            self._parse_fail_total = 0
+            self._rejection_total = 0
+            self._late_arrival_total = 0
+            self._seq_gap_total = 0
+            self._silver_by_table.clear()
+
+
+normalization_metrics = NormalizationMetrics()
