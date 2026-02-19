@@ -181,6 +181,39 @@ impl OrderBookResyncEngine {
                 self.health = OrderBookHealth::Degraded;
                 return Err(UcelError::new(ErrorCode::Desync, "delta ahead of snapshot"));
             }
+            snapshot.sequence = delta.sequence_end;
+        }
+        self.health = OrderBookHealth::Ok;
+        self.next_sequence = Some(snapshot.sequence + 1);
+        Ok(snapshot)
+    }
+
+    pub fn health(&self) -> OrderBookHealth { self.health.clone() }
+}
+impl OrderBookResyncEngine {
+    pub fn ingest_delta(&mut self, delta: OrderBookDelta) -> Result<(), UcelError> {
+        if let Some(next) = self.next_sequence {
+            if delta.sequence_start != next {
+                self.health = OrderBookHealth::Degraded;
+                self.next_sequence = None;
+                self.buffered_deltas.clear();
+                return Err(UcelError::new(ErrorCode::Desync, "orderbook gap detected; resync required"));
+            }
+            self.next_sequence = Some(delta.sequence_end + 1);
+        } else {
+            self.buffered_deltas.push_back(delta);
+        }
+        Ok(())
+    }
+
+    pub fn apply_snapshot(&mut self, mut snapshot: OrderBookSnapshot) -> Result<OrderBookSnapshot, UcelError> {
+        self.next_sequence = Some(snapshot.sequence + 1);
+        while let Some(delta) = self.buffered_deltas.pop_front() {
+            if delta.sequence_end <= snapshot.sequence { continue; }
+            if delta.sequence_start > snapshot.sequence + 1 {
+                self.health = OrderBookHealth::Degraded;
+                return Err(UcelError::new(ErrorCode::Desync, "delta ahead of snapshot"));
+            }
 
             // Apply bids from delta
             for delta_bid in delta.bids {
@@ -216,6 +249,8 @@ impl OrderBookResyncEngine {
 
     pub fn health(&self) -> OrderBookHealth { self.health.clone() }
 }
+
+impl Default for OrderBookHealth { fn default() -> Self { Self::Ok } }
 
 impl Default for OrderBookHealth { fn default() -> Self { Self::Ok } }
 
