@@ -1,0 +1,252 @@
+{
+  "exchange": "kraken",
+  "generated_from": {
+    "sources_md": "docs/exchanges/kraken/sources.md",
+    "last_checked_at": "2026-02-19",
+    "notes": "Official docs only; Spot/Futures REST+WS and FIX coverage, with changelog diff placeholder due network restriction in this run."
+  },
+  "rest_endpoints": [
+    {
+      "id": "spot.public.rest.assets.list",
+      "market": "spot",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.kraken.com",
+      "path": "/0/public/Assets",
+      "version": "v0",
+      "operation": "Get asset metadata",
+      "auth": { "type": "none", "notes": "" },
+      "params": {
+        "query": [
+          { "name": "aclass", "type": "string", "required": false },
+          { "name": "asset", "type": "string", "required": false }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          { "name": "error", "type": "array<string>", "required": true },
+          { "name": "result", "type": "object<k:string,v:object>", "required": true }
+        ]
+      },
+      "errors": { "shape": "object" },
+      "rate_limit": "see spot REST rate limits guide",
+      "notes": "",
+      "source_url": "https://docs.kraken.com/api/docs/rest-api/get-asset-info/"
+    },
+    {
+      "id": "spot.private.rest.order.add",
+      "market": "spot",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://api.kraken.com",
+      "path": "/0/private/AddOrder",
+      "version": "v0",
+      "operation": "Add order",
+      "auth": { "type": "signed", "notes": "API-Key + API-Sign" },
+      "params": {
+        "query": [
+          { "name": "validate", "type": "bool", "required": false }
+        ],
+        "path": [],
+        "body": [
+          { "name": "nonce", "type": "int|string", "required": true },
+          { "name": "ordertype", "type": "string", "required": true },
+          { "name": "type", "type": "string", "required": true },
+          { "name": "pair", "type": "string", "required": true },
+          { "name": "volume", "type": "string(decimal)", "required": true },
+          { "name": "price", "type": "string(decimal)", "required": false }
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          { "name": "error", "type": "array<string>", "required": true },
+          { "name": "result", "type": "object", "required": true }
+        ]
+      },
+      "errors": { "shape": "object" },
+      "rate_limit": "private trading counter applies",
+      "notes": "",
+      "source_url": "https://docs.kraken.com/api/docs/rest-api/add-order/"
+    },
+    {
+      "id": "futures.public.rest.instruments.list",
+      "market": "futures",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://futures.kraken.com/derivatives",
+      "path": "/api/v3/instruments",
+      "version": "v3",
+      "operation": "List futures instruments",
+      "auth": { "type": "none", "notes": "" },
+      "params": { "query": [], "path": [], "body": [] },
+      "response": {
+        "shape": "object",
+        "fields": [
+          { "name": "serverTime", "type": "string(iso8601)", "required": true },
+          { "name": "instruments", "type": "array<object>", "required": true }
+        ]
+      },
+      "errors": { "shape": "object" },
+      "rate_limit": "see futures REST guide",
+      "notes": "",
+      "source_url": "https://docs.kraken.com/api/docs/futures-api/trading/get-instruments/"
+    },
+    {
+      "id": "futures.private.rest.order.send",
+      "market": "futures",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://futures.kraken.com/derivatives",
+      "path": "/api/v3/sendorder",
+      "version": "v3",
+      "operation": "Send futures order",
+      "auth": { "type": "signed", "notes": "Authent header" },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          { "name": "orderType", "type": "string", "required": true },
+          { "name": "symbol", "type": "string", "required": true },
+          { "name": "side", "type": "string", "required": true },
+          { "name": "size", "type": "int", "required": true }
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          { "name": "sendStatus", "type": "object", "required": true }
+        ]
+      },
+      "errors": { "shape": "object" },
+      "rate_limit": "see futures REST guide",
+      "notes": "",
+      "source_url": "https://docs.kraken.com/api/docs/futures-api/trading/send-order"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "spot.public.ws.v1.market.book.subscribe",
+      "market": "spot",
+      "visibility": "public",
+      "ws": {
+        "url": "wss://ws.kraken.com",
+        "version": "v1",
+        "channel": "book"
+      },
+      "auth": { "type": "none" },
+      "heartbeat": { "type": "server-push" },
+      "source_url": "https://docs.kraken.com/api/docs/websocket-v1/book/"
+    },
+    {
+      "id": "spot.private.ws.v1.account.open_orders.subscribe",
+      "market": "spot",
+      "visibility": "private",
+      "ws": {
+        "url": "wss://ws-auth.kraken.com",
+        "version": "v1",
+        "channel": "openOrders"
+      },
+      "auth": { "type": "token" },
+      "heartbeat": { "type": "server-push" },
+      "source_url": "https://docs.kraken.com/api/docs/websocket-v1/openorders/"
+    },
+    {
+      "id": "spot.public.ws.v2.market.book.subscribe",
+      "market": "spot",
+      "visibility": "public",
+      "ws": {
+        "url": "wss://ws.kraken.com/v2",
+        "version": "v2",
+        "channel": "book"
+      },
+      "auth": { "type": "none" },
+      "heartbeat": { "type": "ping-pong" },
+      "source_url": "https://docs.kraken.com/api/docs/websocket-v2/book"
+    },
+    {
+      "id": "spot.private.ws.v2.trade.add_order",
+      "market": "spot",
+      "visibility": "private",
+      "ws": {
+        "url": "wss://ws.kraken.com/v2",
+        "version": "v2",
+        "channel": "add_order"
+      },
+      "auth": { "type": "token" },
+      "heartbeat": { "type": "ping-pong" },
+      "source_url": "https://docs.kraken.com/api/docs/websocket-v2/add_order"
+    },
+    {
+      "id": "futures.public.ws.v1.market.ticker.subscribe",
+      "market": "futures",
+      "visibility": "public",
+      "ws": {
+        "url": "wss://futures.kraken.com/ws/v1",
+        "version": "other",
+        "channel": "ticker"
+      },
+      "auth": { "type": "none" },
+      "heartbeat": { "type": "ping-pong" },
+      "source_url": "https://docs.kraken.com/api/docs/futures-api/websocket/ticker"
+    },
+    {
+      "id": "futures.private.ws.v1.account.open_positions.subscribe",
+      "market": "futures",
+      "visibility": "private",
+      "ws": {
+        "url": "wss://futures.kraken.com/ws/v1",
+        "version": "other",
+        "channel": "open_positions"
+      },
+      "auth": { "type": "signed" },
+      "heartbeat": { "type": "ping-pong" },
+      "source_url": "https://docs.kraken.com/api/docs/futures-api/websocket/open-positions"
+    }
+  ],
+  "fix_feeds": [
+    {
+      "id": "spot.private.fix.session.logon",
+      "market": "spot",
+      "visibility": "private",
+      "session": "order-entry",
+      "auth": { "type": "fix-logon" },
+      "heartbeat": { "type": "ping-pong" },
+      "source_url": "https://docs.kraken.com/api/docs/fix-api/session-fix"
+    },
+    {
+      "id": "spot.private.fix.order.new",
+      "market": "spot",
+      "visibility": "private",
+      "session": "order-entry",
+      "auth": { "type": "fix-logon" },
+      "heartbeat": { "type": "ping-pong" },
+      "source_url": "https://docs.kraken.com/api/docs/guides/fix-intro"
+    },
+    {
+      "id": "futures.private.fix.market_data",
+      "market": "futures",
+      "visibility": "private",
+      "session": "market-data",
+      "auth": { "type": "fix-logon" },
+      "heartbeat": { "type": "ping-pong" },
+      "source_url": "https://docs.kraken.com/api/docs/category/fix-api"
+    }
+  ],
+  "data_feeds": [
+    {
+      "id": "data.ohlc.minute.json",
+      "kind": "market-candles",
+      "url_pattern": "https://api.kraken.com/0/public/OHLC?pair={pair}&interval={minutes}&since={since}",
+      "format": "json",
+      "compression": "none",
+      "update_freq": "on-request",
+      "retention": "rolling endpoint window",
+      "schema": "error + result(pair=>array<candle>)",
+      "source_url": "https://docs.kraken.com/api/docs/rest-api/get-ohlc-data/"
+    }
+  ]
+}
