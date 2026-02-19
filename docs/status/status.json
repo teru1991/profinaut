@@ -1,39 +1,39 @@
 {
-  "base_branch": "main",
-  "active_task": "DOC-GMO-API-001E",
+  "base_branch": "master",
+  "active_task": "DOC-FIX-EXCH-000",
   "owner": "codex",
   "state": "in_progress",
   "open_prs": [
     {
-      "pr_number": null,
-      "title": "CI-010-B follow-up (status unknown)",
-      "url": "",
-      "branch": "",
+      "pr_number": 140,
+      "title": "marketdata: finalize GMO adapter safety boundaries (ops SSOT, auth & allowed_ops guards)",
+      "url": "https://github.com/teru1991/profinaut/pull/140",
+      "branch": "codex/finalize-gmo-adapter-core-boundaries",
       "locks": [
-        "LOCK:ci"
+        "LOCK:services-marketdata"
       ],
-      "status": "unknown"
+      "status": "open"
     },
     {
-      "pr_number": null,
-      "title": "DOC-FIX-GMO-000 preflight docs alignment",
-      "url": "",
-      "branch": "work",
+      "pr_number": 152,
+      "title": "Codex-generated pull request",
+      "url": "https://github.com/teru1991/profinaut/pull/152",
+      "branch": "codex/create-bybit-docs-complete-catalog",
       "locks": [
         "LOCK:shared-docs"
       ],
-      "status": "open_draft"
+      "status": "closed"
     }
   ],
   "locks_held": [
-    "LOCK:ci (holder unresolved; carried from prior status)"
+    "LOCK:ci (holder unresolved; no active PR metadata found; task issuance touching ci remains blocked until holder is identified or lock is explicitly released)"
   ],
   "next_actions": [
-    "Resolve/confirm open PR metadata (URL/branch/Required Locks) once GitHub CLI or remote metadata is available.",
-    "DOC-FIX-GMO-000 は Draft保持。shared-docs lock は保持しない。",
-    "Execute DOC-GMO-API-001E (docs catalog) preflight and proceed in docs-only scope.",
-    "PR creation for DOC-GMO-API-001E is unblocked (LOCK:shared-docs released in status SSOT)."
+    "Close PR #140 without merge, then re-integrate required changes on top of the new exchange-library baseline (see decisions.md).",
+    "Handle PR #152 as closed historical PR; if docs updates are still required, issue a fresh docs-only task/PR instead of reusing #152.",
+    "LOCK:ci remains unresolved; do not issue new implementation tasks requiring LOCK:ci until lock owner/state is clarified.",
+    "After DOC-FIX-EXCH-000 merge, set active_task to EXCH-LIB-CORE-001 when implementation kickoff is authorized."
   ],
-  "last_updated": "2026-02-18T23:45:00Z",
-  "notes": "DOC-FIX-GMO-000 remains open as Draft while LOCK:shared-docs is explicitly released to unblock DOC-GMO-API-001E. PR creation is now enabled from Docs OS perspective."
+  "last_updated": "2026-02-19T06:45:00Z",
+  "notes": "Synced Docs OS SSOT to GitHub reality: repository default branch is master, PR #140 is open, PR #152 is closed, and LOCK:ci unresolved state is explicitly blocking ci-touching implementation task issuance."
 }
