@@ -37,7 +37,7 @@ class DictSecretRefResolver(SecretRefResolver):
     def resolve(self, secret_ref: str) -> ResolvedSecret:
         value = self._secrets.get(secret_ref)
         if value is None:
-            raise CoreError(ErrorCode.MISSING_AUTH, f"secret_ref not found: {secret_ref}")
+            raise CoreError(ErrorCode.MISSING_AUTH, "secret_ref not found")
         return value
 
 
@@ -79,10 +79,13 @@ class KeyPool:
     def health(self) -> dict[str, KeyHealth]:
         return self._health
 
-    def select(self, *, required_scope: str) -> KeyRef:
+    def select(self, *, required_scope: str, excluded_key_ids: set[str] | None = None) -> KeyRef:
         now_ms = self._now_ms_fn()
+        excluded = excluded_key_ids or set()
         candidates = [k for k in self._keys if k.scope == required_scope]
         for key in candidates:
+            if key.key_id in excluded:
+                continue
             state = self._health[key.key_id]
             if state.exhausted:
                 continue
@@ -90,6 +93,17 @@ class KeyPool:
                 continue
             return key
         raise CoreError(ErrorCode.AUTH_FAILED, "all keys exhausted or cooling down", details={"scope": required_scope})
+
+    def has_eligible_key(self, *, required_scope: str, excluded_key_ids: set[str] | None = None) -> bool:
+        try:
+            self.select(required_scope=required_scope, excluded_key_ids=excluded_key_ids)
+        except CoreError:
+            return False
+        return True
+
+    @property
+    def max_attempts(self) -> int:
+        return self._policy.max_attempts
 
     def mark_success(self, *, key_id: str) -> None:
         state = self._health[key_id]
@@ -104,7 +118,7 @@ class KeyPool:
         state.last_error_code = error_code.value
         state.consecutive_failures += 1
 
-        if error_code in {ErrorCode.NOT_SUPPORTED, ErrorCode.INVALID_PARAMS}:
+        if error_code in {ErrorCode.NOT_SUPPORTED, ErrorCode.INVALID_PARAMS, ErrorCode.INVALID_ORDER}:
             return
 
         if error_code == ErrorCode.RATE_LIMITED and self._policy.respect_retry_after and retry_after_ms:
@@ -150,31 +164,63 @@ class GmoPrivateExecutionAdapter(Exchange):
         if "execution" not in ctx.features:
             raise CoreError(ErrorCode.FEATURE_DISABLED, "execution feature disabled")
 
-        if op in {OpName.PLACE_ORDER, OpName.CANCEL_ORDER} and self._dry_run_default and not ctx.live_trading:
+        if "live-trading" not in ctx.features or not ctx.live_trading:
             self._audit("gmo_preflight_reject", op, ctx, ErrorCode.DRY_RUN_ONLY, key_id=None, scope="trade")
             raise CoreError(ErrorCode.DRY_RUN_ONLY, "live-trading override required")
 
         scope = "trade"
-        key = self._key_pool.select(required_scope=scope)
-        self.metrics["ucel_key_selected_total"] += 1
-
-        try:
-            secret = self._secret_resolver.resolve(key.secret_ref)
-        except CoreError:
-            self.metrics["ucel_auth_failed_total"] += 1
-            self._audit("gmo_preflight_reject", op, ctx, ErrorCode.MISSING_AUTH, key_id=key.key_id, scope=scope)
-            raise
-
         path_map = self._paths_by_op()
         endpoint = path_map.get(op)
         if endpoint is None:
             raise CoreError(ErrorCode.NOT_SUPPORTED, f"op unsupported: {op.value}")
 
-        if self._request_fn is not None:
-            response = self._request_fn(endpoint["id"], params, secret.api_key)
+        blocked_failover_codes = {ErrorCode.NOT_SUPPORTED, ErrorCode.INVALID_ORDER, ErrorCode.INVALID_PARAMS}
+        attempted: set[str] = set()
+
+        for _ in range(self._key_pool.max_attempts):
+            key = self._key_pool.select(required_scope=scope, excluded_key_ids=attempted)
+            attempted.add(key.key_id)
+            self.metrics["ucel_key_selected_total"] += 1
+
+            try:
+                secret = self._secret_resolver.resolve(key.secret_ref)
+            except CoreError as exc:
+                self.metrics["ucel_auth_failed_total"] += 1
+                self.metrics["ucel_key_failover_total"] += 1
+                self._key_pool.mark_failure(key_id=key.key_id, error_code=ErrorCode.AUTH_FAILED)
+                self._audit("gmo_preflight_reject", op, ctx, ErrorCode.MISSING_AUTH, key_id=key.key_id, scope=scope)
+                if not self._key_pool.has_eligible_key(required_scope=scope, excluded_key_ids=attempted):
+                    raise exc
+                continue
+
+            try:
+                response = self._dispatch(endpoint=endpoint, op=op, params=params, api_key=secret.api_key)
+            except CoreError as exc:
+                self.metrics["ucel_key_failover_total"] += 1
+                if exc.error_code == ErrorCode.RATE_LIMITED:
+                    self.metrics["ucel_rate_limited_total"] += 1
+                self._key_pool.mark_failure(key_id=key.key_id, error_code=exc.error_code, retry_after_ms=exc.details.get("retry_after_ms"))
+                self._audit("gmo_private_error", op, ctx, exc.error_code, key_id=key.key_id, scope=scope)
+                if exc.error_code in blocked_failover_codes or not self._key_pool.has_eligible_key(
+                    required_scope=scope, excluded_key_ids=attempted
+                ):
+                    raise
+                continue
+
             self._key_pool.mark_success(key_id=key.key_id)
             self._audit("gmo_private_ok", op, ctx, None, key_id=key.key_id, scope=scope)
             return response
+
+        raise CoreError(ErrorCode.AUTH_FAILED, "key pool attempts exhausted", details={"scope": scope})
+
+    def _dispatch(self, *, endpoint: dict[str, Any], op: OpName, params: dict[str, Any], api_key: str) -> Any:
+        if self._request_fn is not None:
+            try:
+                return self._request_fn(endpoint["id"], params, api_key)
+            except CoreError:
+                raise
+            except Exception as exc:  # noqa: BLE001
+                raise self._map_request_error(exc) from None
 
         base_url = str(endpoint["base_url"]).rstrip("/")
         url = f"{base_url}{endpoint['path']}"
@@ -190,22 +236,24 @@ class GmoPrivateExecutionAdapter(Exchange):
                 url=url,
                 timeout_seconds=5,
                 body=body,
-                headers={"X-API-KEY": secret.api_key},
+                headers={"X-API-KEY": api_key},
                 is_private=True,
                 auth_header="signed",
             )
         except Exception as exc:  # noqa: BLE001
-            code = ErrorCode.RATE_LIMITED if "429" in str(exc) else ErrorCode.AUTH_FAILED
-            if code == ErrorCode.RATE_LIMITED:
-                self.metrics["ucel_rate_limited_total"] += 1
-            self.metrics["ucel_key_failover_total"] += 1
-            self._key_pool.mark_failure(key_id=key.key_id, error_code=code)
-            self._audit("gmo_private_error", op, ctx, code, key_id=key.key_id, scope=scope)
-            raise
+            raise self._map_request_error(exc) from None
 
-        self._key_pool.mark_success(key_id=key.key_id)
-        self._audit("gmo_private_ok", op, ctx, None, key_id=key.key_id, scope=scope)
         return json.loads(payload.decode("utf-8"))
+
+    def _map_request_error(self, exc: Exception) -> CoreError:
+        text = str(exc)
+        retry_after_ms: int | None = None
+        if "429" in text:
+            digits = "".join(ch for ch in text if ch.isdigit())
+            if digits:
+                retry_after_ms = int(digits) * 1000
+            return CoreError(ErrorCode.RATE_LIMITED, "rate limited", details={"retry_after_ms": retry_after_ms})
+        return CoreError(ErrorCode.AUTH_FAILED, "private request failed")
 
     def _paths_by_op(self) -> dict[OpName, dict[str, Any]]:
         catalog = json.loads(Path(self._registry.catalog_path).read_text(encoding="utf-8"))
