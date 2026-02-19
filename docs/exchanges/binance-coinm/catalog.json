@@ -1,0 +1,1122 @@
+{
+  "exchange": "binance-coinm",
+  "generated_from": {
+    "sources_md": "docs/exchanges/binance-coinm/sources.md",
+    "last_checked_at": "2026-02-19",
+    "notes": "Official docs navigation catalog for Binance COIN-M Futures and Derivatives Change Log."
+  },
+  "rest_endpoints": [
+    {
+      "id": "coinm.public.rest.general.ref",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "docs://binance-coinm",
+      "path": "/general-info",
+      "version": "n/a",
+      "operation": "doc-ref (general constraints/security/limits)",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "base_rules",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": "timing/signature/base URL guidance"
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "see error-code reference"
+      },
+      "rate_limit": {
+        "notes": "See General Info"
+      },
+      "notes": "Global behavior for all COIN-M REST APIs.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/general-info"
+    },
+    {
+      "id": "coinm.public.rest.errors.ref",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "docs://binance-coinm",
+      "path": "/error-code",
+      "version": "n/a",
+      "operation": "doc-ref (error codes)",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "error_codes",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "self-reference"
+      },
+      "rate_limit": {
+        "notes": "n/a"
+      },
+      "notes": "Shared error definitions.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/error-code"
+    },
+    {
+      "id": "coinm.public.rest.common.ref",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "docs://binance-coinm",
+      "path": "/common-definition",
+      "version": "n/a",
+      "operation": "doc-ref (shared enum/filter definitions)",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "enum_and_filter_definitions",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "n/a"
+      },
+      "notes": "Shared structures used by REST/WS payloads.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/common-definition"
+    },
+    {
+      "id": "coinm.public.rest.market.ref",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "docs://binance-coinm",
+      "path": "/market-data/rest-api",
+      "version": "n/a",
+      "operation": "doc-ref (market data endpoints family)",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "pair",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "interval",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "int",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object/array<object>",
+        "fields": [
+          {
+            "name": "exchangeInfo/depth/trades/klines/premiumIndex/openInterest/fundingRate/indexPrice",
+            "type": "various",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "Per endpoint weight"
+      },
+      "notes": "Public market endpoint families.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/market-data/rest-api"
+    },
+    {
+      "id": "coinm.private.rest.trade.ref",
+      "service": "crypto-derivatives",
+      "visibility": "private",
+      "method": "POST/GET/DELETE",
+      "base_url": "docs://binance-coinm",
+      "path": "/trade/rest-api",
+      "version": "n/a",
+      "operation": "doc-ref (trade endpoints family)",
+      "auth": {
+        "type": "signed",
+        "notes": "TRADE permission and signature/timestamp rules apply"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "side",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "timestamp",
+            "type": "int(ms)",
+            "required": true
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object/array<object>",
+        "fields": [
+          {
+            "name": "order lifecycle payloads",
+            "type": "various",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "REQUEST_WEIGHT + ORDERS"
+      },
+      "notes": "Order placement/change/cancel/query families.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/trade/rest-api"
+    },
+    {
+      "id": "coinm.private.rest.account.ref",
+      "service": "crypto-derivatives",
+      "visibility": "private",
+      "method": "GET/POST",
+      "base_url": "docs://binance-coinm",
+      "path": "/account/rest-api",
+      "version": "n/a",
+      "operation": "doc-ref (account endpoints family)",
+      "auth": {
+        "type": "signed",
+        "notes": "USER_DATA/ACCOUNT scope methods"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "timestamp",
+            "type": "int(ms)",
+            "required": true
+          },
+          {
+            "name": "recvWindow",
+            "type": "int",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object/array<object>",
+        "fields": [
+          {
+            "name": "balances/positions/income/leverage config",
+            "type": "various",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "Per endpoint weight"
+      },
+      "notes": "Account state/configuration family.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/account/rest-api"
+    },
+    {
+      "id": "coinm.private.rest.listenkey.ref",
+      "service": "crypto-derivatives",
+      "visibility": "private",
+      "method": "POST/PUT/DELETE",
+      "base_url": "https://dapi.binance.com",
+      "path": "/dapi/v1/listenKey",
+      "version": "v1",
+      "operation": "User Data Stream listenKey management",
+      "auth": {
+        "type": "api-key",
+        "notes": "X-MBX-APIKEY required"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "listenKey",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "1 weight per call"
+      },
+      "notes": "Create/keepalive/close listenKey for user stream.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/user-data-streams/rest-api"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "coinm.public.ws.market.root",
+      "ws_url": "wss://dstream.binance.com/ws or /stream?streams=...",
+      "version": "stream-v1",
+      "channel": "market streams multiplex",
+      "subscribe": {
+        "template": "connect with raw or combined stream URL",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "close socket",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          "stream",
+          "data(e",
+          "E",
+          "...)"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": [
+        "stream naming must follow page definitions"
+      ],
+      "notes": "COIN-M market stream transport root.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams"
+    },
+    {
+      "id": "coinm.public.ws.market.aggtrade",
+      "ws_url": "wss://dstream.binance.com/ws/<symbol>@aggTrade",
+      "version": "stream-v1",
+      "channel": "aggregate trade stream",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          "e",
+          "E",
+          "a",
+          "s",
+          "p",
+          "q",
+          "f",
+          "l",
+          "T",
+          "m"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": [
+        "symbol must be listed contract"
+      ],
+      "notes": "Aggregated trades by taker order.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/aggregate-trade-streams"
+    },
+    {
+      "id": "coinm.public.ws.market.markprice",
+      "ws_url": "wss://dstream.binance.com/ws/<symbol>@markPrice or @markPrice@1s",
+      "version": "stream-v1",
+      "channel": "mark price stream",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          "e",
+          "E",
+          "s",
+          "p",
+          "P",
+          "i",
+          "r",
+          "T"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": [
+        "1s stream variant available"
+      ],
+      "notes": "Mark/index/funding fields broadcast.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/mark-price-stream"
+    },
+    {
+      "id": "coinm.public.ws.market.kline",
+      "ws_url": "wss://dstream.binance.com/ws/<symbol>@kline_<interval>",
+      "version": "stream-v1",
+      "channel": "symbol kline stream",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          "e",
+          "E",
+          "s",
+          "k(t",
+          "T",
+          "i",
+          "f",
+          "L",
+          "o",
+          "c",
+          "h",
+          "l",
+          "v",
+          "n",
+          "x",
+          "q",
+          "V",
+          "Q",
+          "B)"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": [
+        "interval must be supported value"
+      ],
+      "notes": "Symbol candlestick updates.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/kline-candlestick-streams"
+    },
+    {
+      "id": "coinm.public.ws.market.continuous-kline",
+      "ws_url": "wss://dstream.binance.com/ws/<pair>_<contractType>@continuousKline_<interval>",
+      "version": "stream-v1",
+      "channel": "continuous contract kline",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          "e",
+          "E",
+          "ps",
+          "ct",
+          "k(...)"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": [
+        "contractType in CURRENT_QUARTER/NEXT_QUARTER/PERPETUAL"
+      ],
+      "notes": "Continuous contract candlesticks.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/continuous-contract-kline-candlestick-streams"
+    },
+    {
+      "id": "coinm.public.ws.market.index-kline",
+      "ws_url": "wss://dstream.binance.com/ws/<pair>@indexPriceKline_<interval>",
+      "version": "stream-v1",
+      "channel": "index price kline",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          "e",
+          "E",
+          "ps",
+          "k(...)"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": [
+        "pair-based stream"
+      ],
+      "notes": "Index price candlestick updates.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/index-price-kline-candlestick-streams"
+    },
+    {
+      "id": "coinm.public.ws.market.miniticker",
+      "ws_url": "wss://dstream.binance.com/ws/<symbol>@miniTicker",
+      "version": "stream-v1",
+      "channel": "individual mini ticker",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          "e",
+          "E",
+          "s",
+          "c",
+          "o",
+          "h",
+          "l",
+          "v",
+          "q"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": [
+        "symbol contract required"
+      ],
+      "notes": "Individual symbol mini ticker.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/individual-symbol-mini-ticker-stream"
+    },
+    {
+      "id": "coinm.public.ws.market.miniticker.all",
+      "ws_url": "wss://dstream.binance.com/ws/!miniTicker@arr",
+      "version": "stream-v1",
+      "channel": "all market mini ticker",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "array<object>",
+        "fields": [
+          "list of mini ticker objects"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": [
+        "emits changed symbols only"
+      ],
+      "notes": "All-symbol mini ticker array.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/all-market-mini-tickers-stream"
+    },
+    {
+      "id": "coinm.public.ws.market.ticker",
+      "ws_url": "wss://dstream.binance.com/ws/<symbol>@ticker",
+      "version": "stream-v1",
+      "channel": "individual 24h ticker",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          "e",
+          "E",
+          "s",
+          "p",
+          "P",
+          "w",
+          "c",
+          "Q",
+          "o",
+          "h",
+          "l",
+          "v",
+          "q",
+          "O",
+          "C",
+          "F",
+          "L",
+          "n"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": [
+        "24h rolling stats"
+      ],
+      "notes": "Individual symbol ticker stats.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/individual-symbol-ticker-streams"
+    },
+    {
+      "id": "coinm.public.ws.market.ticker.all",
+      "ws_url": "wss://dstream.binance.com/ws/!ticker@arr",
+      "version": "stream-v1",
+      "channel": "all market ticker",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "array<object>",
+        "fields": [
+          "list of ticker stats objects"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": [
+        "emits changed symbols only"
+      ],
+      "notes": "All-symbol ticker array.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/all-market-tickers-streams"
+    },
+    {
+      "id": "coinm.public.ws.market.bookticker",
+      "ws_url": "wss://dstream.binance.com/ws/<symbol>@bookTicker",
+      "version": "stream-v1",
+      "channel": "book ticker stream",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          "e",
+          "u",
+          "s",
+          "ps",
+          "b",
+          "B",
+          "a",
+          "A",
+          "T",
+          "E"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": [
+        "best bid/ask only"
+      ],
+      "notes": "Top-of-book updates.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/book-ticker-stream"
+    },
+    {
+      "id": "coinm.public.ws.market.liquidation",
+      "ws_url": "wss://dstream.binance.com/ws/<symbol>@forceOrder",
+      "version": "stream-v1",
+      "channel": "liquidation stream",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          "e",
+          "E",
+          "o(symbol",
+          "pair",
+          "side",
+          "type",
+          "timeInForce",
+          "origQty",
+          "price",
+          "avgPrice",
+          "status",
+          "...)"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": [
+        "stream throttled by event rules"
+      ],
+      "notes": "Liquidation order snapshots.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/liquidation-order-streams"
+    },
+    {
+      "id": "coinm.public.ws.market.depth.partial",
+      "ws_url": "wss://dstream.binance.com/ws/<symbol>@depth<levels>@100ms",
+      "version": "stream-v1",
+      "channel": "partial depth stream",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          "e",
+          "E",
+          "T",
+          "s",
+          "U",
+          "u",
+          "pu",
+          "bids",
+          "asks"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": [
+        "levels and speed constrained by docs"
+      ],
+      "notes": "Partial order book snapshots.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/partial-book-depth-streams"
+    },
+    {
+      "id": "coinm.public.ws.market.depth.diff",
+      "ws_url": "wss://dstream.binance.com/ws/<symbol>@depth[@100ms]",
+      "version": "stream-v1",
+      "channel": "diff depth stream",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          "e",
+          "E",
+          "T",
+          "s",
+          "U",
+          "u",
+          "pu",
+          "b",
+          "a"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": [
+        "requires REST snapshot sync procedure"
+      ],
+      "notes": "Incremental order book diffs.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/diff-book-depth-streams"
+    },
+    {
+      "id": "coinm.public.ws.market.composite-index",
+      "ws_url": "wss://dstream.binance.com/ws/<symbol>@compositeIndex",
+      "version": "stream-v1",
+      "channel": "composite index info",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          "e",
+          "E",
+          "s",
+          "p",
+          "C",
+          "P",
+          "w",
+          "i"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": [
+        "symbol availability per index"
+      ],
+      "notes": "Composite index symbol information.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/composite-index-symbol-information-streams"
+    },
+    {
+      "id": "coinm.public.ws.market.contract-info",
+      "ws_url": "wss://dstream.binance.com/ws/!contractInfo",
+      "version": "stream-v1",
+      "channel": "contract info stream",
+      "subscribe": {
+        "template": "auto-on-connect or SUBSCRIBE",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "close socket or UNSUBSCRIBE",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          "e",
+          "E",
+          "s",
+          "ps",
+          "ct",
+          "dt",
+          "ot",
+          "cs",
+          "bks",
+          "bf",
+          "..."
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": [
+        "emits listing/contract changes"
+      ],
+      "notes": "Contract metadata update stream.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/contract-info-stream"
+    },
+    {
+      "id": "coinm.public.ws.wsapi.general",
+      "ws_url": "wss://ws-dapi.binance.com/ws-dapi/v1",
+      "version": "v1",
+      "channel": "websocket-api-general",
+      "subscribe": {
+        "template": "JSON request: {id,method,params}",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "per method or connection close",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          "id",
+          "status",
+          "result",
+          "error",
+          "rateLimits"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "none/signed(method-dependent)",
+        "notes": ""
+      },
+      "restrictions": [
+        "each method defines its own auth and params"
+      ],
+      "notes": "COIN-M WebSocket API general protocol.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-api-general-info"
+    },
+    {
+      "id": "coinm.private.ws.userdata.events",
+      "ws_url": "wss://dstream.binance.com/ws/<listenKey>",
+      "version": "stream-v1",
+      "channel": "user data events",
+      "subscribe": {
+        "template": "Create listenKey via REST then connect",
+        "required_fields": []
+      },
+      "unsubscribe": {
+        "template": "DELETE listenKey via REST or close socket",
+        "required_fields": []
+      },
+      "message": {
+        "shape": "object",
+        "fields": [
+          "ACCOUNT_UPDATE",
+          "ORDER_TRADE_UPDATE",
+          "MARGIN_CALL",
+          "ACCOUNT_CONFIG_UPDATE",
+          "STRATEGY_UPDATE",
+          "GRID_UPDATE"
+        ]
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "interval": "server-defined"
+      },
+      "auth": {
+        "type": "api-key/signed bootstrap",
+        "notes": ""
+      },
+      "restrictions": [
+        "requires active listenKey lifecycle management"
+      ],
+      "notes": "COIN-M user data event stream.",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/user-data-streams"
+    }
+  ],
+  "data_feeds": [
+    {
+      "id": "coinm.data.market.realtime.streams",
+      "kind": "market-data-stream",
+      "url_pattern": "wss://dstream.binance.com/ws/<streamName> or /stream?streams=<a>/<b>",
+      "format": "json",
+      "compression": "none",
+      "update_freq": "real-time",
+      "retention": "session-lifetime",
+      "schema": {
+        "summary": "event envelope with stream name + payload (`e`,`E`,symbol-specific fields)"
+      },
+      "notes": "Covers aggTrade, markPrice, kline, ticker, depth, liquidation, contract info families",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams"
+    },
+    {
+      "id": "coinm.data.market.snapshot.rest.depth",
+      "kind": "rest-snapshot",
+      "url_pattern": "https://dapi.binance.com/dapi/v1/depth?symbol=<symbol>&limit=<n>",
+      "format": "json",
+      "compression": "https gzip(opt)",
+      "update_freq": "on-demand",
+      "retention": "request-time snapshot",
+      "schema": {
+        "summary": "snapshot includes lastUpdateId, bids, asks"
+      },
+      "notes": "Used to initialize local order book before diff depth replay",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/market-data/rest-api"
+    },
+    {
+      "id": "coinm.data.account.realtime.userdata",
+      "kind": "user-data-stream",
+      "url_pattern": "wss://dstream.binance.com/ws/<listenKey>",
+      "format": "json",
+      "compression": "none",
+      "update_freq": "real-time",
+      "retention": "listenKey-lifetime",
+      "schema": {
+        "summary": "account/order/margin event objects by event type"
+      },
+      "notes": "listenKey managed via REST API endpoints",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/user-data-streams"
+    },
+    {
+      "id": "coinm.data.rpc.realtime.wsapi",
+      "kind": "websocket-api-rpc",
+      "url_pattern": "wss://ws-dapi.binance.com/ws-dapi/v1",
+      "format": "json",
+      "compression": "none",
+      "update_freq": "request-response + push (method dependent)",
+      "retention": "session-lifetime",
+      "schema": {
+        "summary": "request/response object: id,status,result,error,rateLimits"
+      },
+      "notes": "Method coverage governed by WS API docs and change log",
+      "source_url": "https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-api-general-info"
+    }
+  ],
+  "diffs": []
+}
