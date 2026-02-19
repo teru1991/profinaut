@@ -181,6 +181,32 @@ impl OrderBookResyncEngine {
                 self.health = OrderBookHealth::Degraded;
                 return Err(UcelError::new(ErrorCode::Desync, "delta ahead of snapshot"));
             }
+
+            // Apply bids from delta
+            for delta_bid in delta.bids {
+                if let Some(existing_bid) = snapshot.bids.iter_mut().find(|b| b.price == delta_bid.price) {
+                    existing_bid.qty = delta_bid.qty;
+                } else {
+                    snapshot.bids.push(delta_bid);
+                }
+            }
+            // Apply asks from delta
+            for delta_ask in delta.asks {
+                if let Some(existing_ask) = snapshot.asks.iter_mut().find(|a| a.price == delta_ask.price) {
+                    existing_ask.qty = delta_ask.qty;
+                } else {
+                    snapshot.asks.push(delta_ask);
+                }
+            }
+
+            // Remove zero quantity levels
+            snapshot.bids.retain(|b| b.qty > 0.0);
+            snapshot.asks.retain(|a| a.qty > 0.0);
+
+            // Sort to maintain order book structure (descending for bids, ascending for asks)
+            snapshot.bids.sort_by(|a, b| b.price.partial_cmp(&a.price).unwrap_or(std::cmp::Ordering::Equal));
+            snapshot.asks.sort_by(|a, b| a.price.partial_cmp(&b.price).unwrap_or(std::cmp::Ordering::Equal));
+
             snapshot.sequence = delta.sequence_end;
         }
         self.health = OrderBookHealth::Ok;
