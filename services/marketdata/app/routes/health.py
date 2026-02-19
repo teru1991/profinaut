@@ -7,6 +7,7 @@ from fastapi import APIRouter
 
 from services.marketdata.app.metrics import ingest_metrics, quality_gate_metrics
 from services.marketdata.app.settings import load_settings
+from services.marketdata.app.routes.raw_ingest import _get_bronze_writer
 
 router = APIRouter()
 
@@ -18,14 +19,22 @@ def _build_id() -> str:
 @router.get("/healthz")
 def healthz() -> dict[str, object]:
     settings = load_settings()
+    writer_health = _get_bronze_writer().health()
     checks = [
-        {"name": "object_store", "ok": settings.object_store_backend is not None},
+        {"name": "object_store", "ok": settings.object_store_backend is not None and not writer_health.get("degraded", False)},
         {"name": "db", "ok": settings.db_dsn is not None},
+        {"name": "spool", "ok": int(writer_health.get("spool_bytes", 0)) == 0},
     ]
 
+    status = "ok"
+    if settings.degraded or writer_health.get("degraded"):
+        status = "degraded"
+
     return {
-        "status": "degraded" if settings.degraded else "ok",
+        "status": status,
         "checks": checks,
+        "last_success_ts": writer_health.get("last_success_ts"),
+        "spool_bytes": writer_health.get("spool_bytes"),
         "ts": datetime.now(UTC).isoformat(),
     }
 
