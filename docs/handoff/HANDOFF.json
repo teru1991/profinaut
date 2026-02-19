@@ -1,12 +1,14 @@
 {
-  "active_task": "PROGRESS-AUDIT-000",
+  "active_task": "DOC-DATAPLATFORM-SSOT-002-FREE",
   "what_done": [
-    "GitHub API 一次情報で default branch / open PR / PR #140 / PR #156 / 最近の merge commit を取得した。",
-    "Docs OS（status/trace/handoff/decisions）と GitHub 実態を突合し、Task A/B と postB chain（EXCH-AUDIT〜GMO-POSTB-006）の merge 到達を確認した。",
-    "progress-updates に監査結果（PR状態表・Task進捗表・次タスク1件）を記録した。"
+    "Created data platform SSOT docs for Raw-first Bronze -> Silver -> Gold -> Serving.",
+    "Fixed technology selection to free OSS only and documented explicit non-adoption of MinIO/Redis.",
+    "Added ADRs for Iceberg, object storage choice, serving stores, dedupe IDs, and secrets non-persistence.",
+    "Aligned Docs OS preflight by making status.json and HANDOFF.json active_task consistent."
   ],
   "what_next": [
-    "POSTB-NEXT-001（TASK C: GMO private execution hardening）を 1PR で起票し、PR #179 実装の本番運用チェック証跡を追加する。"
+    "Share docs/data-platform/** with implementation owners and open implementation tasks referencing these contracts.",
+    "Apply Bronze schema gate, secret scrub denylist, and RawRef lineage requirements in ingestion/transform code."
   ],
   "open_pr": "",
   "locks_held": [
@@ -17,8 +19,9 @@
   ],
   "commands_next": [
     "python -c \"import json; json.load(open('docs/status/status.json'))\"",
+    "python -c \"import json; json.load(open('docs/handoff/HANDOFF.json'))\"",
     "python -c \"import json; json.load(open('docs/status/trace-index.json'))\"",
-    "git diff -- docs/status/status.json docs/status/trace-index.json docs/handoff/HANDOFF.json docs/decisions/decisions.md docs/status/progress-updates/2026-02-19_progress-audit-000.md"
+    "git diff --name-only"
   ],
-  "updated_at": "2026-02-19T09:47:32Z"
+  "updated_at": "2026-02-19T12:30:00Z"
 }
