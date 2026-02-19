@@ -90,6 +90,35 @@
         "LOCK:shared-docs",
         "LOCK:services-marketdata(read-only observed)"
       ]
+    },
+    "EXCH-AUDIT-POSTB-000": {
+      "branch": "work",
+      "pr_urls": [],
+      "commit_shas": [],
+      "verification_evidence": [
+        "docs/audits/2026-02-19_exch-audit-postb-000.md",
+        "docs/status/status.json",
+        "docs/status/trace-index.json",
+        "docs/handoff/HANDOFF.json",
+        "docs/decisions/decisions.md"
+      ],
+      "depends_on": [
+        "MD-DESC-B-005"
+      ],
+      "tracking_prs": [
+        140,
+        156
+      ],
+      "pr_slots": {
+        "task_b_pr": "https://github.com/teru1991/profinaut/pull/156",
+        "task_b_pr_status": "merged",
+        "legacy_pr_140": "https://github.com/teru1991/profinaut/pull/140",
+        "legacy_pr_140_status": "closed(no-merge)",
+        "next_ucel_task": "UCEL-CORE-POSTB-001"
+      },
+      "locks": [
+        "LOCK:shared-docs"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, with GitHub-tracked PR references for exchange/docs synchronization tasks."
