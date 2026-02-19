@@ -222,6 +222,15 @@ _KEYWORDS = {
 
 _UNSUPPORTED_KEYWORDS = {"while", "for", "function", "import", "eval"}
 _PLACEHOLDER_RE = re.compile(r"\{\{\s*([A-Za-z_][A-Za-z0-9_\.]*)\s*\}\}")
+_ALLOWED_PLACEHOLDERS = {
+    "symbol",
+    "venue",
+    "venue_symbol",
+    "market_kind",
+    "trace_id",
+    "request_id",
+    "run_id",
+}
 
 
 class _Parser:
@@ -331,12 +340,29 @@ class _Parser:
         if tok.type != "IDENT":
             raise self._err("DSL_PARSE_ERROR", f"Invalid expression token {tok.type}", tok)
         ident = self._advance()
+        if self._peek().type == "LPAREN":
+            return self._parse_call_expr(ident)
         path = [ident.value]
         while self._peek().type == "DOT":
             self._advance()
             nxt = self._expect("IDENT")
             path.append(nxt.value)
         return Expr(kind="Expr", value={"path": path}, line=ident.line, column=ident.column)
+
+    def _parse_call_expr(self, ident: Token) -> Expr:
+        self._expect("LPAREN")
+        arg = self._parse_expr(until={"RPAREN"})
+        self._expect("RPAREN")
+        if ident.value not in {"json", "get"}:
+            raise self._err("DSL_NOT_SUPPORTED", f"Unsupported function '{ident.value}'", ident)
+        if arg.kind != "String":
+            raise self._err("DSL_TYPE_MISMATCH", f"{ident.value} expects a string pointer", Token("IDENT", ident.value, arg.line, arg.column))
+        return Expr(
+            kind="JsonPointer",
+            value={"pointer": arg.value["text"]},
+            line=ident.line,
+            column=ident.column,
+        )
 
     def _parse_map_literal(self) -> Expr:
         start = self._expect("LBRACE")
@@ -541,6 +567,96 @@ def validate_ast(ast: Ast) -> None:
                 visit_expr(entry["value"], depth + 1)
 
     visit_node(ast.root, 1)
+
+
+def get_json_pointer(value: Any, pointer_str: str) -> Any | None:
+    if pointer_str == "":
+        return value
+    if not pointer_str.startswith("/"):
+        raise DslError("DSL_INVALID_POINTER", "JSON pointer must start with '/'")
+
+    current = value
+    for raw in pointer_str.split("/")[1:]:
+        token = _decode_json_pointer_segment(raw)
+        if isinstance(current, dict):
+            if token not in current:
+                return None
+            current = current[token]
+            continue
+        if isinstance(current, list):
+            if not token.isdigit():
+                return None
+            index = int(token)
+            if index >= len(current):
+                return None
+            current = current[index]
+            continue
+        return None
+    return current
+
+
+def extract_json_pointer(value: Any, pointer_str: str, expected_type: str) -> Any | None:
+    extracted = get_json_pointer(value, pointer_str)
+    if extracted is None:
+        return None
+
+    type_checks = {
+        "string": lambda v: isinstance(v, str),
+        "int": lambda v: isinstance(v, int) and not isinstance(v, bool),
+        "bool": lambda v: isinstance(v, bool),
+        "array": lambda v: isinstance(v, list),
+        "object": lambda v: isinstance(v, dict),
+    }
+    if expected_type not in type_checks:
+        raise DslError("DSL_NOT_SUPPORTED", f"Unsupported expected type '{expected_type}'")
+    if not type_checks[expected_type](extracted):
+        raise DslError("DSL_TYPE_MISMATCH", f"Expected {expected_type}, got {type(extracted).__name__}")
+    return extracted
+
+
+def render_placeholders(template: str, values: dict[str, str], *, max_output_bytes: int) -> str:
+    parts: list[str] = []
+    i = 0
+    while i < len(template):
+        ch = template[i]
+        if ch != "{":
+            parts.append(ch)
+            i += 1
+            continue
+        end = template.find("}", i + 1)
+        if end == -1:
+            raise DslError("DSL_PARSE_ERROR", "Unclosed placeholder")
+        key = template[i + 1 : end].strip()
+        if key not in _ALLOWED_PLACEHOLDERS:
+            raise DslError("DSL_UNKNOWN_PLACEHOLDER", f"Unknown placeholder '{key}'")
+        parts.append(values.get(key, ""))
+        i = end + 1
+    rendered = "".join(parts)
+    if len(rendered.encode("utf-8")) > max_output_bytes:
+        raise DslError("DSL_OUTPUT_TOO_LARGE", "Rendered output exceeds max_output_bytes")
+    return rendered
+
+
+def _decode_json_pointer_segment(segment: str) -> str:
+    out: list[str] = []
+    i = 0
+    while i < len(segment):
+        ch = segment[i]
+        if ch != "~":
+            out.append(ch)
+            i += 1
+            continue
+        if i + 1 >= len(segment):
+            raise DslError("DSL_INVALID_POINTER", "Invalid JSON pointer escape")
+        nxt = segment[i + 1]
+        if nxt == "0":
+            out.append("~")
+        elif nxt == "1":
+            out.append("/")
+        else:
+            raise DslError("DSL_INVALID_POINTER", "Invalid JSON pointer escape")
+        i += 2
+    return "".join(out)
 
 
 def _string_expr_from_token(tok: Token) -> Expr:
