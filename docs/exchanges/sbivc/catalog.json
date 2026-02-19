@@ -1,0 +1,11 @@
+{
+  "exchange": "sbivc",
+  "generated_from": {
+    "sources_md": "docs/exchanges/sbivc/sources.md",
+    "last_checked_at": "2026-02-19",
+    "notes": "Official docs only. Developer-facing REST/WS/data specs are not documented in the enumerated official pages; arrays intentionally empty."
+  },
+  "rest_endpoints": [],
+  "ws_channels": [],
+  "data_feeds": []
+}
