@@ -179,11 +179,60 @@ class ExecuteContext:
     policy: RuntimePolicy | None = None
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class ResolvedSecret:
     api_key: str
     api_secret: str
     passphrase: str | None = None
+
+    def __repr__(self) -> str:
+        return (
+            "ResolvedSecret(api_key=<redacted>, api_secret=<redacted>, "
+            f"passphrase={'<redacted>' if self.passphrase else None})"
+        )
+
+    __str__ = __repr__
+
+
+@dataclass(frozen=True)
+class AccountBalance:
+    symbol: str
+    amount: float
+
+
+@dataclass(frozen=True)
+class OrderIntent:
+    symbol: str
+    side: str
+    order_type: str
+    size: float
+    price: float | None = None
+
+
+@dataclass(frozen=True)
+class OrderAck:
+    order_id: str
+    status: str
+
+
+@dataclass(frozen=True)
+class OrderState:
+    order_id: str
+    symbol: str
+    side: str
+    status: str
+    size: float
+    price: float | None = None
+
+
+@dataclass(frozen=True)
+class FillEvent:
+    execution_id: str
+    order_id: str
+    symbol: str
+    side: str
+    size: float
+    price: float
 
 
 class SecretRefResolver(ABC):
