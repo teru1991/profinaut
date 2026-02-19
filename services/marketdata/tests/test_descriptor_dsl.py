@@ -2,6 +2,9 @@ import pytest
 
 from services.marketdata.app.descriptor_dsl import (
     DslError,
+    ExecutionContext,
+    ExecutionLimits,
+    evaluate,
     extract_json_pointer,
     get_json_pointer,
     parse,
@@ -92,3 +95,46 @@ def test_parse_json_pointer_expr_requires_string_arg() -> None:
     with pytest.raises(DslError) as exc:
         parse(tokenize("emit json(1)"))
     assert exc.value.code == "DSL_TYPE_MISMATCH"
+
+
+def test_mini_expr_comparison_and_logic_happy_path() -> None:
+    source = 'if len(items) >= 2 and contains("abc", "b") and not false { emit "ok" }'
+    rendered = evaluate(source, context=ExecutionContext(values={"items": [1, 2]}))
+    assert rendered == "ok"
+
+
+def test_mini_expr_type_mismatch_in_comparison_rejected() -> None:
+    with pytest.raises(DslError) as exc:
+        evaluate('if 1 == "1" { emit "x" }')
+    assert exc.value.code == "DSL_TYPE_MISMATCH"
+
+
+def test_mini_expr_len_null_rejected() -> None:
+    with pytest.raises(DslError) as exc:
+        evaluate('emit len(null)')
+    assert exc.value.code == "DSL_TYPE_MISMATCH"
+
+
+def test_mini_expr_default_with_empty_value() -> None:
+    rendered = evaluate('emit default("", "fallback")')
+    assert rendered == "fallback"
+
+
+def test_foreach_iteration_limit_enforced() -> None:
+    with pytest.raises(DslError) as exc:
+        evaluate(
+            'foreach item in items { emit item }',
+            context=ExecutionContext(values={"items": [1, 2, 3]}),
+            limits=ExecutionLimits(max_loop_iters=2),
+        )
+    assert exc.value.code == "DSL_EXEC_LIMIT"
+
+
+def test_emit_count_limit_enforced() -> None:
+    with pytest.raises(DslError) as exc:
+        evaluate(
+            'foreach item in items { emit item }',
+            context=ExecutionContext(values={"items": [1, 2, 3]}),
+            limits=ExecutionLimits(max_emit_count=2),
+        )
+    assert exc.value.code == "DSL_OUTPUT_LIMIT"

@@ -75,6 +75,7 @@ class ExecutionLimits:
     max_output_bytes: int = 1_000_000
     max_steps: int = 2_000_000
     max_loop_iters: int = 100_000
+    max_emit_count: int = 100_000
     max_string_len: int = 1_000_000
 
 
@@ -94,6 +95,7 @@ class _Executor:
         self._steps = 0
         self._output: list[str] = []
         self._output_bytes = 0
+        self._emit_count = 0
         self._scope_stack: list[dict[str, Any]] = [dict(context.values)]
 
     def run(self) -> str:
@@ -152,6 +154,17 @@ class _Executor:
             return expr.value
         if expr.kind == "Expr":
             return self._resolve_path(expr)
+        if expr.kind == "UnaryOp":
+            operand = self._eval_expr(expr.value["operand"])
+            if expr.value["op"] == "not":
+                if not isinstance(operand, bool):
+                    raise DslError("DSL_TYPE_MISMATCH", "'not' expects bool", line=expr.line, column=expr.column)
+                return not operand
+            raise DslError("DSL_EXEC_ERROR", f"Unsupported unary op '{expr.value['op']}'", line=expr.line, column=expr.column)
+        if expr.kind == "BinaryOp":
+            return self._eval_binary(expr)
+        if expr.kind == "Call":
+            return self._eval_call(expr)
         if expr.kind == "MapLiteral":
             return {entry["key"]: self._eval_expr(entry["value"]) for entry in expr.value}
         raise DslError("DSL_EXEC_ERROR", f"Unsupported expression '{expr.kind}'", line=expr.line, column=expr.column)
@@ -189,6 +202,9 @@ class _Executor:
         return _MISSING
 
     def _append_output(self, value: str) -> None:
+        self._emit_count += 1
+        if self._emit_count > self._limits.max_emit_count:
+            raise DslError("DSL_OUTPUT_LIMIT", "Emit/output item limit exceeded")
         value_bytes = len(value.encode("utf-8"))
         new_size = self._output_bytes + value_bytes
         if new_size > self._limits.max_output_bytes:
@@ -200,6 +216,63 @@ class _Executor:
         self._steps += 1
         if self._steps > self._limits.max_steps:
             raise DslError("DSL_EXEC_LIMIT", "Execution step limit exceeded", line=source.line, column=source.column)
+
+    def _eval_binary(self, expr: Expr) -> Any:
+        op = expr.value["op"]
+        lhs = self._eval_expr(expr.value["left"])
+        rhs = self._eval_expr(expr.value["right"])
+        if op in {"and", "or"}:
+            if not isinstance(lhs, bool) or not isinstance(rhs, bool):
+                raise DslError("DSL_TYPE_MISMATCH", f"'{op}' expects bool operands", line=expr.line, column=expr.column)
+            return lhs and rhs if op == "and" else lhs or rhs
+        if op in {"==", "!=", "<", "<=", ">", ">="}:
+            if type(lhs) is not type(rhs):
+                raise DslError("DSL_TYPE_MISMATCH", "Comparison operands must have the same type", line=expr.line, column=expr.column)
+            if op == "==":
+                return lhs == rhs
+            if op == "!=":
+                return lhs != rhs
+            if not isinstance(lhs, (int, float, str)) or isinstance(lhs, bool):
+                raise DslError("DSL_TYPE_MISMATCH", f"'{op}' expects int/float/string operands", line=expr.line, column=expr.column)
+            if op == "<":
+                return lhs < rhs
+            if op == "<=":
+                return lhs <= rhs
+            if op == ">":
+                return lhs > rhs
+            return lhs >= rhs
+        raise DslError("DSL_EXEC_ERROR", f"Unsupported binary op '{op}'", line=expr.line, column=expr.column)
+
+    def _eval_call(self, expr: Expr) -> Any:
+        name = expr.value["name"]
+        args = [self._eval_expr(arg) for arg in expr.value["args"]]
+        if name == "len":
+            if len(args) != 1 or not isinstance(args[0], (str, list, dict)):
+                raise DslError("DSL_TYPE_MISMATCH", "len expects one string/array/object argument", line=expr.line, column=expr.column)
+            return len(args[0])
+        if name == "contains":
+            if len(args) != 2:
+                raise DslError("DSL_TYPE_MISMATCH", "contains expects 2 arguments", line=expr.line, column=expr.column)
+            haystack, needle = args
+            if isinstance(haystack, str):
+                if not isinstance(needle, str):
+                    raise DslError("DSL_TYPE_MISMATCH", "contains(string, x) requires string x", line=expr.line, column=expr.column)
+                return needle in haystack
+            if isinstance(haystack, list):
+                return needle in haystack
+            raise DslError("DSL_TYPE_MISMATCH", "contains expects array or string as first arg", line=expr.line, column=expr.column)
+        if name == "default":
+            if len(args) != 2:
+                raise DslError("DSL_TYPE_MISMATCH", "default expects 2 arguments", line=expr.line, column=expr.column)
+            value, fallback = args
+            if value is None:
+                return fallback
+            if isinstance(value, str) and value == "":
+                return fallback
+            if isinstance(value, (list, dict)) and len(value) == 0:
+                return fallback
+            return value
+        raise DslError("DSL_NOT_SUPPORTED", f"Unsupported function '{name}'", line=expr.line, column=expr.column)
 
 
 class _Missing:
@@ -218,6 +291,9 @@ _KEYWORDS = {
     "true": "TRUE",
     "false": "FALSE",
     "null": "NULL",
+    "and": "AND",
+    "or": "OR",
+    "not": "NOT",
 }
 
 _UNSUPPORTED_KEYWORDS = {"while", "for", "function", "import", "eval"}
@@ -317,6 +393,42 @@ class _Parser:
         return seq
 
     def _parse_expr(self, *, until: set[str]) -> Expr:
+        return self._parse_or_expr(until=until)
+
+    def _parse_or_expr(self, *, until: set[str]) -> Expr:
+        left = self._parse_and_expr(until=until)
+        while self._peek().type not in until and self._peek().type == "OR":
+            op = self._advance()
+            right = self._parse_and_expr(until=until)
+            left = Expr(kind="BinaryOp", value={"op": "or", "left": left, "right": right}, line=op.line, column=op.column)
+        return left
+
+    def _parse_and_expr(self, *, until: set[str]) -> Expr:
+        left = self._parse_not_expr(until=until)
+        while self._peek().type not in until and self._peek().type == "AND":
+            op = self._advance()
+            right = self._parse_not_expr(until=until)
+            left = Expr(kind="BinaryOp", value={"op": "and", "left": left, "right": right}, line=op.line, column=op.column)
+        return left
+
+    def _parse_not_expr(self, *, until: set[str]) -> Expr:
+        if self._peek().type not in until and self._peek().type == "NOT":
+            op = self._advance()
+            operand = self._parse_not_expr(until=until)
+            return Expr(kind="UnaryOp", value={"op": "not", "operand": operand}, line=op.line, column=op.column)
+        return self._parse_cmp_expr(until=until)
+
+    def _parse_cmp_expr(self, *, until: set[str]) -> Expr:
+        left = self._parse_primary_expr(until=until)
+        cmp_tokens = {"EQ", "NE", "LT", "LE", "GT", "GE"}
+        if self._peek().type not in until and self._peek().type in cmp_tokens:
+            op_tok = self._advance()
+            op_map = {"EQ": "==", "NE": "!=", "LT": "<", "LE": "<=", "GT": ">", "GE": ">="}
+            right = self._parse_primary_expr(until=until)
+            return Expr(kind="BinaryOp", value={"op": op_map[op_tok.type], "left": left, "right": right}, line=op_tok.line, column=op_tok.column)
+        return left
+
+    def _parse_primary_expr(self, *, until: set[str]) -> Expr:
         tok = self._peek()
         if tok.type in until:
             raise self._err("DSL_PARSE_ERROR", "Expected expression", tok)
@@ -351,10 +463,22 @@ class _Parser:
 
     def _parse_call_expr(self, ident: Token) -> Expr:
         self._expect("LPAREN")
-        arg = self._parse_expr(until={"RPAREN"})
+        args: list[Expr] = []
+        if self._peek().type != "RPAREN":
+            while True:
+                args.append(self._parse_expr(until={"COMMA", "RPAREN"}))
+                if self._peek().type == "COMMA":
+                    self._advance()
+                    continue
+                break
         self._expect("RPAREN")
+        if ident.value in {"len", "contains", "default"}:
+            return Expr(kind="Call", value={"name": ident.value, "args": args}, line=ident.line, column=ident.column)
         if ident.value not in {"json", "get"}:
             raise self._err("DSL_NOT_SUPPORTED", f"Unsupported function '{ident.value}'", ident)
+        if len(args) != 1:
+            raise self._err("DSL_TYPE_MISMATCH", f"{ident.value} expects 1 argument", ident)
+        arg = args[0]
         if arg.kind != "String":
             raise self._err("DSL_TYPE_MISMATCH", f"{ident.value} expects a string pointer", Token("IDENT", ident.value, arg.line, arg.column))
         return Expr(
@@ -501,6 +625,28 @@ def tokenize(input: str) -> list[Token]:
             ":": "COLON",
             ".": "DOT",
         }
+        ops2 = {
+            "==": "EQ",
+            "!=": "NE",
+            "<=": "LE",
+            ">=": "GE",
+        }
+        two = input[i : i + 2]
+        if two in ops2:
+            push(ops2[two], two, t_line, t_col)
+            i += 2
+            col += 2
+            continue
+        if ch == "<":
+            push("LT", ch, t_line, t_col)
+            i += 1
+            col += 1
+            continue
+        if ch == ">":
+            push("GT", ch, t_line, t_col)
+            i += 1
+            col += 1
+            continue
         if ch in punct:
             push(punct[ch], ch, t_line, t_col)
             i += 1
@@ -565,6 +711,14 @@ def validate_ast(ast: Ast) -> None:
         if expr.kind == "MapLiteral":
             for entry in expr.value:
                 visit_expr(entry["value"], depth + 1)
+        if expr.kind == "UnaryOp":
+            visit_expr(expr.value["operand"], depth + 1)
+        if expr.kind == "BinaryOp":
+            visit_expr(expr.value["left"], depth + 1)
+            visit_expr(expr.value["right"], depth + 1)
+        if expr.kind == "Call":
+            for arg in expr.value["args"]:
+                visit_expr(arg, depth + 1)
 
     visit_node(ast.root, 1)
 
