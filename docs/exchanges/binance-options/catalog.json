@@ -1,0 +1,638 @@
+{
+  "exchange": "binance-options",
+  "generated_from": {
+    "sources_md": "docs/exchanges/binance-options/sources.md",
+    "last_checked_at": "2026-02-19",
+    "notes": "Official docs navigation catalog for Binance Derivatives Options Trading and Derivatives Change Log."
+  },
+  "rest_endpoints": [
+    {
+      "id": "options.public.rest.general.ref",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "docs://binance-options",
+      "path": "/general-info",
+      "version": "n/a",
+      "operation": "doc-ref (general rules)",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "base_rules",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "See General Info"
+      },
+      "notes": "Timing/signature/base URL guidance for all options REST APIs.",
+      "source_url": "https://developers.binance.com/docs/derivatives/option/general-info"
+    },
+    {
+      "id": "options.public.rest.errors.ref",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "docs://binance-options",
+      "path": "/error-code",
+      "version": "n/a",
+      "operation": "doc-ref (error catalog)",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "error_codes",
+            "type": "array<object>",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "n/a"
+      },
+      "notes": "Shared options error definitions.",
+      "source_url": "https://developers.binance.com/docs/derivatives/option/error-code"
+    },
+    {
+      "id": "options.public.rest.market.ref",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "docs://binance-options",
+      "path": "/market-data/rest-api",
+      "version": "n/a",
+      "operation": "doc-ref (market data family)",
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "underlying",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "expiryDate",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "type": "int",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object/array<object>",
+        "fields": [
+          {
+            "name": "market_snapshots",
+            "type": "object/array",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "Per endpoint weight"
+      },
+      "notes": "Public options market data endpoints family.",
+      "source_url": "https://developers.binance.com/docs/derivatives/option/market-data/rest-api"
+    },
+    {
+      "id": "options.private.rest.trade.ref",
+      "service": "crypto-derivatives",
+      "visibility": "private",
+      "method": "GET/POST/DELETE",
+      "base_url": "docs://binance-options",
+      "path": "/trade/rest-api",
+      "version": "n/a",
+      "operation": "doc-ref (trade family)",
+      "auth": {
+        "type": "signed",
+        "notes": "TRADE permission and signature/timestamp rules apply"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "symbol",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "side",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "timestamp",
+            "type": "int(ms)",
+            "required": true
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object/array<object>",
+        "fields": [
+          {
+            "name": "order_lifecycle_payloads",
+            "type": "various",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "REQUEST_WEIGHT + ORDERS"
+      },
+      "notes": "Order placement/change/cancel/query family for options.",
+      "source_url": "https://developers.binance.com/docs/derivatives/option/trade/rest-api"
+    },
+    {
+      "id": "options.private.rest.account.ref",
+      "service": "crypto-derivatives",
+      "visibility": "private",
+      "method": "GET/POST",
+      "base_url": "docs://binance-options",
+      "path": "/account/rest-api",
+      "version": "n/a",
+      "operation": "doc-ref (account family)",
+      "auth": {
+        "type": "signed",
+        "notes": "USER_DATA/ACCOUNT scope methods"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "timestamp",
+            "type": "int(ms)",
+            "required": true
+          },
+          {
+            "name": "recvWindow",
+            "type": "int",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object/array<object>",
+        "fields": [
+          {
+            "name": "balances_positions_history",
+            "type": "various",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "Per endpoint weight"
+      },
+      "notes": "Account state/configuration/history family for options.",
+      "source_url": "https://developers.binance.com/docs/derivatives/option/account/rest-api"
+    },
+    {
+      "id": "options.private.rest.listenkey.post",
+      "service": "crypto-derivatives",
+      "visibility": "private",
+      "method": "POST",
+      "base_url": "https://eapi.binance.com",
+      "path": "/eapi/v1/listenKey",
+      "version": "v1",
+      "operation": "Start user data stream",
+      "auth": {
+        "type": "keyed",
+        "notes": "API key required"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "listenKey",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "Per endpoint spec"
+      },
+      "notes": "Create listenKey for options user stream.",
+      "source_url": "https://developers.binance.com/docs/derivatives/option/user-data-streams"
+    },
+    {
+      "id": "options.private.rest.listenkey.put",
+      "service": "crypto-derivatives",
+      "visibility": "private",
+      "method": "PUT",
+      "base_url": "https://eapi.binance.com",
+      "path": "/eapi/v1/listenKey",
+      "version": "v1",
+      "operation": "Keepalive user data stream",
+      "auth": {
+        "type": "keyed",
+        "notes": "API key required"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "listenKey",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "string/object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "Per endpoint spec"
+      },
+      "notes": "Extend listenKey validity.",
+      "source_url": "https://developers.binance.com/docs/derivatives/option/user-data-streams"
+    },
+    {
+      "id": "options.private.rest.listenkey.delete",
+      "service": "crypto-derivatives",
+      "visibility": "private",
+      "method": "DELETE",
+      "base_url": "https://eapi.binance.com",
+      "path": "/eapi/v1/listenKey",
+      "version": "v1",
+      "operation": "Close user data stream",
+      "auth": {
+        "type": "keyed",
+        "notes": "API key required"
+      },
+      "params": {
+        "query": [
+          {
+            "name": "listenKey",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "result",
+            "type": "string/object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "errors": {
+        "shape": "object",
+        "notes": ""
+      },
+      "rate_limit": {
+        "notes": "Per endpoint spec"
+      },
+      "notes": "Invalidate listenKey.",
+      "source_url": "https://developers.binance.com/docs/derivatives/option/user-data-streams"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "options.public.ws.trade",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "channel": "<symbol>@trade",
+      "base_url": "wss://nbstream.binance.com/eoptions/ws",
+      "version": "n/a",
+      "op": "subscribe stream name",
+      "request_message": {
+        "shape": "n/a",
+        "fields": [],
+        "notes": "raw stream endpoint"
+      },
+      "response_message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "trade_event",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "symbol naming per options convention",
+      "notes": "Real-time trade stream",
+      "source_url": "https://developers.binance.com/docs/derivatives/option/websocket-market-streams"
+    },
+    {
+      "id": "options.public.ws.ticker",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "channel": "<symbol>@ticker",
+      "base_url": "wss://nbstream.binance.com/eoptions/ws",
+      "version": "n/a",
+      "op": "subscribe stream name",
+      "request_message": {
+        "shape": "n/a",
+        "fields": [],
+        "notes": "raw stream endpoint"
+      },
+      "response_message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "ticker_event",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "symbol naming per options convention",
+      "notes": "24h ticker stream",
+      "source_url": "https://developers.binance.com/docs/derivatives/option/websocket-market-streams"
+    },
+    {
+      "id": "options.public.ws.kline",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "channel": "<symbol>@kline_<interval>",
+      "base_url": "wss://nbstream.binance.com/eoptions/ws",
+      "version": "n/a",
+      "op": "subscribe stream name",
+      "request_message": {
+        "shape": "n/a",
+        "fields": [],
+        "notes": "raw stream endpoint"
+      },
+      "response_message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "kline_event",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "interval must be in documented enum",
+      "notes": "Kline stream",
+      "source_url": "https://developers.binance.com/docs/derivatives/option/websocket-market-streams"
+    },
+    {
+      "id": "options.public.ws.depth",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "channel": "<symbol>@depth<levels>",
+      "base_url": "wss://nbstream.binance.com/eoptions/ws",
+      "version": "n/a",
+      "op": "subscribe stream name",
+      "request_message": {
+        "shape": "n/a",
+        "fields": [],
+        "notes": "raw stream endpoint"
+      },
+      "response_message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "depth_event",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "levels/speed constrained by spec",
+      "notes": "Partial depth stream",
+      "source_url": "https://developers.binance.com/docs/derivatives/option/websocket-market-streams"
+    },
+    {
+      "id": "options.public.ws.markprice",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "channel": "<underlying>@markPrice",
+      "base_url": "wss://nbstream.binance.com/eoptions/ws",
+      "version": "n/a",
+      "op": "subscribe stream name",
+      "request_message": {
+        "shape": "n/a",
+        "fields": [],
+        "notes": "raw stream endpoint"
+      },
+      "response_message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "mark_price_event",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "underlying stream scope",
+      "notes": "Mark price stream",
+      "source_url": "https://developers.binance.com/docs/derivatives/option/websocket-market-streams"
+    },
+    {
+      "id": "options.public.ws.indexprice",
+      "service": "crypto-derivatives",
+      "visibility": "public",
+      "channel": "<underlying>@indexPrice",
+      "base_url": "wss://nbstream.binance.com/eoptions/ws",
+      "version": "n/a",
+      "op": "subscribe stream name",
+      "request_message": {
+        "shape": "n/a",
+        "fields": [],
+        "notes": "raw stream endpoint"
+      },
+      "response_message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "index_price_event",
+            "type": "object",
+            "required": true
+          }
+        ],
+        "notes": ""
+      },
+      "heartbeat": {
+        "type": "ping-pong",
+        "notes": ""
+      },
+      "auth": {
+        "type": "none",
+        "notes": ""
+      },
+      "restrictions": "underlying stream scope",
+      "notes": "Index price stream",
+      "source_url": "https://developers.binance.com/docs/derivatives/option/websocket-market-streams"
+    }
+  ],
+  "data_feeds": [
+    {
+      "id": "options.data.ws.market",
+      "kind": "streaming",
+      "url_pattern": "wss://nbstream.binance.com/eoptions/ws/<streamName>",
+      "format": "json",
+      "compression": "none",
+      "update_freq": "real-time",
+      "retention": "not stated",
+      "schema": {
+        "summary": "options market stream event payloads",
+        "notes": ""
+      },
+      "notes": "Distribution path for market streams in Options WS docs",
+      "source_url": "https://developers.binance.com/docs/derivatives/option/websocket-market-streams"
+    },
+    {
+      "id": "options.data.rest.market",
+      "kind": "pull-api",
+      "url_pattern": "https://eapi.binance.com/eapi/v1/*",
+      "format": "json",
+      "compression": "none",
+      "update_freq": "on-demand",
+      "retention": "not stated",
+      "schema": {
+        "summary": "market snapshots/metadata from REST",
+        "notes": ""
+      },
+      "notes": "Market data REST family distribution endpoint namespace",
+      "source_url": "https://developers.binance.com/docs/derivatives/option/market-data/rest-api"
+    }
+  ],
+  "diffs": []
+}
