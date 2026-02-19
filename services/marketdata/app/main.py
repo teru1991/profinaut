@@ -43,6 +43,8 @@ from services.marketdata.app.routes.raw_ingest import (
 from services.marketdata.app.settings import load_settings
 from services.marketdata.app.registry import CatalogValidationError, VenueRegistry, load_venue_registry
 from services.marketdata.app.metrics import ingest_metrics
+from services.marketdata.app.gold_cache import HotCache
+from services.marketdata.app.gold_materializer import materialize_gold
 
 logger = logging.getLogger("marketdata")
 if not logger.handlers:
@@ -395,6 +397,7 @@ if _object_store is not None:
 _gmo_ws_connector = GmoPublicWsConnector(GmoWsConfig())
 _mock_runtime = MockRuntime(MockScenario())
 app.include_router(build_mock_router(_mock_runtime))
+_gold_cache = HotCache(default_ttl_seconds=float(os.getenv("GOLD_CACHE_TTL_SECONDS", "2.0")))
 
 
 
@@ -632,13 +635,13 @@ async def orderbook_bbo_latest(
     except RuntimeError as exc:
         return _gold_read_unavailable(request_id, str(exc))
 
-    state = repo.get_orderbook_state(venue_id=venue, market_id=market)
+    state = repo.get_orderbook_state(venue_id=venue_id, market_id=market_id)
     if state is None:
         return JSONResponse(status_code=200, content={"found": False, "stale": True, "as_of": None, "bid": None, "ask": None, "degraded": False, "reason": None})
 
     stale_ms = int(os.getenv("LATEST_STALE_MS", "30000"))
     stale, _ = _compute_stale(str(state.get("as_of") or state.get("last_update_ts")), stale_ms / 1000)
-    stale_reason = "ORDERBOOK_STATE_STALE" if stale and not state.get("reason") else state.get("reason")
+    stale_reason = "ORDERBOOK_GAP" if stale and not state.get("reason") else state.get("reason")
     degraded = bool(state.get("degraded")) or stale
     return JSONResponse(
         status_code=200,
@@ -670,7 +673,7 @@ async def orderbook_state(
     except RuntimeError as exc:
         return _gold_read_unavailable(request_id, str(exc))
 
-    state = repo.get_orderbook_state(venue_id=venue, market_id=market)
+    state = repo.get_orderbook_state(venue_id=venue_id, market_id=market_id)
     if state is None:
         return JSONResponse(status_code=200, content={"found": False, "degraded": False, "reason": None})
 
@@ -711,7 +714,7 @@ async def ticker_latest(
         except RuntimeError as exc:
             return _gold_read_unavailable(request_id, str(exc))
 
-        bba = repo.get_latest_best_bid_ask(venue_id=venue, market_id=market, instrument_id=instrument)
+        bba = repo.get_latest_best_bid_ask(venue_id=venue_id, market_id=market_id, instrument_id=instrument_id)
         threshold_seconds = float(os.getenv("READ_STALE_THRESHOLD_SECONDS", "10"))
         if bba is not None:
             stale, stale_by_ms = _compute_stale(str(bba["received_ts"]), threshold_seconds)
@@ -719,9 +722,9 @@ async def ticker_latest(
                 status_code=200,
                 content={
                     "found": True,
-                    "venue_id": venue,
-                    "market_id": market,
-                    "instrument_id": instrument,
+                    "venue_id": venue_id,
+                    "market_id": market_id,
+                    "instrument_id": instrument_id,
                     "bid": bba["bid_px"],
                     "ask": bba["ask_px"],
                     "bid_qty": bba["bid_qty"],
@@ -733,16 +736,16 @@ async def ticker_latest(
                 },
             )
 
-        trade = repo.get_latest_trade(venue_id=venue, market_id=market, instrument_id=instrument)
+        trade = repo.get_latest_trade(venue_id=venue_id, market_id=market_id, instrument_id=instrument_id)
         if trade is not None:
             stale, stale_by_ms = _compute_stale(str(trade["received_ts"]), threshold_seconds)
             return JSONResponse(
                 status_code=200,
                 content={
                     "found": True,
-                    "venue_id": venue,
-                    "market_id": market,
-                    "instrument_id": instrument,
+                    "venue_id": venue_id,
+                    "market_id": market_id,
+                    "instrument_id": instrument_id,
                     "price": trade["price"],
                     "bid": None,
                     "ask": None,
@@ -756,9 +759,9 @@ async def ticker_latest(
             status_code=404,
             content={
                 "found": False,
-                "venue_id": venue,
-                "market_id": market,
-                "instrument_id": instrument,
+                "venue_id": venue_id,
+                "market_id": market_id,
+                "instrument_id": instrument_id,
                 "stale": True,
                 "stale_by_ms": None,
             },
@@ -896,6 +899,81 @@ async def ohlcv_range(
         for row in rows
     ]
     return JSONResponse(status_code=200, content={"found": True, "stale": stale, "as_of": as_of, "tf": tf, "candles": candles})
+
+
+@app.post("/gold/materialize")
+async def gold_materialize(request: Request, watermark_ts: str | None = Query(default=None)) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    try:
+        repo = _connect_read_repo()
+    except RuntimeError as exc:
+        return _gold_read_unavailable(request_id, str(exc))
+
+    result = materialize_gold(repo._conn, watermark_ts=watermark_ts)
+    return JSONResponse(status_code=200, content={"ok": True, "ticker_latest_rows": result.ticker_latest_rows, "bba_rows": result.bba_rows, "ohlcv_rows": result.ohlcv_rows})
+
+
+def _cache_key(prefix: str, venue: str, symbol: str) -> str:
+    return f"{prefix}:{venue}:{symbol}"
+
+
+@app.get("/markets/ticker/latest")
+async def markets_ticker_latest(request: Request, venue: str = Query(...), symbol: str = Query(...)) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    key = _cache_key("ticker_latest", venue, symbol)
+
+    def _load() -> dict[str, Any] | None:
+        repo = _connect_read_repo()
+        return repo.get_gold_ticker_latest(venue_id=venue, market_id="spot", instrument_id=symbol.lower())
+
+    try:
+        row = await asyncio.to_thread(lambda: _gold_cache.get_or_load(key, _load))
+    except RuntimeError:
+        return JSONResponse(status_code=503, content=error_envelope(code="BACKEND_UNAVAILABLE", message="Read backend unavailable", details={"backend": "db"}, request_id=request_id))
+
+    if row is None:
+        return JSONResponse(status_code=404, content=error_envelope(code="NOT_FOUND", message="ticker latest not found", details={"venue": venue, "symbol": symbol}, request_id=request_id))
+
+    return JSONResponse(status_code=200, content={"venue": venue, "symbol": symbol, "price": row["price"], "bid": row["bid_px"], "ask": row["ask_px"], "as_of": row["ts_recv"], "raw_refs": row["raw_refs"]})
+
+
+@app.get("/markets/bba/latest")
+async def markets_bba_latest(request: Request, venue: str = Query(...), symbol: str = Query(...)) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    key = _cache_key("bba", venue, symbol)
+
+    def _load() -> dict[str, Any] | None:
+        repo = _connect_read_repo()
+        return repo.get_gold_best_bid_ask(venue_id=venue, market_id="spot", instrument_id=symbol.lower())
+
+    try:
+        row = await asyncio.to_thread(lambda: _gold_cache.get_or_load(key, _load))
+    except RuntimeError:
+        return JSONResponse(status_code=503, content=error_envelope(code="BACKEND_UNAVAILABLE", message="Read backend unavailable", details={"backend": "db"}, request_id=request_id))
+
+    if row is None:
+        return JSONResponse(status_code=404, content=error_envelope(code="NOT_FOUND", message="bba latest not found", details={"venue": venue, "symbol": symbol}, request_id=request_id))
+
+    return JSONResponse(status_code=200, content={"venue": venue, "symbol": symbol, "bid": row["bid_px"], "ask": row["ask_px"], "bid_qty": row["bid_qty"], "ask_qty": row["ask_qty"], "as_of": row["ts_recv"], "raw_refs": row["raw_refs"]})
+
+
+@app.get("/markets/ohlcv")
+async def markets_ohlcv(request: Request, venue: str = Query(...), symbol: str = Query(...), tf: str = Query(default="1m"), from_ts: str = Query(..., alias="from"), to_ts: str = Query(..., alias="to"), limit: int = Query(default=100, ge=1, le=2000)) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", "unknown")
+    normalized_tf = _normalize_tf(tf)
+    if normalized_tf != "1m":
+        return JSONResponse(status_code=400, content=error_envelope(code="INVALID_TF", message="Only 1m is currently supported", details={"tf": tf}, request_id=request_id))
+
+    try:
+        repo = _connect_read_repo()
+        rows = repo.get_gold_ohlcv_range(venue_id=venue, market_id="spot", instrument_id=symbol.lower(), from_ts=from_ts, to_ts=to_ts, limit=limit)
+    except RuntimeError:
+        return JSONResponse(status_code=503, content=error_envelope(code="BACKEND_UNAVAILABLE", message="Read backend unavailable", details={"backend": "db"}, request_id=request_id))
+
+    if not rows:
+        return JSONResponse(status_code=404, content=error_envelope(code="NOT_FOUND", message="ohlcv not found", details={"venue": venue, "symbol": symbol}, request_id=request_id))
+
+    return JSONResponse(status_code=200, content={"venue": venue, "symbol": symbol, "tf": "1m", "candles": rows})
 
 
 def _raw_dependency_unavailable(request_id: str) -> JSONResponse:
