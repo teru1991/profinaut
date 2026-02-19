@@ -1,0 +1,1375 @@
+{
+  "exchange": "coincheck",
+  "generated_at": "2026-02-19",
+  "sources": [
+    {
+      "category": "other",
+      "title": "Coincheck 公式サイト（JP）",
+      "url": "https://coincheck.com/ja/"
+    },
+    {
+      "category": "rest",
+      "title": "取引所 API ドキュメント（JP）",
+      "url": "https://coincheck.com/ja/documents/exchange/api"
+    },
+    {
+      "category": "auth",
+      "title": "認証（ACCESS-KEY / ACCESS-NONCE / ACCESS-SIGNATURE）",
+      "url": "https://coincheck.com/ja/documents/exchange/api#auth"
+    },
+    {
+      "category": "rest",
+      "title": "Public API セクション",
+      "url": "https://coincheck.com/ja/documents/exchange/api#public"
+    },
+    {
+      "category": "rest",
+      "title": "Private API セクション",
+      "url": "https://coincheck.com/ja/documents/exchange/api#private"
+    },
+    {
+      "category": "ws",
+      "title": "WebSocket API セクション",
+      "url": "https://coincheck.com/ja/documents/exchange/api#websocket"
+    },
+    {
+      "category": "ws",
+      "title": "Public WebSocket API",
+      "url": "https://coincheck.com/ja/documents/exchange/api#public-channels"
+    },
+    {
+      "category": "ws",
+      "title": "Private WebSocket API",
+      "url": "https://coincheck.com/ja/documents/exchange/api#private-channels"
+    },
+    {
+      "category": "errors",
+      "title": "エラーレスポンス（各 endpoint の success/error 応答）",
+      "url": "https://coincheck.com/ja/documents/exchange/api"
+    },
+    {
+      "category": "rate_limit",
+      "title": "注文系リクエスト制限の記載",
+      "url": "https://coincheck.com/ja/documents/exchange/api#order-new"
+    },
+    {
+      "category": "rate_limit",
+      "title": "注文詳細のリクエスト制限の記載",
+      "url": "https://coincheck.com/ja/documents/exchange/api#order-show"
+    },
+    {
+      "category": "data",
+      "title": "取引所APIドキュメント（データ配布導線確認）",
+      "url": "https://coincheck.com/ja/documents/exchange/api"
+    }
+  ],
+  "rest_endpoints": [
+    {
+      "id": "coincheck.rest.public.ticker.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/ticker",
+      "version": "v1",
+      "operation": "ティッカー取得",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          "pair"
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "last",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "bid",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "ask",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "high",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "low",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "volume",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "timestamp",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#ticker"
+    },
+    {
+      "id": "coincheck.rest.public.trades.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/trades",
+      "version": "v1",
+      "operation": "全取引履歴取得",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          "pair"
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "pagination",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "data",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#public-trades"
+    },
+    {
+      "id": "coincheck.rest.public.order_books.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/order_books",
+      "version": "v1",
+      "operation": "板情報取得",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          "pair"
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "asks",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "bids",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#order-book"
+    },
+    {
+      "id": "coincheck.rest.public.exchange.orders.rate.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/exchange/orders/rate",
+      "version": "v1",
+      "operation": "取引所注文の見積レート取得",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          "order_type",
+          "pair",
+          "amount",
+          "price"
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "rate",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "price",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "amount",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#order-rate"
+    },
+    {
+      "id": "coincheck.rest.public.rate.pair.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/rate/{pair}",
+      "version": "v1",
+      "operation": "基準レート取得",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [],
+        "path": [
+          "pair"
+        ],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "rate",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#buy-rate"
+    },
+    {
+      "id": "coincheck.rest.public.exchange_status.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/exchange_status",
+      "version": "v1",
+      "operation": "取引所ステータス取得",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": [
+          "pair"
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "exchange_status",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#exchange-status"
+    },
+    {
+      "id": "coincheck.rest.private.exchange.orders.post",
+      "method": "POST",
+      "base_url": "https://coincheck.com",
+      "path": "/api/exchange/orders",
+      "version": "v1",
+      "operation": "新規注文",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          "pair",
+          "order_type",
+          "rate",
+          "amount",
+          "market_buy_amount",
+          "stop_loss_rate"
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "id",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#order-new"
+    },
+    {
+      "id": "coincheck.rest.private.exchange.orders.id.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/exchange/orders/{id}",
+      "version": "v1",
+      "operation": "注文詳細",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [],
+        "path": [
+          "id"
+        ],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "id",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "trades",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#order-show"
+    },
+    {
+      "id": "coincheck.rest.private.exchange.orders.opens.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/exchange/orders/opens",
+      "version": "v1",
+      "operation": "未決済注文一覧",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "orders",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#order-opens"
+    },
+    {
+      "id": "coincheck.rest.private.exchange.orders.id.delete",
+      "method": "DELETE",
+      "base_url": "https://coincheck.com",
+      "path": "/api/exchange/orders/{id}",
+      "version": "v1",
+      "operation": "注文キャンセル",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [],
+        "path": [
+          "id"
+        ],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "id",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#order-cancel"
+    },
+    {
+      "id": "coincheck.rest.private.exchange.orders.cancel_status.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/exchange/orders/cancel_status",
+      "version": "v1",
+      "operation": "注文キャンセルステータス",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [
+          "id"
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "id",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "cancel",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#cancel-status"
+    },
+    {
+      "id": "coincheck.rest.private.exchange.orders.transactions.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/exchange/orders/transactions",
+      "version": "v1",
+      "operation": "取引履歴",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "transactions",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#order-transactions"
+    },
+    {
+      "id": "coincheck.rest.private.exchange.orders.transactions_pagination.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/exchange/orders/transactions_pagination",
+      "version": "v1",
+      "operation": "取引履歴（ページネーション）",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [
+          "limit",
+          "order",
+          "starting_after",
+          "ending_before"
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "pagination",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "data",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#order-transactions-pagination"
+    },
+    {
+      "id": "coincheck.rest.private.accounts.balance.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/accounts/balance",
+      "version": "v1",
+      "operation": "残高",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "jpy",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "btc",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#account-balance"
+    },
+    {
+      "id": "coincheck.rest.private.send_money.post",
+      "method": "POST",
+      "base_url": "https://coincheck.com",
+      "path": "/api/send_money",
+      "version": "v1",
+      "operation": "暗号通貨送金",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          "address",
+          "amount",
+          "currency",
+          "is_service",
+          "additional_fee",
+          "destination_tag"
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "id",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#account-sendmoney"
+    },
+    {
+      "id": "coincheck.rest.private.send_money.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/send_money",
+      "version": "v1",
+      "operation": "送金履歴",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [
+          "currency"
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "sends",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#account-sends"
+    },
+    {
+      "id": "coincheck.rest.private.deposit_money.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/deposit_money",
+      "version": "v1",
+      "operation": "受け取り履歴",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [
+          "currency"
+        ],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "deposits",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#account-deposits"
+    },
+    {
+      "id": "coincheck.rest.private.accounts.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/accounts",
+      "version": "v1",
+      "operation": "アカウント情報",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "id",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "email",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "exchange_fees",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#account-info"
+    },
+    {
+      "id": "coincheck.rest.private.bank_accounts.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/bank_accounts",
+      "version": "v1",
+      "operation": "銀行口座一覧",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "data",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#bank-accounts"
+    },
+    {
+      "id": "coincheck.rest.private.bank_accounts.post",
+      "method": "POST",
+      "base_url": "https://coincheck.com",
+      "path": "/api/bank_accounts",
+      "version": "v1",
+      "operation": "銀行口座登録",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          "bank_name",
+          "branch_name",
+          "bank_account_type",
+          "number",
+          "name"
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "data",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#bank-accounts-create"
+    },
+    {
+      "id": "coincheck.rest.private.bank_accounts.id.delete",
+      "method": "DELETE",
+      "base_url": "https://coincheck.com",
+      "path": "/api/bank_accounts/{id}",
+      "version": "v1",
+      "operation": "銀行口座削除",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [],
+        "path": [
+          "id"
+        ],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#bank-accounts-destroy"
+    },
+    {
+      "id": "coincheck.rest.private.withdraws.get",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/api/withdraws",
+      "version": "v1",
+      "operation": "出金履歴",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "pagination",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "data",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#withdraws"
+    },
+    {
+      "id": "coincheck.rest.private.withdraws.post",
+      "method": "POST",
+      "base_url": "https://coincheck.com",
+      "path": "/api/withdraws",
+      "version": "v1",
+      "operation": "出金申請作成",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [],
+        "path": [],
+        "body": [
+          "bank_account_id",
+          "amount",
+          "currency"
+        ]
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          },
+          {
+            "name": "data",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#withdraws-create"
+    },
+    {
+      "id": "coincheck.rest.private.withdraws.id.delete",
+      "method": "DELETE",
+      "base_url": "https://coincheck.com",
+      "path": "/api/withdraws/{id}",
+      "version": "v1",
+      "operation": "出金申請キャンセル",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [],
+        "path": [
+          "id"
+        ],
+        "body": []
+      },
+      "response": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "unknown",
+            "nullable": true,
+            "notes": ""
+          }
+        ]
+      },
+      "errors": {
+        "shape": "object",
+        "notes": "success/error style in docs"
+      },
+      "rate_limit": {
+        "notes": "not documented"
+      },
+      "notes": "",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#withdraws-destroy"
+    },
+    {
+      "id": "coincheck.rest.other.auth.headers",
+      "method": "GET",
+      "base_url": "https://coincheck.com",
+      "path": "/ja/documents/exchange/api#auth",
+      "version": "n/a",
+      "operation": "Private API 認証仕様参照",
+      "auth": {
+        "type": "signature"
+      },
+      "params": {
+        "query": [
+          "ACCESS-KEY",
+          "ACCESS-NONCE",
+          "ACCESS-SIGNATURE"
+        ],
+        "path": [],
+        "body": [
+          "nonce+url+body signed by HMAC-SHA256"
+        ]
+      },
+      "response": {
+        "shape": "string",
+        "fields": []
+      },
+      "errors": {
+        "shape": "string",
+        "notes": "n/a"
+      },
+      "rate_limit": {
+        "notes": "n/a"
+      },
+      "notes": "Authentication rules documentation entry",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#auth"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "coincheck.ws.public.trades",
+      "ws_url": "wss://ws-api.coincheck.com",
+      "version": "v1",
+      "channel": "{pair}-trades",
+      "subscribe_template": "{\"type\":\"subscribe\",\"channel\":\"btc_jpy-trades\"}",
+      "unsubscribe_template": "not documented",
+      "message": {
+        "shape": "array",
+        "fields": [
+          {
+            "name": "trade tuple",
+            "type": "array",
+            "nullable": false,
+            "notes": "[id,pair,rate,amount,side,timestamp]"
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "not documented"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "public stream",
+      "notes": "Public trade channel",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#websocket-trades"
+    },
+    {
+      "id": "coincheck.ws.public.orderbook",
+      "ws_url": "wss://ws-api.coincheck.com",
+      "version": "v1",
+      "channel": "{pair}-orderbook",
+      "subscribe_template": "{\"type\":\"subscribe\",\"channel\":\"btc_jpy-orderbook\"}",
+      "unsubscribe_template": "not documented",
+      "message": {
+        "shape": "array",
+        "fields": [
+          {
+            "name": "orderbook tuple",
+            "type": "array",
+            "nullable": false,
+            "notes": "[pair,bids,asks,...]"
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "not documented"
+      },
+      "auth": {
+        "type": "none"
+      },
+      "restrictions": "public stream",
+      "notes": "Public order book channel",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#websocket-order-book"
+    },
+    {
+      "id": "coincheck.ws.private.order_events",
+      "ws_url": "wss://stream.coincheck.com/private",
+      "version": "v1",
+      "channel": "order_events",
+      "subscribe_template": "{\"command\":\"subscribe\",\"channel\":\"order_events\"}",
+      "unsubscribe_template": "{\"command\":\"unsubscribe\",\"channel\":\"order_events\"}",
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "event",
+            "type": "string",
+            "nullable": false,
+            "notes": "event type"
+          },
+          {
+            "name": "order",
+            "type": "object",
+            "nullable": false,
+            "notes": "order payload"
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "not documented"
+      },
+      "auth": {
+        "type": "signature"
+      },
+      "restrictions": "login required",
+      "notes": "Private order events",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#websocket-order-events"
+    },
+    {
+      "id": "coincheck.ws.private.execution_events",
+      "ws_url": "wss://stream.coincheck.com/private",
+      "version": "v1",
+      "channel": "execution_events",
+      "subscribe_template": "{\"command\":\"subscribe\",\"channel\":\"execution_events\"}",
+      "unsubscribe_template": "{\"command\":\"unsubscribe\",\"channel\":\"execution_events\"}",
+      "message": {
+        "shape": "object",
+        "fields": [
+          {
+            "name": "event",
+            "type": "string",
+            "nullable": false,
+            "notes": "event type"
+          },
+          {
+            "name": "execution",
+            "type": "object",
+            "nullable": false,
+            "notes": "execution payload"
+          }
+        ]
+      },
+      "heartbeat": {
+        "type": "not documented"
+      },
+      "auth": {
+        "type": "signature"
+      },
+      "restrictions": "login required",
+      "notes": "Private execution events",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api#websocket-execution-events"
+    }
+  ],
+  "data_feeds": [
+    {
+      "id": "coincheck.data.none.official_bulk",
+      "kind": "n/a",
+      "url_pattern": "n/a",
+      "format": "n/a",
+      "compression": "n/a",
+      "update_freq": "n/a",
+      "retention": "n/a",
+      "schema.summary": "n/a",
+      "notes": "No official bulk data feed documented.",
+      "source_url": "https://coincheck.com/ja/documents/exchange/api"
+    }
+  ]
+}
