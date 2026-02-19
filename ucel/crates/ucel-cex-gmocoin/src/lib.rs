@@ -190,6 +190,67 @@ impl OrderBookResyncEngine {
 
     pub fn health(&self) -> OrderBookHealth { self.health.clone() }
 }
+impl OrderBookResyncEngine {
+    pub fn ingest_delta(&mut self, delta: OrderBookDelta) -> Result<(), UcelError> {
+        if let Some(next) = self.next_sequence {
+            if delta.sequence_start != next {
+                self.health = OrderBookHealth::Degraded;
+                self.next_sequence = None;
+                self.buffered_deltas.clear();
+                return Err(UcelError::new(ErrorCode::Desync, "orderbook gap detected; resync required"));
+            }
+            self.next_sequence = Some(delta.sequence_end + 1);
+        } else {
+            self.buffered_deltas.push_back(delta);
+        }
+        Ok(())
+    }
+
+    pub fn apply_snapshot(&mut self, mut snapshot: OrderBookSnapshot) -> Result<OrderBookSnapshot, UcelError> {
+        self.next_sequence = Some(snapshot.sequence + 1);
+        while let Some(delta) = self.buffered_deltas.pop_front() {
+            if delta.sequence_end <= snapshot.sequence { continue; }
+            if delta.sequence_start > snapshot.sequence + 1 {
+                self.health = OrderBookHealth::Degraded;
+                return Err(UcelError::new(ErrorCode::Desync, "delta ahead of snapshot"));
+            }
+
+            // Apply bids from delta
+            for delta_bid in delta.bids {
+                if let Some(existing_bid) = snapshot.bids.iter_mut().find(|b| b.price == delta_bid.price) {
+                    existing_bid.qty = delta_bid.qty;
+                } else {
+                    snapshot.bids.push(delta_bid);
+                }
+            }
+            // Apply asks from delta
+            for delta_ask in delta.asks {
+                if let Some(existing_ask) = snapshot.asks.iter_mut().find(|a| a.price == delta_ask.price) {
+                    existing_ask.qty = delta_ask.qty;
+                } else {
+                    snapshot.asks.push(delta_ask);
+                }
+            }
+
+            // Remove zero quantity levels
+            snapshot.bids.retain(|b| b.qty > 0.0);
+            snapshot.asks.retain(|a| a.qty > 0.0);
+
+            // Sort to maintain order book structure (descending for bids, ascending for asks)
+            snapshot.bids.sort_by(|a, b| b.price.partial_cmp(&a.price).unwrap_or(std::cmp::Ordering::Equal));
+            snapshot.asks.sort_by(|a, b| a.price.partial_cmp(&b.price).unwrap_or(std::cmp::Ordering::Equal));
+
+            snapshot.sequence = delta.sequence_end;
+        }
+        self.health = OrderBookHealth::Ok;
+        self.next_sequence = Some(snapshot.sequence + 1);
+        Ok(snapshot)
+    }
+
+    pub fn health(&self) -> OrderBookHealth { self.health.clone() }
+}
+
+impl Default for OrderBookHealth { fn default() -> Self { Self::Ok } }
 
 impl Default for OrderBookHealth { fn default() -> Self { Self::Ok } }
 
