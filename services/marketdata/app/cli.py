@@ -8,6 +8,8 @@ from pathlib import Path
 from services.marketdata.app.backfill import run_backfill_ohlcv
 from services.marketdata.app.replay import run_replay
 from services.marketdata.app.silver.iceberg_pipeline import run_recompute
+from services.marketdata.app.gold_materializer import materialize_gold
+import sqlite3
 
 
 def _parse_ts(value: str) -> datetime:
@@ -44,6 +46,9 @@ def _build_parser() -> argparse.ArgumentParser:
     ohlcv.add_argument("--state-path", default="services/marketdata/.state/ohlcv_backfill_cursor.json")
 
     recompute = subparsers.add_parser("silver-recompute", help="Recompute Silver Iceberg outputs from Bronze")
+    gold = subparsers.add_parser("gold-materialize", help="Materialize Gold marts from Silver tables")
+    gold.add_argument("--db-dsn", required=True, help="DB DSN (sqlite:///...)")
+    gold.add_argument("--watermark-ts", default=None, help="Optional watermark timestamp")
     recompute.add_argument("--bronze-root", required=True, help="Bronze root directory")
     recompute.add_argument("--silver-root", required=True, help="Silver output root directory")
     recompute.add_argument("--from-ts", required=True, help="RFC3339 start timestamp")
@@ -120,6 +125,14 @@ def main() -> int:
             event_types=tuple(args.event_type or []),
         )
         print(json.dumps(report.__dict__, separators=(",", ":"), ensure_ascii=False, sort_keys=True))
+        return 0
+
+    if args.command == "gold-materialize":
+        if not str(args.db_dsn).startswith("sqlite:///"):
+            raise SystemExit("gold-materialize currently supports sqlite:/// only")
+        conn = sqlite3.connect(str(args.db_dsn).removeprefix("sqlite:///"))
+        result = materialize_gold(conn, watermark_ts=args.watermark_ts)
+        print(json.dumps(result.__dict__, separators=(",", ":"), ensure_ascii=False, sort_keys=True))
         return 0
 
     parser.error(f"Unsupported command: {args.command}")

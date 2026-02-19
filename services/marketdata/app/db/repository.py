@@ -624,3 +624,81 @@ class MarketDataMetaRepository:
             "degraded": bool(row[7]),
             "reason": row[8],
         }
+
+    def get_gold_ticker_latest(self, *, venue_id: str, market_id: str, instrument_id: str) -> dict[str, Any] | None:
+        row = self._conn.execute(
+            """
+            SELECT price, bid_px, ask_px, bid_qty, ask_qty, ts_event, ts_recv, raw_refs
+            FROM gold_ticker_latest
+            WHERE venue_id = ? AND market_id = ? AND instrument_id = ?
+            """,
+            (venue_id, market_id, instrument_id),
+        ).fetchone()
+        if row is None:
+            return None
+        return {
+            "price": row[0],
+            "bid_px": row[1],
+            "ask_px": row[2],
+            "bid_qty": row[3],
+            "ask_qty": row[4],
+            "ts_event": row[5],
+            "ts_recv": row[6],
+            "raw_refs": json.loads(row[7] or "[]"),
+        }
+
+    def get_gold_best_bid_ask(self, *, venue_id: str, market_id: str, instrument_id: str) -> dict[str, Any] | None:
+        row = self._conn.execute(
+            """
+            SELECT bid_px, bid_qty, ask_px, ask_qty, ts_event, ts_recv, raw_refs
+            FROM gold_best_bid_ask
+            WHERE venue_id = ? AND market_id = ? AND instrument_id = ?
+            """,
+            (venue_id, market_id, instrument_id),
+        ).fetchone()
+        if row is None:
+            return None
+        return {
+            "bid_px": row[0],
+            "bid_qty": row[1],
+            "ask_px": row[2],
+            "ask_qty": row[3],
+            "ts_event": row[4],
+            "ts_recv": row[5],
+            "raw_refs": json.loads(row[6] or "[]"),
+        }
+
+    def get_gold_ohlcv_range(
+        self,
+        *,
+        venue_id: str,
+        market_id: str,
+        instrument_id: str,
+        from_ts: str,
+        to_ts: str,
+        limit: int,
+    ) -> list[dict[str, Any]]:
+        rows = self._conn.execute(
+            """
+            SELECT ts_bucket, open, high, low, close, volume, is_final, raw_refs
+            FROM gold_ohlcv_1m
+            WHERE venue_id = ? AND market_id = ? AND instrument_id = ?
+              AND ts_bucket >= ? AND ts_bucket <= ?
+            ORDER BY ts_bucket ASC
+            LIMIT ?
+            """,
+            (venue_id, market_id, instrument_id, from_ts, to_ts, limit),
+        ).fetchall()
+        return [
+            {
+                "ts_bucket": row[0],
+                "open": row[1],
+                "high": row[2],
+                "low": row[3],
+                "close": row[4],
+                "volume": row[5],
+                "is_final": bool(row[6]),
+                "raw_refs": json.loads(row[7] or "[]"),
+            }
+            for row in rows
+        ]

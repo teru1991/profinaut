@@ -149,6 +149,116 @@ MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
             """,
         ),
     ),
+    (
+        "0004_marketdata_gold_tables",
+        (
+            """
+            CREATE TABLE IF NOT EXISTS gold_ticker_latest (
+                venue_id TEXT NOT NULL,
+                market_id TEXT NOT NULL,
+                instrument_id TEXT NOT NULL,
+                price REAL NOT NULL,
+                bid_px REAL,
+                ask_px REAL,
+                bid_qty REAL,
+                ask_qty REAL,
+                ts_event TEXT,
+                ts_recv TEXT NOT NULL,
+                dt TEXT NOT NULL,
+                raw_refs TEXT NOT NULL,
+                PRIMARY KEY (venue_id, market_id, instrument_id)
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS gold_best_bid_ask (
+                venue_id TEXT NOT NULL,
+                market_id TEXT NOT NULL,
+                instrument_id TEXT NOT NULL,
+                bid_px REAL NOT NULL,
+                bid_qty REAL NOT NULL,
+                ask_px REAL NOT NULL,
+                ask_qty REAL NOT NULL,
+                ts_event TEXT,
+                ts_recv TEXT NOT NULL,
+                dt TEXT NOT NULL,
+                raw_refs TEXT NOT NULL,
+                PRIMARY KEY (venue_id, market_id, instrument_id)
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS gold_ohlcv_1m (
+                venue_id TEXT NOT NULL,
+                market_id TEXT NOT NULL,
+                instrument_id TEXT NOT NULL,
+                ts_bucket TEXT NOT NULL,
+                open REAL NOT NULL,
+                high REAL NOT NULL,
+                low REAL NOT NULL,
+                close REAL NOT NULL,
+                volume REAL NOT NULL,
+                is_final INTEGER NOT NULL,
+                dt TEXT NOT NULL,
+                raw_refs TEXT NOT NULL,
+                PRIMARY KEY (venue_id, market_id, instrument_id, ts_bucket)
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_gold_ohlcv_1m_lookup ON gold_ohlcv_1m(venue_id, market_id, instrument_id, ts_bucket)",
+        ),
+    ),
+    (
+        "0005_marketdata_ops_tables",
+        (
+            """
+            CREATE TABLE IF NOT EXISTS accounts (
+                account_id TEXT PRIMARY KEY,
+                label TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS venues (
+                venue_id TEXT PRIMARY KEY,
+                venue_name TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS account_venue_binding (
+                account_id TEXT NOT NULL,
+                venue_id TEXT NOT NULL,
+                external_account_ref TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (account_id, venue_id),
+                FOREIGN KEY (account_id) REFERENCES accounts(account_id),
+                FOREIGN KEY (venue_id) REFERENCES venues(venue_id)
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS balance_snapshots (
+                account_id TEXT NOT NULL,
+                venue_id TEXT NOT NULL,
+                asset TEXT NOT NULL,
+                ts_snapshot TEXT NOT NULL,
+                free_qty REAL NOT NULL,
+                locked_qty REAL NOT NULL,
+                PRIMARY KEY (account_id, venue_id, asset, ts_snapshot),
+                FOREIGN KEY (account_id, venue_id) REFERENCES account_venue_binding(account_id, venue_id)
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS position_snapshots (
+                account_id TEXT NOT NULL,
+                venue_id TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                ts_snapshot TEXT NOT NULL,
+                qty REAL NOT NULL,
+                avg_price REAL,
+                PRIMARY KEY (account_id, venue_id, symbol, ts_snapshot),
+                FOREIGN KEY (account_id, venue_id) REFERENCES account_venue_binding(account_id, venue_id)
+            )
+            """,
+        ),
+    ),
 )
 
 
