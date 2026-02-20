@@ -439,7 +439,191 @@ fn map_operation_by_id(id: &str) -> OpName {
         }
     } else if id.contains("balance") || id.contains("account") {
         OpName::FetchBalances
-    } else if id.contains("kline") {
+    } else if id.contains("fills") {
+        OpName::FetchFills
+    } else if id.contains("open-orders") {
+        OpName::FetchOpenOrders
+    } else if id.contains("positions") {
+        OpName::FetchOpenPositions
+    } else {
+        OpName::FetchStatus
+    };
+    Ok(op)
+}
+
+fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
+    if id.starts_with("advanced.")
+        || id.starts_with("exchange.")
+        || id.starts_with("intx.")
+        || id.starts_with("other.")
+    {
+        return map_coinbase_operation_by_id(id);
+    }
+
+    let op = match id {
+        "crypto.public.rest.markets.get" | "fx.public.rest.markets.get" => OpName::FetchStatus,
+        "crypto.public.rest.ticker.get" | "fx.public.rest.ticker.get" => OpName::FetchTicker,
+        "crypto.public.rest.board.get" | "fx.public.rest.board.get" => {
+            OpName::FetchOrderbookSnapshot
+        }
+        "crypto.public.rest.executions.get" | "fx.public.rest.executions.get" => {
+            OpName::FetchTrades
+        }
+        "crypto.public.rest.boardstate.get"
+        | "crypto.public.rest.health.get"
+        | "fx.public.rest.boardstate.get"
+        | "fx.public.rest.health.get"
+        | "other.rest.error.model"
+        | "other.rest.rate_limit" => OpName::FetchStatus,
+        "crypto.public.rest.chats.get" => OpName::FetchTrades,
+        "crypto.private.rest.permissions.get"
+        | "crypto.private.rest.balance.get"
+        | "crypto.private.rest.collateralaccounts.get"
+        | "crypto.private.rest.addresses.get"
+        | "crypto.private.rest.coinins.get"
+        | "crypto.private.rest.bankaccounts.get"
+        | "crypto.private.rest.deposits.get"
+        | "crypto.private.rest.withdrawals.get"
+        | "fx.private.rest.collateral.get" => OpName::FetchBalances,
+        "crypto.private.rest.collateral.get"
+        | "crypto.private.rest.collateralhistory.get"
+        | "fx.private.rest.collateralhistory.get" => OpName::FetchMarginStatus,
+        "crypto.private.rest.coinout.post"
+        | "crypto.private.rest.withdraw.post"
+        | "crypto.private.rest.childorder.send.post"
+        | "crypto.private.rest.parentorder.send.post"
+        | "fx.private.rest.childorder.send.post" => OpName::PlaceOrder,
+        "crypto.private.rest.childorder.cancel.post"
+        | "crypto.private.rest.parentorder.cancel.post"
+        | "crypto.private.rest.childorders.cancelall.post"
+        | "fx.private.rest.childorder.cancel.post"
+        | "fx.private.rest.childorders.cancelall.post" => OpName::CancelOrder,
+        "crypto.private.rest.childorders.get"
+        | "crypto.private.rest.parentorders.get"
+        | "crypto.private.rest.parentorder.get"
+        | "fx.private.rest.childorders.get" => OpName::FetchOpenOrders,
+        "crypto.private.rest.executions.get" | "fx.private.rest.executions.get" => {
+            OpName::FetchFills
+        }
+        "crypto.private.rest.positions.get" | "fx.private.rest.positions.get" => {
+            OpName::FetchOpenPositions
+        }
+        "crypto.private.rest.tradingcommission.get" | "fx.private.rest.tradingcommission.get" => {
+            OpName::FetchStatus
+        }
+        "other.rest.auth.spec" => OpName::FetchStatus,
+        "crypto.public.ws.ticker" | "fx.public.ws.ticker" => OpName::SubscribeTicker,
+        "crypto.public.ws.executions" | "fx.public.ws.executions" => OpName::SubscribeTrades,
+        "crypto.public.ws.board"
+        | "crypto.public.ws.board_snapshot"
+        | "fx.public.ws.board"
+        | "fx.public.ws.board_snapshot" => OpName::SubscribeOrderbook,
+        "crypto.private.ws.child_order_events"
+        | "crypto.private.ws.parent_order_events"
+        | "fx.private.ws.child_order_events"
+        | "fx.private.ws.parent_order_events" => OpName::SubscribeOrderEvents,
+        "options.public.rest.general.ref"
+        | "options.public.rest.errors.ref"
+        | "options.public.rest.market.ref" => OpName::FetchStatus,
+        "options.private.rest.trade.ref" => OpName::PlaceOrder,
+        "options.private.rest.account.ref" => OpName::FetchBalances,
+        "options.private.rest.listenkey.post" => OpName::CreateWsAuthToken,
+        "options.private.rest.listenkey.put" => OpName::ExtendWsAuthToken,
+        "options.private.rest.listenkey.delete" => OpName::CancelOrder,
+        "options.public.ws.trade" => OpName::SubscribeTrades,
+        "options.public.ws.ticker"
+        | "options.public.ws.markprice"
+        | "options.public.ws.indexprice" => OpName::SubscribeTicker,
+        "options.public.ws.depth" => OpName::SubscribeOrderbook,
+        "options.public.ws.kline" => OpName::FetchKlines,
+        "coinm.public.rest.general.ref"
+        | "coinm.public.rest.errors.ref"
+        | "coinm.public.rest.common.ref"
+        | "coinm.public.rest.market.ref"
+        | "coinm.public.ws.market.root"
+        | "coinm.public.ws.market.contract-info"
+        | "coinm.public.ws.wsapi.general" => OpName::FetchStatus,
+        "coinm.private.rest.trade.ref" => OpName::PlaceOrder,
+        "coinm.private.rest.account.ref" => OpName::FetchBalances,
+        "coinm.private.rest.listenkey.ref" => OpName::CreateWsAuthToken,
+        "usdm.public.rest.general.ref"
+        | "usdm.public.rest.errors.ref"
+        | "usdm.public.rest.market.ref" => OpName::FetchStatus,
+        "usdm.private.rest.trade.ref" => OpName::PlaceOrder,
+        "usdm.private.rest.account.ref" => OpName::FetchBalances,
+        "usdm.private.rest.listenkey.ref" => OpName::CreateWsAuthToken,
+        "coinm.public.ws.market.aggtrade" => OpName::SubscribeTrades,
+        "coinm.public.ws.market.markprice"
+        | "coinm.public.ws.market.miniticker"
+        | "coinm.public.ws.market.miniticker.all"
+        | "coinm.public.ws.market.ticker"
+        | "coinm.public.ws.market.ticker.all"
+        | "coinm.public.ws.market.bookticker"
+        | "coinm.public.ws.market.composite-index" => OpName::SubscribeTicker,
+        "coinm.public.ws.market.kline"
+        | "coinm.public.ws.market.continuous-kline"
+        | "coinm.public.ws.market.index-kline" => OpName::FetchKlines,
+        "coinm.public.ws.market.liquidation"
+        | "coinm.public.ws.market.depth.partial"
+        | "coinm.public.ws.market.depth.diff" => OpName::SubscribeOrderbook,
+        "coinm.private.ws.userdata.events" => OpName::SubscribeExecutionEvents,
+        "crypto.public.ws.ticker.update"
+        | "fx.public.ws.ticker.update"
+        | "futures.public.ws.other.market.ticker.subscribe" => OpName::SubscribeTicker,
+        "crypto.public.ws.trades.update"
+        | "fx.public.ws.trades.update"
+        | "spot.public.ws.v1.market.trade.subscribe" => OpName::SubscribeTrades,
+        "crypto.public.ws.orderbooks.update"
+        | "fx.public.ws.orderbooks.update"
+        | "spot.public.ws.v1.market.book.subscribe"
+        | "spot.public.ws.v2.market.book.subscribe"
+        | "futures.public.ws.other.market.book.subscribe" => OpName::SubscribeOrderbook,
+        "crypto.private.ws.executionevents.update" | "fx.private.ws.executionevents.update" => {
+            OpName::SubscribeExecutionEvents
+        }
+        "crypto.private.ws.orderevents.update"
+        | "fx.private.ws.orderevents.update"
+        | "spot.private.ws.v1.account.open_orders.subscribe" => OpName::SubscribeOrderEvents,
+        "crypto.private.ws.positionevents.update"
+        | "fx.private.ws.positionevents.update"
+        | "futures.private.ws.other.account.open_positions.subscribe" => {
+            OpName::SubscribePositionEvents
+        }
+        "spot.public.rest.assets.list"
+        | "spot.public.rest.asset-pairs.list"
+        | "spot.public.ws.v2.market.instrument.subscribe" => OpName::FetchStatus,
+        "spot.private.rest.order.add"
+        | "futures.private.rest.order.send"
+        | "spot.private.ws.v1.trade.add_order.request"
+        | "spot.private.ws.v2.trade.add_order" => OpName::PlaceOrder,
+        "crypto.public.ws.trades.trade" => OpName::SubscribeTrades,
+        "crypto.private.ws.userdata.executionreport" => OpName::SubscribeExecutionEvents,
+        "crypto.public.ws.wsapi.time" => OpName::FetchStatus,
+        "crypto.private.ws.wsapi.order.place" => OpName::PlaceOrder,
+        "other.public.ws.sbe.marketdata" => OpName::SubscribeOrderbook,
+        "crypto.public.ws.market.ticker" => OpName::SubscribeTicker,
+        "crypto.public.ws.market.transactions" => OpName::SubscribeTrades,
+        "crypto.public.ws.market.depth-diff" | "crypto.public.ws.market.depth-whole" => {
+            OpName::SubscribeOrderbook
+        }
+        "crypto.public.ws.market.circuit-break-info" => OpName::SubscribeTicker,
+        "crypto.private.ws.user.stream.spot-trade" => OpName::SubscribeExecutionEvents,
+        "crypto.private.ws.user.stream.margin-position-update" => OpName::SubscribePositionEvents,
+        id if id.starts_with("crypto.private.ws.user.stream.") => OpName::SubscribeOrderEvents,
+        _ => {
+            return Err(UcelError::new(
+                ErrorCode::NotSupported,
+                format!("unsupported operation mapping for id={id}"),
+            ));
+        }
+    };
+    Ok(op)
+}
+
+fn map_coinbase_operation_by_id(id: &str) -> Result<OpName, UcelError> {
+    let op = if id.contains("ticker") {
+        OpName::FetchTicker
+    } else if id.contains("candles") || id.contains("klines") {
         OpName::FetchKlines
     } else if id.contains("depth") || id.contains("orderbook") {
         OpName::FetchOrderbookSnapshot

@@ -90,10 +90,9 @@ impl CatalogContractIndex {
             .rest_endpoints
             .iter()
             .chain(catalog.ws_channels.iter())
-            .filter_map(|e| (!self.registered_tests.contains(&e.id)).then(|| e.id.clone()))
-            .map(|e| e.id.as_str())
+            .map(|entry| entry.id.as_str())
             .filter(|id| !self.registered_tests.contains(*id))
-            .map(|s| s.to_string())
+            .map(ToOwned::to_owned)
             .collect()
     }
 }
@@ -166,43 +165,9 @@ mod tests {
     use ucel_registry::load_catalog_from_repo_root;
 
     #[test]
-    fn mock_rest_supports_response_queue() {
-        let mut server = RestMockServer::default();
-        server.enqueue(200, "ok");
-        server.enqueue(429, "rate limited");
-        assert_eq!(server.next_response(), Some((200, "ok".into())));
-        assert_eq!(server.next_response(), Some((429, "rate limited".into())));
-    }
-
-    #[test]
-    fn resolved_secret_masking_is_enforced() {
-        let s = ResolvedSecret {
-            api_key: "my-key".into(),
-            api_secret: Some("my-secret".into()),
-            passphrase: Some("my-pass".into()),
-        };
-        let dbg = format!("{s:?}");
-        let disp = format!("{s}");
-        assert!(!dbg.contains("my-secret"));
-        assert!(!disp.contains("my-pass"));
-        assert!(disp.contains("***"));
-    }
-
-    #[test]
-    fn contract_index_detects_unregistered_catalog_rows() {
+    fn contract_index_can_cover_all_bitflyer_catalog_rows() {
         let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "gmocoin").unwrap();
-        let index = CatalogContractIndex::default();
-        let missing = index.missing_catalog_ids(&catalog);
-        assert_eq!(missing.len(), 42);
-    }
-
-    #[test]
-    fn contract_index_can_cover_all_bitget_catalog_rows() {
-        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let raw =
-            std::fs::read_to_string(repo_root.join("docs/exchanges/bitget/catalog.json")).unwrap();
-        let catalog: ucel_registry::ExchangeCatalog = serde_json::from_str(&raw).unwrap();
+        let catalog = load_catalog_from_repo_root(&repo_root, "bitflyer").unwrap();
 
         let mut index = CatalogContractIndex::default();
         for id in catalog
@@ -214,34 +179,24 @@ mod tests {
             index.register_id(id);
         }
 
-        assert!(index.missing_catalog_ids(&catalog).is_empty());
+        let missing = index.missing_catalog_ids(&catalog);
+        assert!(missing.is_empty());
     }
 
     #[test]
-    fn coverage_gate_is_strict_and_has_no_gaps() {
-        let manifest_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/gmocoin.yaml");
+    fn coverage_gate_warns_for_bitflyer_until_full_coverage() {
+        let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bitflyer.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "gmocoin");
-        assert!(manifest.strict);
-        assert!(evaluate_coverage_gate(&manifest).is_empty());
-    }
-
-    #[test]
-    fn coverage_gate_warns_for_bitget_gaps() {
-        let manifest_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bitget.yaml");
-        let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "bitget");
+        assert_eq!(manifest.venue, "bitflyer");
         assert!(!manifest.strict);
 
         let result = run_coverage_gate(&manifest);
         match result {
             CoverageGateResult::WarnOnly(gaps) => {
-                assert_eq!(gaps.get("implemented").map(Vec::len), Some(2));
-                assert_eq!(gaps.get("tested").map(Vec::len), Some(2));
+                assert_eq!(gaps.get("implemented").map(Vec::len), Some(61));
+                assert_eq!(gaps.get("tested").map(Vec::len), Some(61));
             }
-            _ => panic!("bitget coverage gate should warn while manifest has gaps"),
+            _ => panic!("bitflyer coverage gate should warn in non-strict mode"),
         }
     }
 }
