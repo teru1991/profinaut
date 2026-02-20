@@ -1,3 +1,5 @@
+pub mod okx;
+
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::{fs, path::Path};
@@ -39,12 +41,10 @@ pub enum Step {
 pub struct RestMockServer {
     pub responses: VecDeque<(u16, String)>,
 }
-
 impl RestMockServer {
     pub fn enqueue(&mut self, status: u16, body: impl Into<String>) {
         self.responses.push_back((status, body.into()));
     }
-
     pub fn next_response(&mut self) -> Option<(u16, String)> {
         self.responses.pop_front()
     }
@@ -56,16 +56,13 @@ pub struct WsMockServer {
     pub events: VecDeque<String>,
     pub dropped: bool,
 }
-
 impl WsMockServer {
     pub fn accept(&mut self) {
         self.accepted = true;
     }
-
     pub fn send_json(&mut self, msg: impl Into<String>) {
         self.events.push_back(msg.into());
     }
-
     pub fn drop_connection(&mut self) {
         self.dropped = true;
     }
@@ -84,25 +81,20 @@ pub fn degraded_health(reason: &str, code: ErrorCode) -> HealthStatus {
 pub struct CatalogContractIndex {
     registered_tests: HashSet<String>,
 }
-
 impl CatalogContractIndex {
     pub fn register_id(&mut self, id: &str) {
         self.registered_tests.insert(id.to_string());
     }
-
     pub fn missing_catalog_ids(&self, catalog: &ExchangeCatalog) -> Vec<String> {
-        let mut missing = Vec::new();
-        for id in catalog
+        catalog
             .rest_endpoints
             .iter()
             .chain(catalog.ws_channels.iter())
+            .filter_map(|e| (!self.registered_tests.contains(&e.id)).then(|| e.id.clone()))
             .map(|e| e.id.as_str())
-        {
-            if !self.registered_tests.contains(id) {
-                missing.push(id.to_string());
-            }
-        }
-        missing
+            .filter(|id| !self.registered_tests.contains(*id))
+            .map(|s| s.to_string())
+            .collect()
     }
 }
 
@@ -112,7 +104,6 @@ pub struct CoverageManifest {
     pub strict: bool,
     pub entries: Vec<CoverageEntry>,
 }
-
 #[derive(Debug, Clone, Deserialize)]
 pub struct CoverageEntry {
     pub id: String,
@@ -121,28 +112,32 @@ pub struct CoverageEntry {
 }
 
 pub fn load_coverage_manifest(path: &Path) -> Result<CoverageManifest, Box<dyn std::error::Error>> {
-    let raw = fs::read_to_string(path)?;
-    Ok(serde_yaml::from_str(&raw)?)
+    Ok(serde_yaml::from_str(&fs::read_to_string(path)?)?)
 }
 
 pub fn evaluate_coverage_gate(manifest: &CoverageManifest) -> HashMap<String, Vec<String>> {
-    let mut missing: HashMap<String, Vec<String>> = HashMap::new();
-
+    let mut gaps: HashMap<String, Vec<String>> = HashMap::new();
     for entry in &manifest.entries {
         if !entry.implemented {
+            gaps.entry("implemented".to_string())
+    let mut missing: HashMap<String, Vec<String>> = HashMap::new();
+    for e in &manifest.entries {
+        if !e.implemented {
             missing
-                .entry("implemented".to_string())
+                .entry("implemented".into())
                 .or_default()
-                .push(entry.id.clone());
+                .push(e.id.clone());
         }
         if !entry.tested {
+            gaps.entry("tested".to_string())
+        if !e.tested {
             missing
-                .entry("tested".to_string())
+                .entry("tested".into())
                 .or_default()
-                .push(entry.id.clone());
+                .push(e.id.clone());
         }
     }
-
+    gaps
     missing
 }
 
@@ -206,8 +201,7 @@ mod tests {
         assert_eq!(manifest.venue, "coincheck");
         assert!(!manifest.strict);
 
-        let result = run_coverage_gate(&manifest);
-        match result {
+        match run_coverage_gate(&manifest) {
             CoverageGateResult::WarnOnly(gaps) => {
                 assert_eq!(gaps.get("implemented").map(Vec::len), Some(29));
                 assert_eq!(gaps.get("tested").map(Vec::len), Some(29));

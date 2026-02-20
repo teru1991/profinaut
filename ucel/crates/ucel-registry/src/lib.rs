@@ -1,23 +1,13 @@
+pub mod deribit;
 use serde::Deserialize;
 use std::{collections::HashSet, fs, path::Path};
-use ucel_core::{
-    AuthCapabilities, Capabilities, ErrorCode, FailoverPolicy, MarketDataCapabilities, OpMeta,
-    OpName, OperationalCapabilities, RateLimitCapabilities, RuntimePolicy, SafeDefaults,
-    TradingCapabilities, UcelError,
-};
+use ucel_core::{ErrorCode, OpMeta, OpName, UcelError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConnectionConfig {
     pub id: String,
     pub venue: String,
     pub enabled: bool,
-    pub policy: RuntimePolicy,
-    pub auth: AuthConfigRef,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AuthConfigRef {
-    pub key_pool: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -32,7 +22,6 @@ pub struct ExchangeCatalog {
 }
 
 pub type GmoCatalog = ExchangeCatalog;
-pub type BitbankCatalog = ExchangeCatalog;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct DataFeedEntry {
@@ -51,7 +40,6 @@ pub struct CatalogEntry {
     pub base_url: Option<String>,
     pub path: Option<String>,
     pub ws_url: Option<String>,
-    pub channel: Option<String>,
     pub ws: Option<CatalogWs>,
     pub auth: CatalogAuth,
 }
@@ -61,9 +49,9 @@ pub struct CatalogWs {
     pub url: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Default)]
 pub struct CatalogAuth {
-    #[serde(rename = "type")]
+    #[serde(rename = "type", default)]
     pub auth_type: String,
 }
 
@@ -71,15 +59,17 @@ pub fn load_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, UcelError>
     let raw = fs::read_to_string(path).map_err(|e| {
         UcelError::new(
             ErrorCode::CatalogInvalid,
-            format!("failed to read {}: {e}", path.display()),
+            format!("read {}: {e}", path.display()),
         )
     })?;
+
     let catalog: ExchangeCatalog = serde_json::from_str(&raw).map_err(|e| {
         UcelError::new(
             ErrorCode::CatalogInvalid,
-            format!("failed to parse {}: {e}", path.display()),
+            format!("parse {}: {e}", path.display()),
         )
     })?;
+
     validate_catalog(&catalog)?;
     Ok(catalog)
 }
@@ -88,37 +78,48 @@ pub fn load_catalog_from_repo_root(
     repo_root: &Path,
     exchange: &str,
 ) -> Result<ExchangeCatalog, UcelError> {
-    let exchange_dir = exchange.to_ascii_lowercase();
     let path = repo_root
         .join("docs")
         .join("exchanges")
-        .join(exchange_dir)
+        .join(exchange_dir.clone())
         .join("catalog.json");
+
+    if exchange_dir == "deribit" {
+        return deribit::load_deribit_catalog_from_path(&path);
+    }
+
     load_catalog_from_path(&path)
+    load_catalog_from_path(
+        &repo_root
+            .join("docs")
+            .join("exchanges")
+            .join(exchange.to_ascii_lowercase())
+            .join("catalog.json"),
+    )
 }
 
 pub fn validate_catalog(catalog: &ExchangeCatalog) -> Result<(), UcelError> {
     if catalog.exchange.trim().is_empty() {
         return Err(UcelError::new(
             ErrorCode::CatalogMissingField,
-            "catalog.exchange must not be empty",
+            "catalog.exchange empty",
         ));
     }
-
     let mut seen = HashSet::new();
-    for entry in catalog
+    for e in catalog
         .rest_endpoints
         .iter()
         .chain(catalog.ws_channels.iter())
     {
-        validate_entry(entry)?;
-        if !seen.insert(entry.id.clone()) {
+        if e.id.trim().is_empty() {
             return Err(UcelError::new(
-                ErrorCode::CatalogDuplicateId,
-                format!("duplicate id found: {}", entry.id),
+                ErrorCode::CatalogMissingField,
+                "entry.id empty",
             ));
         }
+        if !seen.insert(e.id.clone()) {
     }
+
     Ok(())
 }
 
@@ -137,7 +138,7 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
             return Err(UcelError::new(
                 ErrorCode::CatalogInvalid,
                 format!(
-                    "requires_auth conflicts with visibility for id={} (visibility={}, requires_auth={})",
+                    "requires_auth contradicts visibility for id={} (visibility={}, requires_auth={})",
                     entry.id, visibility, requires_auth
                 ),
             ));
@@ -237,6 +238,10 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
 }
 
 pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
+    if entry.id.starts_with("jsonrpc.") || entry.id.starts_with("ws.") {
+        return deribit::map_deribit_operation(entry);
+    }
+
     let op = map_operation(entry)?;
     let requires_auth = entry_visibility(entry)? == "private";
     Ok(OpMeta { op, requires_auth })
@@ -254,17 +259,20 @@ fn entry_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
         ));
     }
 
-    if entry.id.contains(".private.") {
-        return Ok("private".to_string());
+    match normalized.as_str() {
+        "public" | "private" | "public/private" => Ok(normalized),
+        _ => Err(UcelError::new(
+            ErrorCode::CatalogInvalid,
+            format!("invalid visibility={} for id={}", normalized, entry.id),
+        )),
     }
-    if entry.id.contains(".public.") {
-        return Ok("public".to_string());
-    }
+}
 
-    Err(UcelError::new(
-        ErrorCode::CatalogMissingField,
-        format!("missing visibility for id={}", entry.id),
-    ))
+pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
+    Ok(OpMeta {
+        op: map_operation(entry)?,
+        requires_auth: entry_visibility(entry)? == "private",
+    })
 }
 
 pub fn map_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
@@ -415,6 +423,12 @@ mod tests {
             assert_eq!(meta.requires_auth, entry.id.contains(".private."));
         }
     }
+}
+
+#[cfg(test)]
+mod deribit_registry_tests {
+    use super::{load_catalog_from_repo_root, op_meta_from_entry};
+    use std::path::Path;
 
     #[test]
     fn rejects_duplicate_catalog_ids() {
