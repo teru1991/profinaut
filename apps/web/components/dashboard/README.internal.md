@@ -35,16 +35,18 @@
   - `npm run build`
 
 ---
-## UI-DASH-003 progress notes
+## UI-DASH-004 progress notes
 - what_done:
-  - Added state-aware navigation model with incident-priority ordering and query-preserving dashboard deep links.
-  - Added personal nav preferences (pins/home/workspace template), status badge fetch with cache, and copy-link action.
-  - Added Cmd/Ctrl+K command palette for safe navigation/view actions.
-  - Updated dashboard workspace route handling to accept template + mode params for command-driven navigation.
+  - Added personal local audit model/store + `/audit` page with filter/export/detail JSON drawer.
+  - Added incident console (`/incidents`) with degraded drilldown, local checklist persistence, notes, and audit NOTE entries.
+  - Added local snapshots store + save buttons + `/snapshots` listing/export/note annotations with audit logging.
+  - Added safe danger action guard for command execution requiring reason + TTL + type-to-confirm; wired into `/commands` PAUSE/RESUME.
+  - Updated sidebar navigation for quick access to Incidents/Snapshots/Audit.
 - what_next:
-  - Validate end-to-end behavior in live UI for workspace switching and command palette keyboard ergonomics.
+  - Consider sharing actor identity from authenticated profile instead of static `local-user`.
+  - Consider richer incident suggested checks per component type.
 - errors:
-  - None during implementation.
+  - None.
 - commands_next:
   - `cd apps/web`
   - `npm install --no-package-lock`

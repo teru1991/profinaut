@@ -18,6 +18,7 @@ import marketDataTemplate from "./templates/marketdata.json";
 import { normalizeStatus } from "./ui/badges";
 import { WIDGETS } from "./widgets/registry";
 import { fetchJson, useWidgetCapabilities, type WidgetQuality } from "./widgets/runtime";
+import { SaveSnapshotButton } from "../snapshots/SaveSnapshotButton";
 
 const FilterContext = createContext<GlobalFilters>({});
 export const useDashboardFilters = () => useContext(FilterContext);
@@ -25,7 +26,7 @@ export const useDashboardFilters = () => useContext(FilterContext);
 const templates = [marketDataTemplate, executionTemplate, incidentTemplate] as Workspace[];
 const templateById = Object.fromEntries(templates.map((template) => [template.id, template])) as Record<string, Workspace>;
 
-type StatusSummary = { overall_status?: string; components?: { name?: string; status?: string }[] };
+type StatusSummary = { overall_status?: string; components?: { name?: string; status?: string; reason?: string; ts?: string }[] };
 
 function isoNow() {
   return new Date().toISOString();
@@ -353,6 +354,13 @@ export default function DashboardWorkspace() {
             <button className={`btn ${mode === "edit" ? "btn-primary" : ""}`} onClick={() => setMode("edit")}>Edit</button>
             <button className="btn" onClick={() => setFocusMode((v) => !v)}>{focusMode ? "Exit Focus" : "Focus/Kiosk"}</button>
             <button className="btn" onClick={handleExport}>Export</button>
+            <SaveSnapshotButton
+              workspaceId={workspace.id}
+              pageId={activePage?.id ?? "unknown"}
+              globalFilters={{ venue: filters.venue, bot: filters.bot, symbol: filters.symbol, range: filters.timeRange }}
+              overallStatus={statusSummary?.overall_status ?? "unknown"}
+              components={statusSummary?.components ?? []}
+            />
             <label className="btn" style={{ cursor: "pointer" }}>Import
               <input type="file" accept="application/json" style={{ display: "none" }} onChange={(e) => handleImport(e.target.files?.[0] ?? null)} />
             </label>
