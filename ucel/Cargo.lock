@@ -1367,10 +1367,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "ucel-cex-sbivc"
+name = "ucel-cex-okx"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "reqwest",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -1378,6 +1379,8 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ucel-core",
+ "ucel-transport",
+ "uuid",
 ]
 
 [[package]]
