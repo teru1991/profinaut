@@ -1195,7 +1195,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ucel-cex-binance-usdm"
+name = "ucel-cex-binance-options"
 version = "0.1.0"
 dependencies = [
  "bytes",
@@ -1234,6 +1234,25 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "serde_yaml",
+ "tokio",
+ "tracing",
+ "ucel-core",
+ "ucel-registry",
+ "ucel-testkit",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-bitget"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yaml",
  "tokio",
  "ucel-core",
  "ucel-transport",
@@ -1291,6 +1310,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucel-cex-coincheck"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "ucel-core",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
 name = "ucel-cex-gmocoin"
 version = "0.1.0"
 dependencies = [
@@ -1336,6 +1371,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucel-cex-okx"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "ucel-core",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
 name = "ucel-chain-ethereum"
 version = "0.1.0"
 dependencies = [
@@ -1356,6 +1408,7 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
+ "serde_yaml",
  "ucel-core",
 ]
 

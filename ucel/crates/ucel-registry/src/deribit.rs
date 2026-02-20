@@ -54,6 +54,7 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
             ));
         }
 
+        let visibility = derive_visibility_from_id(&row.id)?;
         rest_endpoints.push(CatalogEntry {
             id: row.id.clone(),
             visibility: Some(derive_visibility_from_id(&row.id)?),
@@ -83,6 +84,7 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
             ));
         }
 
+        let visibility = derive_visibility_from_id(&row.id)?;
         ws_channels.push(CatalogEntry {
             id: row.id.clone(),
             visibility: Some(derive_visibility_from_id(&row.id)?),
@@ -109,6 +111,7 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
             ));
         }
 
+        let visibility = Some(derive_visibility_from_id(&row.id)?);
         ws_channels.push(CatalogEntry {
             id: row.id.clone(),
             visibility: Some(derive_visibility_from_id(&row.id)?),
@@ -203,6 +206,32 @@ mod tests {
         let catalog = load_deribit_catalog_from_path(&path).unwrap();
         assert_eq!(catalog.rest_endpoints.len(), 9);
         assert_eq!(catalog.ws_channels.len(), 19);
+    }
+
+    #[test]
+    fn deribit_coverage_manifest_is_strict_and_has_no_gaps() {
+        #[derive(serde::Deserialize)]
+        struct CoverageManifest {
+            strict: bool,
+            entries: Vec<CoverageEntry>,
+        }
+
+        #[derive(serde::Deserialize)]
+        struct CoverageEntry {
+            implemented: bool,
+            tested: bool,
+        }
+
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let path = repo_root.join("ucel/coverage/deribit.yaml");
+        let manifest: CoverageManifest =
+            serde_yaml::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+
+        assert!(manifest.strict);
+        assert!(manifest
+            .entries
+            .iter()
+            .all(|entry| entry.implemented && entry.tested));
     }
 
     #[test]

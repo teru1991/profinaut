@@ -1,0 +1,17 @@
+[package]
+name = "ucel-cex-bitget"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bytes = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+uuid = { version = "1", features = ["v4"] }
+ucel-core = { path = "../ucel-core" }
+ucel-transport = { path = "../ucel-transport" }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }
+serde_yaml = { workspace = true }

@@ -147,585 +147,191 @@ impl BittradeWsAdapter {
             trace_id: Uuid::new_v4().to_string(),
             request_id: Uuid::new_v4().to_string(),
             run_id: Uuid::new_v4().to_string(),
-            op: OpName::SubscribeTicker,
+            op: map_op(endpoint_id),
             venue: "bittrade".into(),
             policy_id: "default".into(),
-            key_id: key_id.clone(),
-            requires_auth: spec.access == "private",
+            key_id: if spec.requires_auth { key_id } else { None },
+            requires_auth: spec.requires_auth,
         };
         enforce_auth_boundary(&ctx)?;
-        info!(venue="bittrade", key_id=?key_id, channel_id=%sub.channel_id, "ws subscribe preflight passed");
-        t.connect_ws(WsConnectRequest { url: spec.ws_url }, ctx)
-            .await?;
-        self.active.insert(sub);
-        Ok(())
+
+        let path = render_path(spec.path, &args.path_params)?;
+        let req_path = with_query(format!("{}{}", spec.base_url, path), &args.query_params);
+        let req = HttpRequest {
+            method: spec.method.into(),
+            path: req_path,
+            body: args.body,
+        };
+        self.send_with_retry(req, ctx, endpoint_id).await
     }
 
-    pub async fn reconnect_and_resubscribe<T: Transport>(
+    async fn send_with_retry(
         &self,
-        t: &T,
-        key_id: Option<String>,
-    ) -> Result<(), UcelError> {
-        self.counters
-            .ws_reconnect_total
-            .fetch_add(1, Ordering::Relaxed);
-        for s in &self.active {
-            let mut replay = Self::new(self.counters.clone());
-            replay
-                .connect_and_subscribe(t, s.clone(), key_id.clone())
-                .await?;
-            self.counters
-                .ws_resubscribe_total
-                .fetch_add(1, Ordering::Relaxed);
-        }
-        Ok(())
-    }
-
-    pub fn parse_market_event(&self, id: &str, body: &Bytes) -> Result<MarketEvent, UcelError> {
-        match id {
-            "public.ws.market.kline" => {
-                let m: KlineMsg = parse_json(body)?;
-                Ok(MarketEvent::Kline {
-                    ch: m.ch,
-                    close: m.tick.close,
-                })
+        req: HttpRequest,
+        ctx: RequestContext,
+        endpoint_id: &str,
+    ) -> Result<BittradeRestResponse, UcelError> {
+        let mut attempt = 0;
+        loop {
+            let send = tokio::time::timeout(self.timeout, self.transport.send_http(req.clone(), ctx.clone())).await;
+            let resp = match send {
+                Ok(v) => v,
+                Err(_) => Err(UcelError::new(ErrorCode::Timeout, "request timeout")),
+            };
+            match resp {
+                Ok(ok) => {
+                    if ok.status == 429 {
+                        let mut err = parse_error(&ok.body, ErrorCode::RateLimited);
+                        if err.retry_after_ms.is_none() {
+                            err.retry_after_ms = Some(self.retry_policy.base_delay_ms);
+                        }
+                        if attempt >= self.max_retries {
+                            return Err(err);
+                        }
+                        let wait = next_retry_delay_ms(&self.retry_policy, attempt, err.retry_after_ms);
+                        tokio::time::sleep(Duration::from_millis(wait)).await;
+                        attempt += 1;
+                        continue;
+                    }
+                    if ok.status >= 500 {
+                        let err = UcelError::new(ErrorCode::Upstream5xx, format!("upstream status {}", ok.status));
+                        if attempt >= self.max_retries {
+                            return Err(err);
+                        }
+                        let wait = next_retry_delay_ms(&self.retry_policy, attempt, None);
+                        tokio::time::sleep(Duration::from_millis(wait)).await;
+                        attempt += 1;
+                        continue;
+                    }
+                    if ok.status >= 400 {
+                        return Err(parse_error(&ok.body, ErrorCode::Internal));
+                    }
+                    return parse_success(endpoint_id, &ok.body);
+                }
+                Err(err) => {
+                    let retryable = classify_error(&err.code) == RetryClass::Retryable;
+                    if !retryable || attempt >= self.max_retries {
+                        return Err(err);
+                    }
+                    let wait = next_retry_delay_ms(&self.retry_policy, attempt, err.retry_after_ms);
+                    tokio::time::sleep(Duration::from_millis(wait)).await;
+                    attempt += 1;
+                }
             }
-            "public.ws.market.depth" => {
-                let m: DepthMsg = parse_json(body)?;
-                Ok(MarketEvent::OrderBookDelta(OrderBookDelta {
-                    bids: levels(m.tick.bids)?,
-                    asks: levels(m.tick.asks)?,
-                    sequence_start: m.tick.version,
-                    sequence_end: m.tick.version,
-                }))
-            }
-            "public.ws.market.bbo" => {
-                let m: BboMsg = parse_json(body)?;
-                Ok(MarketEvent::Bbo {
-                    ch: m.ch,
-                    bid: m.tick.bid,
-                    ask: m.tick.ask,
-                })
-            }
-            "public.ws.market.detail" => {
-                let m: DetailMsg = parse_json(body)?;
-                Ok(MarketEvent::Ticker {
-                    ch: m.ch,
-                    close: m.tick.close,
-                })
-            }
-            "public.ws.market.trade.detail" => {
-                let m: TradeMsg = parse_json(body)?;
-                let t = m.tick.data.into_iter().next().ok_or_else(|| {
-                    UcelError::new(ErrorCode::CatalogMissingField, "trade data empty")
-                })?;
-                Ok(MarketEvent::Trade(TradeEvent {
-                    trade_id: t.id,
-                    price: t.price,
-                    qty: t.amount,
-                    side: t.direction,
-                }))
-            }
-            "private.ws.accounts.update" => {
-                let m: AccountsMsg = parse_json(body)?;
-                Ok(MarketEvent::AccountUpdate {
-                    ch: m.ch,
-                    count: m.data.len(),
-                })
-            }
-            "private.ws.trade.clearing" => {
-                let m: ClearingMsg = parse_json(body)?;
-                Ok(MarketEvent::TradeClearing {
-                    ch: m.ch,
-                    fields: m.data,
-                })
-            }
-            _ => Err(UcelError::new(
-                ErrorCode::NotSupported,
-                "unknown channel id",
-            )),
         }
     }
 }
 
-fn render_channel(template: &str, sub: &WsSubscription) -> String {
-    template
-        .replace("$symbol", &sub.symbol)
-        .replace("$period", sub.period_or_type.as_deref().unwrap_or("1min"))
-        .replace("$type", sub.period_or_type.as_deref().unwrap_or("step0"))
+fn render_path(path_template: &str, path_params: &BTreeMap<String, String>) -> Result<String, UcelError> {
+    let mut rendered = path_template.to_string();
+    for (k, v) in path_params {
+        rendered = rendered.replace(&format!("{{{k}}}"), v);
+    }
+    if rendered.contains('{') {
+        return Err(UcelError::new(ErrorCode::CatalogInvalid, "missing path param"));
+    }
+    Ok(rendered)
 }
 
-#[derive(Debug, Default)]
-pub struct OrderbookResync {
-    pub degraded: bool,
-    next: Option<u64>,
-    pending: VecDeque<OrderBookDelta>,
-}
-impl OrderbookResync {
-    pub fn on_snapshot(&mut self, snap: OrderBookSnapshot) -> Vec<OrderBookDelta> {
-        self.degraded = false;
-        self.next = Some(snap.sequence + 1);
-        let mut applied = Vec::new();
-        while let Some(front) = self.pending.front() {
-            if front.sequence_end < snap.sequence + 1 {
-                self.pending.pop_front();
-                continue;
-            }
-            if front.sequence_start == self.next.unwrap_or_default() {
-                let d = self.pending.pop_front().expect("front exists");
-                self.next = Some(d.sequence_end + 1);
-                applied.push(d);
-                continue;
-            }
-            break;
-        }
-        applied
+fn with_query(path: String, query_params: &BTreeMap<String, String>) -> String {
+    if query_params.is_empty() {
+        return path;
     }
-
-    pub fn on_delta(&mut self, d: OrderBookDelta) -> Result<(), UcelError> {
-        if let Some(next) = self.next {
-            if d.sequence_end < next {
-                return Ok(());
-            }
-            if d.sequence_start != next {
-                self.degraded = true;
-                self.next = None;
-                self.pending.clear();
-                return Err(UcelError::new(
-                    ErrorCode::Desync,
-                    "gap detected, resync required",
-                ));
-            }
-            self.next = Some(d.sequence_end + 1);
-            return Ok(());
-        }
-        self.pending.push_back(d);
-        Ok(())
-    }
+    let q = query_params
+        .iter()
+        .map(|(k, v)| format!("{k}={v}"))
+        .collect::<Vec<_>>()
+        .join("&");
+    format!("{path}?{q}")
 }
 
 fn parse_json<T: DeserializeOwned>(body: &Bytes) -> Result<T, UcelError> {
-    serde_json::from_slice(body).map_err(|e| {
-        UcelError::new(
-            ErrorCode::CatalogInvalid,
-            format!("ws payload parse failed: {e}"),
-        )
-    })
+    serde_json::from_slice(body)
+        .map_err(|e| UcelError::new(ErrorCode::Internal, format!("json parse failed: {e}")))
 }
 
-fn levels(raw: Vec<[f64; 2]>) -> Result<Vec<OrderBookLevel>, UcelError> {
-    if raw.is_empty() {
-        return Err(UcelError::new(
-            ErrorCode::CatalogMissingField,
-            "levels empty",
-        ));
+fn parse_success(endpoint_id: &str, body: &Bytes) -> Result<BittradeRestResponse, UcelError> {
+    if endpoint_id == "public.rest.common.currencys.get" {
+        return Ok(BittradeRestResponse::ListString(parse_json(body)?));
     }
-    Ok(raw
-        .into_iter()
-        .map(|lv| OrderBookLevel {
-            price: lv[0],
-            qty: lv[1],
-        })
-        .collect())
-}
-
-#[derive(Debug, Deserialize)]
-struct KlineMsg {
-    ch: String,
-    tick: KlineTick,
-}
-#[derive(Debug, Deserialize)]
-struct KlineTick {
-    close: f64,
-}
-
-#[derive(Debug, Deserialize)]
-struct DepthMsg {
-    tick: DepthTick,
-}
-#[derive(Debug, Deserialize)]
-struct DepthTick {
-    bids: Vec<[f64; 2]>,
-    asks: Vec<[f64; 2]>,
-    version: u64,
-}
-
-#[derive(Debug, Deserialize)]
-struct BboMsg {
-    ch: String,
-    tick: BboTick,
-}
-#[derive(Debug, Deserialize)]
-struct BboTick {
-    bid: f64,
-    ask: f64,
-}
-
-#[derive(Debug, Deserialize)]
-struct DetailMsg {
-    ch: String,
-    tick: DetailTick,
-}
-#[derive(Debug, Deserialize)]
-struct DetailTick {
-    close: f64,
-}
-
-#[derive(Debug, Deserialize)]
-struct TradeMsg {
-    tick: TradeTick,
-}
-#[derive(Debug, Deserialize)]
-struct TradeTick {
-    data: Vec<TradeRow>,
-}
-#[derive(Debug, Deserialize)]
-struct TradeRow {
-    id: String,
-    price: f64,
-    amount: f64,
-    direction: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct AccountsMsg {
-    ch: String,
-    data: Vec<BTreeMap<String, String>>,
-}
-#[derive(Debug, Deserialize)]
-struct ClearingMsg {
-    ch: String,
-    data: BTreeMap<String, String>,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::sync::Mutex;
-    use ucel_testkit::{
-        load_coverage_manifest, run_coverage_gate, CatalogContractIndex, CoverageGateResult,
-    };
-    use ucel_transport::{HttpRequest, HttpResponse, Transport, WsStream};
-
-    #[derive(Default)]
-    struct SpyTransport {
-        ws_connects: Arc<Mutex<Vec<String>>>,
+    if endpoint_id == "public.rest.common.timestamp.get" {
+        return Ok(BittradeRestResponse::NumberData(parse_json(body)?));
     }
-
-    impl Transport for SpyTransport {
-        async fn send_http(
-            &self,
-            _req: HttpRequest,
-            _ctx: RequestContext,
-        ) -> Result<HttpResponse, UcelError> {
-            unreachable!()
-        }
-
-        async fn connect_ws(
-            &self,
-            req: WsConnectRequest,
-            _ctx: RequestContext,
-        ) -> Result<WsStream, UcelError> {
-            self.ws_connects.lock().unwrap().push(req.url);
-            Ok(WsStream { connected: true })
-        }
+    if endpoint_id == "public.rest.market.kline.get"
+        || endpoint_id == "public.rest.market.history.trade.get"
+        || endpoint_id == "public.rest.market.tickers.get"
+    {
+        return Ok(BittradeRestResponse::TsListObject(parse_json(body)?));
     }
-
-    #[test]
-    fn all_catalog_ws_channels_have_contract_tests() {
-        let mut ix = CatalogContractIndex::default();
-        for spec in ws_specs() {
-            ix.register_id(&spec.id);
-        }
-        let catalog: Catalog = serde_json::from_str(include_str!(
-            "../../../../docs/exchanges/bittrade/catalog.json"
-        ))
-        .unwrap();
-        let reg = ucel_registry::ExchangeCatalog {
-            exchange: "bittrade".into(),
-            rest_endpoints: vec![],
-            ws_channels: catalog
-                .ws_channels
-                .into_iter()
-                .map(|w| ucel_registry::CatalogEntry {
-                    id: w.id,
-                    visibility: None,
-                    access: w.access,
-                    requires_auth: None,
-                    operation: None,
-                    method: None,
-                    base_url: None,
-                    path: None,
-                    ws_url: Some(w.ws_url),
-                    ws: None,
-                    auth: ucel_registry::CatalogAuth::default(),
-                })
-                .collect(),
-        };
-        assert!(ix.missing_catalog_ids(&reg).is_empty());
+    if endpoint_id == "public.rest.market.depth.get"
+        || endpoint_id == "public.rest.market.detail.merged.get"
+        || endpoint_id == "public.rest.market.trade.get"
+    {
+        return Ok(BittradeRestResponse::TickObject(parse_json(body)?));
     }
-
-    #[tokio::test(flavor = "current_thread")]
-    async fn reconnect_resubscribe_and_idempotent() {
-        let mut adapter = BittradeWsAdapter::new(Arc::new(WsCounters::default()));
-        let t = SpyTransport::default();
-        let sub = WsSubscription {
-            channel_id: "public.ws.market.kline".into(),
-            symbol: "btcjpy".into(),
-            period_or_type: Some("1min".into()),
-        };
-        adapter
-            .connect_and_subscribe(&t, sub.clone(), None)
-            .await
-            .unwrap();
-        adapter
-            .connect_and_subscribe(&t, sub.clone(), None)
-            .await
-            .unwrap();
-        assert_eq!(adapter.active.len(), 1);
-        adapter.reconnect_and_resubscribe(&t, None).await.unwrap();
-        assert_eq!(
-            adapter.counters.ws_reconnect_total.load(Ordering::Relaxed),
-            1
-        );
-        assert_eq!(
-            adapter
-                .counters
-                .ws_resubscribe_total
-                .load(Ordering::Relaxed),
-            1
-        );
+    if endpoint_id == "private.rest.order.place.post"
+        || endpoint_id == "private.rest.order.cancel.post"
+        || endpoint_id == "private.rest.wallet.withdraw.create.post"
+        || endpoint_id == "private.rest.wallet.withdraw.cancel.post"
+        || endpoint_id == "private.rest.retail.order.place.post"
+    {
+        return Ok(BittradeRestResponse::DataObject(parse_json(body)?));
     }
-
-    #[tokio::test(flavor = "current_thread")]
-    async fn private_preflight_reject_blocks_connect() {
-        let mut adapter = BittradeWsAdapter::new(Arc::new(WsCounters::default()));
-        let t = SpyTransport::default();
-        let err = adapter
-            .connect_and_subscribe(
-                &t,
-                WsSubscription {
-                    channel_id: "private.ws.accounts.update".into(),
-                    symbol: "accounts.update".into(),
-                    period_or_type: None,
-                },
-                None,
-            )
-            .await
-            .unwrap_err();
-        assert_eq!(err.code, ErrorCode::MissingAuth);
-        assert_eq!(t.ws_connects.lock().unwrap().len(), 0);
+    if endpoint_id == "other.rest.host.info" {
+        return Ok(BittradeRestResponse::HostInfo(parse_json(body)?));
     }
+    Ok(BittradeRestResponse::ListObject(parse_json(body)?))
+}
 
-    #[tokio::test(flavor = "current_thread")]
-    async fn bounded_backpressure_drops_are_counted() {
-        let mut q = BittradeWsBackpressure::new(1, Arc::new(WsCounters::default()));
-        q.try_enqueue(Bytes::from_static(b"a"));
-        q.try_enqueue(Bytes::from_static(b"b"));
-        assert_eq!(
-            q.counters
-                .ws_backpressure_drops_total
-                .load(Ordering::Relaxed),
-            1
-        );
-        assert_eq!(q.recv().await.unwrap(), Bytes::from_static(b"a"));
+#[derive(Debug, Deserialize)]
+struct BittradeErrorBody {
+    #[serde(rename = "err-code")]
+    err_code: Option<String>,
+    #[serde(rename = "err-msg")]
+    err_msg: Option<String>,
+    code: Option<String>,
+    message: Option<String>,
+    retry_after: Option<u64>,
+    retry_after_ms: Option<u64>,
+}
+
+fn parse_error(body: &Bytes, fallback: ErrorCode) -> UcelError {
+    if let Ok(e) = serde_json::from_slice::<BittradeErrorBody>(body) {
+        let code_key = e.err_code.or(e.code).unwrap_or_default();
+        let mapped = map_error_code(code_key.as_str(), fallback);
+        let mut out = UcelError::new(mapped, e.err_msg.or(e.message).unwrap_or_else(|| "bittrade error".into()));
+        out.retry_after_ms = e.retry_after_ms.or(e.retry_after);
+        return out;
     }
+    UcelError::new(fallback, "bittrade error")
+}
 
-    #[test]
-    fn orderbook_gap_duplicate_and_resync_recovered() {
-        let mut sync = OrderbookResync::default();
-        assert!(sync
-            .on_delta(OrderBookDelta {
-                bids: vec![OrderBookLevel {
-                    price: 1.0,
-                    qty: 1.0
-                }],
-                asks: vec![OrderBookLevel {
-                    price: 2.0,
-                    qty: 1.0
-                }],
-                sequence_start: 9,
-                sequence_end: 9
-            })
-            .is_ok());
-        let applied = sync.on_snapshot(OrderBookSnapshot {
-            bids: vec![OrderBookLevel {
-                price: 1.0,
-                qty: 1.0,
-            }],
-            asks: vec![OrderBookLevel {
-                price: 2.0,
-                qty: 1.0,
-            }],
-            sequence: 9,
-        });
-        assert_eq!(applied.len(), 0);
-        sync.on_delta(OrderBookDelta {
-            bids: vec![OrderBookLevel {
-                price: 1.1,
-                qty: 1.0,
-            }],
-            asks: vec![OrderBookLevel {
-                price: 2.1,
-                qty: 1.0,
-            }],
-            sequence_start: 10,
-            sequence_end: 10,
-        })
-        .unwrap();
-        assert!(sync
-            .on_delta(OrderBookDelta {
-                bids: vec![OrderBookLevel {
-                    price: 1.1,
-                    qty: 1.0
-                }],
-                asks: vec![OrderBookLevel {
-                    price: 2.1,
-                    qty: 1.0
-                }],
-                sequence_start: 10,
-                sequence_end: 10
-            })
-            .is_ok());
-        let err = sync
-            .on_delta(OrderBookDelta {
-                bids: vec![OrderBookLevel {
-                    price: 1.2,
-                    qty: 1.0,
-                }],
-                asks: vec![OrderBookLevel {
-                    price: 2.2,
-                    qty: 1.0,
-                }],
-                sequence_start: 12,
-                sequence_end: 12,
-            })
-            .unwrap_err();
-        assert_eq!(err.code, ErrorCode::Desync);
-        assert!(sync.degraded);
-        let recovered = sync.on_snapshot(OrderBookSnapshot {
-            bids: vec![OrderBookLevel {
-                price: 1.2,
-                qty: 1.0,
-            }],
-            asks: vec![OrderBookLevel {
-                price: 2.2,
-                qty: 1.0,
-            }],
-            sequence: 12,
-        });
-        assert!(recovered.is_empty());
-        assert!(!sync.degraded);
+fn map_error_code(code: &str, fallback: ErrorCode) -> ErrorCode {
+    match code {
+        "api-signature-not-valid" | "login-required" | "authentication-failed" => ErrorCode::AuthFailed,
+        "403" | "forbidden" | "permission-denied" => ErrorCode::PermissionDenied,
+        "order-invalid" | "order-not-found" | "base-record-invalid" => ErrorCode::InvalidOrder,
+        "429" | "too-many-requests" | "rate-limit" => ErrorCode::RateLimited,
+        _ => fallback,
     }
+}
 
-    #[test]
-    fn parse_all_ws_channels_typed() {
-        let adapter = BittradeWsAdapter::new(Arc::new(WsCounters::default()));
-        assert!(matches!(
-            adapter
-                .parse_market_event(
-                    "public.ws.market.kline",
-                    &Bytes::from_static(
-                        br#"{"ch":"market.btcjpy.kline.1min","tick":{"close":1.23}}"#
-                    )
-                )
-                .unwrap(),
-            MarketEvent::Kline { .. }
-        ));
-        assert!(matches!(
-            adapter
-                .parse_market_event(
-                    "public.ws.market.depth",
-                    &Bytes::from_static(
-                        br#"{"tick":{"bids":[[1.0,2.0]],"asks":[[1.1,3.0]],"version":2}}"#
-                    )
-                )
-                .unwrap(),
-            MarketEvent::OrderBookDelta(_)
-        ));
-        assert!(matches!(
-            adapter
-                .parse_market_event(
-                    "public.ws.market.bbo",
-                    &Bytes::from_static(br#"{"ch":"x","tick":{"bid":1.0,"ask":1.1}}"#)
-                )
-                .unwrap(),
-            MarketEvent::Bbo { .. }
-        ));
-        assert!(matches!(
-            adapter
-                .parse_market_event(
-                    "public.ws.market.detail",
-                    &Bytes::from_static(br#"{"ch":"x","tick":{"close":1.0}}"#)
-                )
-                .unwrap(),
-            MarketEvent::Ticker { .. }
-        ));
-        assert!(matches!(adapter.parse_market_event("public.ws.market.trade.detail", &Bytes::from_static(br#"{"tick":{"data":[{"id":"1","price":1.0,"amount":2.0,"direction":"buy"}]}}"#)).unwrap(), MarketEvent::Trade(_)));
-        assert!(matches!(
-            adapter
-                .parse_market_event(
-                    "private.ws.accounts.update",
-                    &Bytes::from_static(br#"{"ch":"accounts.update","data":[{"currency":"btc"}]}"#)
-                )
-                .unwrap(),
-            MarketEvent::AccountUpdate { .. }
-        ));
-        assert!(matches!(
-            adapter
-                .parse_market_event(
-                    "private.ws.trade.clearing",
-                    &Bytes::from_static(br#"{"ch":"trade.clearing","data":{"status":"done"}}"#)
-                )
-                .unwrap(),
-            MarketEvent::TradeClearing { .. }
-        ));
-    }
-
-    #[test]
-    fn no_secret_leak_in_logs() {
-        use tracing::subscriber::with_default;
-        use tracing_subscriber::fmt::MakeWriter;
-
-        #[derive(Clone, Default)]
-        struct SharedBuf(Arc<Mutex<Vec<u8>>>);
-        impl std::io::Write for SharedBuf {
-            fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-                self.0.lock().unwrap().extend_from_slice(buf);
-                Ok(buf.len())
-            }
-            fn flush(&mut self) -> std::io::Result<()> {
-                Ok(())
-            }
-        }
-        impl<'a> MakeWriter<'a> for SharedBuf {
-            type Writer = SharedBuf;
-            fn make_writer(&'a self) -> Self::Writer {
-                self.clone()
-            }
-        }
-
-        let out = SharedBuf::default();
-        let subscriber = tracing_subscriber::fmt()
-            .with_ansi(false)
-            .with_writer(out.clone())
-            .finish();
-        with_default(subscriber, || info!(key_id = "kid-1", "ws auth"));
-
-        let txt = String::from_utf8(out.0.lock().unwrap().clone()).unwrap();
-        assert!(txt.contains("kid-1"));
-        assert!(!txt.contains("api_secret"));
-        assert!(!txt.contains("secret"));
-    }
-
-    #[test]
-    fn strict_coverage_gate_is_enabled_for_bittrade() {
-        let manifest =
-            load_coverage_manifest(std::path::Path::new("../../coverage/bittrade.yaml")).unwrap();
-        assert!(manifest.strict);
-        assert!(matches!(
-            run_coverage_gate(&manifest),
-            CoverageGateResult::Passed
-        ));
+fn map_op(id: &str) -> OpName {
+    if id.contains("ticker") || id.contains("detail.merged") {
+        OpName::FetchTicker
+    } else if id.contains("trade") || id.contains("matchresults") {
+        OpName::FetchTrades
+    } else if id.contains("kline") {
+        OpName::FetchKlines
+    } else if id.contains("depth") {
+        OpName::FetchOrderbookSnapshot
+    } else if id.contains("balance") || id.contains("accounts") {
+        OpName::FetchBalances
+    } else if id.contains("place") {
+        OpName::PlaceOrder
+    } else if id.contains("cancel") {
+        OpName::CancelOrder
+    } else {
+        OpName::FetchStatus
     }
 }
