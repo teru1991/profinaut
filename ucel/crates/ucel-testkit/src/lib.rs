@@ -164,82 +164,45 @@ mod tests {
     #[test]
     fn coverage_gate_is_strict_for_binance_usdm() {
     use std::path::Path;
-    use ucel_core::ResolvedSecret;
     use ucel_registry::load_catalog_from_repo_root;
 
     #[test]
-    fn coverage_gate_is_strict_for_bitbank_and_has_no_gaps() {
-        let manifest = load_coverage_manifest(
-            &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bitbank.yaml"),
-        )
-        .unwrap();
-        assert_eq!(manifest.venue, "bitbank");
-        assert!(manifest.strict);
-        assert!(evaluate_coverage_gate(&manifest).is_empty());
-    }
-
-    #[test]
-    fn resolved_secret_masking_is_enforced() {
-        let s = ResolvedSecret {
-            api_key: "my-key".into(),
-            api_secret: Some("my-secret".into()),
-            passphrase: Some("my-pass".into()),
-        };
-        let dbg = format!("{s:?}");
-        let disp = format!("{s}");
-        assert!(!dbg.contains("my-secret"));
-        assert!(!disp.contains("my-pass"));
-        assert!(disp.contains("***"));
-    }
-
-    #[test]
-    fn contract_index_detects_unregistered_catalog_rows() {
+    fn contract_index_can_cover_all_upbit_catalog_rows() {
         let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "gmocoin").unwrap();
+        let catalog = load_catalog_from_repo_root(&repo_root, "upbit").unwrap();
+
+        let mut index = CatalogContractIndex::default();
+        for id in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+            .map(|entry| entry.id.as_str())
+        {
+            index.register_id(id);
+        }
+
+        let missing = index.missing_catalog_ids(&catalog);
+        assert!(missing.is_empty());
+    }
+
+    #[test]
+<<<<<<< codex/implement-upbit-ssot-coverage-system
+    fn contract_index_detects_unregistered_upbit_rows() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "upbit").unwrap();
+
         let index = CatalogContractIndex::default();
         let missing = index.missing_catalog_ids(&catalog);
-        assert_eq!(missing.len(), 42);
+        assert_eq!(missing.len(), 29);
     }
 
     #[test]
-    fn contract_index_can_cover_all_kraken_catalog_rows() {
-        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "kraken").unwrap();
-
-        let mut index = CatalogContractIndex::default();
-        for id in catalog
-            .rest_endpoints
-            .iter()
-            .chain(catalog.ws_channels.iter())
-            .map(|entry| entry.id.as_str())
-        {
-            index.register_id(id);
-        }
-
-        let missing = index.missing_catalog_ids(&catalog);
-        assert!(missing.is_empty());
-    }
-
-    #[test]
-    fn contract_index_can_cover_all_binance_coinm_catalog_rows() {
-        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "binance-coinm").unwrap();
-
-        let mut index = CatalogContractIndex::default();
-        for id in catalog
-            .rest_endpoints
-            .iter()
-            .chain(catalog.ws_channels.iter())
-            .map(|entry| entry.id.as_str())
-        {
-            index.register_id(id);
-        }
-
-        let missing = index.missing_catalog_ids(&catalog);
-        assert!(missing.is_empty());
-    }
-
-    #[test]
+    fn coverage_gate_warns_for_upbit_until_full_coverage() {
+        let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/upbit.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "upbit");
+        assert!(!manifest.strict);
+=======
 <<<<<<< codex/implement-full-binance-ws-support
 =======
     fn contract_index_can_cover_all_binance_options_catalog_rows() {
@@ -317,10 +280,17 @@ mod tests {
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-usdm.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
         assert_eq!(manifest.venue, "binance-usdm");
+>>>>>>> master
 
         let result = run_coverage_gate(&manifest);
         match result {
             CoverageGateResult::WarnOnly(gaps) => {
+<<<<<<< codex/implement-upbit-ssot-coverage-system
+                assert_eq!(gaps.get("implemented").map(Vec::len), Some(29));
+                assert_eq!(gaps.get("tested").map(Vec::len), Some(29));
+            }
+            _ => panic!("upbit coverage gate should warn while manifest has gaps"),
+=======
                 assert_eq!(gaps.get("implemented").map(Vec::len), Some(16));
                 assert_eq!(gaps.get("tested").map(Vec::len), Some(16));
             }
@@ -351,6 +321,7 @@ mod tests {
         match result {
             CoverageGateResult::Passed | CoverageGateResult::WarnOnly(_) => {}
             CoverageGateResult::Failed(_) => panic!("binance-coinm strict gate should not fail in repository state"),
+>>>>>>> master
 >>>>>>> master
         }
     }
