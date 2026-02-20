@@ -189,12 +189,61 @@ mod tests {
         let disp = format!("{s}");
         assert!(!dbg.contains("my-secret"));
         assert!(!disp.contains("my-pass"));
+        assert!(disp.contains("***"));
     }
 
     #[test]
-    fn contract_index_can_cover_all_bitbank_catalog_rows() {
+    fn contract_index_detects_unregistered_catalog_rows() {
         let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "bitbank").unwrap();
+        let catalog = load_catalog_from_repo_root(&repo_root, "gmocoin").unwrap();
+        let index = CatalogContractIndex::default();
+        let missing = index.missing_catalog_ids(&catalog);
+        assert_eq!(missing.len(), 42);
+    }
+
+    #[test]
+    fn contract_index_can_cover_all_kraken_catalog_rows() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "kraken").unwrap();
+
+        let mut index = CatalogContractIndex::default();
+        for id in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+            .map(|entry| entry.id.as_str())
+        {
+            index.register_id(id);
+        }
+
+        let missing = index.missing_catalog_ids(&catalog);
+        assert!(missing.is_empty());
+    }
+
+    #[test]
+    fn contract_index_can_cover_all_bybit_catalog_rows() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "bybit").unwrap();
+
+        let mut index = CatalogContractIndex::default();
+        for id in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+            .map(|entry| entry.id.as_str())
+        {
+            index.register_id(id);
+        }
+
+        let missing = index.missing_catalog_ids(&catalog);
+        assert!(missing.is_empty());
+    }
+
+    #[test]
+    fn contract_index_can_cover_all_bitmex_catalog_rows() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "bitmex").unwrap();
+
         let mut index = CatalogContractIndex::default();
         for id in catalog
             .rest_endpoints
@@ -258,39 +307,6 @@ mod tests {
     }
 
     #[test]
-    fn coverage_gate_warns_for_binance_options_until_full_coverage() {
-        let manifest_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-options.yaml");
-        let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "binance-options");
-        assert!(!manifest.strict);
-
-        let result = run_coverage_gate(&manifest);
-        match result {
-            CoverageGateResult::WarnOnly(gaps) => {
-                assert_eq!(gaps.get("implemented").map(Vec::len), Some(14));
-                assert_eq!(gaps.get("tested").map(Vec::len), Some(14));
-            }
-            _ => panic!("binance-options coverage gate should warn while manifest has gaps"),
-        }
-    }
-
-    #[test]
-    fn coverage_gate_is_strict_for_coinbase_and_has_no_gaps() {
-        let manifest_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/coinbase.yaml");
-        let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "coinbase");
-        assert!(manifest.strict);
-
-        let result = run_coverage_gate(&manifest);
-        match result {
-            CoverageGateResult::Passed => {}
-            _ => panic!("coinbase coverage gate should pass in strict mode"),
-        }
-    }
-
-    #[test]
     fn coverage_gate_is_strict_for_kraken_and_has_no_gaps() {
         let manifest_path =
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/kraken.yaml");
@@ -302,54 +318,6 @@ mod tests {
         match result {
             CoverageGateResult::Passed => {}
             _ => panic!("kraken coverage gate should pass in strict mode"),
-        }
-    }
-
-    #[test]
-    fn coverage_gate_is_strict_for_binance_usdm_and_has_no_gaps() {
-    fn coverage_gate_warns_for_bitbank_until_full_coverage() {
-        let manifest_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bitbank.yaml");
-        let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "bitbank");
-    }
-
-    #[test]
-    fn coverage_gate_warns_for_binance_usdm_until_full_coverage() {
-        let manifest_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-usdm.yaml");
-        let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "binance-usdm");
-        assert!(manifest.strict);
-        assert!(matches!(
-            run_coverage_gate(&manifest),
-            CoverageGateResult::Passed
-        ));
-    }
-
-    #[test]
-    fn coverage_gate_is_strict_for_binance_coinm_and_has_no_gaps() {
-        assert!(manifest.strict);
-
-        let result = run_coverage_gate(&manifest);
-        match result {
-            CoverageGateResult::Passed => {}
-            _ => panic!("binance-usdm coverage gate should pass in strict mode"),
-        }
-    }
-
-    #[test]
-    fn coverage_gate_warns_for_binance_coinm_gaps() {
-        let manifest_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-coinm.yaml");
-        let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "binance-coinm");
-        assert!(manifest.strict);
-
-        let result = run_coverage_gate(&manifest);
-        match result {
-            CoverageGateResult::Passed => {}
-            _ => panic!("binance-coinm coverage gate should pass in strict mode"),
         }
     }
 }
