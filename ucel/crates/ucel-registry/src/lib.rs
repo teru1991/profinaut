@@ -21,13 +21,15 @@ pub struct AuthConfigRef {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct GmoCatalog {
+pub struct ExchangeCatalog {
     pub exchange: String,
     pub rest_endpoints: Vec<CatalogEntry>,
     pub ws_channels: Vec<CatalogEntry>,
     #[serde(default)]
     pub data_feeds: Vec<DataFeedEntry>,
 }
+
+pub type GmoCatalog = ExchangeCatalog;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct DataFeedEntry {
@@ -37,15 +39,19 @@ pub struct DataFeedEntry {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct CatalogEntry {
     pub id: String,
-    pub service: String,
     pub visibility: String,
     pub operation: Option<String>,
     pub method: Option<String>,
     pub base_url: Option<String>,
     pub path: Option<String>,
     pub ws_url: Option<String>,
+    pub ws: Option<CatalogWs>,
     pub auth: CatalogAuth,
-    pub source_url: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct CatalogWs {
+    pub url: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -54,14 +60,14 @@ pub struct CatalogAuth {
     pub auth_type: String,
 }
 
-pub fn load_catalog_from_path(path: &Path) -> Result<GmoCatalog, UcelError> {
+pub fn load_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, UcelError> {
     let raw = fs::read_to_string(path).map_err(|e| {
         UcelError::new(
             ErrorCode::CatalogInvalid,
             format!("failed to read {}: {e}", path.display()),
         )
     })?;
-    let catalog: GmoCatalog = serde_json::from_str(&raw).map_err(|e| {
+    let catalog: ExchangeCatalog = serde_json::from_str(&raw).map_err(|e| {
         UcelError::new(
             ErrorCode::CatalogInvalid,
             format!("failed to parse {}: {e}", path.display()),
@@ -74,7 +80,7 @@ pub fn load_catalog_from_path(path: &Path) -> Result<GmoCatalog, UcelError> {
 pub fn load_catalog_from_repo_root(
     repo_root: &Path,
     exchange: &str,
-) -> Result<GmoCatalog, UcelError> {
+) -> Result<ExchangeCatalog, UcelError> {
     let path = repo_root
         .join("docs")
         .join("exchanges")
@@ -83,7 +89,14 @@ pub fn load_catalog_from_repo_root(
     load_catalog_from_path(&path)
 }
 
-pub fn validate_catalog(catalog: &GmoCatalog) -> Result<(), UcelError> {
+pub fn validate_catalog(catalog: &ExchangeCatalog) -> Result<(), UcelError> {
+    if catalog.exchange.trim().is_empty() {
+        return Err(UcelError::new(
+            ErrorCode::CatalogMissingField,
+            "catalog.exchange must not be empty",
+        ));
+    }
+
     let mut seen = HashSet::new();
     for entry in catalog
         .rest_endpoints
@@ -102,10 +115,7 @@ pub fn validate_catalog(catalog: &GmoCatalog) -> Result<(), UcelError> {
 }
 
 fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
-    if entry.id.trim().is_empty()
-        || entry.service.trim().is_empty()
-        || entry.visibility.trim().is_empty()
-    {
+    if entry.id.trim().is_empty() || entry.visibility.trim().is_empty() {
         return Err(UcelError::new(
             ErrorCode::CatalogMissingField,
             format!("missing required fields for id={}", entry.id),
@@ -147,7 +157,11 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
         }
     }
 
-    match (&entry.method, &entry.base_url, &entry.path, &entry.ws_url) {
+    let resolved_ws_url = entry
+        .ws_url
+        .as_deref()
+        .or(entry.ws.as_ref().map(|ws| ws.url.as_str()));
+    match (&entry.method, &entry.base_url, &entry.path, resolved_ws_url) {
         (Some(method), Some(base_url), Some(path), None) => {
             if method.trim().is_empty() || base_url.trim().is_empty() || path.trim().is_empty() {
                 return Err(UcelError::new(
@@ -189,7 +203,7 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
             return Err(UcelError::new(
                 ErrorCode::CatalogInvalid,
                 format!(
-                    "catalog row must be either REST(method/base_url/path) or WS(ws_url), id={}",
+                    "catalog row must be either REST(method/base_url/path) or WS(ws.url/ws_url), id={}",
                     entry.id
                 ),
             ));
@@ -216,19 +230,31 @@ pub fn map_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
 
 fn map_operation_literal(operation: &str) -> Option<OpName> {
     match operation {
-        "Get service status" | "Get FX API status" => Some(OpName::FetchStatus),
-        "Get ticker" | "Get FX ticker" => Some(OpName::FetchTicker),
+        "Get service status" | "Get FX API status" | "List futures instruments" => {
+            Some(OpName::FetchStatus)
+        }
+        "Get ticker"
+        | "Get FX ticker"
+        | "Get ticker information"
+        | "Get futures tickers" => Some(OpName::FetchTicker),
         "Get order book" | "Get FX order book" => Some(OpName::FetchOrderbookSnapshot),
         "Get recent trades" | "Get FX trades" => Some(OpName::FetchTrades),
         "Get candlesticks" | "Get FX klines" => Some(OpName::FetchKlines),
-        "Create WS auth token" | "Create FX WS auth token" => Some(OpName::CreateWsAuthToken),
+        "Create WS auth token" | "Create FX WS auth token" | "Get WS token" => {
+            Some(OpName::CreateWsAuthToken)
+        }
         "Extend WS auth token" => Some(OpName::ExtendWsAuthToken),
-        "Get account assets" | "Get FX account assets" => Some(OpName::FetchBalances),
+        "Get account assets"
+        | "Get FX account assets"
+        | "Get account balances"
+        | "Get account information" => Some(OpName::FetchBalances),
         "Get margin status" => Some(OpName::FetchMarginStatus),
         "Get active orders" | "Get FX active orders" => Some(OpName::FetchOpenOrders),
         "Get execution history" => Some(OpName::FetchFills),
         "Get latest execution per order" => Some(OpName::FetchLatestExecutions),
-        "Create order" | "Create FX order" => Some(OpName::PlaceOrder),
+        "Create order" | "Create FX order" | "Add order" | "Send futures order" => {
+            Some(OpName::PlaceOrder)
+        }
         "Amend order" => Some(OpName::AmendOrder),
         "Cancel order" | "Cancel FX order" => Some(OpName::CancelOrder),
         "Get open positions" | "Get FX open positions" => Some(OpName::FetchOpenPositions),
@@ -240,20 +266,35 @@ fn map_operation_literal(operation: &str) -> Option<OpName> {
 
 fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
     let op = match id {
-        "crypto.public.ws.ticker.update" | "fx.public.ws.ticker.update" => OpName::SubscribeTicker,
-        "crypto.public.ws.trades.update" | "fx.public.ws.trades.update" => OpName::SubscribeTrades,
-        "crypto.public.ws.orderbooks.update" | "fx.public.ws.orderbooks.update" => {
-            OpName::SubscribeOrderbook
-        }
+        "crypto.public.ws.ticker.update"
+        | "fx.public.ws.ticker.update"
+        | "futures.public.ws.other.market.ticker.subscribe" => OpName::SubscribeTicker,
+        "crypto.public.ws.trades.update"
+        | "fx.public.ws.trades.update"
+        | "spot.public.ws.v1.market.trade.subscribe" => OpName::SubscribeTrades,
+        "crypto.public.ws.orderbooks.update"
+        | "fx.public.ws.orderbooks.update"
+        | "spot.public.ws.v1.market.book.subscribe"
+        | "spot.public.ws.v2.market.book.subscribe"
+        | "futures.public.ws.other.market.book.subscribe" => OpName::SubscribeOrderbook,
         "crypto.private.ws.executionevents.update" | "fx.private.ws.executionevents.update" => {
             OpName::SubscribeExecutionEvents
         }
-        "crypto.private.ws.orderevents.update" | "fx.private.ws.orderevents.update" => {
-            OpName::SubscribeOrderEvents
-        }
-        "crypto.private.ws.positionevents.update" | "fx.private.ws.positionevents.update" => {
+        "crypto.private.ws.orderevents.update"
+        | "fx.private.ws.orderevents.update"
+        | "spot.private.ws.v1.account.open_orders.subscribe" => OpName::SubscribeOrderEvents,
+        "crypto.private.ws.positionevents.update"
+        | "fx.private.ws.positionevents.update"
+        | "futures.private.ws.other.account.open_positions.subscribe" => {
             OpName::SubscribePositionEvents
         }
+        "spot.public.rest.assets.list"
+        | "spot.public.rest.asset-pairs.list"
+        | "spot.public.ws.v2.market.instrument.subscribe" => OpName::FetchStatus,
+        "spot.private.rest.order.add"
+        | "futures.private.rest.order.send"
+        | "spot.private.ws.v1.trade.add_order.request"
+        | "spot.private.ws.v2.trade.add_order" => OpName::PlaceOrder,
         _ => {
             return Err(UcelError::new(
                 ErrorCode::NotSupported,
@@ -264,7 +305,7 @@ fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
     Ok(op)
 }
 
-pub fn capabilities_from_catalog(name: &str, catalog: &GmoCatalog) -> Capabilities {
+pub fn capabilities_from_catalog(name: &str, catalog: &ExchangeCatalog) -> Capabilities {
     Capabilities {
         schema_version: "1.0.0".into(),
         kind: "exchange".into(),
@@ -307,35 +348,33 @@ mod tests {
 
     #[test]
     fn rejects_duplicate_catalog_ids() {
-        let catalog = GmoCatalog {
+        let catalog = ExchangeCatalog {
             exchange: "gmo".into(),
             rest_endpoints: vec![CatalogEntry {
                 id: "same".into(),
-                service: "rest".into(),
                 visibility: "public".into(),
                 operation: Some("Get ticker".into()),
                 method: Some("GET".into()),
                 base_url: Some("https://x".into()),
                 path: Some("/ok".into()),
                 ws_url: None,
+                ws: None,
                 auth: CatalogAuth {
                     auth_type: "none".into(),
                 },
-                source_url: None,
             }],
             ws_channels: vec![CatalogEntry {
                 id: "same".into(),
-                service: "ws".into(),
                 visibility: "public".into(),
                 operation: None,
                 method: None,
                 base_url: None,
                 path: None,
                 ws_url: Some("wss://x".into()),
+                ws: None,
                 auth: CatalogAuth {
                     auth_type: "none".into(),
                 },
-                source_url: None,
             }],
             data_feeds: vec![],
         };
@@ -347,31 +386,29 @@ mod tests {
     fn requires_auth_comes_from_visibility() {
         let private_entry = CatalogEntry {
             id: "crypto.private.ws.executionevents.update".into(),
-            service: "crypto".into(),
             visibility: "private".into(),
             operation: None,
             method: None,
             base_url: None,
             path: None,
             ws_url: Some("wss://api.coin.z.com/ws/private/v1/xxx".into()),
+            ws: None,
             auth: CatalogAuth {
                 auth_type: "token".into(),
             },
-            source_url: None,
         };
         let public_entry = CatalogEntry {
             id: "crypto.public.rest.ticker.get".into(),
-            service: "crypto".into(),
             visibility: "public".into(),
             operation: Some("Get ticker".into()),
             method: Some("GET".into()),
             base_url: Some("https://api.coin.z.com".into()),
             path: Some("/public/v1/ticker".into()),
             ws_url: None,
+            ws: None,
             auth: CatalogAuth {
                 auth_type: "none".into(),
             },
-            source_url: None,
         };
 
         assert!(op_meta_from_entry(&private_entry).unwrap().requires_auth);
@@ -379,10 +416,22 @@ mod tests {
     }
 
     #[test]
-    fn loads_and_counts_repo_catalog() {
+    fn loads_gmocoin_catalog() {
         let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
         let catalog = load_catalog_from_repo_root(&repo_root, "gmocoin").unwrap();
         assert_eq!(catalog.rest_endpoints.len(), 30);
         assert_eq!(catalog.ws_channels.len(), 12);
+    }
+
+    #[test]
+    fn loads_kraken_catalog_and_maps_all_ops() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "kraken").unwrap();
+        assert_eq!(catalog.rest_endpoints.len(), 10);
+        assert_eq!(catalog.ws_channels.len(), 10);
+
+        for entry in catalog.rest_endpoints.iter().chain(catalog.ws_channels.iter()) {
+            assert!(map_operation(entry).is_ok(), "missing op mapping for {}", entry.id);
+        }
     }
 }
