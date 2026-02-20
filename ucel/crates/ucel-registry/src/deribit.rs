@@ -54,15 +54,16 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
             ));
         }
 
+        let visibility = derive_visibility_from_id(&row.id)?;
         rest_endpoints.push(CatalogEntry {
             id: row.id,
-            visibility: derive_visibility_from_id(&row.id)?,
+            visibility: Some(visibility),
+            access: String::new(),
             operation: row.operation,
             method: Some("POST".to_string()),
             base_url: Some(row.base_url),
             path: Some(format!("/{}", row.method)),
             ws_url: None,
-            channel: None,
             ws: None,
             auth: row.auth,
             requires_auth: None,
@@ -83,15 +84,16 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
             ));
         }
 
+        let visibility = derive_visibility_from_id(&row.id)?;
         ws_channels.push(CatalogEntry {
             id: row.id,
-            visibility: derive_visibility_from_id(&row.id)?,
+            visibility: Some(visibility),
+            access: String::new(),
             operation: row.operation,
             method: None,
             base_url: None,
             path: None,
             ws_url: Some(row.base_url),
-            channel: Some(row.method),
             ws: None,
             auth: row.auth,
             requires_auth: None,
@@ -109,15 +111,16 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
             ));
         }
 
+        let visibility = derive_visibility_from_id(&row.id)?;
         ws_channels.push(CatalogEntry {
             id: row.id,
-            visibility: derive_visibility_from_id(&row.id)?,
+            visibility: Some(visibility),
+            access: String::new(),
             operation: Some(row.channel.clone()),
             method: None,
             base_url: None,
             path: None,
             ws_url: Some(row.ws_url),
-            channel: Some(row.channel),
             ws: None,
             auth: row.auth,
             requires_auth: None,
@@ -128,7 +131,6 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
         exchange: catalog.exchange,
         rest_endpoints,
         ws_channels,
-        data_feeds: Vec::new(),
     };
 
     crate::validate_catalog(&normalized)?;
@@ -210,13 +212,13 @@ mod tests {
     fn derives_requires_auth_from_visibility_for_deribit() {
         let entry = CatalogEntry {
             id: "jsonrpc.ws.private.trading.private_buy".to_string(),
-            visibility: "private".to_string(),
+            visibility: Some("private".to_string()),
+            access: String::new(),
             operation: Some("place buy order".to_string()),
             method: None,
             base_url: None,
             path: None,
             ws_url: Some("wss://www.deribit.com/ws/api/v2".to_string()),
-            channel: Some("private/buy".to_string()),
             ws: None,
             auth: CatalogAuth {
                 auth_type: "token".to_string(),
