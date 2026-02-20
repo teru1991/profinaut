@@ -56,8 +56,8 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
 
         let visibility = derive_visibility_from_id(&row.id)?;
         rest_endpoints.push(CatalogEntry {
-            id: row.id,
-            visibility: Some(visibility),
+            id: row.id.clone(),
+            visibility: Some(derive_visibility_from_id(&row.id)?),
             access: String::new(),
             operation: row.operation,
             method: Some("POST".to_string()),
@@ -86,9 +86,9 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
 
         let visibility = derive_visibility_from_id(&row.id)?;
         ws_channels.push(CatalogEntry {
-            id: row.id,
-            visibility: Some(visibility),
-            access: String::new(),
+            id: row.id.clone(),
+            visibility: Some(derive_visibility_from_id(&row.id)?),
+            access: row.method.clone(),
             operation: row.operation,
             method: None,
             base_url: None,
@@ -113,9 +113,9 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
 
         let visibility = Some(derive_visibility_from_id(&row.id)?);
         ws_channels.push(CatalogEntry {
-            id: row.id,
-            visibility,
-            access: String::new(),
+            id: row.id.clone(),
+            visibility: Some(derive_visibility_from_id(&row.id)?),
+            access: row.channel.clone(),
             operation: Some(row.channel.clone()),
             method: None,
             base_url: None,
@@ -209,11 +209,37 @@ mod tests {
     }
 
     #[test]
+    fn deribit_coverage_manifest_is_strict_and_has_no_gaps() {
+        #[derive(serde::Deserialize)]
+        struct CoverageManifest {
+            strict: bool,
+            entries: Vec<CoverageEntry>,
+        }
+
+        #[derive(serde::Deserialize)]
+        struct CoverageEntry {
+            implemented: bool,
+            tested: bool,
+        }
+
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let path = repo_root.join("ucel/coverage/deribit.yaml");
+        let manifest: CoverageManifest =
+            serde_yaml::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+
+        assert!(manifest.strict);
+        assert!(manifest
+            .entries
+            .iter()
+            .all(|entry| entry.implemented && entry.tested));
+    }
+
+    #[test]
     fn derives_requires_auth_from_visibility_for_deribit() {
         let entry = CatalogEntry {
             id: "jsonrpc.ws.private.trading.private_buy".to_string(),
             visibility: Some("private".to_string()),
-            access: String::new(),
+            access: "private/buy".to_string(),
             operation: Some("place buy order".to_string()),
             method: None,
             base_url: None,

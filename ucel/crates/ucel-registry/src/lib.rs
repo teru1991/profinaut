@@ -121,20 +121,16 @@ pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
 }
 
 fn entry_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
-    if let Some(visibility) = entry.visibility.as_ref().filter(|v| !v.trim().is_empty()) {
-        return Ok(visibility.to_ascii_lowercase());
+    if let Some(visibility) = &entry.visibility {
+        if !visibility.trim().is_empty() {
+            return Ok(visibility.to_ascii_lowercase());
+        }
     }
     if entry.id.contains(".private.") {
         return Ok("private".into());
     }
     if entry.id.contains(".public.") {
         return Ok("public".into());
-    }
-    if entry.auth.auth_type.eq_ignore_ascii_case("none") {
-        return Ok("public".into());
-    }
-    if !entry.auth.auth_type.trim().is_empty() {
-        return Ok("private".into());
     }
     Err(UcelError::new(
         ErrorCode::CatalogMissingField,
