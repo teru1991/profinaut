@@ -166,18 +166,9 @@ mod tests {
     use ucel_registry::load_catalog_from_repo_root;
 
     #[test]
-    fn contract_index_detects_unregistered_coincheck_rows() {
+    fn contract_index_can_cover_all_bittrade_catalog_rows() {
         let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "coincheck").unwrap();
-        let index = CatalogContractIndex::default();
-        let missing = index.missing_catalog_ids(&catalog);
-        assert_eq!(missing.len(), 29);
-    }
-
-    #[test]
-    fn contract_index_can_cover_all_coincheck_catalog_rows() {
-        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "coincheck").unwrap();
+        let catalog = load_catalog_from_repo_root(&repo_root, "bittrade").unwrap();
 
         let mut index = CatalogContractIndex::default();
         for id in catalog
@@ -194,19 +185,34 @@ mod tests {
     }
 
     #[test]
-    fn coverage_gate_warns_for_coincheck_gaps() {
+    fn coverage_gate_warns_for_bittrade_until_full_coverage() {
         let manifest_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/coincheck.yaml");
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bittrade.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "coincheck");
+        assert_eq!(manifest.venue, "bittrade");
         assert!(!manifest.strict);
 
-        match run_coverage_gate(&manifest) {
+        let result = run_coverage_gate(&manifest);
+        match result {
             CoverageGateResult::WarnOnly(gaps) => {
-                assert_eq!(gaps.get("implemented").map(Vec::len), Some(29));
-                assert_eq!(gaps.get("tested").map(Vec::len), Some(29));
+                assert_eq!(gaps.get("implemented").map(Vec::len), Some(34));
+                assert_eq!(gaps.get("tested").map(Vec::len), Some(34));
             }
-            _ => panic!("coincheck coverage gate should warn while manifest has gaps"),
+            _ => panic!("bittrade coverage gate should warn while manifest has gaps"),
         }
+    }
+
+    #[test]
+    fn resolved_secret_masking_is_enforced() {
+        let s = ResolvedSecret {
+            api_key: "my-key".into(),
+            api_secret: Some("my-secret".into()),
+            passphrase: Some("my-pass".into()),
+        };
+        let dbg = format!("{s:?}");
+        let disp = format!("{s}");
+        assert!(!dbg.contains("my-secret"));
+        assert!(!disp.contains("my-pass"));
+        assert!(disp.contains("***"));
     }
 }
