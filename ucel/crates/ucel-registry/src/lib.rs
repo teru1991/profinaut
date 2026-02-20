@@ -1,23 +1,12 @@
 use serde::Deserialize;
 use std::{collections::HashSet, fs, path::Path};
-use ucel_core::{
-    AuthCapabilities, Capabilities, ErrorCode, FailoverPolicy, MarketDataCapabilities, OpMeta,
-    OpName, OperationalCapabilities, RateLimitCapabilities, RuntimePolicy, SafeDefaults,
-    TradingCapabilities, UcelError,
-};
+use ucel_core::{ErrorCode, OpMeta, OpName, UcelError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConnectionConfig {
     pub id: String,
     pub venue: String,
     pub enabled: bool,
-    pub policy: RuntimePolicy,
-    pub auth: AuthConfigRef,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AuthConfigRef {
-    pub key_pool: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -46,16 +35,10 @@ pub struct CatalogEntry {
     pub base_url: Option<String>,
     pub path: Option<String>,
     pub ws_url: Option<String>,
-    pub channel: Option<String>,
     pub ws: Option<CatalogWs>,
     pub auth: CatalogAuth,
-    #[serde(default)]
     pub requires_auth: Option<bool>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct CatalogWs {
-    pub url: String,
+    pub auth: CatalogAuth,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -68,13 +51,13 @@ pub fn load_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, UcelError>
     let raw = fs::read_to_string(path).map_err(|e| {
         UcelError::new(
             ErrorCode::CatalogInvalid,
-            format!("failed to read {}: {e}", path.display()),
+            format!("read {}: {e}", path.display()),
         )
     })?;
     let catalog: ExchangeCatalog = serde_json::from_str(&raw).map_err(|e| {
         UcelError::new(
             ErrorCode::CatalogInvalid,
-            format!("failed to parse {}: {e}", path.display()),
+            format!("parse {}: {e}", path.display()),
         )
     })?;
     validate_catalog(&catalog)?;
@@ -85,36 +68,41 @@ pub fn load_catalog_from_repo_root(
     repo_root: &Path,
     exchange: &str,
 ) -> Result<ExchangeCatalog, UcelError> {
-    let exchange_dir = exchange.to_ascii_lowercase();
     let path = repo_root
         .join("docs")
         .join("exchanges")
-        .join(exchange_dir)
+        .join(exchange.to_ascii_lowercase())
         .join("catalog.json");
     load_catalog_from_path(&path)
+    load_catalog_from_path(
+        &repo_root
+            .join("docs")
+            .join("exchanges")
+            .join(exchange.to_ascii_lowercase())
+            .join("catalog.json"),
+    )
 }
 
 pub fn validate_catalog(catalog: &ExchangeCatalog) -> Result<(), UcelError> {
     if catalog.exchange.trim().is_empty() {
         return Err(UcelError::new(
             ErrorCode::CatalogMissingField,
-            "catalog.exchange must not be empty",
+            "catalog.exchange empty",
         ));
     }
-
     let mut seen = HashSet::new();
-    for entry in catalog
+    for e in catalog
         .rest_endpoints
         .iter()
         .chain(catalog.ws_channels.iter())
     {
-        validate_entry(entry)?;
-        if !seen.insert(entry.id.clone()) {
+        if e.id.trim().is_empty() {
             return Err(UcelError::new(
-                ErrorCode::CatalogDuplicateId,
-                format!("duplicate id found: {}", entry.id),
+                ErrorCode::CatalogMissingField,
+                "entry.id empty",
             ));
         }
+        if !seen.insert(e.id.clone()) {
     }
     Ok(())
 }
@@ -123,7 +111,7 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
     if entry.id.trim().is_empty() {
         return Err(UcelError::new(
             ErrorCode::CatalogMissingField,
-            format!("missing required fields for id={}", entry.id),
+            "catalog entry id must not be empty",
         ));
     }
 
@@ -135,7 +123,7 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                 ErrorCode::CatalogInvalid,
                 format!(
                     "invalid visibility={} for id={}",
-                    entry.visibility.as_deref().unwrap_or(""),
+                    entry.visibility.as_str(),
                     entry.id
                 ),
             ));
@@ -159,10 +147,6 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
         .ws_url
         .as_deref()
         .or(entry.ws.as_ref().map(|ws| ws.url.as_str()));
-    let ws_base_url = entry
-        .base_url
-        .as_deref()
-        .filter(|base_url| base_url.starts_with("wss://") || base_url.starts_with("ws://"));
     match (&entry.method, &entry.base_url, &entry.path, resolved_ws_url) {
         (Some(method), Some(base_url), Some(path), None) => {
             if method.trim().is_empty() || base_url.trim().is_empty() || path.trim().is_empty() {
@@ -198,8 +182,6 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                     format!("ws endpoint has empty ws_url for id={}", entry.id),
                 ));
             }
-            let is_tokenized_pubnub = ws_url.contains("tokenized") || ws_url.contains("PubNub");
-            let is_docs_reference = ws_url.contains("see docs");
             if !is_placeholder(ws_url)
                 && !is_tokenized_pubnub
                 && !is_docs_reference
@@ -238,7 +220,6 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
             ));
         }
     }
-
     Ok(())
 }
 
@@ -303,6 +284,44 @@ fn map_operation_literal(operation: &str) -> Option<OpName> {
         "Close position by order" | "Close FX position" => Some(OpName::ClosePositionByOrder),
         _ => None,
     }
+}
+
+fn is_placeholder(value: &str) -> bool {
+    let trimmed = value.trim();
+    trimmed == "n/a" || trimmed == "N/A" || trimmed.contains("<") || trimmed.contains("{")
+}
+
+fn map_coinbase_operation_by_id(id: &str) -> Result<OpName, UcelError> {
+    let op = if id.contains(".ws.") {
+        if id.contains("ticker") {
+            OpName::SubscribeTicker
+        } else if id.contains("candles") || id.contains("trades") {
+            OpName::SubscribeTrades
+        } else if id.contains("level2") || id.contains("book") {
+            OpName::SubscribeOrderbook
+        } else if id.contains("user") || id.contains("fills") {
+            OpName::SubscribeExecutionEvents
+        } else {
+            OpName::FetchStatus
+        }
+    } else if id.contains("orders") && (id.contains("create") || id.contains("preview")) {
+        OpName::PlaceOrder
+    } else if id.contains("orders") && id.contains("edit") {
+        OpName::AmendOrder
+    } else if id.contains("orders") && (id.contains("cancel") || id.contains("close")) {
+        OpName::CancelOrder
+    } else if id.contains("balances") || id.contains("accounts") {
+        OpName::FetchBalances
+    } else if id.contains("fills") {
+        OpName::FetchFills
+    } else if id.contains("open-orders") {
+        OpName::FetchOpenOrders
+    } else if id.contains("positions") {
+        OpName::FetchOpenPositions
+    } else {
+        OpName::FetchStatus
+    };
+    Ok(op)
 }
 
 fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
@@ -381,16 +400,8 @@ fn map_coinbase_operation_by_id(id: &str) -> Result<OpName, UcelError> {
 }
 
 fn normalized_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
-    if entry
-        .visibility
-        .as_deref()
-        .is_some_and(|v| !v.trim().is_empty())
-    {
-        return Ok(entry
-            .visibility
-            .as_deref()
-            .unwrap_or_default()
-            .to_ascii_lowercase());
+    if !entry.visibility.trim().is_empty() {
+        return Ok(entry.visibility.to_ascii_lowercase());
     }
 
     if entry.id.contains(".public.") {
@@ -408,62 +419,43 @@ fn normalized_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
 
 fn map_bybit_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
     let id = entry.id.as_str();
-    let operation = entry
-        .operation
-        .as_deref()
-        .unwrap_or("")
-        .to_ascii_lowercase();
-
     let op = if id.contains(".ws.") {
-        if id.contains("orderbook") {
-            OpName::SubscribeOrderbook
-        } else if id.contains("ticker") {
+        if id.contains("ticker") {
             OpName::SubscribeTicker
-        } else if id.contains("execution") {
-            OpName::SubscribeExecutionEvents
+        } else if id.contains("trade") || id.contains("transaction") {
+            OpName::SubscribeTrades
+        } else if id.contains("depth") || id.contains("book") {
+            OpName::SubscribeOrderbook
         } else if id.contains("position") {
             OpName::SubscribePositionEvents
-        } else if id.contains("trade") || id.contains("kline") || id.contains("liquidation") {
-            OpName::SubscribeTrades
-        } else {
+        } else if id.contains("order") {
             OpName::SubscribeOrderEvents
+        } else {
+            OpName::FetchStatus
         }
-    } else if id.contains("create-order") || id.contains("batch-place") {
+    } else if id.contains("order.create") || id.contains("order.post") || id.contains("add_order") {
         OpName::PlaceOrder
-    } else if id.contains("amend") {
-        OpName::AmendOrder
     } else if id.contains("cancel") {
         OpName::CancelOrder
-    } else if id.contains("open-order") || id.contains("order-list") {
-        OpName::FetchOpenOrders
-    } else if id.contains("position-info") {
-        OpName::FetchOpenPositions
-    } else if id.contains("execution") || id.contains("close-pnl") || id.contains("transaction") {
-        OpName::FetchFills
-    } else if id.contains("wallet") || id.contains("balance") || id.contains("asset") {
+    } else if id.contains("assets") || id.contains("balance") {
         OpName::FetchBalances
     } else if id.contains("ticker") {
         OpName::FetchTicker
-    } else if id.contains("orderbook") {
+    } else if id.contains("depth") || id.contains("orderbook") {
         OpName::FetchOrderbookSnapshot
-    } else if id.contains("trade") {
+    } else if id.contains("trade") || id.contains("transactions") {
         OpName::FetchTrades
-    } else if id.contains("kline") || id.contains("iv") {
-        OpName::FetchKlines
-    } else if operation.contains("status") {
-        OpName::FetchStatus
     } else {
         OpName::FetchStatus
     };
-
     Ok(op)
 }
 
-pub fn capabilities_from_catalog(name: &str, catalog: &ExchangeCatalog) -> Capabilities {
+pub fn default_capabilities(catalog: &ExchangeCatalog) -> Capabilities {
     Capabilities {
-        schema_version: "1.0.0".into(),
+        schema_version: "v1".into(),
         kind: "exchange".into(),
-        name: name.into(),
+        name: catalog.exchange.clone(),
         marketdata: MarketDataCapabilities {
             rest: !catalog.rest_endpoints.is_empty(),
             ws: !catalog.ws_channels.is_empty(),
@@ -501,6 +493,7 @@ mod tests {
     use super::*;
 
     #[test]
+    fn maps_all_binance_usdm_ops() {
     fn rejects_duplicate_catalog_ids() {
         let catalog = ExchangeCatalog {
             exchange: "gmo".into(),
@@ -512,7 +505,6 @@ mod tests {
                 base_url: Some("https://x".into()),
                 path: Some("/ok".into()),
                 ws_url: None,
-                channel: None,
                 ws: None,
                 auth: CatalogAuth {
                     auth_type: "none".into(),
@@ -527,7 +519,6 @@ mod tests {
                 base_url: None,
                 path: None,
                 ws_url: Some("wss://x".into()),
-                channel: None,
                 ws: None,
                 auth: CatalogAuth {
                     auth_type: "none".into(),
@@ -544,7 +535,7 @@ mod tests {
     fn rejects_requires_auth_visibility_conflict() {
         let entry = CatalogEntry {
             id: "bybit.public.rest.market.tickers".into(),
-            visibility: Some("public".into()),
+            visibility: "public".into(),
             operation: Some("Get Tickers".into()),
             method: Some("GET".into()),
             base_url: Some("https://api.bybit.com".into()),
@@ -572,7 +563,6 @@ mod tests {
             base_url: None,
             path: None,
             ws_url: Some("wss://api.coin.z.com/ws/private/v1/xxx".into()),
-            channel: None,
             ws: None,
             auth: CatalogAuth {
                 auth_type: "token".into(),
@@ -587,7 +577,6 @@ mod tests {
             base_url: Some("https://api.coin.z.com".into()),
             path: Some("/public/v1/ticker".into()),
             ws_url: None,
-            channel: None,
             ws: None,
             auth: CatalogAuth {
                 auth_type: "none".into(),

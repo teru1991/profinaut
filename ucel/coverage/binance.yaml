@@ -28,18 +28,3 @@ entries:
 - id: other.public.rest.changelog.ref
   implemented: true
   tested: true
-- id: crypto.public.ws.trades.trade
-  implemented: true
-  tested: true
-- id: crypto.private.ws.userdata.executionreport
-  implemented: true
-  tested: true
-- id: crypto.public.ws.wsapi.time
-  implemented: true
-  tested: true
-- id: crypto.private.ws.wsapi.order.place
-  implemented: true
-  tested: true
-- id: other.public.ws.sbe.marketdata
-  implemented: true
-  tested: true
