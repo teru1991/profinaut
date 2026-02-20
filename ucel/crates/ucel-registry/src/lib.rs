@@ -595,6 +595,67 @@ fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
     }
 
     let op = match id {
+        "crypto.public.rest.markets.get" | "fx.public.rest.markets.get" => OpName::FetchStatus,
+        "crypto.public.rest.ticker.get" | "fx.public.rest.ticker.get" => OpName::FetchTicker,
+        "crypto.public.rest.board.get" | "fx.public.rest.board.get" => {
+            OpName::FetchOrderbookSnapshot
+        }
+        "crypto.public.rest.executions.get" | "fx.public.rest.executions.get" => {
+            OpName::FetchTrades
+        }
+        "crypto.public.rest.boardstate.get"
+        | "crypto.public.rest.health.get"
+        | "fx.public.rest.boardstate.get"
+        | "fx.public.rest.health.get"
+        | "other.rest.error.model"
+        | "other.rest.rate_limit" => OpName::FetchStatus,
+        "crypto.public.rest.chats.get" => OpName::FetchTrades,
+        "crypto.private.rest.permissions.get"
+        | "crypto.private.rest.balance.get"
+        | "crypto.private.rest.collateralaccounts.get"
+        | "crypto.private.rest.addresses.get"
+        | "crypto.private.rest.coinins.get"
+        | "crypto.private.rest.bankaccounts.get"
+        | "crypto.private.rest.deposits.get"
+        | "crypto.private.rest.withdrawals.get"
+        | "fx.private.rest.collateral.get" => OpName::FetchBalances,
+        "crypto.private.rest.collateral.get"
+        | "crypto.private.rest.collateralhistory.get"
+        | "fx.private.rest.collateralhistory.get" => OpName::FetchMarginStatus,
+        "crypto.private.rest.coinout.post"
+        | "crypto.private.rest.withdraw.post"
+        | "crypto.private.rest.childorder.send.post"
+        | "crypto.private.rest.parentorder.send.post"
+        | "fx.private.rest.childorder.send.post" => OpName::PlaceOrder,
+        "crypto.private.rest.childorder.cancel.post"
+        | "crypto.private.rest.parentorder.cancel.post"
+        | "crypto.private.rest.childorders.cancelall.post"
+        | "fx.private.rest.childorder.cancel.post"
+        | "fx.private.rest.childorders.cancelall.post" => OpName::CancelOrder,
+        "crypto.private.rest.childorders.get"
+        | "crypto.private.rest.parentorders.get"
+        | "crypto.private.rest.parentorder.get"
+        | "fx.private.rest.childorders.get" => OpName::FetchOpenOrders,
+        "crypto.private.rest.executions.get" | "fx.private.rest.executions.get" => {
+            OpName::FetchFills
+        }
+        "crypto.private.rest.positions.get" | "fx.private.rest.positions.get" => {
+            OpName::FetchOpenPositions
+        }
+        "crypto.private.rest.tradingcommission.get" | "fx.private.rest.tradingcommission.get" => {
+            OpName::FetchStatus
+        }
+        "other.rest.auth.spec" => OpName::FetchStatus,
+        "crypto.public.ws.ticker" | "fx.public.ws.ticker" => OpName::SubscribeTicker,
+        "crypto.public.ws.executions" | "fx.public.ws.executions" => OpName::SubscribeTrades,
+        "crypto.public.ws.board"
+        | "crypto.public.ws.board_snapshot"
+        | "fx.public.ws.board"
+        | "fx.public.ws.board_snapshot" => OpName::SubscribeOrderbook,
+        "crypto.private.ws.child_order_events"
+        | "crypto.private.ws.parent_order_events"
+        | "fx.private.ws.child_order_events"
+        | "fx.private.ws.parent_order_events" => OpName::SubscribeOrderEvents,
         "options.public.rest.general.ref"
         | "options.public.rest.errors.ref"
         | "options.public.rest.market.ref" => OpName::FetchStatus,
