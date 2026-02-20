@@ -217,6 +217,11 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
     Ok(())
 }
 
+fn is_placeholder(v: &str) -> bool {
+    let t = v.trim();
+    (t.starts_with("{{") && t.ends_with("}}")) || (t.starts_with("${") && t.ends_with("}"))
+}
+
 fn auth_type_requires_credentials(auth_type: &str) -> bool {
     matches!(auth_type, "apiKey" | "token" | "oauth2")
 }
@@ -325,6 +330,27 @@ fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
                 format!("unsupported operation mapping for id={id}"),
             ));
         }
+    };
+    Ok(op)
+}
+
+fn map_coinbase_operation_by_id(id: &str) -> Result<OpName, UcelError> {
+    let op = if id.contains("ticker") {
+        OpName::FetchTicker
+    } else if id.contains("candles") || id.contains("klines") {
+        OpName::FetchKlines
+    } else if id.contains("trade") {
+        OpName::FetchTrades
+    } else if id.contains("orderbook") || id.contains("book") {
+        OpName::FetchOrderbookSnapshot
+    } else if id.contains("order") && (id.contains("create") || id.contains("place")) {
+        OpName::PlaceOrder
+    } else if id.contains("order") && id.contains("cancel") {
+        OpName::CancelOrder
+    } else if id.contains("balance") || id.contains("account") {
+        OpName::FetchBalances
+    } else {
+        OpName::FetchStatus
     };
     Ok(op)
 }
