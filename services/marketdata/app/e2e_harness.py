@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import hashlib
 import json
 import os
 import random
@@ -52,7 +53,12 @@ class HarnessSummary:
     api_hit_p95_ms: float
     api_miss_p95_ms: float
     objectstore_degraded: bool
+    objectstore_spool_bounded: bool
+    clickhouse_degraded_safe: bool
+    valkey_degraded_safe: bool
     api_unavailable_status: int
+    queue_depth_stable: bool
+    deterministic_digest: str
     pass_all: bool
 
 
@@ -157,6 +163,31 @@ def _generate_stream(cfg: HarnessConfig) -> list[dict[str, Any]]:
     return events
 
 
+def _summary_digest(summary: dict[str, Any]) -> str:
+    stable = {
+        "seed": summary["seed"],
+        "generated": summary["generated"],
+        "accepted": summary["accepted"],
+        "rejected": summary["rejected"],
+        "dedupe_dropped": summary["dedupe_dropped"],
+        "bronze_lines": summary["bronze_lines"],
+        "silver_trades": summary["silver_trades"],
+        "silver_bba": summary["silver_bba"],
+        "silver_ohlcv": summary["silver_ohlcv"],
+        "silver_events": summary["silver_events"],
+        "anomalies": summary["anomalies"],
+        "restart_no_growth": summary["restart_no_growth"],
+        "objectstore_degraded": summary["objectstore_degraded"],
+        "objectstore_spool_bounded": summary["objectstore_spool_bounded"],
+        "clickhouse_degraded_safe": summary["clickhouse_degraded_safe"],
+        "valkey_degraded_safe": summary["valkey_degraded_safe"],
+        "api_unavailable_status": summary["api_unavailable_status"],
+        "queue_depth_stable": summary["queue_depth_stable"],
+    }
+    blob = json.dumps(stable, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
 def _count_bronze_lines(bronze_root: Path) -> int:
     total = 0
     for path in bronze_root.rglob("*.jsonl.gz"):
@@ -236,10 +267,36 @@ def run_harness(cfg: HarnessConfig) -> HarnessSummary:
         writer = raw_ingest._get_bronze_writer()
         writer._store = _FailingObjectStore()  # failure simulation
         raw_ingest.ingest_raw_envelope(_build_event(datetime.now(UTC), datetime.now(UTC), "trade", 5000), settings=settings)
-        degraded = bool(writer.health().get("degraded"))
+        degraded_health = writer.health()
+        degraded = bool(degraded_health.get("degraded"))
+        spool_bytes = int(degraded_health.get("spool_bytes", 0))
+        spool_bounded = spool_bytes <= (64 * 1024 * 1024)
+        queue_depth_start = int(degraded_health.get("queue_depth", 0))
 
         main._gold_cache = HotCache(default_ttl_seconds=5.0, jitter_seconds=0.0)
+        main._valkey_cache = main.ValkeyHotCache(main._gold_cache)
         main._poller.run_forever = _idle_poller  # type: ignore[method-assign]
+
+        class _DownClickhouse:
+            def query_ticker_latest(self, **_: Any) -> dict[str, Any] | None:
+                raise RuntimeError("clickhouse down")
+
+            def query_bba_latest(self, **_: Any) -> dict[str, Any] | None:
+                raise RuntimeError("clickhouse down")
+
+            def query_ohlcv_range(self, **_: Any) -> list[dict[str, Any]]:
+                raise RuntimeError("clickhouse down")
+
+        class _DownValkey:
+            def get_or_load(self, key, loader, *, ttl_seconds: float | None = None):
+                raise RuntimeError("valkey down")
+
+            def invalidate(self, key: str) -> None:
+                return None
+
+            def stats(self) -> dict[str, int]:
+                return {"hit": 0, "miss": 0}
+
         with TestClient(main.app) as client:
             t_hit: list[float] = []
             for _ in range(6):
@@ -259,6 +316,22 @@ def run_harness(cfg: HarnessConfig) -> HarnessSummary:
             os.environ["DB_DSN"] = "postgres://down"
             unavailable_status = client.get("/markets/ticker/latest?venue=gmo&symbol=BTC_JPY").status_code
 
+            os.environ["DB_DSN"] = f"sqlite:///{db_file}"
+            original_ch = main._clickhouse_store
+            main._clickhouse_store = _DownClickhouse()
+            clickhouse_fallback_status = client.get("/markets/ticker/latest?venue=gmo&symbol=btc_jpy").status_code
+            main._clickhouse_store = original_ch
+
+            original_valkey = main._valkey_cache
+            original_ch_for_valkey = main._clickhouse_store
+            main._clickhouse_store = _DownClickhouse()
+            main._valkey_cache = _DownValkey()
+            valkey_fallback_status = client.get("/markets/ticker/latest?venue=gmo&symbol=btc_jpy").status_code
+            main._valkey_cache = original_valkey
+            main._clickhouse_store = original_ch_for_valkey
+
+            queue_depth_end = int(writer.health().get("queue_depth", 0))
+
         bronze_lines = _count_bronze_lines(bronze_root)
         silver_trades = conn.execute("SELECT COUNT(*) FROM md_trades").fetchone()[0]
         silver_bba = conn.execute("SELECT COUNT(*) FROM md_best_bid_ask").fetchone()[0]
@@ -266,16 +339,23 @@ def run_harness(cfg: HarnessConfig) -> HarnessSummary:
         silver_events = conn.execute("SELECT COUNT(*) FROM md_events_json").fetchone()[0]
         conn.close()
 
+        queue_depth_stable = max(queue_depth_start, queue_depth_end) <= 2
+        clickhouse_degraded_safe = clickhouse_fallback_status == 200
+        valkey_degraded_safe = valkey_fallback_status == 200
         restart_no_growth = before_restart == after_restart
         pass_all = all([
             bronze_lines >= accepted - dedupe,
             restart_no_growth,
             degraded,
+            spool_bounded,
+            clickhouse_degraded_safe,
+            valkey_degraded_safe,
+            queue_depth_stable,
             unavailable_status == 503,
             rejected >= 2,
         ])
 
-        return HarnessSummary(
+        summary = HarnessSummary(
             seed=cfg.seed,
             generated=len(events),
             accepted=accepted,
@@ -293,9 +373,17 @@ def run_harness(cfg: HarnessConfig) -> HarnessSummary:
             api_hit_p95_ms=_p95(t_hit),
             api_miss_p95_ms=_p95(t_miss),
             objectstore_degraded=degraded,
+            objectstore_spool_bounded=spool_bounded,
+            clickhouse_degraded_safe=clickhouse_degraded_safe,
+            valkey_degraded_safe=valkey_degraded_safe,
             api_unavailable_status=unavailable_status,
+            queue_depth_stable=queue_depth_stable,
+            deterministic_digest="",
             pass_all=pass_all,
         )
+        payload = asdict(summary)
+        payload["deterministic_digest"] = _summary_digest(payload)
+        return HarnessSummary(**payload)
 
 
 def main_cli(argv: list[str] | None = None) -> int:

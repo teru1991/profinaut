@@ -992,7 +992,10 @@ async def markets_ticker_latest(request: Request, venue: str = Query(...), symbo
     try:
         row = await asyncio.to_thread(lambda: _valkey_cache.get_or_load(key, _load, ttl_seconds=float(os.getenv("GOLD_CACHE_TTL_SECONDS", "2.0"))))
     except RuntimeError:
-        return JSONResponse(status_code=503, content=error_envelope(code="BACKEND_UNAVAILABLE", message="Read backend unavailable", details={"backend": "clickhouse/sqlite"}, request_id=request_id))
+        try:
+            row = await asyncio.to_thread(_load)
+        except RuntimeError:
+            return JSONResponse(status_code=503, content=error_envelope(code="BACKEND_UNAVAILABLE", message="Read backend unavailable", details={"backend": "clickhouse/sqlite"}, request_id=request_id))
 
     if row is None:
         return JSONResponse(status_code=404, content=error_envelope(code="NOT_FOUND", message="ticker latest not found", details={"venue": venue, "symbol": symbol}, request_id=request_id))
@@ -1015,7 +1018,10 @@ async def markets_bba_latest(request: Request, venue: str = Query(...), symbol: 
     try:
         row = await asyncio.to_thread(lambda: _valkey_cache.get_or_load(key, _load, ttl_seconds=float(os.getenv("GOLD_CACHE_TTL_SECONDS", "2.0"))))
     except RuntimeError:
-        return JSONResponse(status_code=503, content=error_envelope(code="BACKEND_UNAVAILABLE", message="Read backend unavailable", details={"backend": "clickhouse/sqlite"}, request_id=request_id))
+        try:
+            row = await asyncio.to_thread(_load)
+        except RuntimeError:
+            return JSONResponse(status_code=503, content=error_envelope(code="BACKEND_UNAVAILABLE", message="Read backend unavailable", details={"backend": "clickhouse/sqlite"}, request_id=request_id))
 
     if row is None:
         return JSONResponse(status_code=404, content=error_envelope(code="NOT_FOUND", message="bba latest not found", details={"venue": venue, "symbol": symbol}, request_id=request_id))

@@ -135,3 +135,47 @@ def test_backend_down_scenarios(monkeypatch, tmp_path: Path) -> None:
 
     assert resp.status_code == 200
     assert resp.json()["price"] == 100.5
+
+
+def test_valkey_down_falls_back_to_direct_read(monkeypatch, tmp_path: Path) -> None:
+    db_file = tmp_path / "md.sqlite3"
+    conn = _prep(db_file)
+    conn.execute(
+        """
+        INSERT INTO gold_ticker_latest(venue_id, market_id, instrument_id, price, bid_px, ask_px, bid_qty, ask_qty, ts_event, ts_recv, dt, raw_refs)
+        VALUES ('gmo','spot','btc_jpy',222.5,222,223,1,2,'2026-01-01T00:00:00Z','2099-01-01T00:00:00Z','2099-01-01','["r1"]')
+        """
+    )
+    conn.commit()
+
+    monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
+    monkeypatch.setattr(main._poller, "run_forever", _idle_poller)
+
+    class DownValkey:
+        def get_or_load(self, key, loader, *, ttl_seconds=None):
+            raise RuntimeError("valkey down")
+
+        def invalidate(self, key: str) -> None:
+            return None
+
+        def stats(self) -> dict[str, int]:
+            return {"hit": 0, "miss": 0}
+
+    class DownClickHouse:
+        def query_ticker_latest(self, **kwargs):
+            raise RuntimeError("down")
+
+        def query_bba_latest(self, **kwargs):
+            raise RuntimeError("down")
+
+        def query_ohlcv_range(self, **kwargs):
+            raise RuntimeError("down")
+
+    monkeypatch.setattr(main, "_clickhouse_store", DownClickHouse())
+    monkeypatch.setattr(main, "_valkey_cache", DownValkey())
+
+    with TestClient(main.app) as client:
+        resp = client.get("/markets/ticker/latest?venue=gmo&symbol=BTC_JPY")
+
+    assert resp.status_code == 200
+    assert resp.json()["price"] == 222.5
