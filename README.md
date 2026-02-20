@@ -25,7 +25,10 @@ Current delivered baseline is tracked in:
    ```powershell
    ./scripts/dev.ps1
    ```
-3. Run checks:
+3. Open the dashboard in your browser:
+   - `http://localhost:3001` (web)
+   - `http://localhost:8000/healthz` (API health)
+4. Run checks:
    ```powershell
    ./scripts/test.ps1
    ```
