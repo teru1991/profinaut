@@ -88,6 +88,7 @@ impl CatalogContractIndex {
             .rest_endpoints
             .iter()
             .chain(catalog.ws_channels.iter())
+            .filter_map(|e| (!self.registered_tests.contains(&e.id)).then(|| e.id.clone()))
             .map(|e| e.id.as_str())
             .filter(|id| !self.registered_tests.contains(*id))
             .map(|s| s.to_string())
@@ -113,6 +114,10 @@ pub fn load_coverage_manifest(path: &Path) -> Result<CoverageManifest, Box<dyn s
 }
 
 pub fn evaluate_coverage_gate(manifest: &CoverageManifest) -> HashMap<String, Vec<String>> {
+    let mut gaps: HashMap<String, Vec<String>> = HashMap::new();
+    for entry in &manifest.entries {
+        if !entry.implemented {
+            gaps.entry("implemented".to_string())
     let mut missing: HashMap<String, Vec<String>> = HashMap::new();
     for e in &manifest.entries {
         if !e.implemented {
@@ -121,6 +126,8 @@ pub fn evaluate_coverage_gate(manifest: &CoverageManifest) -> HashMap<String, Ve
                 .or_default()
                 .push(e.id.clone());
         }
+        if !entry.tested {
+            gaps.entry("tested".to_string())
         if !e.tested {
             missing
                 .entry("tested".into())
@@ -128,6 +135,7 @@ pub fn evaluate_coverage_gate(manifest: &CoverageManifest) -> HashMap<String, Ve
                 .push(e.id.clone());
         }
     }
+    gaps
     missing
 }
 
@@ -152,6 +160,9 @@ pub fn run_coverage_gate(manifest: &CoverageManifest) -> CoverageGateResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn coverage_gate_is_strict_for_binance_usdm() {
     use std::path::Path;
     use ucel_core::ResolvedSecret;
     use ucel_registry::load_catalog_from_repo_root;
@@ -309,6 +320,11 @@ mod tests {
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-usdm.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
         assert_eq!(manifest.venue, "binance-usdm");
+        assert!(manifest.strict);
+        assert!(matches!(
+            run_coverage_gate(&manifest),
+            CoverageGateResult::Passed
+        ));
     }
 
     #[test]
