@@ -7,7 +7,7 @@ from pathlib import Path
 
 from services.marketdata.app.backfill import run_backfill_ohlcv
 from services.marketdata.app.replay import run_replay
-from services.marketdata.app.silver.iceberg_pipeline import run_recompute
+from services.marketdata.app.silver.iceberg_pipeline import run_diff, run_recompute
 from services.marketdata.app.gold_materializer import materialize_gold
 from services.marketdata.app.e2e_harness import main_cli as e2e_main_cli
 import sqlite3
@@ -46,7 +46,12 @@ def _build_parser() -> argparse.ArgumentParser:
     ohlcv.add_argument("--max-pages-per-run", type=int, default=5)
     ohlcv.add_argument("--state-path", default="services/marketdata/.state/ohlcv_backfill_cursor.json")
 
-    recompute = subparsers.add_parser("silver-recompute", help="Recompute Silver Iceberg outputs from Bronze")
+    silver = subparsers.add_parser("silver", help="Silver Iceberg tools")
+    silver_sub = silver.add_subparsers(dest="silver_command", required=True)
+    silver_backfill = silver_sub.add_parser("backfill", help="Recompute Silver Iceberg outputs from Bronze")
+    silver_diff = silver_sub.add_parser("diff", help="Diff two Silver Iceberg outputs with deterministic hashes")
+
+    recompute = subparsers.add_parser("silver-recompute", help="Deprecated alias for 'silver backfill'")
     e2e = subparsers.add_parser("dataplat-e2e", help="Run deterministic data platform e2e harness")
     e2e.add_argument("--seed", type=int, default=7)
     e2e.add_argument("--rate", type=int, default=50)
@@ -54,13 +59,19 @@ def _build_parser() -> argparse.ArgumentParser:
     gold = subparsers.add_parser("gold-materialize", help="Materialize Gold marts from Silver tables")
     gold.add_argument("--db-dsn", required=True, help="DB DSN (sqlite:///...)")
     gold.add_argument("--watermark-ts", default=None, help="Optional watermark timestamp")
-    recompute.add_argument("--bronze-root", required=True, help="Bronze root directory")
-    recompute.add_argument("--silver-root", required=True, help="Silver output root directory")
-    recompute.add_argument("--from-ts", required=True, help="RFC3339 start timestamp")
-    recompute.add_argument("--to-ts", required=True, help="RFC3339 end timestamp")
-    recompute.add_argument("--venue", default=None, help="Venue filter")
-    recompute.add_argument("--event-type", action="append", default=[], help="Repeatable event type filter")
-    recompute.add_argument("--symbol", action="append", default=[], help="Repeatable symbol filter")
+    for parser_obj in (recompute, silver_backfill):
+        parser_obj.add_argument("--bronze-root", required=True, help="Bronze root directory")
+        parser_obj.add_argument("--silver-root", required=True, help="Silver output root directory")
+        parser_obj.add_argument("--from-ts", required=True, help="RFC3339 start timestamp")
+        parser_obj.add_argument("--to-ts", required=True, help="RFC3339 end timestamp")
+        parser_obj.add_argument("--venue", default=None, help="Venue filter")
+        parser_obj.add_argument("--event-type", action="append", default=[], help="Repeatable event type filter")
+        parser_obj.add_argument("--symbol", action="append", default=[], help="Repeatable symbol filter")
+        parser_obj.add_argument("--batch-size", type=int, default=10000, help="Max rows per output parquet part")
+        parser_obj.add_argument("--compact", action="store_true", help="Use larger output batches to mitigate small files")
+
+    silver_diff.add_argument("--baseline-silver-root", required=True, help="Baseline silver root directory")
+    silver_diff.add_argument("--candidate-silver-root", required=True, help="Candidate silver root directory")
 
     return parser
 
@@ -119,7 +130,7 @@ def main() -> int:
         print(json.dumps(summary.__dict__, separators=(",", ":"), ensure_ascii=False))
         return 0
 
-    if args.command == "silver-recompute":
+    if args.command == "silver-recompute" or (args.command == "silver" and args.silver_command == "backfill"):
         report = run_recompute(
             bronze_root=Path(args.bronze_root),
             silver_root=Path(args.silver_root),
@@ -128,6 +139,16 @@ def main() -> int:
             venue=args.venue,
             symbols=tuple(args.symbol or []),
             event_types=tuple(args.event_type or []),
+            batch_size=args.batch_size,
+            compact=args.compact,
+        )
+        print(json.dumps(report.__dict__, separators=(",", ":"), ensure_ascii=False, sort_keys=True))
+        return 0
+
+    if args.command == "silver" and args.silver_command == "diff":
+        report = run_diff(
+            baseline_silver_root=Path(args.baseline_silver_root),
+            candidate_silver_root=Path(args.candidate_silver_root),
         )
         print(json.dumps(report.__dict__, separators=(",", ":"), ensure_ascii=False, sort_keys=True))
         return 0
