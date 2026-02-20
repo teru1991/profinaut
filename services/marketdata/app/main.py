@@ -46,6 +46,7 @@ from services.marketdata.app.registry import CatalogValidationError, VenueRegist
 from services.marketdata.app.metrics import ingest_metrics
 from services.marketdata.app.gold_cache import HotCache
 from services.marketdata.app.gold_materializer import materialize_gold
+from services.marketdata.app.serving_stores import ClickHouseLikeStore, PostgresOpsLikeStore, ValkeyHotCache, timed_query
 
 logger = logging.getLogger("marketdata")
 if not logger.handlers:
@@ -399,7 +400,10 @@ _gmo_ws_connector = GmoPublicWsConnector(GmoWsConfig())
 _mock_runtime = MockRuntime(MockScenario())
 app.include_router(build_mock_router(_mock_runtime))
 _gold_cache = HotCache(default_ttl_seconds=float(os.getenv("GOLD_CACHE_TTL_SECONDS", "2.0")))
-
+_valkey_cache = ValkeyHotCache(_gold_cache)
+_clickhouse_store = ClickHouseLikeStore()
+_ops_store = PostgresOpsLikeStore()
+_read_metrics: dict[str, float] = {"requests": 0.0, "errors": 0.0, "latency_ms_sum": 0.0}
 
 
 @app.exception_handler(HTTPException)
@@ -934,11 +938,43 @@ async def gold_materialize(request: Request, watermark_ts: str | None = Query(de
         return _gold_read_unavailable(request_id, str(exc))
 
     result = materialize_gold(repo._conn, watermark_ts=watermark_ts)
-    return JSONResponse(status_code=200, content={"ok": True, "ticker_latest_rows": result.ticker_latest_rows, "bba_rows": result.bba_rows, "ohlcv_rows": result.ohlcv_rows})
+    synced_rows = _clickhouse_store.sync_from_sqlite_gold(repo._conn)
+    updated = repo._conn.execute("SELECT DISTINCT venue_id, instrument_id FROM gold_ticker_latest").fetchall()
+    for row in updated:
+        _invalidate_market_keys(str(row[0]), str(row[1]))
+    return JSONResponse(status_code=200, content={"ok": True, "ticker_latest_rows": result.ticker_latest_rows, "bba_rows": result.bba_rows, "ohlcv_rows": result.ohlcv_rows, "clickhouse_synced_rows": synced_rows})
 
 
 def _cache_key(prefix: str, venue: str, symbol: str) -> str:
     return f"{prefix}:{venue}:{symbol}"
+
+
+def _record_read_metric(*, ok: bool, latency_s: float) -> None:
+    _read_metrics["requests"] += 1
+    _read_metrics["latency_ms_sum"] += latency_s * 1000
+    if not ok:
+        _read_metrics["errors"] += 1
+
+
+def _read_with_fallback(primary, fallback):
+    timeout_s = float(os.getenv("SERVING_READ_TIMEOUT_SECONDS", "0.5"))
+    try:
+        value, latency = timed_query(timeout_s, primary)
+        _record_read_metric(ok=True, latency_s=latency)
+        return value
+    except Exception:
+        try:
+            value, latency = timed_query(timeout_s, fallback)
+            _record_read_metric(ok=True, latency_s=latency)
+            return value
+        except Exception:
+            _record_read_metric(ok=False, latency_s=0)
+            raise RuntimeError("READ_BACKEND_UNAVAILABLE")
+
+
+def _invalidate_market_keys(venue: str, symbol: str) -> None:
+    _valkey_cache.invalidate(_cache_key("ticker_latest", venue, symbol.upper()))
+    _valkey_cache.invalidate(_cache_key("bba", venue, symbol.upper()))
 
 
 @app.get("/markets/ticker/latest")
@@ -948,12 +984,15 @@ async def markets_ticker_latest(request: Request, venue: str = Query(...), symbo
 
     def _load() -> dict[str, Any] | None:
         repo = _connect_read_repo()
-        return repo.get_gold_ticker_latest(venue_id=venue, market_id="spot", instrument_id=symbol.lower())
+        return _read_with_fallback(
+            lambda: _clickhouse_store.query_ticker_latest(venue=venue, market_id="spot", symbol=symbol.lower()),
+            lambda: repo.get_gold_ticker_latest(venue_id=venue, market_id="spot", instrument_id=symbol.lower()),
+        )
 
     try:
-        row = await asyncio.to_thread(lambda: _gold_cache.get_or_load(key, _load))
+        row = await asyncio.to_thread(lambda: _valkey_cache.get_or_load(key, _load, ttl_seconds=float(os.getenv("GOLD_CACHE_TTL_SECONDS", "2.0"))))
     except RuntimeError:
-        return JSONResponse(status_code=503, content=error_envelope(code="BACKEND_UNAVAILABLE", message="Read backend unavailable", details={"backend": "db"}, request_id=request_id))
+        return JSONResponse(status_code=503, content=error_envelope(code="BACKEND_UNAVAILABLE", message="Read backend unavailable", details={"backend": "clickhouse/sqlite"}, request_id=request_id))
 
     if row is None:
         return JSONResponse(status_code=404, content=error_envelope(code="NOT_FOUND", message="ticker latest not found", details={"venue": venue, "symbol": symbol}, request_id=request_id))
@@ -968,12 +1007,15 @@ async def markets_bba_latest(request: Request, venue: str = Query(...), symbol: 
 
     def _load() -> dict[str, Any] | None:
         repo = _connect_read_repo()
-        return repo.get_gold_best_bid_ask(venue_id=venue, market_id="spot", instrument_id=symbol.lower())
+        return _read_with_fallback(
+            lambda: _clickhouse_store.query_bba_latest(venue=venue, market_id="spot", symbol=symbol.lower()),
+            lambda: repo.get_gold_best_bid_ask(venue_id=venue, market_id="spot", instrument_id=symbol.lower()),
+        )
 
     try:
-        row = await asyncio.to_thread(lambda: _gold_cache.get_or_load(key, _load))
+        row = await asyncio.to_thread(lambda: _valkey_cache.get_or_load(key, _load, ttl_seconds=float(os.getenv("GOLD_CACHE_TTL_SECONDS", "2.0"))))
     except RuntimeError:
-        return JSONResponse(status_code=503, content=error_envelope(code="BACKEND_UNAVAILABLE", message="Read backend unavailable", details={"backend": "db"}, request_id=request_id))
+        return JSONResponse(status_code=503, content=error_envelope(code="BACKEND_UNAVAILABLE", message="Read backend unavailable", details={"backend": "clickhouse/sqlite"}, request_id=request_id))
 
     if row is None:
         return JSONResponse(status_code=404, content=error_envelope(code="NOT_FOUND", message="bba latest not found", details={"venue": venue, "symbol": symbol}, request_id=request_id))
@@ -990,15 +1032,25 @@ async def markets_ohlcv(request: Request, venue: str = Query(...), symbol: str =
 
     try:
         repo = _connect_read_repo()
-        rows = repo.get_gold_ohlcv_range(venue_id=venue, market_id="spot", instrument_id=symbol.lower(), from_ts=from_ts, to_ts=to_ts, limit=limit)
+        rows = _read_with_fallback(
+            lambda: _clickhouse_store.query_ohlcv_range(venue=venue, market_id="spot", symbol=symbol.lower(), from_ts=from_ts, to_ts=to_ts, limit=limit),
+            lambda: repo.get_gold_ohlcv_range(venue_id=venue, market_id="spot", instrument_id=symbol.lower(), from_ts=from_ts, to_ts=to_ts, limit=limit),
+        )
     except RuntimeError:
-        return JSONResponse(status_code=503, content=error_envelope(code="BACKEND_UNAVAILABLE", message="Read backend unavailable", details={"backend": "db"}, request_id=request_id))
+        return JSONResponse(status_code=503, content=error_envelope(code="BACKEND_UNAVAILABLE", message="Read backend unavailable", details={"backend": "clickhouse/sqlite"}, request_id=request_id))
 
     if not rows:
         return JSONResponse(status_code=404, content=error_envelope(code="NOT_FOUND", message="ohlcv not found", details={"venue": venue, "symbol": symbol}, request_id=request_id))
 
     return JSONResponse(status_code=200, content={"venue": venue, "symbol": symbol, "tf": "1m", "candles": rows})
 
+
+
+@app.get("/markets/read-metrics")
+async def markets_read_metrics() -> JSONResponse:
+    req = _read_metrics["requests"]
+    avg_ms = 0.0 if req == 0 else _read_metrics["latency_ms_sum"] / req
+    return JSONResponse(status_code=200, content={"requests": int(req), "errors": int(_read_metrics["errors"]), "avg_latency_ms": avg_ms, "cache": _valkey_cache.stats(), "clickhouse_available": _clickhouse_store.available})
 
 def _raw_dependency_unavailable(request_id: str) -> JSONResponse:
     return JSONResponse(
