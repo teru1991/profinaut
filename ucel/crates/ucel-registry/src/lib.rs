@@ -166,7 +166,7 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                 ErrorCode::CatalogInvalid,
                 format!(
                     "invalid visibility={} for id={}",
-                    entry.visibility.as_deref().unwrap_or(""),
+                    entry.visibility.as_str(),
                     entry.id
                 ),
             ));
@@ -547,6 +547,44 @@ fn map_operation_literal(operation: &str) -> Option<OpName> {
     }
 }
 
+fn is_placeholder(value: &str) -> bool {
+    let trimmed = value.trim();
+    trimmed == "n/a" || trimmed == "N/A" || trimmed.contains("<") || trimmed.contains("{")
+}
+
+fn map_coinbase_operation_by_id(id: &str) -> Result<OpName, UcelError> {
+    let op = if id.contains(".ws.") {
+        if id.contains("ticker") {
+            OpName::SubscribeTicker
+        } else if id.contains("candles") || id.contains("trades") {
+            OpName::SubscribeTrades
+        } else if id.contains("level2") || id.contains("book") {
+            OpName::SubscribeOrderbook
+        } else if id.contains("user") || id.contains("fills") {
+            OpName::SubscribeExecutionEvents
+        } else {
+            OpName::FetchStatus
+        }
+    } else if id.contains("orders") && (id.contains("create") || id.contains("preview")) {
+        OpName::PlaceOrder
+    } else if id.contains("orders") && id.contains("edit") {
+        OpName::AmendOrder
+    } else if id.contains("orders") && (id.contains("cancel") || id.contains("close")) {
+        OpName::CancelOrder
+    } else if id.contains("balances") || id.contains("accounts") {
+        OpName::FetchBalances
+    } else if id.contains("fills") {
+        OpName::FetchFills
+    } else if id.contains("open-orders") {
+        OpName::FetchOpenOrders
+    } else if id.contains("positions") {
+        OpName::FetchOpenPositions
+    } else {
+        OpName::FetchStatus
+    };
+    Ok(op)
+}
+
 fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
     if id.starts_with("advanced.")
         || id.starts_with("exchange.")
@@ -581,6 +619,12 @@ fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
         "coinm.private.rest.trade.ref" => OpName::PlaceOrder,
         "coinm.private.rest.account.ref" => OpName::FetchBalances,
         "coinm.private.rest.listenkey.ref" => OpName::CreateWsAuthToken,
+        "usdm.public.rest.general.ref"
+        | "usdm.public.rest.errors.ref"
+        | "usdm.public.rest.market.ref" => OpName::FetchStatus,
+        "usdm.private.rest.trade.ref" => OpName::PlaceOrder,
+        "usdm.private.rest.account.ref" => OpName::FetchBalances,
+        "usdm.private.rest.listenkey.ref" => OpName::CreateWsAuthToken,
         "coinm.public.ws.market.aggtrade" => OpName::SubscribeTrades,
         "coinm.public.ws.market.markprice"
         | "coinm.public.ws.market.miniticker"
@@ -671,16 +715,8 @@ fn map_coinbase_operation_by_id(id: &str) -> Result<OpName, UcelError> {
 }
 
 fn normalized_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
-    if entry
-        .visibility
-        .as_deref()
-        .is_some_and(|v| !v.trim().is_empty())
-    {
-        return Ok(entry
-            .visibility
-            .as_deref()
-            .unwrap_or_default()
-            .to_ascii_lowercase());
+    if !entry.visibility.trim().is_empty() {
+        return Ok(entry.visibility.to_ascii_lowercase());
     }
 
     if entry.id.contains(".public.") {
@@ -838,7 +874,7 @@ mod tests {
     fn rejects_requires_auth_visibility_conflict() {
         let entry = CatalogEntry {
             id: "bybit.public.rest.market.tickers".into(),
-            visibility: Some("public".into()),
+            visibility: "public".into(),
             operation: Some("Get Tickers".into()),
             method: Some("GET".into()),
             base_url: Some("https://api.bybit.com".into()),
