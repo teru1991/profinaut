@@ -20,6 +20,35 @@ cp infra/env/.env.example infra/env/.env
 
 All credentials and ports are centralized in `infra/env/.env` (never commit real secrets).
 
+
+## 2.1) Compose interpolation defaults (safe when vars are unset)
+`docker-compose.yml` now defines fallback defaults for SeaweedFS/object-store runtime sizing and ports, so `docker compose config` works even in a clean shell:
+
+- `SEAWEEDFS_MASTER_PORT` → `9333`
+- `SEAWEEDFS_S3_PORT` → `8333`
+- `OBJECTSTORE_MEM_LIMIT` → `512m`
+- `OBJECTSTORE_CPUS` → `1.0`
+
+Override options (highest precedence first):
+1. Exported shell variables (e.g. `export OBJECTSTORE_CPUS=2.0`)
+2. Values in `infra/env/.env` when passed via `--env-file infra/env/.env`
+3. Compose fallback defaults in `docker-compose.yml`
+
+Verification commands:
+```bash
+# clean-shell behavior (uses compose defaults)
+unset SEAWEEDFS_S3_PORT SEAWEEDFS_MASTER_PORT OBJECTSTORE_MEM_LIMIT OBJECTSTORE_CPUS
+docker compose config > /dev/null
+
+# explicit overrides
+export SEAWEEDFS_S3_PORT=18333
+export SEAWEEDFS_MASTER_PORT=19333
+export OBJECTSTORE_MEM_LIMIT=768m
+export OBJECTSTORE_CPUS=2.0
+docker compose config | sed -n '/seaweedfs:/,/objectstore-init:/p'
+```
+
+
 ## 3) Start / Stop / Reset
 
 ### Start
