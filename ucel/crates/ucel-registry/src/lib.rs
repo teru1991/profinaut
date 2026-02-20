@@ -144,9 +144,7 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
             return Err(UcelError::new(
                 ErrorCode::CatalogInvalid,
                 format!(
-                    "requires_auth contradicts visibility for id={} (visibility={}, requires_auth={})",
-                    entry.id, visibility, requires_auth
-                ),
+                    "requires_auth contradicts visibility for id={} (visibility={}, requires_auth={})"
             ));
         }
     }
