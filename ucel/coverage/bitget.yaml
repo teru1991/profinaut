@@ -1,9 +1,9 @@
 venue: bitget
-strict: false
+strict: true
 entries:
   - id: other.public.rest.nav.blocked
-    implemented: false
-    tested: false
+    implemented: true
+    tested: true
   - id: other.public.ws.nav.blocked
-    implemented: false
-    tested: false
+    implemented: true
+    tested: true
