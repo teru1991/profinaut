@@ -1,0 +1,30 @@
+venue: deribit
+strict: true
+entries:
+  - id: jsonrpc.http.public.market_data.public_get_instruments
+    implemented: true
+    tested: true
+  - id: jsonrpc.http.public.market_data.public_ticker
+    implemented: true
+    tested: true
+  - id: jsonrpc.http.public.market_data.public_get_order_book
+    implemented: true
+    tested: true
+  - id: jsonrpc.http.public.market_data.public_get_tradingview_chart_data
+    implemented: true
+    tested: true
+  - id: jsonrpc.http.private.auth.public_auth
+    implemented: true
+    tested: true
+  - id: jsonrpc.http.private.account.private_get_account_summary
+    implemented: true
+    tested: true
+  - id: jsonrpc.http.private.trading.private_buy
+    implemented: true
+    tested: true
+  - id: jsonrpc.http.private.trading.private_sell
+    implemented: true
+    tested: true
+  - id: jsonrpc.http.private.trading.private_cancel
+    implemented: true
+    tested: true
