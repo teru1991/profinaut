@@ -1,9 +1,15 @@
 use bytes::Bytes;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use std::collections::{HashSet, VecDeque};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use tokio::sync::{mpsc, Mutex};
 use ucel_core::{ErrorCode, Exchange, OpName, UcelError};
-use ucel_transport::{enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport};
+use ucel_core::{OrderBookDelta, OrderBookLevel, OrderBookSnapshot, TradeEvent};
+use ucel_transport::{
+    enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport, WsConnectRequest,
+};
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
@@ -265,12 +271,493 @@ impl Exchange for BinanceCoinmRestAdapter {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct WsChannelSpec {
+    pub id: &'static str,
+    pub ws_url: &'static str,
+    pub requires_auth: bool,
+}
+
+const WS_CHANNELS: [WsChannelSpec; 18] = [
+    WsChannelSpec {
+        id: "coinm.public.ws.market.root",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.public.ws.market.aggtrade",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.public.ws.market.markprice",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.public.ws.market.kline",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.public.ws.market.continuous-kline",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.public.ws.market.index-kline",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.public.ws.market.miniticker",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.public.ws.market.miniticker.all",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.public.ws.market.ticker",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.public.ws.market.ticker.all",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.public.ws.market.bookticker",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.public.ws.market.liquidation",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.public.ws.market.depth.partial",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.public.ws.market.depth.diff",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.public.ws.market.composite-index",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.public.ws.market.contract-info",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.public.ws.wsapi.general",
+        ws_url: "wss://ws-dapi.binance.com/ws-dapi/v1",
+        requires_auth: false,
+    },
+    WsChannelSpec {
+        id: "coinm.private.ws.userdata.events",
+        ws_url: "wss://dstream.binance.com/ws",
+        requires_auth: true,
+    },
+];
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct WsSubscription {
+    pub channel_id: String,
+    pub symbol: Option<String>,
+    pub listen_key: Option<String>,
+    pub key_id: Option<String>,
+}
+
+#[derive(Debug, Default)]
+pub struct WsCounters {
+    pub ws_backpressure_drops_total: AtomicU64,
+    pub ws_reconnect_total: AtomicU64,
+    pub ws_resubscribe_total: AtomicU64,
+    pub ws_orderbook_resync_total: AtomicU64,
+}
+
+pub struct BinanceCoinmBackpressure {
+    tx: mpsc::Sender<Bytes>,
+    rx: mpsc::Receiver<Bytes>,
+    counters: Arc<WsCounters>,
+}
+
+impl BinanceCoinmBackpressure {
+    pub fn new(cap: usize, counters: Arc<WsCounters>) -> Self {
+        let (tx, rx) = mpsc::channel(cap);
+        Self { tx, rx, counters }
+    }
+
+    pub fn try_enqueue(&self, msg: Bytes) {
+        if self.tx.try_send(msg).is_err() {
+            self.counters
+                .ws_backpressure_drops_total
+                .fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    pub async fn recv(&mut self) -> Option<Bytes> {
+        self.rx.recv().await
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OrderBookHealth {
+    Recovered,
+    Degraded,
+}
+
+#[derive(Debug, Default)]
+pub struct OrderBookResyncEngine {
+    buffered_deltas: VecDeque<OrderBookDelta>,
+    expected_next: Option<u64>,
+    health: OrderBookHealth,
+}
+
+impl Default for OrderBookHealth {
+    fn default() -> Self {
+        Self::Recovered
+    }
+}
+
+impl OrderBookResyncEngine {
+    pub fn ingest_delta(&mut self, delta: OrderBookDelta) -> Result<(), UcelError> {
+        if let Some(next) = self.expected_next {
+            if delta.sequence_start != next {
+                self.expected_next = None;
+                self.buffered_deltas.clear();
+                self.health = OrderBookHealth::Degraded;
+                return Err(UcelError::new(
+                    ErrorCode::Desync,
+                    "orderbook gap detected; immediate resync required",
+                ));
+            }
+            self.expected_next = Some(delta.sequence_end + 1);
+        } else {
+            self.buffered_deltas.push_back(delta);
+        }
+        Ok(())
+    }
+
+    pub fn apply_snapshot(
+        &mut self,
+        mut snapshot: OrderBookSnapshot,
+    ) -> Result<OrderBookSnapshot, UcelError> {
+        self.expected_next = Some(snapshot.sequence + 1);
+        while let Some(delta) = self.buffered_deltas.pop_front() {
+            if delta.sequence_end <= snapshot.sequence {
+                continue;
+            }
+            if delta.sequence_start > snapshot.sequence + 1 {
+                self.health = OrderBookHealth::Degraded;
+                return Err(UcelError::new(ErrorCode::Desync, "snapshot mismatch"));
+            }
+            merge_levels(&mut snapshot.bids, delta.bids, true);
+            merge_levels(&mut snapshot.asks, delta.asks, false);
+            snapshot.sequence = delta.sequence_end;
+        }
+        self.health = OrderBookHealth::Recovered;
+        self.expected_next = Some(snapshot.sequence + 1);
+        Ok(snapshot)
+    }
+
+    pub fn health(&self) -> OrderBookHealth {
+        self.health
+    }
+}
+
+fn merge_levels(target: &mut Vec<OrderBookLevel>, updates: Vec<OrderBookLevel>, desc: bool) {
+    for update in updates {
+        if let Some(existing) = target.iter_mut().find(|x| x.price == update.price) {
+            existing.qty = update.qty;
+        } else {
+            target.push(update);
+        }
+    }
+    target.retain(|x| x.qty > 0.0);
+    target.sort_by(|a, b| {
+        if desc {
+            b.price.partial_cmp(&a.price)
+        } else {
+            a.price.partial_cmp(&b.price)
+        }
+        .unwrap_or(std::cmp::Ordering::Equal)
+    });
+}
+
+#[derive(Debug, Clone)]
+pub struct WsCommand {
+    pub method: &'static str,
+    pub params: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum MarketEvent {
+    Trade(TradeEvent),
+    Generic {
+        event: String,
+        symbol: Option<String>,
+    },
+    OrderBookDelta(OrderBookDelta),
+    WsApiResponse {
+        status: u16,
+    },
+    UserData {
+        event: String,
+    },
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct GenericWsMsg {
+    e: String,
+    #[serde(rename = "s")]
+    symbol: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct TradeWsMsg {
+    e: String,
+    s: String,
+    p: String,
+    q: String,
+    m: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct DepthWsMsg {
+    #[serde(rename = "U")]
+    first_update_id: u64,
+    #[serde(rename = "u")]
+    final_update_id: u64,
+    b: Vec<(String, String)>,
+    a: Vec<(String, String)>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct WsApiMsg {
+    status: u16,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct UserDataMsg {
+    e: String,
+}
+
+#[derive(Clone)]
+pub struct BinanceCoinmWsAdapter {
+    subscriptions: Arc<Mutex<HashSet<WsSubscription>>>,
+    counters: Arc<WsCounters>,
+}
+
+impl BinanceCoinmWsAdapter {
+    pub fn new(counters: Arc<WsCounters>) -> Self {
+        Self {
+            subscriptions: Arc::new(Mutex::new(HashSet::new())),
+            counters,
+        }
+    }
+
+    pub fn channel_specs() -> &'static [WsChannelSpec] {
+        &WS_CHANNELS
+    }
+
+    pub fn counters(&self) -> Arc<WsCounters> {
+        self.counters.clone()
+    }
+
+    pub async fn subscribe<T: Transport>(
+        &self,
+        transport: &T,
+        subscription: WsSubscription,
+    ) -> Result<bool, UcelError> {
+        let spec = WS_CHANNELS
+            .iter()
+            .find(|s| s.id == subscription.channel_id)
+            .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown ws channel"))?;
+        let ctx = RequestContext {
+            trace_id: Uuid::new_v4().to_string(),
+            request_id: Uuid::new_v4().to_string(),
+            run_id: Uuid::new_v4().to_string(),
+            op: OpName::SubscribeTrades,
+            venue: "binance-coinm".into(),
+            policy_id: "default".into(),
+            key_id: subscription.key_id.clone(),
+            requires_auth: spec.requires_auth,
+        };
+        enforce_auth_boundary(&ctx)?;
+
+        let ws_url = resolve_ws_url(spec, &subscription)?;
+        transport
+            .connect_ws(WsConnectRequest { url: ws_url }, ctx)
+            .await?;
+
+        let mut guard = self.subscriptions.lock().await;
+        Ok(guard.insert(subscription))
+    }
+
+    pub async fn reconnect_and_resubscribe<T: Transport>(
+        &self,
+        transport: &T,
+    ) -> Result<usize, UcelError> {
+        let subs: Vec<WsSubscription> = self.subscriptions.lock().await.iter().cloned().collect();
+        self.counters
+            .ws_reconnect_total
+            .fetch_add(1, Ordering::Relaxed);
+        for sub in &subs {
+            let spec = WS_CHANNELS
+                .iter()
+                .find(|s| s.id == sub.channel_id)
+                .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown ws channel"))?;
+            let ctx = RequestContext {
+                trace_id: Uuid::new_v4().to_string(),
+                request_id: Uuid::new_v4().to_string(),
+                run_id: Uuid::new_v4().to_string(),
+                op: OpName::SubscribeTrades,
+                venue: "binance-coinm".into(),
+                policy_id: "default".into(),
+                key_id: sub.key_id.clone(),
+                requires_auth: spec.requires_auth,
+            };
+            transport
+                .connect_ws(
+                    WsConnectRequest {
+                        url: resolve_ws_url(spec, sub)?,
+                    },
+                    ctx,
+                )
+                .await?;
+        }
+        self.counters
+            .ws_resubscribe_total
+            .fetch_add(subs.len() as u64, Ordering::Relaxed);
+        Ok(subs.len())
+    }
+
+    pub fn build_subscribe_command(&self, sub: &WsSubscription) -> WsCommand {
+        WsCommand {
+            method: "SUBSCRIBE",
+            params: vec![stream_name(sub)],
+        }
+    }
+
+    pub fn build_unsubscribe_command(&self, sub: &WsSubscription) -> WsCommand {
+        WsCommand {
+            method: "UNSUBSCRIBE",
+            params: vec![stream_name(sub)],
+        }
+    }
+
+    pub fn parse_market_event(
+        &self,
+        channel_id: &str,
+        body: &Bytes,
+    ) -> Result<MarketEvent, UcelError> {
+        match channel_id {
+            "coinm.public.ws.market.aggtrade" => {
+                let msg: TradeWsMsg = parse_json(body)?;
+                Ok(MarketEvent::Trade(TradeEvent {
+                    trade_id: format!("{}:{}", msg.s, msg.p),
+                    price: parse_num(&msg.p)?,
+                    qty: parse_num(&msg.q)?,
+                    side: if msg.m { "sell".into() } else { "buy".into() },
+                }))
+            }
+            "coinm.public.ws.market.depth.partial" | "coinm.public.ws.market.depth.diff" => {
+                let msg: DepthWsMsg = parse_json(body)?;
+                let bids = msg
+                    .b
+                    .into_iter()
+                    .map(|(p, q)| {
+                        Ok(OrderBookLevel {
+                            price: parse_num(&p)?,
+                            qty: parse_num(&q)?,
+                        })
+                    })
+                    .collect::<Result<Vec<_>, UcelError>>()?;
+                let asks = msg
+                    .a
+                    .into_iter()
+                    .map(|(p, q)| {
+                        Ok(OrderBookLevel {
+                            price: parse_num(&p)?,
+                            qty: parse_num(&q)?,
+                        })
+                    })
+                    .collect::<Result<Vec<_>, UcelError>>()?;
+                Ok(MarketEvent::OrderBookDelta(OrderBookDelta {
+                    bids,
+                    asks,
+                    sequence_start: msg.first_update_id,
+                    sequence_end: msg.final_update_id,
+                }))
+            }
+            "coinm.public.ws.wsapi.general" => {
+                let msg: WsApiMsg = parse_json(body)?;
+                Ok(MarketEvent::WsApiResponse { status: msg.status })
+            }
+            "coinm.private.ws.userdata.events" => {
+                let msg: UserDataMsg = parse_json(body)?;
+                Ok(MarketEvent::UserData { event: msg.e })
+            }
+            _ => {
+                let msg: GenericWsMsg = parse_json(body)?;
+                Ok(MarketEvent::Generic {
+                    event: msg.e,
+                    symbol: msg.symbol,
+                })
+            }
+        }
+    }
+}
+
+fn resolve_ws_url(spec: &WsChannelSpec, sub: &WsSubscription) -> Result<String, UcelError> {
+    if spec.id == "coinm.private.ws.userdata.events" {
+        let listen_key = sub
+            .listen_key
+            .clone()
+            .ok_or_else(|| UcelError::new(ErrorCode::MissingAuth, "listen key required"))?;
+        return Ok(format!("{}/{}", spec.ws_url, listen_key));
+    }
+    Ok(spec.ws_url.to_string())
+}
+
+fn stream_name(sub: &WsSubscription) -> String {
+    if sub.channel_id == "coinm.private.ws.userdata.events" {
+        return "userdata".into();
+    }
+    match &sub.symbol {
+        Some(symbol) => format!("{}:{}", sub.channel_id, symbol),
+        None => sub.channel_id.clone(),
+    }
+}
+
+fn parse_num(raw: &str) -> Result<f64, UcelError> {
+    raw.parse::<f64>()
+        .map_err(|e| UcelError::new(ErrorCode::Internal, format!("parse number failed: {e}")))
+}
+
+pub fn log_private_ws_auth_attempt(key_id: Option<&str>, _api_key: &str, _api_secret: &str) {
+    tracing::info!(key_id = ?key_id, "binance coinm private ws auth attempt");
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::collections::HashMap;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use tokio::sync::Mutex;
+    use tracing_subscriber::fmt::MakeWriter;
     use ucel_transport::{HttpResponse, WsConnectRequest, WsStream};
 
     #[derive(Debug, Deserialize)]
@@ -289,6 +776,7 @@ mod tests {
 
     struct SpyTransport {
         calls: AtomicUsize,
+        ws_calls: AtomicUsize,
         key_ids: Mutex<Vec<Option<String>>>,
         responses: Mutex<HashMap<String, HttpResponse>>,
     }
@@ -297,6 +785,7 @@ mod tests {
         fn new() -> Self {
             Self {
                 calls: AtomicUsize::new(0),
+                ws_calls: AtomicUsize::new(0),
                 key_ids: Mutex::new(Vec::new()),
                 responses: Mutex::new(HashMap::new()),
             }
@@ -314,6 +803,10 @@ mod tests {
 
         fn calls(&self) -> usize {
             self.calls.load(Ordering::Relaxed)
+        }
+
+        fn ws_calls(&self) -> usize {
+            self.ws_calls.load(Ordering::Relaxed)
         }
     }
 
@@ -337,6 +830,7 @@ mod tests {
             _req: WsConnectRequest,
             _ctx: RequestContext,
         ) -> Result<WsStream, UcelError> {
+            self.ws_calls.fetch_add(1, Ordering::Relaxed);
             Ok(WsStream { connected: true })
         }
     }
@@ -403,82 +897,149 @@ mod tests {
         assert_eq!(transport.calls(), 0);
     }
 
-    #[test]
-    fn maps_binance_coinm_errors_by_code() {
-        let auth = map_binance_coinm_http_error(401, br#"{"code":-2015,"msg":"bad key"}"#);
-        assert_eq!(auth.code, ErrorCode::AuthFailed);
-
-        let perm = map_binance_coinm_http_error(403, br#"{"code":-1002,"msg":"permission"}"#);
-        assert_eq!(perm.code, ErrorCode::PermissionDenied);
-
-        let invalid = map_binance_coinm_http_error(400, br#"{"code":-1111,"msg":"bad order"}"#);
-        assert_eq!(invalid.code, ErrorCode::InvalidOrder);
-
-        let rate = map_binance_coinm_http_error(429, b"retry_after_ms=321");
-        assert_eq!(rate.code, ErrorCode::RateLimited);
-        assert_eq!(rate.retry_after_ms, Some(321));
-
-        let upstream = map_binance_coinm_http_error(503, b"busy");
-        assert_eq!(upstream.code, ErrorCode::Upstream5xx);
+    #[tokio::test(flavor = "current_thread")]
+    async fn ws_contract_all_channels_typed_parse() {
+        let ws = BinanceCoinmWsAdapter::new(Arc::new(WsCounters::default()));
+        for spec in BinanceCoinmWsAdapter::channel_specs() {
+            let fname = format!("{}.json", spec.id);
+            let body = Bytes::from(fixture(&fname));
+            assert!(
+                ws.parse_market_event(spec.id, &body).is_ok(),
+                "id={}",
+                spec.id
+            );
+        }
     }
 
     #[tokio::test(flavor = "current_thread")]
-    async fn contract_error_paths_cover_429_5xx_and_timeout() {
+    async fn ws_reconnect_resubscribe_and_idempotent() {
         let transport = SpyTransport::new();
-        let adapter =
-            BinanceCoinmRestAdapter::new("https://docs.test/binance-coinm", "https://dapi.test");
+        let counters = Arc::new(WsCounters::default());
+        let ws = BinanceCoinmWsAdapter::new(counters.clone());
 
-        transport
-            .set_response(
-                "https://docs.test/binance-coinm/general-info",
-                429,
-                "retry_after_ms=999",
-            )
-            .await;
-        let e429 = adapter
-            .execute_rest(&transport, "coinm.public.rest.general.ref", None, None)
-            .await
-            .unwrap_err();
-        assert_eq!(e429.code, ErrorCode::RateLimited);
-        assert_eq!(e429.retry_after_ms, Some(999));
+        let sub = WsSubscription {
+            channel_id: "coinm.public.ws.market.aggtrade".into(),
+            symbol: Some("BTCUSD_PERP".into()),
+            listen_key: None,
+            key_id: None,
+        };
+        assert!(ws.subscribe(&transport, sub.clone()).await.unwrap());
+        assert!(!ws.subscribe(&transport, sub).await.unwrap());
 
-        transport
-            .set_response("https://docs.test/binance-coinm/error-code", 502, "oops")
-            .await;
-        let e5xx = adapter
-            .execute_rest(&transport, "coinm.public.rest.errors.ref", None, None)
-            .await
-            .unwrap_err();
-        assert_eq!(e5xx.code, ErrorCode::Upstream5xx);
+        let count = ws.reconnect_and_resubscribe(&transport).await.unwrap();
+        assert_eq!(count, 1);
+        assert_eq!(counters.ws_reconnect_total.load(Ordering::Relaxed), 1);
+        assert_eq!(counters.ws_resubscribe_total.load(Ordering::Relaxed), 1);
+    }
 
-        struct TimeoutTransport;
-        impl Transport for TimeoutTransport {
-            async fn send_http(
-                &self,
-                _req: HttpRequest,
-                _ctx: RequestContext,
-            ) -> Result<HttpResponse, UcelError> {
-                Err(UcelError::new(ErrorCode::Timeout, "timeout"))
-            }
-            async fn connect_ws(
-                &self,
-                _req: WsConnectRequest,
-                _ctx: RequestContext,
-            ) -> Result<WsStream, UcelError> {
-                Ok(WsStream { connected: true })
-            }
-        }
+    #[tokio::test(flavor = "current_thread")]
+    async fn ws_private_preflight_rejects_without_key_and_spy_shows_no_connect() {
+        let transport = SpyTransport::new();
+        let ws = BinanceCoinmWsAdapter::new(Arc::new(WsCounters::default()));
+        let sub = WsSubscription {
+            channel_id: "coinm.private.ws.userdata.events".into(),
+            symbol: None,
+            listen_key: Some("lk".into()),
+            key_id: None,
+        };
+        let err = ws.subscribe(&transport, sub).await.unwrap_err();
+        assert_eq!(err.code, ErrorCode::MissingAuth);
+        assert_eq!(transport.ws_calls(), 0);
+    }
 
-        let timeout = TimeoutTransport;
-        let e_timeout = adapter
-            .execute_rest(&timeout, "coinm.public.rest.common.ref", None, None)
-            .await
-            .unwrap_err();
-        assert_eq!(e_timeout.code, ErrorCode::Timeout);
+    #[tokio::test(flavor = "current_thread")]
+    async fn backpressure_bounded_channel_drops_and_metrics() {
+        let counters = Arc::new(WsCounters::default());
+        let mut bp = BinanceCoinmBackpressure::new(1, counters.clone());
+        bp.try_enqueue(Bytes::from_static(b"one"));
+        bp.try_enqueue(Bytes::from_static(b"two"));
+        assert_eq!(
+            counters.ws_backpressure_drops_total.load(Ordering::Relaxed),
+            1
+        );
+        let got = bp.recv().await.unwrap();
+        assert_eq!(got, Bytes::from_static(b"one"));
     }
 
     #[test]
-    fn endpoint_specs_match_catalog_rest_ids_exactly() {
+    fn orderbook_gap_triggers_resync_then_recovered() {
+        let mut e = OrderBookResyncEngine::default();
+        e.ingest_delta(OrderBookDelta {
+            bids: vec![OrderBookLevel {
+                price: 100.0,
+                qty: 1.0,
+            }],
+            asks: vec![],
+            sequence_start: 5,
+            sequence_end: 6,
+        })
+        .unwrap();
+        let snapshot = e
+            .apply_snapshot(OrderBookSnapshot {
+                bids: vec![OrderBookLevel {
+                    price: 99.0,
+                    qty: 1.0,
+                }],
+                asks: vec![OrderBookLevel {
+                    price: 101.0,
+                    qty: 1.0,
+                }],
+                sequence: 4,
+            })
+            .unwrap();
+        assert_eq!(snapshot.sequence, 6);
+
+        let err = e
+            .ingest_delta(OrderBookDelta {
+                bids: vec![],
+                asks: vec![],
+                sequence_start: 9,
+                sequence_end: 9,
+            })
+            .unwrap_err();
+        assert_eq!(err.code, ErrorCode::Desync);
+        assert_eq!(e.health(), OrderBookHealth::Degraded);
+    }
+
+    #[test]
+    fn no_secret_leak_in_tracing_logs() {
+        #[derive(Clone, Default)]
+        struct SharedBuf(Arc<std::sync::Mutex<Vec<u8>>>);
+        impl std::io::Write for SharedBuf {
+            fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+                self.0.lock().unwrap().extend_from_slice(buf);
+                Ok(buf.len())
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        #[derive(Clone)]
+        struct WriterMaker(SharedBuf);
+        impl<'a> MakeWriter<'a> for WriterMaker {
+            type Writer = SharedBuf;
+            fn make_writer(&'a self) -> Self::Writer {
+                self.0.clone()
+            }
+        }
+
+        let buf = SharedBuf::default();
+        let subscriber = tracing_subscriber::fmt()
+            .with_writer(WriterMaker(buf.clone()))
+            .without_time()
+            .with_ansi(false)
+            .finish();
+        let _guard = tracing::subscriber::set_default(subscriber);
+
+        log_private_ws_auth_attempt(Some("kid-1"), "api_key_123", "api_secret_456");
+        let logs = String::from_utf8(buf.0.lock().unwrap().clone()).unwrap();
+        assert!(logs.contains("kid-1"));
+        assert!(!logs.contains("api_key_123"));
+        assert!(!logs.contains("api_secret_456"));
+    }
+
+    #[test]
+    fn endpoint_specs_match_catalog_rest_and_ws_ids_exactly() {
         let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
         let raw =
             std::fs::read_to_string(repo_root.join("docs/exchanges/binance-coinm/catalog.json"))
@@ -487,12 +1048,20 @@ mod tests {
         let mut impl_ids: Vec<&str> = BinanceCoinmRestAdapter::endpoint_specs()
             .iter()
             .map(|e| e.id)
+            .chain(BinanceCoinmWsAdapter::channel_specs().iter().map(|e| e.id))
             .collect();
         let mut catalog_ids: Vec<String> = catalog["rest_endpoints"]
             .as_array()
             .unwrap()
             .iter()
             .map(|e| e["id"].as_str().unwrap().to_string())
+            .chain(
+                catalog["ws_channels"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|e| e["id"].as_str().unwrap().to_string()),
+            )
             .collect();
         impl_ids.sort_unstable();
         catalog_ids.sort_unstable();
@@ -503,7 +1072,7 @@ mod tests {
     }
 
     #[test]
-    fn coverage_manifest_has_no_rest_gaps() {
+    fn coverage_manifest_has_no_gaps_and_is_strict() {
         let manifest_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../coverage/binance-coinm.yaml");
         let raw = std::fs::read_to_string(manifest_path).unwrap();
