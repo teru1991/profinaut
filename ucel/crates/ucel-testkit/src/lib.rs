@@ -252,6 +252,82 @@ mod tests {
     }
 
     #[test]
+    fn contract_index_can_cover_all_binance_options_catalog_rows() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "binance-options").unwrap();
+
+        let mut index = CatalogContractIndex::default();
+        for id in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+            .map(|entry| entry.id.as_str())
+        {
+            index.register_id(id);
+        }
+
+        let missing = index.missing_catalog_ids(&catalog);
+        assert!(missing.is_empty());
+    }
+
+    #[test]
+    fn contract_index_can_cover_all_binance_usdm_catalog_rows() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "binance-usdm").unwrap();
+
+        let mut index = CatalogContractIndex::default();
+        for id in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+            .map(|entry| entry.id.as_str())
+        {
+            index.register_id(id);
+        }
+
+        let missing = index.missing_catalog_ids(&catalog);
+        assert!(missing.is_empty());
+    }
+
+    #[test]
+    fn contract_index_can_cover_all_bitbank_catalog_rows() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "bitbank").unwrap();
+
+        let mut index = CatalogContractIndex::default();
+        for id in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+            .map(|entry| entry.id.as_str())
+        {
+            index.register_id(id);
+        }
+
+        let missing = index.missing_catalog_ids(&catalog);
+        assert!(missing.is_empty());
+    }
+
+    #[test]
+    fn contract_index_can_cover_all_bitmex_catalog_rows() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "bitmex").unwrap();
+
+        let mut index = CatalogContractIndex::default();
+        for id in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+            .map(|entry| entry.id.as_str())
+        {
+            index.register_id(id);
+        }
+
+        let missing = index.missing_catalog_ids(&catalog);
+        assert!(missing.is_empty());
+    }
+
+    #[test]
     fn coverage_gate_is_strict_and_has_no_gaps() {
         let manifest_path =
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/gmocoin.yaml");
@@ -282,6 +358,55 @@ mod tests {
             _ => panic!("bybit coverage gate should be warn-only while gaps exist"),
         }
     }
+
+    #[test]
+    fn coverage_gate_is_strict_for_bitmex_and_has_no_gaps() {
+        let manifest_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bitmex.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "bitmex");
+        assert!(manifest.strict);
+
+        let result = run_coverage_gate(&manifest);
+        match result {
+            CoverageGateResult::Passed => {}
+            _ => panic!("bitmex coverage gate should pass in strict mode"),
+        }
+    }
+
+    #[test]
+    fn coverage_gate_warns_for_binance_options_until_full_coverage() {
+        let manifest_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-options.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "binance-options");
+        assert!(!manifest.strict);
+
+        let result = run_coverage_gate(&manifest);
+        match result {
+            CoverageGateResult::WarnOnly(gaps) => {
+                assert_eq!(gaps.get("implemented").map(Vec::len), Some(14));
+                assert_eq!(gaps.get("tested").map(Vec::len), Some(14));
+            }
+            _ => panic!("binance-options coverage gate should warn while manifest has gaps"),
+        }
+    }
+
+    #[test]
+    fn coverage_gate_is_strict_for_coinbase_and_has_no_gaps() {
+        let manifest_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/coinbase.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "coinbase");
+        assert!(manifest.strict);
+
+        let result = run_coverage_gate(&manifest);
+        match result {
+            CoverageGateResult::Passed => {}
+            _ => panic!("coinbase coverage gate should pass in strict mode"),
+        }
+    }
+
     #[test]
     fn coverage_gate_is_strict_for_kraken_and_has_no_gaps() {
         let manifest_path =
@@ -299,6 +424,12 @@ mod tests {
 
     #[test]
     fn coverage_gate_is_strict_for_binance_usdm_and_has_no_gaps() {
+    fn coverage_gate_warns_for_bitbank_until_full_coverage() {
+        let manifest_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bitbank.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "bitbank");
+    fn coverage_gate_warns_for_binance_usdm_until_full_coverage() {
         let manifest_path =
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-usdm.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
@@ -323,6 +454,14 @@ mod tests {
         let result = run_coverage_gate(&manifest);
         match result {
             CoverageGateResult::WarnOnly(gaps) => {
+                assert_eq!(gaps.get("implemented").map(Vec::len), Some(44));
+                assert_eq!(gaps.get("tested").map(Vec::len), Some(44));
+            }
+            _ => panic!("bitbank coverage gate should warn while manifest has gaps"),
+                assert_eq!(gaps.get("implemented").map(Vec::len), Some(16));
+                assert_eq!(gaps.get("tested").map(Vec::len), Some(16));
+            }
+            _ => panic!("binance-usdm coverage gate should warn while manifest has gaps"),
                 assert_eq!(gaps.get("implemented").map(Vec::len), Some(25));
                 assert_eq!(gaps.get("tested").map(Vec::len), Some(25));
             }
