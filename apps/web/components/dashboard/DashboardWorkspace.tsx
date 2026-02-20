@@ -3,24 +3,28 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import marketDataTemplate from "./templates/marketdata.json";
-import executionTemplate from "./templates/execution.json";
-import incidentTemplate from "./templates/incident.json";
-
+import { WidgetCatalog } from "./catalog/WidgetCatalog";
 import { WorkspaceHistory } from "./core/history";
 import { type GlobalFilters } from "./core/filters";
+import { type Panel, type Workspace, DASHBOARD_SCHEMA_VERSION } from "./core/model";
 import { parseDashboardUrl } from "./core/router";
 import { validateWorkspace } from "./core/schema";
 import { clearDraft, commit, loadCommitted, loadDraft, loadFilters, saveDraft, saveFilters } from "./core/storage";
-import { DASHBOARD_SCHEMA_VERSION, type Panel, type Workspace } from "./core/model";
-
-type StatusSummary = { overall_status: string; components?: { name: string; status: string; reason?: string | null }[] };
-type BotsSummary = { total: number; items: { state?: string; status?: string; degraded?: boolean }[] };
+import { GridLayout } from "./layout/GridLayout";
+import { PanelFrame } from "./panels/PanelFrame";
+import incidentTemplate from "./templates/incident.json";
+import executionTemplate from "./templates/execution.json";
+import marketDataTemplate from "./templates/marketdata.json";
+import { normalizeStatus } from "./ui/badges";
+import { WIDGETS } from "./widgets/registry";
+import { fetchJson, useWidgetCapabilities, type WidgetQuality } from "./widgets/runtime";
 
 const FilterContext = createContext<GlobalFilters>({});
 export const useDashboardFilters = () => useContext(FilterContext);
 
 const templates = [marketDataTemplate, executionTemplate, incidentTemplate] as Workspace[];
+
+type StatusSummary = { overall_status?: string; components?: { name?: string; status?: string }[] };
 
 function isoNow() {
   return new Date().toISOString();
@@ -28,6 +32,33 @@ function isoNow() {
 
 function cloneWorkspace(workspace: Workspace): Workspace {
   return structuredClone(workspace);
+}
+
+function findFirstSlot(panels: Panel[], w: number, h: number, columns: number) {
+  const occupied = new Set<string>();
+  for (const panel of panels) {
+    const grid = panel.frame.grid;
+    if (!grid) continue;
+    for (let y = grid.y; y < grid.y + grid.h; y += 1) {
+      for (let x = grid.x; x < grid.x + grid.w; x += 1) occupied.add(`${x}:${y}`);
+    }
+  }
+
+  for (let y = 0; y < 40; y += 1) {
+    for (let x = 0; x <= columns - w; x += 1) {
+      let clear = true;
+      for (let dy = 0; dy < h && clear; dy += 1) {
+        for (let dx = 0; dx < w; dx += 1) {
+          if (occupied.has(`${x + dx}:${y + dy}`)) {
+            clear = false;
+            break;
+          }
+        }
+      }
+      if (clear) return { x, y };
+    }
+  }
+  return { x: 0, y: panels.length + 1 };
 }
 
 export default function DashboardWorkspace() {
@@ -44,11 +75,8 @@ export default function DashboardWorkspace() {
   const [activePageId, setActivePageId] = useState<string | null>(null);
   const [focusMode, setFocusMode] = useState(false);
   const [filters, setFilters] = useState<GlobalFilters>({ timeRange: "1h" });
-  const [status, setStatus] = useState<StatusSummary | null>(null);
-  const [bots, setBots] = useState<BotsSummary | null>(null);
-  const [statusError, setStatusError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-  const [draggingPanelId, setDraggingPanelId] = useState<string | null>(null);
+  const [statusSummary, setStatusSummary] = useState<StatusSummary | null>(null);
+  const [qualityMap, setQualityMap] = useState<Record<string, WidgetQuality>>({});
 
   useEffect(() => {
     const committedLoaded = loadCommitted();
@@ -56,10 +84,7 @@ export default function DashboardWorkspace() {
     const prefs = loadFilters();
     const routeState = parseDashboardUrl(new URLSearchParams(searchParams.toString()));
 
-    setWarnings([
-      ...committedLoaded.warnings.map((w) => w.message),
-      ...draftLoaded.warnings.map((w) => w.message)
-    ]);
+    setWarnings([...committedLoaded.warnings.map((w) => w.message), ...draftLoaded.warnings.map((w) => w.message)]);
 
     const baseWorkspace = committedLoaded.workspace ?? null;
     const initialWorkspace = draftLoaded.workspace ?? baseWorkspace;
@@ -84,38 +109,15 @@ export default function DashboardWorkspace() {
     return () => document.body.classList.remove("dashboard-focus-mode");
   }, [focusMode]);
 
-  const refreshData = useCallback(async () => {
-    try {
-      const [statusRes, botsRes] = await Promise.allSettled([
-        fetch("/api/status/summary", { cache: "no-store" }),
-        fetch("/api/bots?page=1&page_size=50", { cache: "no-store" })
-      ]);
-
-      if (statusRes.status === "fulfilled" && statusRes.value.ok) {
-        setStatus(await statusRes.value.json());
-        setStatusError(null);
-      }
-      if (botsRes.status === "fulfilled" && botsRes.value.ok) {
-        setBots(await botsRes.value.json());
-      }
-      if (
-        (statusRes.status === "rejected" || (statusRes.status === "fulfilled" && !statusRes.value.ok)) &&
-        (botsRes.status === "rejected" || (botsRes.status === "fulfilled" && !botsRes.value.ok))
-      ) {
-        setStatusError("Status and bots endpoints are unavailable.");
-      }
-      setLastUpdated(new Date().toISOString());
-    } catch {
-      setStatusError("Unable to refresh dashboard snapshot.");
-      setLastUpdated(new Date().toISOString());
-    }
-  }, []);
-
   useEffect(() => {
-    refreshData();
-    const id = setInterval(refreshData, 10000);
+    const refresh = async () => {
+      const result = await fetchJson<StatusSummary>("/api/status/summary", 6000);
+      if (result.ok && result.data) setStatusSummary(result.data);
+    };
+    refresh();
+    const id = setInterval(refresh, 10000);
     return () => clearInterval(id);
-  }, [refreshData]);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -133,17 +135,17 @@ export default function DashboardWorkspace() {
 
   const workspace = mode === "edit" ? draft : committed;
   const activePage = workspace?.pages.find((p) => p.id === activePageId) ?? workspace?.pages[0] ?? null;
-
   const canUndo = mode === "edit" && historyRef.current.canUndo();
   const canRedo = mode === "edit" && historyRef.current.canRedo();
+  const capabilities = useWidgetCapabilities(statusSummary);
 
-  const patchDraft = (mutator: (draftWorkspace: Workspace) => Workspace) => {
+  const patchDraft = useCallback((mutator: (draftWorkspace: Workspace) => Workspace) => {
     if (!draft) return;
     historyRef.current.push(draft);
     const nextDraft = mutator(cloneWorkspace(draft));
     setDraft(nextDraft);
     saveDraft(nextDraft);
-  };
+  }, [draft]);
 
   const handleApply = () => {
     if (!draft) return;
@@ -180,18 +182,34 @@ export default function DashboardWorkspace() {
     saveDraft(next);
   };
 
-  const addPlaceholderPanel = () => {
+  const updatePanelGrid = (panelId: string, grid: { x: number; y: number; w: number; h: number }) => {
     if (!activePage) return;
     patchDraft((ws) => {
       const page = ws.pages.find((p) => p.id === activePage.id);
+      const panel = page?.layout.panels.find((p) => p.id === panelId);
+      if (!panel) return ws;
+      panel.frame.grid = grid;
+      panel.updatedAt = isoNow();
+      ws.updatedAt = isoNow();
+      return ws;
+    });
+  };
+
+  const addWidgetPanel = (widgetId: string) => {
+    const definition = WIDGETS[widgetId];
+    if (!definition || !activePage) return;
+    patchDraft((ws) => {
+      const page = ws.pages.find((p) => p.id === activePage.id);
       if (!page) return ws;
+      const columns = page.layout.gridSpec?.columns ?? 12;
+      const slot = findFirstSlot(page.layout.panels, definition.defaultGrid.w, definition.defaultGrid.h, columns);
       page.layout.panels.push({
-        id: `panel-${Date.now()}`,
-        widgetId: "placeholder",
-        title: "New Panel",
-        dataSpec: { queryKey: "placeholder" },
-        viewSpec: { variant: "placeholder" },
-        frame: { grid: { x: 0, y: page.layout.panels.length + 1, w: 3, h: 1 } },
+        id: `panel-${Date.now()}-${Math.random().toString(16).slice(2, 7)}`,
+        widgetId,
+        title: definition.title,
+        dataSpec: { queryKey: widgetId },
+        viewSpec: { variant: "kpi", showBadges: true },
+        frame: { grid: { x: slot.x, y: slot.y, w: definition.defaultGrid.w, h: definition.defaultGrid.h } },
         createdAt: isoNow(),
         updatedAt: isoNow()
       });
@@ -202,42 +220,45 @@ export default function DashboardWorkspace() {
 
   const removePanel = (panelId: string) => {
     if (!activePage) return;
+    const panel = activePage.layout.panels.find((item) => item.id === panelId);
+    if (panel?.protected && !window.confirm("This panel is protected. Remove it anyway?")) return;
     patchDraft((ws) => {
       const page = ws.pages.find((p) => p.id === activePage.id);
       if (!page) return ws;
-      page.layout.panels = page.layout.panels.filter((panel) => panel.id !== panelId);
+      page.layout.panels = page.layout.panels.filter((p) => p.id !== panelId);
       ws.updatedAt = isoNow();
       return ws;
     });
   };
 
-  const reorderPanels = (sourceId: string, targetId: string) => {
-    if (!activePage || sourceId === targetId) return;
+  const duplicatePanel = (panelId: string) => {
+    if (!activePage) return;
     patchDraft((ws) => {
       const page = ws.pages.find((p) => p.id === activePage.id);
-      if (!page) return ws;
-      const next = [...page.layout.panels];
-      const sourceIdx = next.findIndex((panel) => panel.id === sourceId);
-      const targetIdx = next.findIndex((panel) => panel.id === targetId);
-      if (sourceIdx < 0 || targetIdx < 0) return ws;
-      const [item] = next.splice(sourceIdx, 1);
-      next.splice(targetIdx, 0, item);
-      page.layout.panels = next;
+      const panel = page?.layout.panels.find((p) => p.id === panelId);
+      if (!page || !panel) return ws;
+      const grid = panel.frame.grid ?? { x: 0, y: 0, w: 3, h: 2 };
+      const columns = page.layout.gridSpec?.columns ?? 12;
+      const slot = findFirstSlot(page.layout.panels, grid.w, grid.h, columns);
+      page.layout.panels.push({
+        ...structuredClone(panel),
+        id: `panel-${Date.now()}-${Math.random().toString(16).slice(2, 7)}`,
+        frame: { ...panel.frame, grid: { ...grid, x: slot.x, y: slot.y } },
+        createdAt: isoNow(),
+        updatedAt: isoNow()
+      });
       ws.updatedAt = isoNow();
       return ws;
     });
   };
 
-  const resizePanel = (panelId: string, delta: number) => {
+  const toggleFlag = (panelId: string, flag: "locked" | "pinned" | "protected") => {
     if (!activePage) return;
     patchDraft((ws) => {
       const page = ws.pages.find((p) => p.id === activePage.id);
       const panel = page?.layout.panels.find((p) => p.id === panelId);
       if (!panel) return ws;
-      if (!panel.frame.grid) {
-        panel.frame.grid = { x: 0, y: 0, w: 3, h: 1 };
-      }
-      panel.frame.grid.w = Math.max(2, Math.min(12, panel.frame.grid.w + delta));
+      panel[flag] = !panel[flag];
       panel.updatedAt = isoNow();
       ws.updatedAt = isoNow();
       return ws;
@@ -265,7 +286,6 @@ export default function DashboardWorkspace() {
   const handleImport = async (file: File | null) => {
     if (!file) return;
     setImportError(null);
-
     try {
       const raw = await file.text();
       const parsed = JSON.parse(raw);
@@ -274,7 +294,6 @@ export default function DashboardWorkspace() {
         setImportError(`${validated.error} at ${validated.path}`);
         return;
       }
-
       const imported = { ...validated.value, updatedAt: isoNow() };
       setDraft(imported);
       setCommitted(imported);
@@ -286,24 +305,6 @@ export default function DashboardWorkspace() {
     }
   };
 
-  const snapshot = useMemo(() => {
-    const totalBots = bots?.total ?? 0;
-    const activeBots = (bots?.items ?? []).filter((b) => {
-      const state = (b.state ?? b.status ?? "").toUpperCase();
-      return state === "RUNNING" || state === "ACTIVE" || state === "OK";
-    }).length;
-    const degradedBots = (bots?.items ?? []).filter((b) => b.degraded).length;
-    const degradedComponents = (status?.components ?? []).filter((c) => c.status.toUpperCase() !== "OK");
-
-    return {
-      overall: status?.overall_status ?? "UNKNOWN",
-      totalBots,
-      activeBots,
-      degradedBots,
-      degradedComponents
-    };
-  }, [bots, status]);
-
   if (!workspace) {
     return (
       <div className="card">
@@ -311,9 +312,7 @@ export default function DashboardWorkspace() {
         <p className="text-muted">Start with a personal workspace template.</p>
         <div className="card-grid" style={{ marginTop: 12 }}>
           {templates.map((template) => (
-            <button key={template.id} className="btn" onClick={() => handleTemplatePick(template)}>
-              {template.name}
-            </button>
+            <button key={template.id} className="btn" onClick={() => handleTemplatePick(template)}>{template.name}</button>
           ))}
         </div>
       </div>
@@ -333,15 +332,14 @@ export default function DashboardWorkspace() {
         <div className="page-header" style={{ alignItems: "center", gap: 12 }}>
           <div className="page-header-left">
             <h1 className="page-title">Dashboard Workspace</h1>
-            <p className="page-subtitle">Customizable layout with safe Edit/Draft workflow.</p>
+            <p className="page-subtitle">Grid widgets with catalog, drag/resize, and quality badges.</p>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button className={`btn ${mode === "view" ? "btn-primary" : ""}`} onClick={() => setMode("view")}>View</button>
             <button className={`btn ${mode === "edit" ? "btn-primary" : ""}`} onClick={() => setMode("edit")}>Edit</button>
             <button className="btn" onClick={() => setFocusMode((v) => !v)}>{focusMode ? "Exit Focus" : "Focus/Kiosk"}</button>
             <button className="btn" onClick={handleExport}>Export</button>
-            <label className="btn" style={{ cursor: "pointer" }}>
-              Import
+            <label className="btn" style={{ cursor: "pointer" }}>Import
               <input type="file" accept="application/json" style={{ display: "none" }} onChange={(e) => handleImport(e.target.files?.[0] ?? null)} />
             </label>
           </div>
@@ -358,15 +356,10 @@ export default function DashboardWorkspace() {
           </div>
         </div>
 
-        {(warnings.length > 0 || statusError || importError) && (
+        {(warnings.length > 0 || importError) && (
           <div className="notice notice-warning" style={{ marginBottom: 12 }}>
             <span className="notice-icon">!</span>
-            <div className="notice-content">
-              {[...warnings, statusError, importError].filter(Boolean).map((message) => (
-                <div key={message}>{message}</div>
-              ))}
-              {lastUpdated && <div className="text-xs">Last snapshot: {new Date(lastUpdated).toLocaleTimeString()}</div>}
-            </div>
+            <div className="notice-content">{[...warnings, importError].filter(Boolean).map((msg) => <div key={msg}>{msg}</div>)}</div>
           </div>
         )}
 
@@ -377,7 +370,6 @@ export default function DashboardWorkspace() {
             ))}
             {mode === "edit" && (
               <>
-                <button className="btn" onClick={addPlaceholderPanel}>Add Panel</button>
                 <button className="btn" onClick={handleUndo} disabled={!canUndo}>Undo</button>
                 <button className="btn" onClick={handleRedo} disabled={!canRedo}>Redo</button>
                 <button className="btn btn-success" onClick={handleApply}>Apply</button>
@@ -387,69 +379,51 @@ export default function DashboardWorkspace() {
           </div>
         </div>
 
-        <div className="card-grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))" }}>
-          {(activePage?.layout.panels ?? []).map((panel) => (
-            <div
-              key={panel.id}
-              className="card"
-              draggable={mode === "edit"}
-              onDragStart={() => setDraggingPanelId(panel.id)}
-              onDragOver={(event) => mode === "edit" && event.preventDefault()}
-              onDrop={() => {
-                if (mode === "edit" && draggingPanelId) reorderPanels(draggingPanelId, panel.id);
-                setDraggingPanelId(null);
-              }}
-              style={{ opacity: draggingPanelId === panel.id ? 0.6 : 1 }}
-            >
-              <div className="card-header">
-                <h3 className="card-title">{panel.title ?? panel.widgetId}</h3>
-                {mode === "edit" && (
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button className="btn btn-sm" onClick={() => resizePanel(panel.id, -1)}>-W</button>
-                    <button className="btn btn-sm" onClick={() => resizePanel(panel.id, 1)}>+W</button>
-                    <button className="btn btn-sm btn-danger" onClick={() => removePanel(panel.id)}>Remove</button>
-                  </div>
-                )}
-              </div>
-              <PanelBody panel={panel} snapshot={snapshot} />
-            </div>
-          ))}
-        </div>
+        {mode === "edit" && <WidgetCatalog onAdd={addWidgetPanel} />}
+
+        {activePage && (
+          <GridLayout
+            panels={activePage.layout.panels}
+            columns={activePage.layout.gridSpec?.columns ?? 12}
+            rowHeight={activePage.layout.gridSpec?.rowHeight ?? 140}
+            gap={activePage.layout.gridSpec?.gap ?? 12}
+            editMode={mode === "edit"}
+            onPanelFrameChange={updatePanelGrid}
+            renderPanel={(panel, bind) => {
+              const definition = WIDGETS[panel.widgetId];
+              const title = panel.title ?? definition?.title ?? panel.widgetId;
+              return (
+                <PanelFrame
+                  title={title}
+                  quality={qualityMap[panel.id]}
+                  locked={panel.locked}
+                  pinned={panel.pinned}
+                  protectedPanel={panel.protected}
+                  canEdit={mode === "edit"}
+                  onDuplicate={() => duplicatePanel(panel.id)}
+                  onRemove={() => removePanel(panel.id)}
+                  onToggleLock={() => toggleFlag(panel.id, "locked")}
+                  onTogglePin={() => toggleFlag(panel.id, "pinned")}
+                  onToggleProtect={() => toggleFlag(panel.id, "protected")}
+                  dragHandleProps={bind.dragHandleProps}
+                  resizeHandle={bind.resizeHandle}
+                >
+                  {definition ? (
+                    definition.render({
+                      globalFilters: filters,
+                      capabilities,
+                      refreshNow: () => setStatusSummary((prev) => prev ? { ...prev } : prev),
+                      reportQuality: (quality) => setQualityMap((prev) => ({ ...prev, [panel.id]: { ...quality, status: normalizeStatus(quality.status) } }))
+                    })
+                  ) : (
+                    <div className="text-sm text-muted">Unknown widget: {panel.widgetId}</div>
+                  )}
+                </PanelFrame>
+              );
+            }}
+          />
+        )}
       </div>
     </FilterContext.Provider>
   );
-}
-
-function PanelBody({ panel, snapshot }: { panel: Panel; snapshot: { overall: string; totalBots: number; activeBots: number; degradedBots: number; degradedComponents: StatusSummary["components"] } }) {
-  if (panel.widgetId === "system-status") {
-    return <div><div className={`badge ${snapshot.overall === "OK" ? "badge-success" : "badge-warning"}`}>{snapshot.overall}</div></div>;
-  }
-  if (panel.widgetId === "bots-overview") {
-    return <div className="text-sm">Total {snapshot.totalBots} / Active {snapshot.activeBots} / Degraded {snapshot.degradedBots}</div>;
-  }
-  if (panel.widgetId === "degraded-components") {
-    return (
-      <div className="text-sm">
-        {(snapshot.degradedComponents ?? []).length === 0 ? "No degraded components" : (snapshot.degradedComponents ?? []).map((component) => (
-          <div key={component.name}>{component.name}: {component.status}{component.reason ? ` — ${component.reason}` : ""}</div>
-        ))}
-      </div>
-    );
-  }
-  if (panel.widgetId === "quick-nav") {
-    return (
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {[
-          ["Bots", "/bots"],
-          ["Portfolio", "/portfolio"],
-          ["Markets", "/markets"],
-          ["Commands", "/commands"],
-          ["Analytics", "/analytics"]
-        ].map(([label, href]) => (
-          <a key={href} href={href} className="btn btn-sm">{label}</a>
-        ))}
-      </div>
-    );
-  }
-  return <div className="text-muted text-sm">{panel.widgetId} widget placeholder</div>;
 }
