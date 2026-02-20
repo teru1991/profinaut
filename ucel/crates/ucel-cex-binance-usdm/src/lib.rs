@@ -551,7 +551,13 @@ fn parse_retry_after_ms(body: &[u8]) -> Option<u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde::Deserialize;
+    use std::collections::VecDeque;
+    use std::path::Path;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::{Arc, Mutex};
     use ucel_testkit::{evaluate_coverage_gate, load_coverage_manifest};
+    use ucel_transport::{HttpResponse, WsConnectRequest, WsStream};
 
     #[test]
     fn ws_contract_covers_all_catalog_ids() {
@@ -629,13 +635,6 @@ mod tests {
         assert!(manifest.strict);
         assert!(gaps.is_empty(), "strict coverage gate found gaps: {gaps:?}");
     }
-
-    use serde::Deserialize;
-    use std::collections::VecDeque;
-    use std::path::Path;
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    use std::sync::{Arc, Mutex};
-    use ucel_transport::{HttpResponse, WsConnectRequest, WsStream};
 
     #[derive(Clone, Default)]
     struct SpyTransport {
