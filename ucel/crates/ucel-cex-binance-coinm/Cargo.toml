@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+tracing = "0.1"
+tokio = { version = "1", features = ["sync"] }
 bytes = { version = "1", features = ["serde"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde = { version = "1", features = ["derive"] }
@@ -15,3 +17,4 @@ ucel-transport = { path = "../ucel-transport" }
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt", "sync"] }
 serde_yaml = "0.9"
+tracing-subscriber = { version = "0.3", features = ["fmt"] }
