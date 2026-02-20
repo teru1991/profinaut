@@ -39,6 +39,7 @@ pub struct DataFeedEntry {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct CatalogEntry {
     pub id: String,
+    #[serde(default)]
     pub visibility: String,
     pub operation: Option<String>,
     pub method: Option<String>,
@@ -115,32 +116,34 @@ pub fn validate_catalog(catalog: &ExchangeCatalog) -> Result<(), UcelError> {
 }
 
 fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
-    if entry.id.trim().is_empty() || entry.visibility.trim().is_empty() {
+    if entry.id.trim().is_empty() {
         return Err(UcelError::new(
             ErrorCode::CatalogMissingField,
             format!("missing required fields for id={}", entry.id),
         ));
     }
 
-    let visibility = entry.visibility.to_ascii_lowercase();
+    let visibility = entry_visibility(entry)?;
+    let auth_type = entry.auth.auth_type.to_ascii_lowercase();
+    let auth_has_none = auth_type.contains("none");
     match visibility.as_str() {
         "public" => {
-            if entry.auth.auth_type != "none" {
+            if !auth_has_none {
                 return Err(UcelError::new(
                     ErrorCode::CatalogInvalid,
                     format!(
-                        "public endpoint must use auth.type=none for id={}",
+                        "public endpoint must include auth.type=none for id={}",
                         entry.id
                     ),
                 ));
             }
         }
         "private" => {
-            if entry.auth.auth_type == "none" {
+            if auth_has_none {
                 return Err(UcelError::new(
                     ErrorCode::CatalogInvalid,
                     format!(
-                        "private endpoint must not use auth.type=none for id={}",
+                        "private endpoint must not include auth.type=none for id={}",
                         entry.id
                     ),
                 ));
@@ -172,7 +175,10 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                     ),
                 ));
             }
-            if !(base_url.starts_with("https://") || base_url.starts_with("http://")) {
+            if !(base_url.starts_with("https://")
+                || base_url.starts_with("http://")
+                || base_url.starts_with("docs://"))
+            {
                 return Err(UcelError::new(
                     ErrorCode::CatalogInvalid,
                     format!("invalid base_url for id={}: {base_url}", entry.id),
@@ -215,8 +221,26 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
 
 pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
     let op = map_operation(entry)?;
-    let requires_auth = entry.visibility.eq_ignore_ascii_case("private");
+    let requires_auth = entry_visibility(entry)? == "private";
     Ok(OpMeta { op, requires_auth })
+}
+
+fn entry_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
+    if !entry.visibility.trim().is_empty() {
+        return Ok(entry.visibility.to_ascii_lowercase());
+    }
+
+    if entry.id.contains(".private.") {
+        return Ok("private".to_string());
+    }
+    if entry.id.contains(".public.") {
+        return Ok("public".to_string());
+    }
+
+    Err(UcelError::new(
+        ErrorCode::CatalogMissingField,
+        format!("missing visibility for id={}", entry.id),
+    ))
 }
 
 pub fn map_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
@@ -233,10 +257,9 @@ fn map_operation_literal(operation: &str) -> Option<OpName> {
         "Get service status" | "Get FX API status" | "List futures instruments" => {
             Some(OpName::FetchStatus)
         }
-        "Get ticker"
-        | "Get FX ticker"
-        | "Get ticker information"
-        | "Get futures tickers" => Some(OpName::FetchTicker),
+        "Get ticker" | "Get FX ticker" | "Get ticker information" | "Get futures tickers" => {
+            Some(OpName::FetchTicker)
+        }
         "Get order book" | "Get FX order book" => Some(OpName::FetchOrderbookSnapshot),
         "Get recent trades" | "Get FX trades" => Some(OpName::FetchTrades),
         "Get candlesticks" | "Get FX klines" => Some(OpName::FetchKlines),
@@ -266,6 +289,31 @@ fn map_operation_literal(operation: &str) -> Option<OpName> {
 
 fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
     let op = match id {
+        "coinm.public.rest.general.ref"
+        | "coinm.public.rest.errors.ref"
+        | "coinm.public.rest.common.ref"
+        | "coinm.public.rest.market.ref"
+        | "coinm.public.ws.market.root"
+        | "coinm.public.ws.market.contract-info"
+        | "coinm.public.ws.wsapi.general" => OpName::FetchStatus,
+        "coinm.private.rest.trade.ref" => OpName::PlaceOrder,
+        "coinm.private.rest.account.ref" => OpName::FetchBalances,
+        "coinm.private.rest.listenkey.ref" => OpName::CreateWsAuthToken,
+        "coinm.public.ws.market.aggtrade" => OpName::SubscribeTrades,
+        "coinm.public.ws.market.markprice"
+        | "coinm.public.ws.market.miniticker"
+        | "coinm.public.ws.market.miniticker.all"
+        | "coinm.public.ws.market.ticker"
+        | "coinm.public.ws.market.ticker.all"
+        | "coinm.public.ws.market.bookticker"
+        | "coinm.public.ws.market.composite-index" => OpName::SubscribeTicker,
+        "coinm.public.ws.market.kline"
+        | "coinm.public.ws.market.continuous-kline"
+        | "coinm.public.ws.market.index-kline" => OpName::FetchKlines,
+        "coinm.public.ws.market.liquidation"
+        | "coinm.public.ws.market.depth.partial"
+        | "coinm.public.ws.market.depth.diff" => OpName::SubscribeOrderbook,
+        "coinm.private.ws.userdata.events" => OpName::SubscribeExecutionEvents,
         "crypto.public.ws.ticker.update"
         | "fx.public.ws.ticker.update"
         | "futures.public.ws.other.market.ticker.subscribe" => OpName::SubscribeTicker,
@@ -430,8 +478,33 @@ mod tests {
         assert_eq!(catalog.rest_endpoints.len(), 10);
         assert_eq!(catalog.ws_channels.len(), 10);
 
-        for entry in catalog.rest_endpoints.iter().chain(catalog.ws_channels.iter()) {
-            assert!(map_operation(entry).is_ok(), "missing op mapping for {}", entry.id);
+        for entry in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+        {
+            assert!(
+                map_operation(entry).is_ok(),
+                "missing op mapping for {}",
+                entry.id
+            );
+        }
+    }
+
+    #[test]
+    fn loads_binance_coinm_catalog_and_maps_all_ops() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "binance-coinm").unwrap();
+        assert_eq!(catalog.rest_endpoints.len(), 7);
+        assert_eq!(catalog.ws_channels.len(), 18);
+
+        for entry in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+        {
+            let op_meta = op_meta_from_entry(entry).unwrap();
+            assert_eq!(op_meta.requires_auth, entry.id.contains(".private."));
         }
     }
 }
