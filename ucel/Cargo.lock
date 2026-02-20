@@ -1239,6 +1239,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucel-cex-bybit"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "ucel-core",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
 name = "ucel-cex-gmocoin"
 version = "0.1.0"
 dependencies = [
