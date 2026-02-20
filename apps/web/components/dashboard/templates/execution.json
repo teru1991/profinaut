@@ -1,0 +1,23 @@
+{
+  "id": "ws-execution",
+  "name": "Execution Workspace",
+  "defaultPageId": "execution",
+  "schema_version": 1,
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z",
+  "pages": [
+    {
+      "id": "execution",
+      "title": "Execution",
+      "layout": {
+        "kind": "grid",
+        "gridSpec": { "columns": 12, "rowHeight": 140, "gap": 12 },
+        "panels": [
+          { "id": "status", "widgetId": "system-status", "title": "System Status", "dataSpec": { "queryKey": "status.summary", "endpointRef": "/api/status/summary", "refreshMs": 10000 }, "viewSpec": { "variant": "status" }, "frame": { "grid": { "x": 0, "y": 0, "w": 4, "h": 1 } }, "createdAt": "2026-01-01T00:00:00.000Z", "updatedAt": "2026-01-01T00:00:00.000Z" },
+          { "id": "commands", "widgetId": "commands-summary", "title": "Commands", "dataSpec": { "queryKey": "commands.summary", "endpointRef": "/api/commands" }, "viewSpec": { "variant": "placeholder" }, "frame": { "grid": { "x": 4, "y": 0, "w": 8, "h": 2 } }, "createdAt": "2026-01-01T00:00:00.000Z", "updatedAt": "2026-01-01T00:00:00.000Z" },
+          { "id": "bots", "widgetId": "bots-overview", "title": "Bots", "dataSpec": { "queryKey": "bots.summary", "endpointRef": "/api/bots?page=1&page_size=50", "refreshMs": 10000 }, "viewSpec": { "variant": "kpi" }, "frame": { "grid": { "x": 0, "y": 1, "w": 4, "h": 1 } }, "createdAt": "2026-01-01T00:00:00.000Z", "updatedAt": "2026-01-01T00:00:00.000Z" }
+        ]
+      }
+    }
+  ]
+}
