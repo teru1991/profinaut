@@ -121,8 +121,10 @@ pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
 }
 
 fn entry_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
-    if let Some(visibility) = entry.visibility.as_ref().filter(|v| !v.trim().is_empty()) {
-        return Ok(visibility.to_ascii_lowercase());
+    if let Some(visibility) = &entry.visibility {
+        if !visibility.trim().is_empty() {
+            return Ok(visibility.to_ascii_lowercase());
+        }
     }
     if entry.id.contains(".private.") {
         return Ok("private".into());
@@ -157,5 +159,47 @@ fn map_operation_fallback(id: &str) -> OpName {
         OpName::PlaceOrder
     } else {
         OpName::FetchStatus
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde::Deserialize;
+    use std::path::Path;
+
+    #[derive(Debug, Deserialize)]
+    struct CoverageManifest {
+        venue: String,
+        strict: bool,
+        entries: Vec<CoverageEntry>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct CoverageEntry {
+        id: String,
+        implemented: bool,
+        tested: bool,
+    }
+
+    #[test]
+    fn bitget_coverage_manifest_is_strict_and_has_no_gaps() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let manifest: CoverageManifest = serde_yaml::from_str(
+            &std::fs::read_to_string(repo_root.join("coverage/bitget.yaml")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(manifest.venue, "bitget");
+        assert!(manifest.strict);
+
+        let uncovered: Vec<_> = manifest
+            .entries
+            .iter()
+            .filter(|entry| !entry.implemented || !entry.tested)
+            .map(|entry| entry.id.clone())
+            .collect();
+        assert!(
+            uncovered.is_empty(),
+            "strict gate requires zero gaps: {uncovered:?}"
+        );
     }
 }

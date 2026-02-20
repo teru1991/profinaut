@@ -239,7 +239,7 @@ mod tests {
         let entry = CatalogEntry {
             id: "jsonrpc.ws.private.trading.private_buy".to_string(),
             visibility: Some("private".to_string()),
-            access: "private".to_string(),
+            access: String::new(),
             operation: Some("place buy order".to_string()),
             method: None,
             base_url: None,
