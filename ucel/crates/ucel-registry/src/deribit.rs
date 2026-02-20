@@ -54,6 +54,7 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
             ));
         }
 
+        let visibility = derive_visibility_from_id(&row.id)?;
         rest_endpoints.push(CatalogEntry {
             id: row.id.clone(),
             visibility: Some(derive_visibility_from_id(&row.id)?),
@@ -83,6 +84,7 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
             ));
         }
 
+        let visibility = derive_visibility_from_id(&row.id)?;
         ws_channels.push(CatalogEntry {
             id: row.id.clone(),
             visibility: Some(derive_visibility_from_id(&row.id)?),
@@ -109,6 +111,7 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
             ));
         }
 
+        let visibility = Some(derive_visibility_from_id(&row.id)?);
         ws_channels.push(CatalogEntry {
             id: row.id.clone(),
             visibility: Some(derive_visibility_from_id(&row.id)?),

@@ -40,3 +40,30 @@ entries:
 - id: broker.private.rest.broker.not_applicable
   implemented: true
   tested: true
+- id: spot.public.ws.market.catalog.index
+  implemented: true
+  tested: true
+- id: spot.private.ws.account.catalog.index
+  implemented: true
+  tested: true
+- id: futures.public.ws.market.catalog.index
+  implemented: true
+  tested: true
+- id: futures.private.ws.account.catalog.index
+  implemented: true
+  tested: true
+- id: swap.public.ws.market.catalog.index
+  implemented: true
+  tested: true
+- id: swap.private.ws.account.catalog.index
+  implemented: true
+  tested: true
+- id: options.public.ws.market.catalog.index
+  implemented: true
+  tested: true
+- id: other.public.ws.common.protocol
+  implemented: true
+  tested: true
+- id: other.public.ws.other.not_applicable
+  implemented: true
+  tested: true
