@@ -1,0 +1,25 @@
+{
+  "id": "ws-marketdata",
+  "name": "Market Data Workspace",
+  "defaultPageId": "overview",
+  "schema_version": 1,
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z",
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "layout": {
+        "kind": "grid",
+        "gridSpec": { "columns": 12, "rowHeight": 140, "gap": 12 },
+        "panels": [
+          { "id": "status", "widgetId": "system-status", "title": "System Status", "dataSpec": { "queryKey": "status.summary", "endpointRef": "/api/status/summary", "refreshMs": 10000 }, "viewSpec": { "variant": "status", "showBadges": true }, "frame": { "grid": { "x": 0, "y": 0, "w": 3, "h": 1 } }, "createdAt": "2026-01-01T00:00:00.000Z", "updatedAt": "2026-01-01T00:00:00.000Z" },
+          { "id": "bots", "widgetId": "bots-overview", "title": "Bots", "dataSpec": { "queryKey": "bots.summary", "endpointRef": "/api/bots?page=1&page_size=50", "refreshMs": 10000 }, "viewSpec": { "variant": "kpi" }, "frame": { "grid": { "x": 3, "y": 0, "w": 3, "h": 1 } }, "createdAt": "2026-01-01T00:00:00.000Z", "updatedAt": "2026-01-01T00:00:00.000Z" },
+          { "id": "degraded", "widgetId": "degraded-components", "title": "Degraded Components", "dataSpec": { "queryKey": "status.degraded", "endpointRef": "/api/status/summary", "refreshMs": 10000 }, "viewSpec": { "variant": "table" }, "frame": { "grid": { "x": 0, "y": 1, "w": 6, "h": 2 } }, "createdAt": "2026-01-01T00:00:00.000Z", "updatedAt": "2026-01-01T00:00:00.000Z" },
+          { "id": "markets", "widgetId": "markets-overview", "title": "Markets", "dataSpec": { "queryKey": "markets.overview" }, "viewSpec": { "variant": "placeholder" }, "frame": { "grid": { "x": 6, "y": 0, "w": 6, "h": 2 } }, "createdAt": "2026-01-01T00:00:00.000Z", "updatedAt": "2026-01-01T00:00:00.000Z" },
+          { "id": "quick-nav", "widgetId": "quick-nav", "title": "Quick Navigation", "dataSpec": { "queryKey": "nav.quick" }, "viewSpec": { "variant": "list" }, "frame": { "grid": { "x": 6, "y": 2, "w": 6, "h": 1 } }, "createdAt": "2026-01-01T00:00:00.000Z", "updatedAt": "2026-01-01T00:00:00.000Z" }
+        ]
+      }
+    }
+  ]
+}
