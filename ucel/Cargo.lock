@@ -1195,7 +1195,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "ucel-cex-binance-options"
+name = "ucel-cex-binance-usdm"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tokio",
+ "tracing",
+ "ucel-core",
+ "ucel-testkit",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-bitbank"
 version = "0.1.0"
 dependencies = [
  "bytes",
@@ -1246,38 +1263,6 @@ dependencies = [
 
 [[package]]
 name = "ucel-cex-bitget"
-version = "0.1.0"
-dependencies = [
- "bytes",
- "reqwest",
- "serde",
- "serde_json",
- "serde_yaml",
- "tokio",
- "ucel-core",
- "ucel-transport",
- "uuid",
-]
-
-[[package]]
-name = "ucel-cex-bittrade"
-version = "0.1.0"
-dependencies = [
- "bytes",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "ucel-core",
- "ucel-registry",
- "ucel-testkit",
- "ucel-transport",
- "uuid",
-]
-
-[[package]]
-name = "ucel-cex-bybit"
 version = "0.1.0"
 dependencies = [
  "serde",

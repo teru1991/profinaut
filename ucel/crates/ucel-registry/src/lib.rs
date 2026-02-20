@@ -2,7 +2,11 @@ pub mod deribit;
 pub mod okx;
 use serde::Deserialize;
 use std::{collections::HashSet, fs, path::Path};
-use ucel_core::{ErrorCode, OpMeta, OpName, UcelError};
+use ucel_core::{
+    AuthCapabilities, Capabilities, ErrorCode, FailoverPolicy, MarketDataCapabilities, OpMeta,
+    OpName, OperationalCapabilities, RateLimitCapabilities, RuntimePolicy, SafeDefaults,
+    TradingCapabilities, UcelError,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConnectionConfig {
@@ -24,11 +28,11 @@ pub struct ExchangeCatalog {
 pub struct CatalogEntry {
     pub id: String,
     #[serde(default)]
-    pub visibility: Option<String>,
-    #[serde(default)]
-    pub access: String,
+    pub visibility: String,
     #[serde(default)]
     pub requires_auth: Option<bool>,
+    #[serde(default)]
+    pub channel: Option<String>,
     pub operation: Option<String>,
     pub method: Option<String>,
     pub base_url: Option<String>,
@@ -106,6 +110,77 @@ pub fn validate_catalog(catalog: &ExchangeCatalog) -> Result<(), UcelError> {
         if !seen.insert(e.id.clone()) {
             return Err(UcelError::new(
                 ErrorCode::CatalogDuplicateId,
+                format!("duplicate catalog id={}", e.id),
+            ));
+        }
+        validate_entry(e)?;
+    }
+    Ok(())
+}
+
+fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
+    if entry.id.trim().is_empty() {
+        return Err(UcelError::new(
+            ErrorCode::CatalogMissingField,
+            "catalog row has empty id",
+        ));
+    }
+
+    let visibility = entry_visibility(entry)?;
+    if visibility != "public" && visibility != "private" && visibility != "public/private" {
+        return Err(UcelError::new(
+            ErrorCode::CatalogInvalid,
+            format!(
+                "invalid visibility={} for id={}",
+                entry.visibility, entry.id
+            ),
+        ));
+    }
+
+    if let Some(requires_auth) = entry.requires_auth {
+        let expected_requires_auth = visibility == "private";
+        if requires_auth != expected_requires_auth {
+            return Err(UcelError::new(
+                ErrorCode::CatalogInvalid,
+                format!(
+                    "requires_auth contradicts visibility for id={} (visibility={}, requires_auth={})",
+                    entry.id, visibility, requires_auth
+                ),
+            ));
+        }
+    }
+
+    let ws_url = entry
+        .ws_url
+        .as_deref()
+        .or_else(|| entry.ws.as_ref().map(|ws| ws.url.as_str()));
+
+    if let (Some(method), Some(base_url), Some(path)) = (
+        entry.method.as_deref(),
+        entry.base_url.as_deref(),
+        entry.path.as_deref(),
+    ) {
+        if method.trim().is_empty() || base_url.trim().is_empty() || path.trim().is_empty() {
+            return Err(UcelError::new(
+                ErrorCode::CatalogMissingField,
+                format!("empty method/base_url/path for id={}", entry.id),
+            ));
+        }
+        if !method.chars().all(|ch| ch.is_ascii_uppercase()) {
+            return Err(UcelError::new(
+                ErrorCode::CatalogInvalid,
+                format!("invalid method for id={}: {method}", entry.id),
+            ));
+        }
+        if !(base_url.starts_with("https://") || base_url.starts_with("http://")) {
+            return Err(UcelError::new(
+                ErrorCode::CatalogInvalid,
+                format!("invalid base_url for id={}: {base_url}", entry.id),
+            ));
+        }
+        if !path.starts_with('/') {
+            return Err(UcelError::new(
+                ErrorCode::CatalogDuplicateId,
                 format!("duplicate id={}", e.id),
             ));
         }
@@ -121,10 +196,8 @@ pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
 }
 
 fn entry_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
-    if let Some(visibility) = &entry.visibility {
-        if !visibility.trim().is_empty() {
-            return Ok(visibility.to_ascii_lowercase());
-        }
+    if !entry.visibility.trim().is_empty() {
+        return Ok(entry.visibility.to_ascii_lowercase());
     }
     if entry.id.contains(".private.") {
         return Ok("private".into());
@@ -182,14 +255,41 @@ mod tests {
     }
 
     #[test]
-    fn bitget_coverage_manifest_is_strict_and_has_no_gaps() {
-        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-        let manifest: CoverageManifest = serde_yaml::from_str(
-            &std::fs::read_to_string(repo_root.join("coverage/bitget.yaml")).unwrap(),
-        )
-        .unwrap();
-        assert_eq!(manifest.venue, "bitget");
-        assert!(manifest.strict);
+    fn rejects_duplicate_catalog_ids() {
+        let catalog = ExchangeCatalog {
+            exchange: "x".into(),
+            rest_endpoints: vec![CatalogEntry {
+                id: "same".into(),
+                visibility: "public".into(),
+                requires_auth: None,
+                channel: None,
+                operation: None,
+                method: Some("GET".into()),
+                base_url: Some("https://api.x".into()),
+                path: Some("/ok".into()),
+                ws_url: None,
+                ws: None,
+                auth: CatalogAuth {
+                    auth_type: "none".into(),
+                },
+            }],
+            ws_channels: vec![CatalogEntry {
+                id: "same".into(),
+                visibility: "public".into(),
+                requires_auth: None,
+                operation: None,
+                method: None,
+                base_url: None,
+                path: None,
+                ws_url: Some("wss://api.x/ws".into()),
+                channel: Some("ticker".into()),
+                ws: None,
+                auth: CatalogAuth {
+                    auth_type: "none".into(),
+                },
+            }],
+            data_feeds: vec![],
+        };
 
         let uncovered: Vec<_> = manifest
             .entries

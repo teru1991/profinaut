@@ -91,7 +91,8 @@ impl CatalogContractIndex {
             .rest_endpoints
             .iter()
             .chain(catalog.ws_channels.iter())
-            .filter_map(|e| (!self.registered_tests.contains(&e.id)).then(|| e.id.clone()))
+            .filter(|entry| !self.registered_tests.contains(&entry.id))
+            .map(|entry| entry.id.clone())
             .collect()
     }
 }
@@ -115,15 +116,18 @@ pub fn load_coverage_manifest(path: &Path) -> Result<CoverageManifest, Box<dyn s
 
 pub fn evaluate_coverage_gate(manifest: &CoverageManifest) -> HashMap<String, Vec<String>> {
     let mut missing: HashMap<String, Vec<String>> = HashMap::new();
-    for e in &manifest.entries {
-        if !e.implemented {
+    for entry in &manifest.entries {
+        if !entry.implemented {
             missing
                 .entry("implemented".into())
                 .or_default()
-                .push(e.id.clone());
+                .push(entry.id.clone());
         }
-        if !e.tested {
-            missing.entry("tested".into()).or_default().push(e.id.clone());
+        if !entry.tested {
+            missing
+                .entry("tested".into())
+                .or_default()
+                .push(entry.id.clone());
         }
     }
     missing
@@ -144,5 +148,44 @@ pub fn run_coverage_gate(manifest: &CoverageManifest) -> CoverageGateResult {
         CoverageGateResult::Failed(gaps)
     } else {
         CoverageGateResult::WarnOnly(gaps)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn coverage_gate_returns_failed_when_strict_with_gaps() {
+        let manifest = CoverageManifest {
+            venue: "x".into(),
+            strict: true,
+            entries: vec![CoverageEntry {
+                id: "a".into(),
+                implemented: false,
+                tested: false,
+            }],
+        };
+        assert!(matches!(
+            run_coverage_gate(&manifest),
+            CoverageGateResult::Failed(_)
+        ));
+    }
+
+    #[test]
+    fn coverage_gate_returns_warn_only_when_non_strict_with_gaps() {
+        let manifest = CoverageManifest {
+            venue: "x".into(),
+            strict: false,
+            entries: vec![CoverageEntry {
+                id: "a".into(),
+                implemented: false,
+                tested: false,
+            }],
+        };
+        assert!(matches!(
+            run_coverage_gate(&manifest),
+            CoverageGateResult::WarnOnly(_)
+        ));
     }
 }

@@ -1,10 +1,14 @@
 use bytes::Bytes;
-use serde::Deserialize;
+use serde::{de::DeserializeOwned, Deserialize};
 use std::collections::{BTreeMap, HashSet};
+use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::info;
 use ucel_core::{ErrorCode, OpName, UcelError};
-use ucel_transport::{enforce_auth_boundary, RequestContext, WsConnectRequest};
+use ucel_transport::{
+    enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport, WsConnectRequest,
+};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WsChannelSpec {
@@ -73,12 +77,9 @@ pub const WS_CHANNELS: [WsChannelSpec; 10] = [
         id: "usdm.private.ws.userdata.events",
         ws_url: "wss://fstream.binance.com/ws/<listenKey>",
         channel: "userdata",
-use serde::de::DeserializeOwned;
-use serde::Deserialize;
-use std::sync::Arc;
-use ucel_core::{ErrorCode, OpName, UcelError};
-use ucel_transport::{enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport};
-use uuid::Uuid;
+        requires_auth: true,
+    },
+];
 
 #[derive(Debug, Clone)]
 pub struct EndpointSpec {
@@ -327,6 +328,8 @@ pub fn build_connect_request(channel_id: &str) -> Result<WsConnectRequest, UcelE
     Ok(WsConnectRequest {
         url: spec.ws_url.to_string(),
     })
+}
+
 #[derive(Debug, Clone)]
 pub enum BinanceUsdmRestResponse {
     GeneralRef(GeneralRefResponse),
@@ -548,7 +551,13 @@ fn parse_retry_after_ms(body: &[u8]) -> Option<u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde::Deserialize;
+    use std::collections::VecDeque;
+    use std::path::Path;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::{Arc, Mutex};
     use ucel_testkit::{evaluate_coverage_gate, load_coverage_manifest};
+    use ucel_transport::{HttpResponse, WsConnectRequest, WsStream};
 
     #[test]
     fn ws_contract_covers_all_catalog_ids() {
@@ -625,12 +634,7 @@ mod tests {
         let gaps = evaluate_coverage_gate(&manifest);
         assert!(manifest.strict);
         assert!(gaps.is_empty(), "strict coverage gate found gaps: {gaps:?}");
-    use serde::Deserialize;
-    use std::collections::VecDeque;
-    use std::path::Path;
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    use std::sync::{Arc, Mutex};
-    use ucel_transport::{HttpResponse, WsConnectRequest, WsStream};
+    }
 
     #[derive(Clone, Default)]
     struct SpyTransport {

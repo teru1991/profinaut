@@ -11,9 +11,10 @@ serde_yaml = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 uuid = { version = "1", features = ["v4"] }
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 ucel-core = { path = "../ucel-core" }
 ucel-transport = { path = "../ucel-transport" }
 
 [dev-dependencies]
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+ucel-testkit = { path = "../ucel-testkit" }
+tracing-subscriber = { version = "0.3", features = ["fmt"] }

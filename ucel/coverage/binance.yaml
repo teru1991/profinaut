@@ -1,7 +1,6 @@
 venue: binance
 strict: true
 entries:
-<<<<<<< codex/implement-full-binance-ws-support
   - id: crypto.public.rest.ping.get
     implemented: true
     tested: true
@@ -44,32 +43,3 @@ entries:
   - id: other.public.ws.sbe.marketdata
     implemented: true
     tested: true
-=======
-- id: crypto.public.rest.ping.get
-  implemented: true
-  tested: true
-- id: crypto.public.rest.time.get
-  implemented: true
-  tested: true
-- id: crypto.public.rest.exchangeinfo.get
-  implemented: true
-  tested: true
-- id: crypto.private.rest.order.post
-  implemented: true
-  tested: true
-- id: crypto.private.rest.account.get
-  implemented: true
-  tested: true
-- id: crypto.private.rest.listenkey.post
-  implemented: true
-  tested: true
-- id: crypto.public.rest.docs.enums.ref
-  implemented: true
-  tested: true
-- id: crypto.public.rest.docs.filters.ref
-  implemented: true
-  tested: true
-- id: other.public.rest.changelog.ref
-  implemented: true
-  tested: true
->>>>>>> master

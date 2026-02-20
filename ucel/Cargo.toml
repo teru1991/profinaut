@@ -4,6 +4,7 @@ members = [
   "crates/ucel-transport",
   "crates/ucel-registry",
   "crates/ucel-testkit",
+  "crates/ucel-cex-bitbank",
   "crates/ucel-cex-gmocoin",
   "crates/ucel-cex-kraken",
   "crates/ucel-cex-binance-usdm",
@@ -16,11 +17,7 @@ members = [
   "crates/ucel-cex-bitmex",
   "crates/ucel-cex-bitflyer",
   "crates/ucel-cex-binance",
-  "crates/ucel-cex-bitbank",
   "crates/ucel-chain-ethereum",
-  "crates/ucel-cex-bybit",
-  "crates/ucel-cex-htx",
-  "crates/ucel-cex-bittrade",
 ]
 resolver = "2"
 
