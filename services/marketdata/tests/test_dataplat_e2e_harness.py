@@ -11,18 +11,7 @@ def test_e2e_harness_deterministic_for_same_seed() -> None:
 
     assert first.pass_all
     assert second.pass_all
-    assert first.generated == second.generated
-    assert first.accepted == second.accepted
-    assert first.rejected == second.rejected
-    assert first.dedupe_dropped == second.dedupe_dropped
-    assert first.bronze_lines == second.bronze_lines
-    assert first.silver_trades == second.silver_trades
-    assert first.silver_bba == second.silver_bba
-    assert first.silver_ohlcv == second.silver_ohlcv
-    assert first.silver_events == second.silver_events
-    assert first.anomalies == second.anomalies
-    assert first.restart_no_growth == second.restart_no_growth
-    assert first.api_unavailable_status == 503
+    assert first.deterministic_digest == second.deterministic_digest
 
 
 def test_e2e_harness_reports_gold_serving_and_perf() -> None:
@@ -35,6 +24,10 @@ def test_e2e_harness_reports_gold_serving_and_perf() -> None:
     assert summary.silver_bba > 0
     assert summary.restart_no_growth
     assert summary.objectstore_degraded
+    assert summary.objectstore_spool_bounded
+    assert summary.clickhouse_degraded_safe
+    assert summary.valkey_degraded_safe
+    assert summary.queue_depth_stable
     assert summary.bronze_p95_ms > 0
     assert summary.api_hit_p95_ms > 0
     assert summary.api_miss_p95_ms > 0
