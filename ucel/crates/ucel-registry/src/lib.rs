@@ -143,6 +143,18 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
             ),
         ));
     }
+    if entry.visibility.trim().is_empty() {
+        return Err(UcelError::new(
+            ErrorCode::CatalogMissingField,
+            format!("missing visibility for id={}", entry.id),
+        ));
+    }
+    if entry.auth.auth_type.trim().is_empty() {
+        return Err(UcelError::new(
+            ErrorCode::CatalogMissingField,
+            format!("missing auth.type for id={}", entry.id),
+        ));
+    }
 
     let visibility = entry_visibility(entry)?;
     if let Some(requires_auth) = entry.requires_auth {
@@ -192,12 +204,90 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
         return Ok(());
     }
 
-    if let Some(ws_url) = ws_url {
-        if ws_url.trim().is_empty() {
-            return Err(UcelError::new(
-                ErrorCode::CatalogMissingField,
-                format!("ws endpoint has empty ws_url for id={}", entry.id),
-            ));
+    let resolved_ws_url = entry
+        .ws_url
+        .as_deref()
+        .or(entry.ws.as_ref().map(|ws| ws.url.as_str()));
+    let ws_base_url = entry
+        .base_url
+        .as_deref()
+        .filter(|base_url| base_url.starts_with("wss://") || base_url.starts_with("ws://"));
+    match (&entry.method, &entry.base_url, &entry.path, resolved_ws_url) {
+        (Some(method), Some(base_url), Some(path), None) => {
+            if method.trim().is_empty() || base_url.trim().is_empty() || path.trim().is_empty() {
+                return Err(UcelError::new(
+                    ErrorCode::CatalogMissingField,
+                    format!(
+                        "rest endpoint has empty method/base_url/path for id={}",
+                        entry.id
+                    ),
+                ));
+            }
+            if !method
+                .chars()
+                .all(|ch| ch.is_ascii_uppercase() || ch == '_' || ch == '-' || ch == '/')
+            {
+                return Err(UcelError::new(
+                    ErrorCode::CatalogInvalid,
+                    format!("invalid method for id={}: {method}", entry.id),
+                ));
+            }
+            let is_doc_ref =
+                entry.operation.as_deref() == Some("doc-ref") || entry.id.ends_with(".ref");
+            if !(base_url.starts_with("https://")
+                || base_url.starts_with("http://")
+                || base_url.starts_with("docs://"))
+            {
+                return Err(UcelError::new(
+                    ErrorCode::CatalogInvalid,
+                    format!("invalid base_url for id={}: {base_url}", entry.id),
+                ));
+            }
+            if !is_placeholder(path) && !path.starts_with('/') {
+                return Err(UcelError::new(
+                    ErrorCode::CatalogInvalid,
+                    format!("invalid path for id={}: {path}", entry.id),
+                ));
+            }
+        }
+        (None, _, None, Some(ws_url)) => {
+            if ws_url.trim().is_empty() {
+                return Err(UcelError::new(
+                    ErrorCode::CatalogMissingField,
+                    format!("ws endpoint has empty ws_url for id={}", entry.id),
+                ));
+            }
+            if !is_placeholder(ws_url)
+                && !(ws_url.starts_with("wss://")
+                    || ws_url.starts_with("ws://")
+                    || ws_url.starts_with("https://")
+                    || ws_url.starts_with("http://"))
+            {
+                return Err(UcelError::new(
+                    ErrorCode::CatalogInvalid,
+                    format!("invalid ws_url for id={}: {ws_url}", entry.id),
+                ));
+            }
+        }
+        (None, Some(base_url), None, None) if ws_base_url.is_some() => {
+            if base_url.trim().is_empty() {
+                return Err(UcelError::new(
+                    ErrorCode::CatalogMissingField,
+                    format!("ws endpoint has empty base_url for id={}", entry.id),
+                ));
+            }
+            if entry
+                .channel
+                .as_deref()
+                .unwrap_or_default()
+                .trim()
+                .is_empty()
+            {
+                return Err(UcelError::new(
+                    ErrorCode::CatalogMissingField,
+                    format!("ws endpoint requires non-empty channel for id={}", entry.id),
+                ));
+            }
         }
         if !(ws_url.starts_with("wss://")
             || ws_url.starts_with("ws://")
@@ -258,6 +348,16 @@ fn entry_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
 }
 
 pub fn map_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
+    if entry.id.starts_with("usdm.") {
+        return map_binance_usdm_operation(entry);
+    }
+    if entry.id.starts_with("bybit.") {
+        return map_bybit_operation(entry);
+    }
+    if let Some(op) = map_bitget_operation_by_id(&entry.id) {
+        return Ok(op);
+    }
+
     if let Some(operation) = entry.operation.as_deref() {
         if let Some(op) = map_operation_literal(operation) {
             return Ok(op);
@@ -266,20 +366,58 @@ pub fn map_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
     Ok(map_operation_by_id(&entry.id))
 }
 
-fn map_operation_literal(operation: &str) -> Option<OpName> {
-    let op = operation.to_ascii_lowercase();
-    if op.contains("ticker") || op.contains("bbo") {
-        Some(OpName::FetchTicker)
-    } else if op.contains("order book") || op.contains('板') {
-        Some(OpName::FetchOrderbookSnapshot)
-    } else if op.contains("trade") || op.contains("約定") {
-        Some(OpName::FetchTrades)
-    } else if op.contains("kline") || op.contains("ローソク") {
-        Some(OpName::FetchKlines)
-    } else if op.contains("balance")
-        || op.contains("残高")
-        || op.contains("account")
-        || op.contains("口座")
+fn map_bitget_operation_by_id(id: &str) -> Option<OpName> {
+    match id {
+        "other.public.rest.nav.blocked" | "other.public.ws.nav.blocked" => {
+            Some(OpName::FetchStatus)
+        }
+        _ => None,
+    }
+}
+
+fn map_binance_usdm_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
+    let op = match entry.id.as_str() {
+        "usdm.public.rest.general.ref"
+        | "usdm.public.rest.errors.ref"
+        | "usdm.public.rest.market.ref"
+        | "usdm.public.ws.wsapi.general" => OpName::FetchStatus,
+        "usdm.private.rest.trade.ref" | "usdm.private.rest.listenkey.ref" => OpName::PlaceOrder,
+        "usdm.private.rest.account.ref" => OpName::FetchBalances,
+        "usdm.public.ws.market.root"
+        | "usdm.public.ws.market.markprice"
+        | "usdm.public.ws.market.bookticker" => OpName::SubscribeTicker,
+        "usdm.public.ws.market.aggtrade" => OpName::SubscribeTrades,
+        "usdm.public.ws.market.kline" => OpName::FetchKlines,
+        "usdm.public.ws.market.depth.partial" | "usdm.public.ws.market.depth.diff" => {
+            OpName::SubscribeOrderbook
+        }
+        "usdm.public.ws.market.liquidation" | "usdm.private.ws.userdata.events" => {
+            OpName::SubscribeExecutionEvents
+        }
+        _ => {
+            return Err(UcelError::new(
+                ErrorCode::NotSupported,
+                format!(
+                    "unsupported binance-usdm operation mapping for id={}",
+                    entry.id
+                ),
+            ));
+        }
+    };
+    Ok(op)
+}
+
+fn map_bitmex_operation_by_id(id: &str) -> Option<OpName> {
+    if let Some(channel) = id
+        .strip_prefix("public.ws.")
+        .and_then(|raw| raw.strip_suffix(".subscribe"))
+    {
+        return Some(map_bitmex_public_ws_channel(channel));
+    }
+
+    if let Some(channel) = id
+        .strip_prefix("private.ws.")
+        .and_then(|raw| raw.strip_suffix(".subscribe"))
     {
         Some(OpName::FetchBalances)
     } else if op.contains("order") || op.contains("注文") {
@@ -375,39 +513,91 @@ mod tests {
     use std::path::Path;
 
     #[test]
-    fn loads_bittrade_catalog_and_maps_all_rows() {
-        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "bittrade").unwrap();
-        assert_eq!(catalog.rest_endpoints.len(), 27);
-        assert_eq!(catalog.ws_channels.len(), 7);
-
-        for entry in catalog
-            .rest_endpoints
-            .iter()
-            .chain(catalog.ws_channels.iter())
-        {
-            let op_meta = op_meta_from_entry(entry).unwrap();
-            let expected_private =
-                entry.id.starts_with("private.") || entry.id.contains(".private.");
-            assert_eq!(
-                op_meta.requires_auth, expected_private,
-                "requires_auth must be mechanically derived from visibility/access for {}",
-                entry.id
-            );
-        }
+    fn rejects_duplicate_catalog_ids() {
+        let catalog = ExchangeCatalog {
+            exchange: "gmo".into(),
+            rest_endpoints: vec![CatalogEntry {
+                id: "same".into(),
+                visibility: "public".into(),
+                requires_auth: None,
+                operation: Some("Get ticker".into()),
+                method: Some("GET".into()),
+                base_url: Some("https://x".into()),
+                path: Some("/ok".into()),
+                ws_url: None,
+                channel: None,
+                ws: None,
+                auth: CatalogAuth {
+                    auth_type: "none".into(),
+                },
+            }],
+            ws_channels: vec![CatalogEntry {
+                id: "same".into(),
+                visibility: "public".into(),
+                requires_auth: None,
+                operation: None,
+                method: None,
+                base_url: None,
+                path: None,
+                ws_url: Some("wss://x".into()),
+                channel: None,
+                ws: None,
+                auth: CatalogAuth {
+                    auth_type: "none".into(),
+                },
+            }],
+            data_feeds: vec![],
+        };
+        let err = validate_catalog(&catalog).unwrap_err();
+        assert_eq!(err.code, ErrorCode::CatalogDuplicateId);
     }
 
     #[test]
-    fn rejects_duplicate_ids_across_rest_and_ws() {
+    fn rejects_requires_auth_visibility_conflict() {
         let entry = CatalogEntry {
-            id: "dup".into(),
+            id: "bybit.public.rest.market.tickers".into(),
             visibility: "public".into(),
-            access: String::new(),
+            requires_auth: Some(true),
+            operation: Some("Get Tickers".into()),
+            method: Some("GET".into()),
+            base_url: Some("https://api.bybit.com".into()),
+            path: Some("/v5/market/tickers".into()),
+            ws_url: None,
+            channel: None,
+            ws: None,
+            auth: CatalogAuth {
+                auth_type: "api-key+sign".into(),
+            },
+        };
+        let err = validate_entry(&entry).unwrap_err();
+        assert_eq!(err.code, ErrorCode::CatalogInvalid);
+    }
+
+    #[test]
+    fn requires_auth_comes_from_visibility() {
+        let private_entry = CatalogEntry {
+            id: "crypto.private.ws.executionevents.update".into(),
+            visibility: "private".into(),
+            requires_auth: None,
+            operation: None,
+            method: None,
+            base_url: None,
+            path: None,
+            ws_url: Some("wss://api.coin.z.com/ws/private/v1/xxx".into()),
+            channel: None,
+            ws: None,
+            auth: CatalogAuth {
+                auth_type: "token".into(),
+            },
+        };
+        let public_entry = CatalogEntry {
+            id: "crypto.public.rest.ticker.get".into(),
+            visibility: "public".into(),
             requires_auth: None,
             operation: Some("Get ticker".into()),
             method: Some("GET".into()),
-            base_url: Some("https://example.com".into()),
-            path: Some("/x".into()),
+            base_url: Some("https://api.coin.z.com".into()),
+            path: Some("/public/v1/ticker".into()),
             ws_url: None,
             channel: None,
             ws: None,
@@ -416,20 +606,87 @@ mod tests {
             },
         };
 
-        let catalog = ExchangeCatalog {
-            exchange: "x".into(),
-            rest_endpoints: vec![entry.clone()],
-            ws_channels: vec![CatalogEntry {
-                method: None,
-                base_url: None,
-                path: None,
-                ws_url: Some("wss://example.com/ws".into()),
-                ..entry
-            }],
-            data_feeds: vec![],
+        assert!(op_meta_from_entry(&private_entry).unwrap().requires_auth);
+        assert!(!op_meta_from_entry(&public_entry).unwrap().requires_auth);
+    }
+
+    #[test]
+    fn rejects_requires_auth_contradiction() {
+        let entry = CatalogEntry {
+            id: "x.private.rest.y.get".into(),
+            visibility: "private".into(),
+            requires_auth: Some(false),
+            operation: Some("Get ticker".into()),
+            method: Some("GET".into()),
+            base_url: Some("https://x".into()),
+            path: Some("/ok".into()),
+            ws_url: None,
+            channel: None,
+            ws: None,
+            auth: CatalogAuth {
+                auth_type: "apiKey".into(),
+            },
         };
 
-        let err = validate_catalog(&catalog).unwrap_err();
-        assert_eq!(err.code, ErrorCode::CatalogDuplicateId);
+        let err = validate_entry(&entry).unwrap_err();
+        assert_eq!(err.code, ErrorCode::CatalogInvalid);
+    }
+
+    #[test]
+    fn loads_gmocoin_catalog() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "gmocoin").unwrap();
+        assert_eq!(catalog.rest_endpoints.len(), 30);
+        assert_eq!(catalog.ws_channels.len(), 12);
+    }
+
+    #[test]
+    fn bitget_catalog_fail_fast_on_invalid_urls() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let err = load_catalog_from_repo_root(&repo_root, "bitget").unwrap_err();
+        assert_eq!(err.code, ErrorCode::CatalogInvalid);
+    }
+
+    #[test]
+    fn map_operation_handles_bitget_placeholder_ids() {
+        let rest = CatalogEntry {
+            id: "other.public.rest.nav.blocked".into(),
+            visibility: "public".into(),
+            requires_auth: Some(false),
+            operation: Some("not_applicable_due_to_source_access_failure".into()),
+            method: Some("GET".into()),
+            base_url: Some("https://docs.bitget.com".into()),
+            path: Some("/placeholder".into()),
+            ws_url: None,
+            channel: None,
+            ws: None,
+            auth: CatalogAuth {
+                auth_type: "none".into(),
+            },
+        };
+        let ws = CatalogEntry {
+            id: "other.public.ws.nav.blocked".into(),
+            visibility: "public".into(),
+            requires_auth: Some(false),
+            operation: None,
+            method: None,
+            base_url: None,
+            path: None,
+            ws_url: Some("wss://docs.bitget.com/ws".into()),
+            channel: Some("common".into()),
+            ws: None,
+            auth: CatalogAuth {
+                auth_type: "none".into(),
+            },
+        };
+
+        assert!(matches!(
+            op_meta_from_entry(&rest).unwrap().op,
+            OpName::FetchStatus
+        ));
+        assert!(matches!(
+            op_meta_from_entry(&ws).unwrap().op,
+            OpName::FetchStatus
+        ));
     }
 }

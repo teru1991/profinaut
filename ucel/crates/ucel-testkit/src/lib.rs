@@ -166,40 +166,12 @@ mod tests {
     use ucel_registry::load_catalog_from_repo_root;
 
     #[test]
-    fn contract_index_can_cover_all_bittrade_catalog_rows() {
-        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "bittrade").unwrap();
-
-        let mut index = CatalogContractIndex::default();
-        for id in catalog
-            .rest_endpoints
-            .iter()
-            .chain(catalog.ws_channels.iter())
-            .map(|entry| entry.id.as_str())
-        {
-            index.register_id(id);
-        }
-
-        let missing = index.missing_catalog_ids(&catalog);
-        assert!(missing.is_empty());
-    }
-
-    #[test]
-    fn coverage_gate_warns_for_bittrade_until_full_coverage() {
-        let manifest_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bittrade.yaml");
-        let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "bittrade");
-        assert!(!manifest.strict);
-
-        let result = run_coverage_gate(&manifest);
-        match result {
-            CoverageGateResult::WarnOnly(gaps) => {
-                assert_eq!(gaps.get("implemented").map(Vec::len), Some(34));
-                assert_eq!(gaps.get("tested").map(Vec::len), Some(34));
-            }
-            _ => panic!("bittrade coverage gate should warn while manifest has gaps"),
-        }
+    fn mock_rest_supports_response_queue() {
+        let mut server = RestMockServer::default();
+        server.enqueue(200, "ok");
+        server.enqueue(429, "rate limited");
+        assert_eq!(server.next_response(), Some((200, "ok".into())));
+        assert_eq!(server.next_response(), Some((429, "rate limited".into())));
     }
 
     #[test]
@@ -214,5 +186,62 @@ mod tests {
         assert!(!dbg.contains("my-secret"));
         assert!(!disp.contains("my-pass"));
         assert!(disp.contains("***"));
+    }
+
+    #[test]
+    fn contract_index_detects_unregistered_catalog_rows() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "gmocoin").unwrap();
+        let index = CatalogContractIndex::default();
+        let missing = index.missing_catalog_ids(&catalog);
+        assert_eq!(missing.len(), 42);
+    }
+
+    #[test]
+    fn contract_index_can_cover_all_bitget_catalog_rows() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let raw =
+            std::fs::read_to_string(repo_root.join("docs/exchanges/bitget/catalog.json")).unwrap();
+        let catalog: ucel_registry::ExchangeCatalog = serde_json::from_str(&raw).unwrap();
+
+        let mut index = CatalogContractIndex::default();
+        for id in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+            .map(|entry| entry.id.as_str())
+        {
+            index.register_id(id);
+        }
+
+        assert!(index.missing_catalog_ids(&catalog).is_empty());
+    }
+
+    #[test]
+    fn coverage_gate_is_strict_and_has_no_gaps() {
+        let manifest_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/gmocoin.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "gmocoin");
+        assert!(manifest.strict);
+        assert!(evaluate_coverage_gate(&manifest).is_empty());
+    }
+
+    #[test]
+    fn coverage_gate_warns_for_bitget_gaps() {
+        let manifest_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bitget.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "bitget");
+        assert!(!manifest.strict);
+
+        let result = run_coverage_gate(&manifest);
+        match result {
+            CoverageGateResult::WarnOnly(gaps) => {
+                assert_eq!(gaps.get("implemented").map(Vec::len), Some(2));
+                assert_eq!(gaps.get("tested").map(Vec::len), Some(2));
+            }
+            _ => panic!("bitget coverage gate should warn while manifest has gaps"),
+        }
     }
 }
