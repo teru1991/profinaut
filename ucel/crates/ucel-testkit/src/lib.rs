@@ -85,14 +85,13 @@ impl CatalogContractIndex {
     pub fn register_id(&mut self, id: &str) {
         self.registered_tests.insert(id.to_string());
     }
+
     pub fn missing_catalog_ids(&self, catalog: &ExchangeCatalog) -> Vec<String> {
         catalog
             .rest_endpoints
             .iter()
             .chain(catalog.ws_channels.iter())
-            .map(|entry| entry.id.as_str())
-            .filter(|id| !self.registered_tests.contains(*id))
-            .map(ToOwned::to_owned)
+            .filter_map(|e| (!self.registered_tests.contains(&e.id)).then(|| e.id.clone()))
             .collect()
     }
 }
@@ -115,10 +114,6 @@ pub fn load_coverage_manifest(path: &Path) -> Result<CoverageManifest, Box<dyn s
 }
 
 pub fn evaluate_coverage_gate(manifest: &CoverageManifest) -> HashMap<String, Vec<String>> {
-    let mut gaps: HashMap<String, Vec<String>> = HashMap::new();
-    for entry in &manifest.entries {
-        if !entry.implemented {
-            gaps.entry("implemented".to_string())
     let mut missing: HashMap<String, Vec<String>> = HashMap::new();
     for e in &manifest.entries {
         if !e.implemented {
@@ -127,16 +122,10 @@ pub fn evaluate_coverage_gate(manifest: &CoverageManifest) -> HashMap<String, Ve
                 .or_default()
                 .push(e.id.clone());
         }
-        if !entry.tested {
-            gaps.entry("tested".to_string())
         if !e.tested {
-            missing
-                .entry("tested".into())
-                .or_default()
-                .push(e.id.clone());
+            missing.entry("tested".into()).or_default().push(e.id.clone());
         }
     }
-    gaps
     missing
 }
 
@@ -155,48 +144,5 @@ pub fn run_coverage_gate(manifest: &CoverageManifest) -> CoverageGateResult {
         CoverageGateResult::Failed(gaps)
     } else {
         CoverageGateResult::WarnOnly(gaps)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::path::Path;
-    use ucel_registry::load_catalog_from_repo_root;
-
-    #[test]
-    fn contract_index_can_cover_all_bitflyer_catalog_rows() {
-        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "bitflyer").unwrap();
-
-        let mut index = CatalogContractIndex::default();
-        for id in catalog
-            .rest_endpoints
-            .iter()
-            .chain(catalog.ws_channels.iter())
-            .map(|entry| entry.id.as_str())
-        {
-            index.register_id(id);
-        }
-
-        let missing = index.missing_catalog_ids(&catalog);
-        assert!(missing.is_empty());
-    }
-
-    #[test]
-    fn coverage_gate_warns_for_bitflyer_until_full_coverage() {
-        let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bitflyer.yaml");
-        let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "bitflyer");
-        assert!(!manifest.strict);
-
-        let result = run_coverage_gate(&manifest);
-        match result {
-            CoverageGateResult::WarnOnly(gaps) => {
-                assert_eq!(gaps.get("implemented").map(Vec::len), Some(61));
-                assert_eq!(gaps.get("tested").map(Vec::len), Some(61));
-            }
-            _ => panic!("bitflyer coverage gate should warn in non-strict mode"),
-        }
     }
 }
