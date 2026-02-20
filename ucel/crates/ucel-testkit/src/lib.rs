@@ -296,4 +296,42 @@ mod tests {
             _ => panic!("kraken coverage gate should pass in strict mode"),
         }
     }
+
+    #[test]
+    fn contract_index_can_cover_all_bitmex_catalog_rows() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "bitmex").unwrap();
+
+        let mut index = CatalogContractIndex::default();
+        for id in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+            .map(|entry| entry.id.as_str())
+        {
+            index.register_id(id);
+        }
+
+        let missing = index.missing_catalog_ids(&catalog);
+        assert!(missing.is_empty());
+    }
+
+    #[test]
+    fn coverage_gate_is_warn_only_for_bitmex_and_detects_gaps() {
+        let manifest_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bitmex.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "bitmex");
+        assert!(!manifest.strict);
+
+        let result = run_coverage_gate(&manifest);
+        match result {
+            CoverageGateResult::WarnOnly(gaps) => {
+                assert!(!gaps.is_empty());
+                assert!(gaps.contains_key("implemented"));
+                assert!(gaps.contains_key("tested"));
+            }
+            _ => panic!("bitmex coverage gate should be warn-only until strict migration"),
+        }
+    }
 }
