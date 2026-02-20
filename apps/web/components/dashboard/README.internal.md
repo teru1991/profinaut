@@ -33,3 +33,19 @@
   - `cd apps/web`
   - `npm install --no-package-lock`
   - `npm run build`
+
+---
+## UI-DASH-003 progress notes
+- what_done:
+  - Added state-aware navigation model with incident-priority ordering and query-preserving dashboard deep links.
+  - Added personal nav preferences (pins/home/workspace template), status badge fetch with cache, and copy-link action.
+  - Added Cmd/Ctrl+K command palette for safe navigation/view actions.
+  - Updated dashboard workspace route handling to accept template + mode params for command-driven navigation.
+- what_next:
+  - Validate end-to-end behavior in live UI for workspace switching and command palette keyboard ergonomics.
+- errors:
+  - None during implementation.
+- commands_next:
+  - `cd apps/web`
+  - `npm install --no-package-lock`
+  - `npm run build`
