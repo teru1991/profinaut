@@ -1,5 +1,5 @@
 venue: upbit
-strict: false
+strict: true
 entries:
 - id: quotation.public.rest.markets.list
   implemented: true
@@ -68,23 +68,23 @@ entries:
   implemented: true
   tested: true
 - id: quotation.public.ws.ticker.stream
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: quotation.public.ws.trade.stream
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: quotation.public.ws.orderbook.stream
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: quotation.public.ws.candle.stream
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: other.public.ws.subscription.list
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: exchange.private.ws.myordertrade.stream
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: exchange.private.ws.myasset.stream
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true

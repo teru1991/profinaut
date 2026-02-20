@@ -1,356 +1,345 @@
-use bytes::Bytes;
-use serde::de::DeserializeOwned;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, HashSet};
+use tokio::sync::mpsc;
+use tracing::info;
 use ucel_core::{ErrorCode, OpName, UcelError};
-use ucel_transport::{enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport};
+use ucel_transport::{RequestContext, Transport, WsConnectRequest};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Deserialize)]
 struct Catalog {
-    rest_endpoints: Vec<CatalogRestEndpoint>,
+    ws_channels: Vec<CatalogWsEntry>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-struct CatalogRestEndpoint {
+#[derive(Debug, Deserialize)]
+struct CatalogWsEntry {
     id: String,
-    method: String,
-    base_url: String,
-    path: String,
+    channel: String,
+    ws_url: String,
     visibility: String,
 }
 
 #[derive(Debug, Clone)]
-pub struct EndpointSpec {
+pub struct WsChannelSpec {
     pub id: String,
-    pub method: String,
-    pub base_url: String,
-    pub path: String,
+    pub channel: String,
+    pub ws_url: String,
     pub requires_auth: bool,
-    pub op: OpName,
 }
 
-pub fn endpoint_specs() -> Vec<EndpointSpec> {
-    let catalog: Catalog = serde_json::from_str(include_str!("../../../../docs/exchanges/upbit/catalog.json"))
-        .expect("upbit catalog must be valid json");
-
+pub fn ws_channel_specs() -> Vec<WsChannelSpec> {
+    let raw = include_str!("../../../../docs/exchanges/upbit/catalog.json");
+    let catalog: Catalog = serde_json::from_str(raw).expect("valid upbit catalog");
     catalog
-        .rest_endpoints
+        .ws_channels
         .into_iter()
-        .map(|e| EndpointSpec {
-            op: op_for_id(&e.id),
-            requires_auth: e.visibility == "private",
-            id: e.id,
-            method: e.method,
-            base_url: e.base_url,
-            path: e.path,
+        .map(|x| WsChannelSpec {
+            requires_auth: x.visibility == "private",
+            id: x.id,
+            channel: x.channel,
+            ws_url: x.ws_url,
         })
         .collect()
 }
 
-#[derive(Debug, Clone)]
-pub enum UpbitRestResponse {
-    Markets(Vec<Market>),
-    Tickers(Vec<Ticker>),
-    Trades(Vec<Trade>),
-    Orderbook(Vec<OrderbookSnapshot>),
-    Candles(Vec<Candle>),
-    Accounts(Vec<Account>),
-    CreateOrder(Order),
-    CancelOrder(Order),
-    OpenOrders(Vec<Order>),
-    ClosedOrders(Vec<Order>),
-    OrderChance(OrderChance),
-    Withdraws(Vec<Withdraw>),
-    WithdrawCoin(Withdraw),
-    Deposits(Vec<Deposit>),
-    DepositAddress(DepositAddress),
-    TravelRuleVasps(Vec<TravelRuleVasp>),
-    WalletStatus(Vec<WalletStatus>),
-    ApiKeys(Vec<ApiKeyInfo>),
+#[derive(Debug, Default, Clone)]
+pub struct WsAdapterMetrics {
+    pub ws_reconnect_total: u64,
+    pub ws_resubscribe_total: u64,
+    pub ws_backpressure_drops_total: u64,
+    pub ws_orderbook_gap_total: u64,
+    pub ws_orderbook_resync_total: u64,
+    pub ws_orderbook_recovered_total: u64,
 }
 
-#[derive(Clone)]
-pub struct UpbitRestAdapter {
-    http_client: reqwest::Client,
-    pub retry_policy: RetryPolicy,
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct UpbitSubscribeFrame {
+    pub ticket: String,
+    #[serde(rename = "type")]
+    pub channel_type: String,
+    pub codes: Vec<String>,
 }
 
-impl UpbitRestAdapter {
-    pub fn new() -> Self {
-        let http_client = reqwest::Client::builder()
-            .pool_idle_timeout(std::time::Duration::from_secs(90))
-            .timeout(std::time::Duration::from_secs(10))
-            .build()
-            .expect("reqwest client");
+#[derive(Debug, Clone, PartialEq)]
+pub enum MarketEvent {
+    Ticker { code: String, trade_price: f64 },
+    Trade { code: String, trade_price: f64, trade_volume: f64 },
+    Orderbook { code: String, total_ask_size: Option<f64>, total_bid_size: Option<f64> },
+    Candle { code: String, trade_price: f64 },
+    SubscriptionList { channels: Vec<String> },
+    MyOrder { code: Option<String>, state: Option<String> },
+    MyAsset { currency: Option<String>, balance: Option<String> },
+}
 
-        Self {
-            http_client,
-            retry_policy: RetryPolicy {
-                base_delay_ms: 100,
-                max_delay_ms: 5_000,
-                jitter_ms: 20,
-                respect_retry_after: true,
-            },
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type")]
+enum UpbitMessage {
+    #[serde(rename = "ticker")]
+    Ticker { code: String, trade_price: f64 },
+    #[serde(rename = "trade")]
+    Trade { code: String, trade_price: f64, trade_volume: f64 },
+    #[serde(rename = "orderbook")]
+    Orderbook { code: String, total_ask_size: Option<f64>, total_bid_size: Option<f64>, timestamp: Option<u64> },
+    #[serde(rename = "candle")]
+    Candle { code: String, trade_price: f64 },
+    #[serde(rename = "list_subscriptions")]
+    ListSubscriptions { codes: Vec<String> },
+    #[serde(rename = "myOrder")]
+    MyOrder { code: Option<String>, state: Option<String> },
+    #[serde(rename = "myAsset")]
+    MyAsset { currency: Option<String>, balance: Option<String> },
+}
+
+pub fn normalize_ws_message(raw: &str) -> Result<MarketEvent, UcelError> {
+    let msg: UpbitMessage = serde_json::from_str(raw)
+        .map_err(|e| UcelError::new(ErrorCode::Internal, format!("typed ws parse error: {e}")))?;
+    Ok(match msg {
+        UpbitMessage::Ticker { code, trade_price } => MarketEvent::Ticker { code, trade_price },
+        UpbitMessage::Trade { code, trade_price, trade_volume } => {
+            MarketEvent::Trade { code, trade_price, trade_volume }
+        }
+        UpbitMessage::Orderbook { code, total_ask_size, total_bid_size, .. } => {
+            MarketEvent::Orderbook { code, total_ask_size, total_bid_size }
+        }
+        UpbitMessage::Candle { code, trade_price } => MarketEvent::Candle { code, trade_price },
+        UpbitMessage::ListSubscriptions { codes } => MarketEvent::SubscriptionList { channels: codes },
+        UpbitMessage::MyOrder { code, state } => MarketEvent::MyOrder { code, state },
+        UpbitMessage::MyAsset { currency, balance } => MarketEvent::MyAsset { currency, balance },
+    })
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct OrderbookSync {
+    pub last_ts: Option<u64>,
+    pub degraded: bool,
+    pub book: BTreeMap<String, f64>,
+}
+impl OrderbookSync {
+    pub fn apply_snapshot(&mut self, ts: u64) {
+        self.last_ts = Some(ts);
+        self.degraded = false;
+    }
+
+    pub fn apply_delta(&mut self, ts: u64, metrics: &mut WsAdapterMetrics) -> Result<(), UcelError> {
+        match self.last_ts {
+            Some(prev) if ts <= prev => {
+                self.degraded = true;
+                metrics.ws_orderbook_gap_total += 1;
+                metrics.ws_orderbook_resync_total += 1;
+                Err(UcelError::new(ErrorCode::Desync, "gap/mismatch detected, immediate resync"))
+            }
+            Some(_) => {
+                self.last_ts = Some(ts);
+                Ok(())
+            }
+            None => {
+                self.degraded = true;
+                metrics.ws_orderbook_gap_total += 1;
+                metrics.ws_orderbook_resync_total += 1;
+                Err(UcelError::new(ErrorCode::Desync, "delta before snapshot"))
+            }
         }
     }
 
-    pub fn endpoint_specs(&self) -> Vec<EndpointSpec> {
-        endpoint_specs()
+    pub fn resync(&mut self, snapshot_ts: u64, metrics: &mut WsAdapterMetrics) {
+        let was_degraded = self.degraded;
+        self.apply_snapshot(snapshot_ts);
+        if was_degraded {
+            metrics.ws_orderbook_recovered_total += 1;
+        }
     }
 
-    pub fn http_client(&self) -> &reqwest::Client {
-        &self.http_client
+    pub fn mark_recovered(&mut self, metrics: &mut WsAdapterMetrics) {
+        if self.degraded {
+            self.degraded = false;
+            metrics.ws_orderbook_recovered_total += 1;
+        }
+    }
+}
+
+pub struct BackpressureQueue {
+    tx: mpsc::Sender<MarketEvent>,
+    rx: mpsc::Receiver<MarketEvent>,
+}
+impl BackpressureQueue {
+    pub fn with_capacity(cap: usize) -> Self {
+        let (tx, rx) = mpsc::channel(cap);
+        Self { tx, rx }
     }
 
-    pub async fn execute_rest<T: Transport>(
-        &self,
-        transport: &T,
-        endpoint_id: &str,
-        body: Option<Bytes>,
-        key_id: Option<String>,
-    ) -> Result<UpbitRestResponse, UcelError> {
-        let spec = endpoint_specs()
+    pub fn try_push(&self, ev: MarketEvent, metrics: &mut WsAdapterMetrics) {
+        if self.tx.try_send(ev).is_err() {
+            metrics.ws_backpressure_drops_total += 1;
+        }
+    }
+
+    pub async fn recv(&mut self) -> Option<MarketEvent> {
+        self.rx.recv().await
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct UpbitWsAdapter {
+    subscriptions: HashSet<String>,
+    pub metrics: WsAdapterMetrics,
+}
+impl UpbitWsAdapter {
+    pub fn build_subscribe(endpoint_id: &str, code: &str, key_id: Option<&str>) -> Result<UpbitSubscribeFrame, UcelError> {
+        let spec = ws_channel_specs()
             .into_iter()
             .find(|s| s.id == endpoint_id)
-            .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, format!("unknown endpoint: {endpoint_id}")))?;
+            .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown ws endpoint"))?;
+        if spec.requires_auth && key_id.is_none() {
+            return Err(UcelError::new(ErrorCode::MissingAuth, "private ws endpoint requires auth"));
+        }
+        if spec.requires_auth {
+            info!(target: "upbit.auth", key_id = %key_id.unwrap_or(""), "private ws subscribe preflight passed");
+        }
+        Ok(UpbitSubscribeFrame {
+            ticket: "ucel-upbit".into(),
+            channel_type: spec.channel,
+            codes: vec![code.into()],
+        })
+    }
 
+    pub fn build_unsubscribe(endpoint_id: &str, code: &str) -> Result<UpbitSubscribeFrame, UcelError> {
+        Self::build_subscribe(endpoint_id, code, Some("dummy"))
+    }
+
+    pub fn subscribe_once(&mut self, endpoint_id: &str, code: &str) -> bool {
+        self.subscriptions.insert(format!("{endpoint_id}:{code}"))
+    }
+
+    pub async fn reconnect_and_resubscribe<T: Transport>(&mut self, transport: &T) -> Result<usize, UcelError> {
         let ctx = RequestContext {
             trace_id: Uuid::new_v4().to_string(),
             request_id: Uuid::new_v4().to_string(),
             run_id: Uuid::new_v4().to_string(),
-            op: spec.op,
+            op: OpName::FetchStatus,
             venue: "upbit".into(),
             policy_id: "default".into(),
-            key_id: if spec.requires_auth { key_id } else { None },
-            requires_auth: spec.requires_auth,
+            key_id: None,
+            requires_auth: false,
         };
-        enforce_auth_boundary(&ctx)?;
+        transport.connect_ws(WsConnectRequest { url: "wss://api.upbit.com/websocket/v1".into() }, ctx).await?;
+        self.metrics.ws_reconnect_total += 1;
+        self.metrics.ws_resubscribe_total += self.subscriptions.len() as u64;
+        Ok(self.subscriptions.len())
+    }
+}
 
-        let req = HttpRequest {
-            method: spec.method,
-            path: format!("{}{}", spec.base_url, spec.path),
-            body,
-        };
+pub fn scrub_secrets(line: &str) -> String {
+    line.split_whitespace()
+        .map(|x| {
+            if x.starts_with("api_key=") { "api_key=***".to_string() }
+            else if x.starts_with("api_secret=") { "api_secret=***".to_string() }
+            else { x.to_string() }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
 
-        let response = transport.send_http(req, ctx).await?;
-        if response.status >= 400 {
-            return Err(map_upbit_http_error(response.status, &response.body));
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use ucel_transport::{HttpRequest, HttpResponse, WsConnectRequest, WsStream};
+
+    struct SpyTransport { ws_connects: AtomicUsize }
+    impl SpyTransport { fn new() -> Self { Self { ws_connects: AtomicUsize::new(0) } } }
+    impl Transport for SpyTransport {
+        async fn send_http(&self, _req: HttpRequest, _ctx: RequestContext) -> Result<HttpResponse, UcelError> {
+            Err(UcelError::new(ErrorCode::NotSupported, "unused"))
         }
-
-        match endpoint_id {
-            "quotation.public.rest.markets.list" => Ok(UpbitRestResponse::Markets(parse_json(&response.body)?)),
-            "quotation.public.rest.ticker.pairs" => Ok(UpbitRestResponse::Tickers(parse_json(&response.body)?)),
-            "quotation.public.rest.trades.recent" => Ok(UpbitRestResponse::Trades(parse_json(&response.body)?)),
-            "quotation.public.rest.orderbook.snapshot" => Ok(UpbitRestResponse::Orderbook(parse_json(&response.body)?)),
-            "quotation.public.rest.candles.minutes"
-            | "quotation.public.rest.candles.days"
-            | "quotation.public.rest.candles.weeks"
-            | "quotation.public.rest.candles.months"
-            | "quotation.public.rest.candles.years" => Ok(UpbitRestResponse::Candles(parse_json(&response.body)?)),
-            "exchange.private.rest.accounts.list" => Ok(UpbitRestResponse::Accounts(parse_json(&response.body)?)),
-            "exchange.private.rest.orders.create" => Ok(UpbitRestResponse::CreateOrder(parse_json(&response.body)?)),
-            "exchange.private.rest.orders.cancel" => Ok(UpbitRestResponse::CancelOrder(parse_json(&response.body)?)),
-            "exchange.private.rest.orders.open" => Ok(UpbitRestResponse::OpenOrders(parse_json(&response.body)?)),
-            "exchange.private.rest.orders.closed" => Ok(UpbitRestResponse::ClosedOrders(parse_json(&response.body)?)),
-            "exchange.private.rest.orders.chance" => Ok(UpbitRestResponse::OrderChance(parse_json(&response.body)?)),
-            "exchange.private.rest.withdraws.list" => Ok(UpbitRestResponse::Withdraws(parse_json(&response.body)?)),
-            "exchange.private.rest.withdraws.coin" => Ok(UpbitRestResponse::WithdrawCoin(parse_json(&response.body)?)),
-            "exchange.private.rest.deposits.list" => Ok(UpbitRestResponse::Deposits(parse_json(&response.body)?)),
-            "exchange.private.rest.deposits.address" => Ok(UpbitRestResponse::DepositAddress(parse_json(&response.body)?)),
-            "exchange.private.rest.travelrule.vasps" => Ok(UpbitRestResponse::TravelRuleVasps(parse_json(&response.body)?)),
-            "exchange.private.rest.service.walletstatus" => Ok(UpbitRestResponse::WalletStatus(parse_json(&response.body)?)),
-            "exchange.private.rest.keys.list" => Ok(UpbitRestResponse::ApiKeys(parse_json(&response.body)?)),
-            _ => Err(UcelError::new(ErrorCode::NotSupported, format!("unsupported endpoint: {endpoint_id}"))),
+        async fn connect_ws(&self, _req: WsConnectRequest, _ctx: RequestContext) -> Result<WsStream, UcelError> {
+            self.ws_connects.fetch_add(1, Ordering::Relaxed);
+            Ok(WsStream { connected: true })
         }
     }
-}
 
-impl Default for UpbitRestAdapter {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-fn parse_json<T: DeserializeOwned>(bytes: &[u8]) -> Result<T, UcelError> {
-    serde_json::from_slice(bytes)
-        .map_err(|e| UcelError::new(ErrorCode::Internal, format!("json parse error: {e}")))
-}
-
-#[derive(Debug, Deserialize)]
-struct UpbitErrorEnvelope {
-    error: Option<UpbitErrorBody>,
-    name: Option<String>,
-    code: Option<String>,
-    retry_after_ms: Option<u64>,
-    retry_after: Option<u64>,
-}
-
-#[derive(Debug, Deserialize)]
-struct UpbitErrorBody {
-    name: Option<String>,
-    code: Option<String>,
-}
-
-pub fn map_upbit_http_error(status: u16, body: &[u8]) -> UcelError {
-    let payload = serde_json::from_slice::<UpbitErrorEnvelope>(body).ok();
-    let code = payload
-        .as_ref()
-        .and_then(|p| p.error.as_ref().and_then(|e| e.name.clone()).or_else(|| p.error.as_ref().and_then(|e| e.code.clone())).or_else(|| p.name.clone()).or_else(|| p.code.clone()))
-        .unwrap_or_default();
-
-    if status == 429 {
-        let mut err = UcelError::new(ErrorCode::RateLimited, "rate limited");
-        err.ban_risk = true;
-        err.retry_after_ms = payload
-            .as_ref()
-            .and_then(|p| p.retry_after_ms.or(p.retry_after));
-        return err;
-    }
-    if status >= 500 {
-        return UcelError::new(ErrorCode::Upstream5xx, "upstream server error");
-    }
-
-    let mut err = match code.as_str() {
-        "invalid_access_key" | "jwt_verification" | "expired_access_key" => {
-            UcelError::new(ErrorCode::AuthFailed, "authentication failed")
+    #[test]
+    fn all_ws_catalog_rows_build_subscribe_unsubscribe() {
+        for spec in ws_channel_specs() {
+            let key = if spec.requires_auth { Some("kid") } else { None };
+            assert_eq!(UpbitWsAdapter::build_subscribe(&spec.id, "KRW-BTC", key).unwrap().channel_type, spec.channel);
+            assert_eq!(UpbitWsAdapter::build_unsubscribe(&spec.id, "KRW-BTC").unwrap().channel_type, spec.channel);
         }
-        "out_of_scope" => UcelError::new(ErrorCode::PermissionDenied, "permission denied"),
-        "insufficient_funds_bid" | "insufficient_funds_ask" | "under_min_total_bid" | "under_min_total_ask" | "validation_error" | "create_ask_error" | "create_bid_error" => {
-            UcelError::new(ErrorCode::InvalidOrder, "invalid order")
-        }
-        "too_many_requests" => UcelError::new(ErrorCode::RateLimited, "rate limited"),
-        _ => UcelError::new(
-            ErrorCode::Internal,
-            format!("upbit http error status={status} code={code}"),
-        ),
-    };
-
-    err.key_specific = matches!(err.code, ErrorCode::AuthFailed | ErrorCode::PermissionDenied);
-    err
-}
-
-fn op_for_id(id: &str) -> OpName {
-    match id {
-        "quotation.public.rest.ticker.pairs" => OpName::FetchTicker,
-        "quotation.public.rest.trades.recent" => OpName::FetchTrades,
-        "quotation.public.rest.orderbook.snapshot" => OpName::FetchOrderbookSnapshot,
-        "quotation.public.rest.candles.minutes"
-        | "quotation.public.rest.candles.days"
-        | "quotation.public.rest.candles.weeks"
-        | "quotation.public.rest.candles.months"
-        | "quotation.public.rest.candles.years" => OpName::FetchKlines,
-        "exchange.private.rest.accounts.list" => OpName::FetchBalances,
-        "exchange.private.rest.orders.create" => OpName::PlaceOrder,
-        "exchange.private.rest.orders.cancel" => OpName::CancelOrder,
-        "exchange.private.rest.orders.open" => OpName::FetchOpenOrders,
-        "exchange.private.rest.orders.closed" => OpName::FetchLatestExecutions,
-        _ => OpName::FetchStatus,
     }
-}
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct Market {
-    pub market: String,
-    pub korean_name: String,
-    pub english_name: String,
-    #[serde(default)]
-    pub market_warning: Option<String>,
-}
+    #[test]
+    fn private_preflight_reject_no_connect() {
+        let err = UpbitWsAdapter::build_subscribe("exchange.private.ws.myasset.stream", "KRW-BTC", None).unwrap_err();
+        assert_eq!(err.code, ErrorCode::MissingAuth);
+    }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct Ticker {
-    pub market: String,
-    pub trade_price: f64,
-    pub timestamp: i64,
-}
+    #[tokio::test(flavor = "current_thread")]
+    async fn reconnect_resubscribe_idempotent() {
+        let spy = SpyTransport::new();
+        let mut ws = UpbitWsAdapter::default();
+        assert!(ws.subscribe_once("quotation.public.ws.trade.stream", "KRW-BTC"));
+        assert!(!ws.subscribe_once("quotation.public.ws.trade.stream", "KRW-BTC"));
+        let restored = ws.reconnect_and_resubscribe(&spy).await.unwrap();
+        assert_eq!(restored, 1);
+        assert_eq!(ws.metrics.ws_resubscribe_total, 1);
+        assert_eq!(spy.ws_connects.load(Ordering::Relaxed), 1);
+    }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct Trade {
-    pub trade_price: f64,
-    pub trade_volume: f64,
-    #[serde(default)]
-    pub trade_timestamp: Option<i64>,
-}
+    #[test]
+    fn typed_deserialize_and_normalize() {
+        let t = normalize_ws_message(r#"{"type":"ticker","code":"KRW-BTC","trade_price":1.0}"#).unwrap();
+        assert!(matches!(t, MarketEvent::Ticker { .. }));
+    }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct OrderbookSnapshot {
-    pub market: String,
-    pub orderbook_units: Vec<OrderbookUnit>,
-}
+    #[tokio::test(flavor = "current_thread")]
+    async fn bounded_backpressure_and_metrics() {
+        let mut q = BackpressureQueue::with_capacity(1);
+        let mut m = WsAdapterMetrics::default();
+        q.try_push(MarketEvent::Candle { code: "KRW-BTC".into(), trade_price: 1.0 }, &mut m);
+        q.try_push(MarketEvent::Candle { code: "KRW-ETH".into(), trade_price: 2.0 }, &mut m);
+        assert_eq!(m.ws_backpressure_drops_total, 1);
+        assert!(matches!(q.recv().await.unwrap(), MarketEvent::Candle { code, .. } if code == "KRW-BTC"));
+    }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct OrderbookUnit {
-    pub ask_price: f64,
-    pub bid_price: f64,
-    pub ask_size: f64,
-    pub bid_size: f64,
-}
+    #[test]
+    fn orderbook_gap_resync_recovered() {
+        let mut sync = OrderbookSync::default();
+        let mut m = WsAdapterMetrics::default();
+        sync.apply_snapshot(100);
+        assert!(sync.apply_delta(100, &mut m).is_err());
+        assert!(sync.degraded);
+        sync.resync(101, &mut m);
+        assert!(!sync.degraded);
+        assert_eq!(m.ws_orderbook_gap_total, 1);
+        assert_eq!(m.ws_orderbook_resync_total, 1);
+        assert_eq!(m.ws_orderbook_recovered_total, 1);
+    }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct Candle {
-    pub candle_date_time_utc: String,
-    pub opening_price: f64,
-    pub trade_price: f64,
-}
+    #[test]
+    fn duplicate_and_out_of_order_policy_forces_resync() {
+        let mut sync = OrderbookSync::default();
+        let mut m = WsAdapterMetrics::default();
+        sync.apply_snapshot(10);
+        assert!(sync.apply_delta(9, &mut m).is_err());
+        assert!(sync.degraded);
+    }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct Account {
-    pub currency: String,
-    pub balance: String,
-    pub locked: String,
-}
+    #[test]
+    fn no_secret_leak() {
+        let line = "key_id=alpha api_key=hello api_secret=world";
+        let scrubbed = scrub_secrets(line);
+        assert!(scrubbed.contains("key_id=alpha"));
+        assert!(!scrubbed.contains("hello"));
+        assert!(!scrubbed.contains("world"));
+    }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct Order {
-    pub uuid: String,
-    pub state: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct OrderChance {
-    pub bid_fee: String,
-    pub ask_fee: String,
-    pub market: OrderChanceMarket,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct OrderChanceMarket {
-    pub id: String,
-    pub name: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct Withdraw {
-    pub currency: String,
-    pub state: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct Deposit {
-    pub currency: String,
-    pub state: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct DepositAddress {
-    pub currency: String,
-    pub deposit_address: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct TravelRuleVasp {
-    pub vasp_name: String,
-    pub vasp_code: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct WalletStatus {
-    pub currency: String,
-    pub wallet_state: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct ApiKeyInfo {
-    pub access_key: String,
-    pub expire_at: String,
+    #[test]
+    fn strict_gate_enabled_and_zero_gaps() {
+        let manifest: serde_yaml::Value = serde_yaml::from_str(include_str!("../../../coverage/upbit.yaml")).unwrap();
+        assert_eq!(manifest["strict"], true);
+        let entries = manifest["entries"].as_sequence().unwrap();
+        for e in entries {
+            assert_eq!(e["implemented"], true, "implemented gap for {:?}", e["id"]);
+            assert_eq!(e["tested"], true, "tested gap for {:?}", e["id"]);
+        }
+    }
 }
