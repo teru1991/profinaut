@@ -301,11 +301,18 @@ mod tests {
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bitbank.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
         assert_eq!(manifest.venue, "bitbank");
+    }
+
+    #[test]
     fn coverage_gate_warns_for_binance_usdm_until_full_coverage() {
         let manifest_path =
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-usdm.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
         assert_eq!(manifest.venue, "binance-usdm");
+    }
+
+    #[test]
+    fn coverage_gate_is_strict_for_binance_coinm_and_has_no_gaps() {
         assert!(manifest.strict);
 
         let result = run_coverage_gate(&manifest);
@@ -321,23 +328,12 @@ mod tests {
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-coinm.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
         assert_eq!(manifest.venue, "binance-coinm");
-        assert!(!manifest.strict);
+        assert!(manifest.strict);
 
         let result = run_coverage_gate(&manifest);
         match result {
-            CoverageGateResult::WarnOnly(gaps) => {
-                assert_eq!(gaps.get("implemented").map(Vec::len), Some(44));
-                assert_eq!(gaps.get("tested").map(Vec::len), Some(44));
-            }
-            _ => panic!("bitbank coverage gate should warn while manifest has gaps"),
-                assert_eq!(gaps.get("implemented").map(Vec::len), Some(16));
-                assert_eq!(gaps.get("tested").map(Vec::len), Some(16));
-            }
-            _ => panic!("binance-usdm coverage gate should warn while manifest has gaps"),
-                assert_eq!(gaps.get("implemented").map(Vec::len), Some(25));
-                assert_eq!(gaps.get("tested").map(Vec::len), Some(25));
-            }
-            _ => panic!("binance-coinm coverage gate should warn in non-strict mode"),
+            CoverageGateResult::Passed => {}
+            _ => panic!("binance-coinm coverage gate should pass in strict mode"),
         }
     }
 }
