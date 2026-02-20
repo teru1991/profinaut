@@ -5,6 +5,7 @@ members = [
   "crates/ucel-registry",
   "crates/ucel-testkit",
   "crates/ucel-cex-gmocoin",
+  "crates/ucel-cex-kraken",
   "crates/ucel-chain-ethereum",
 ]
 resolver = "2"
