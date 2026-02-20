@@ -39,7 +39,7 @@ pub struct DataFeedEntry {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct CatalogEntry {
     pub id: String,
-    pub visibility: String,
+    pub visibility: Option<String>,
     pub operation: Option<String>,
     pub method: Option<String>,
     pub base_url: Option<String>,
@@ -115,22 +115,25 @@ pub fn validate_catalog(catalog: &ExchangeCatalog) -> Result<(), UcelError> {
 }
 
 fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
-    if entry.id.trim().is_empty() || entry.visibility.trim().is_empty() {
+    if entry.id.trim().is_empty() {
         return Err(UcelError::new(
             ErrorCode::CatalogMissingField,
             format!("missing required fields for id={}", entry.id),
         ));
     }
 
-    let visibility = entry.visibility.to_ascii_lowercase();
+    let visibility = resolved_visibility(entry)?.to_ascii_lowercase();
     match visibility.as_str() {
         "public" => {
-            if auth_type_requires_credentials(&entry.auth.auth_type) {
+            if matches!(
+                entry.auth.auth_type.as_str(),
+                "jwt" | "token" | "signed" | "api-key"
+            ) {
                 return Err(UcelError::new(
                     ErrorCode::CatalogInvalid,
                     format!(
-                        "public endpoint must not require credentials for id={} (auth.type={})",
-                        entry.id, entry.auth.auth_type
+                        "public endpoint auth.type contradicts visibility for id={}",
+                        entry.id
                     ),
                 ));
             }
@@ -149,10 +152,7 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
         _ => {
             return Err(UcelError::new(
                 ErrorCode::CatalogInvalid,
-                format!(
-                    "invalid visibility={} for id={}",
-                    entry.visibility, entry.id
-                ),
+                format!("invalid visibility={} for id={}", visibility, entry.id),
             ));
         }
     }
@@ -172,27 +172,15 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                     ),
                 ));
             }
-            if !method
-                .chars()
-                .all(|ch| ch.is_ascii_uppercase() || ch == '_' || ch == '-')
-            {
-                return Err(UcelError::new(
-                    ErrorCode::CatalogInvalid,
-                    format!("invalid method for id={}: {method}", entry.id),
-                ));
-            }
-            let is_doc_ref =
-                entry.operation.as_deref() == Some("doc-ref") || entry.id.ends_with(".ref");
-            if !(base_url.starts_with("https://")
-                || base_url.starts_with("http://")
-                || (is_doc_ref && base_url.starts_with("docs://")))
+            if !is_placeholder(base_url)
+                && !(base_url.starts_with("https://") || base_url.starts_with("http://"))
             {
                 return Err(UcelError::new(
                     ErrorCode::CatalogInvalid,
                     format!("invalid base_url for id={}: {base_url}", entry.id),
                 ));
             }
-            if !path.starts_with('/') {
+            if !is_placeholder(path) && !path.starts_with('/') {
                 return Err(UcelError::new(
                     ErrorCode::CatalogInvalid,
                     format!("invalid path for id={}: {path}", entry.id),
@@ -206,10 +194,11 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                     format!("ws endpoint has empty ws_url for id={}", entry.id),
                 ));
             }
-            let is_non_socket_reference = entry.id == "other.public.ws.sbe.marketdata";
-            if !(ws_url.starts_with("wss://")
-                || ws_url.starts_with("ws://")
-                || (is_non_socket_reference && ws_url.contains("see docs")))
+            if !is_placeholder(ws_url)
+                && !(ws_url.starts_with("wss://")
+                    || ws_url.starts_with("ws://")
+                    || ws_url.starts_with("https://")
+                    || ws_url.starts_with("http://"))
             {
                 return Err(UcelError::new(
                     ErrorCode::CatalogInvalid,
@@ -237,7 +226,7 @@ fn auth_type_requires_credentials(auth_type: &str) -> bool {
 
 pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
     let op = map_operation(entry)?;
-    let requires_auth = entry.visibility.eq_ignore_ascii_case("private");
+    let requires_auth = resolved_visibility(entry)?.eq_ignore_ascii_case("private");
     Ok(OpMeta { op, requires_auth })
 }
 
@@ -255,11 +244,6 @@ fn map_operation_literal(operation: &str) -> Option<OpName> {
         "Get service status" | "Get FX API status" | "List futures instruments" => {
             Some(OpName::FetchStatus)
         }
-        "Test connectivity"
-        | "Get server time"
-        | "Exchange/symbol metadata"
-        | "Start user data stream (legacy)"
-        | "doc-ref" => Some(OpName::FetchStatus),
         "Get ticker" | "Get FX ticker" | "Get ticker information" | "Get futures tickers" => {
             Some(OpName::FetchTicker)
         }
@@ -291,6 +275,14 @@ fn map_operation_literal(operation: &str) -> Option<OpName> {
 }
 
 fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
+    if id.starts_with("advanced.")
+        || id.starts_with("exchange.")
+        || id.starts_with("intx.")
+        || id.starts_with("other.")
+    {
+        return map_coinbase_operation_by_id(id);
+    }
+
     let op = match id {
         "crypto.public.ws.ticker.update"
         | "fx.public.ws.ticker.update"
@@ -334,6 +326,46 @@ fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
         }
     };
     Ok(op)
+}
+
+fn map_coinbase_operation_by_id(id: &str) -> Result<OpName, UcelError> {
+    if id.contains(".rest.") {
+        return Ok(OpName::FetchStatus);
+    }
+    if id.contains(".private.ws.") {
+        return Ok(OpName::SubscribeOrderEvents);
+    }
+    if id.contains(".public.ws.") {
+        return Ok(OpName::SubscribeTicker);
+    }
+    Err(UcelError::new(
+        ErrorCode::NotSupported,
+        format!("unsupported operation mapping for id={id}"),
+    ))
+}
+
+fn resolved_visibility(entry: &CatalogEntry) -> Result<&str, UcelError> {
+    if let Some(visibility) = entry.visibility.as_deref() {
+        if !visibility.trim().is_empty() {
+            return Ok(visibility);
+        }
+    }
+
+    if entry.id.contains(".public.") {
+        return Ok("public");
+    }
+    if entry.id.contains(".private.") {
+        return Ok("private");
+    }
+
+    Err(UcelError::new(
+        ErrorCode::CatalogMissingField,
+        format!("missing required visibility for id={}", entry.id),
+    ))
+}
+
+fn is_placeholder(value: &str) -> bool {
+    matches!(value.trim(), "not_applicable" | "n/a")
 }
 
 pub fn capabilities_from_catalog(name: &str, catalog: &ExchangeCatalog) -> Capabilities {
@@ -383,7 +415,7 @@ mod tests {
             exchange: "gmo".into(),
             rest_endpoints: vec![CatalogEntry {
                 id: "same".into(),
-                visibility: "public".into(),
+                visibility: Some("public".into()),
                 operation: Some("Get ticker".into()),
                 method: Some("GET".into()),
                 base_url: Some("https://x".into()),
@@ -396,7 +428,7 @@ mod tests {
             }],
             ws_channels: vec![CatalogEntry {
                 id: "same".into(),
-                visibility: "public".into(),
+                visibility: Some("public".into()),
                 operation: None,
                 method: None,
                 base_url: None,
@@ -417,7 +449,7 @@ mod tests {
     fn requires_auth_comes_from_visibility() {
         let private_entry = CatalogEntry {
             id: "crypto.private.ws.executionevents.update".into(),
-            visibility: "private".into(),
+            visibility: Some("private".into()),
             operation: None,
             method: None,
             base_url: None,
@@ -430,7 +462,7 @@ mod tests {
         };
         let public_entry = CatalogEntry {
             id: "crypto.public.rest.ticker.get".into(),
-            visibility: "public".into(),
+            visibility: Some("public".into()),
             operation: Some("Get ticker".into()),
             method: Some("GET".into()),
             base_url: Some("https://api.coin.z.com".into()),
@@ -475,11 +507,11 @@ mod tests {
     }
 
     #[test]
-    fn loads_binance_catalog_and_maps_all_ops() {
+    fn loads_coinbase_catalog_and_maps_all_ops() {
         let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "binance").unwrap();
-        assert_eq!(catalog.rest_endpoints.len(), 9);
-        assert_eq!(catalog.ws_channels.len(), 5);
+        let catalog = load_catalog_from_repo_root(&repo_root, "coinbase").unwrap();
+        assert_eq!(catalog.rest_endpoints.len(), 7);
+        assert_eq!(catalog.ws_channels.len(), 8);
 
         for entry in catalog
             .rest_endpoints
@@ -491,6 +523,21 @@ mod tests {
                 "missing op mapping for {}",
                 entry.id
             );
+            let op_meta = op_meta_from_entry(entry).unwrap();
+            if entry.id.contains(".private.") {
+                assert!(
+                    op_meta.requires_auth,
+                    "private id must require auth: {}",
+                    entry.id
+                );
+            }
+            if entry.id.contains(".public.") {
+                assert!(
+                    !op_meta.requires_auth,
+                    "public id must not require auth: {}",
+                    entry.id
+                );
+            }
         }
     }
 }

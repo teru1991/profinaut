@@ -233,9 +233,9 @@ mod tests {
     }
 
     #[test]
-    fn contract_index_can_cover_all_binance_catalog_rows() {
+    fn contract_index_can_cover_all_coinbase_catalog_rows() {
         let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "binance").unwrap();
+        let catalog = load_catalog_from_repo_root(&repo_root, "coinbase").unwrap();
 
         let mut index = CatalogContractIndex::default();
         for id in catalog
@@ -267,20 +267,21 @@ mod tests {
     }
 
     #[test]
-    fn coverage_gate_warns_for_binance_until_full_coverage() {
+    fn coverage_gate_warns_for_coinbase_until_strict_is_enabled() {
         let manifest_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance.yaml");
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/coinbase.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "binance");
+        assert_eq!(manifest.venue, "coinbase");
         assert!(!manifest.strict);
 
         let result = run_coverage_gate(&manifest);
         match result {
             CoverageGateResult::WarnOnly(gaps) => {
-                assert_eq!(gaps.get("implemented").map(Vec::len), Some(14));
-                assert_eq!(gaps.get("tested").map(Vec::len), Some(14));
+                assert!(!gaps.is_empty());
+                assert_eq!(gaps.get("implemented").map(Vec::len), Some(15));
+                assert_eq!(gaps.get("tested").map(Vec::len), Some(15));
             }
-            _ => panic!("binance coverage gate should warn while manifest has gaps"),
+            _ => panic!("coinbase coverage gate should warn in non-strict mode"),
         }
     }
 
