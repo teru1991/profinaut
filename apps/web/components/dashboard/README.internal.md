@@ -33,3 +33,21 @@
   - `cd apps/web`
   - `npm install --no-package-lock`
   - `npm run build`
+
+---
+## UI-DASH-004 progress notes
+- what_done:
+  - Added personal local audit model/store + `/audit` page with filter/export/detail JSON drawer.
+  - Added incident console (`/incidents`) with degraded drilldown, local checklist persistence, notes, and audit NOTE entries.
+  - Added local snapshots store + save buttons + `/snapshots` listing/export/note annotations with audit logging.
+  - Added safe danger action guard for command execution requiring reason + TTL + type-to-confirm; wired into `/commands` PAUSE/RESUME.
+  - Updated sidebar navigation for quick access to Incidents/Snapshots/Audit.
+- what_next:
+  - Consider sharing actor identity from authenticated profile instead of static `local-user`.
+  - Consider richer incident suggested checks per component type.
+- errors:
+  - None.
+- commands_next:
+  - `cd apps/web`
+  - `npm install --no-package-lock`
+  - `npm run build`
