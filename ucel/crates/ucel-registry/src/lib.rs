@@ -1,4 +1,5 @@
 pub mod deribit;
+pub mod okx;
 use serde::Deserialize;
 use std::{collections::HashSet, fs, path::Path};
 use ucel_core::{ErrorCode, OpMeta, OpName, UcelError};
