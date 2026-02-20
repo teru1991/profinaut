@@ -1,16 +1,14 @@
 {
   "base_branch": "master",
-  "active_task": "DOC-DATAPLATFORM-SSOT-002-FREE",
+  "active_task": "AUDIT-REPO-STATE-001",
   "owner": "codex",
   "state": "in_progress",
   "open_prs": [],
-  "locks_held": [
-    "LOCK:shared-docs"
-  ],
+  "locks_held": [],
   "next_actions": [
-    "Review and circulate the new data-platform SSOT + ADR set for implementation tasking.",
-    "Implement Bronze->Silver->Gold contracts following docs/data-platform/storage-contracts.md."
+    "Investigate failed CI runs 22209816671/22209474150/22208983745 with maintainer-level log access and capture root cause in a follow-up audit note.",
+    "Resolve local formatting drift in ucel workspace (cargo fmt) and rerun rust quality gates before next implementation task."
   ],
-  "last_updated": "2026-02-19T12:30:00Z",
-  "notes": "Data platform SSOT docs established with free OSS-only stack (SeaweedFS/RustFS, Iceberg, ClickHouse, PostgreSQL, Valkey, DuckDB)."
+  "last_updated": "2026-02-20T06:26:05Z",
+  "notes": "Repository-state audit synced SSOT to GitHub API snapshot: open PRs=0, shared-docs lock released, CI currently treated as Red due to recent failed runs within latest 100 executions."
 }
