@@ -10,8 +10,11 @@ serde_json.workspace = true
 ucel-core = { path = "../ucel-core" }
 ucel-transport = { path = "../ucel-transport" }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+tokio.workspace = true
+tracing.workspace = true
 uuid = { version = "1", features = ["v4"] }
 
 [dev-dependencies]
+serde_yaml.workspace = true
+tracing-subscriber = { version = "0.3", features = ["fmt"] }
 tokio = { version = "1", features = ["macros", "rt", "sync"] }
-ucel-testkit = { path = "../ucel-testkit" }

@@ -1,0 +1,16 @@
+[package]
+name = "ucel-cex-bittrade"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bytes = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+ucel-core = { path = "../ucel-core" }
+ucel-transport = { path = "../ucel-transport" }
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }
+ucel-testkit = { path = "../ucel-testkit" }
