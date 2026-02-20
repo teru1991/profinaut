@@ -1223,7 +1223,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ucel-cex-binance-options"
+name = "ucel-cex-binance-usdm"
 version = "0.1.0"
 dependencies = [
  "bytes",
@@ -1231,7 +1231,20 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
- "tracing",
+ "ucel-core",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-coinbase"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
  "ucel-core",
  "ucel-testkit",
  "ucel-transport",

@@ -240,6 +240,8 @@ mod tests {
     }
 
     #[test]
+<<<<<<< codex/implement-full-binance-ws-support
+=======
     fn contract_index_can_cover_all_binance_options_catalog_rows() {
         let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
         let catalog = load_catalog_from_repo_root(&repo_root, "binance-options").unwrap();
@@ -259,6 +261,7 @@ mod tests {
     }
 
     #[test]
+>>>>>>> master
     fn coverage_gate_is_strict_and_has_no_gaps() {
         let manifest_path =
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/gmocoin.yaml");
@@ -305,7 +308,11 @@ mod tests {
     }
 
     #[test]
+<<<<<<< codex/implement-full-binance-ws-support
+    fn coverage_gate_is_strict_for_binance_usdm_and_has_no_gaps() {
+=======
     fn coverage_gate_warns_for_binance_usdm_until_full_coverage() {
+>>>>>>> master
         let manifest_path =
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-usdm.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
@@ -322,16 +329,29 @@ mod tests {
     }
 
     #[test]
+<<<<<<< codex/implement-full-binance-ws-support
+    fn coverage_gate_is_strict_for_binance_coinm_and_has_no_gaps() {
+=======
     fn coverage_gate_binance_coinm_manifest_is_consistent() {
+>>>>>>> master
         let manifest_path =
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-coinm.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
         assert_eq!(manifest.venue, "binance-coinm");
+<<<<<<< codex/implement-full-binance-ws-support
+        assert!(manifest.strict);
+
+        let result = run_coverage_gate(&manifest);
+        match result {
+            CoverageGateResult::Passed => {}
+            _ => panic!("binance-coinm coverage gate should pass in strict mode"),
+=======
 
         let result = run_coverage_gate(&manifest);
         match result {
             CoverageGateResult::Passed | CoverageGateResult::WarnOnly(_) => {}
             CoverageGateResult::Failed(_) => panic!("binance-coinm strict gate should not fail in repository state"),
+>>>>>>> master
         }
     }
 }
