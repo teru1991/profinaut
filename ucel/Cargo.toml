@@ -7,6 +7,7 @@ members = [
   "crates/ucel-cex-gmocoin",
   "crates/ucel-cex-kraken",
   "crates/ucel-cex-binance-coinm",
+  "crates/ucel-cex-binance-options",
   "crates/ucel-cex-bitmex",
   "crates/ucel-cex-binance",
   "crates/ucel-chain-ethereum",
