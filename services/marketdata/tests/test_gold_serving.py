@@ -9,6 +9,7 @@ from services.marketdata.app import main
 from services.marketdata.app.db.schema import apply_migrations
 from services.marketdata.app.gold_cache import HotCache
 from services.marketdata.app.gold_materializer import materialize_gold
+from services.marketdata.app.serving_stores import ClickHouseLikeStore
 
 
 async def _idle_poller() -> None:
@@ -45,8 +46,9 @@ def test_gold_materializer_builds_latest_and_ohlcv(tmp_path: Path) -> None:
     assert result.ohlcv_rows == 1
 
 
-def test_markets_endpoints_use_gold_and_cache(monkeypatch, tmp_path: Path) -> None:
+def test_markets_endpoints_use_gold_clickhouse_and_cache(monkeypatch, tmp_path: Path) -> None:
     db_file = tmp_path / "md.sqlite3"
+    ch_file = tmp_path / "ch.sqlite3"
     conn = _prep(db_file)
     conn.execute(
         """
@@ -70,19 +72,27 @@ def test_markets_endpoints_use_gold_and_cache(monkeypatch, tmp_path: Path) -> No
 
     monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
     monkeypatch.setattr(main, "_gold_cache", HotCache(default_ttl_seconds=30.0, jitter_seconds=0.0))
+    monkeypatch.setattr(main, "_valkey_cache", main.ValkeyHotCache(main._gold_cache))
+    monkeypatch.setattr(main, "_clickhouse_store", ClickHouseLikeStore(f"sqlite:///{ch_file}"))
     monkeypatch.setattr(main._poller, "run_forever", _idle_poller)
 
     with TestClient(main.app) as client:
+        materialize_resp = client.post("/gold/materialize")
         ticker = client.get("/markets/ticker/latest?venue=gmo&symbol=BTC_JPY")
         bba = client.get("/markets/bba/latest?venue=gmo&symbol=BTC_JPY")
         ohlcv = client.get("/markets/ohlcv?venue=gmo&symbol=BTC_JPY&tf=1m&from=2026-01-01T00:00:00Z&to=2026-01-01T00:01:00Z")
+        metrics = client.get("/markets/read-metrics")
 
+    assert materialize_resp.status_code == 200
+    assert materialize_resp.json()["clickhouse_synced_rows"] >= 3
     assert ticker.status_code == 200
     assert ticker.json()["price"] == 100.5
     assert bba.status_code == 200
     assert bba.json()["bid"] == 100
     assert ohlcv.status_code == 200
     assert len(ohlcv.json()["candles"]) == 1
+    assert metrics.status_code == 200
+    assert metrics.json()["requests"] >= 3
 
 
 def test_cache_invalidation_behavior() -> None:
@@ -91,3 +101,37 @@ def test_cache_invalidation_behavior() -> None:
     assert cache.get("ticker_latest:gmo:BTC_JPY") == {"price": 1}
     cache.invalidate("ticker_latest:gmo:BTC_JPY")
     assert cache.get("ticker_latest:gmo:BTC_JPY") is None
+
+
+def test_backend_down_scenarios(monkeypatch, tmp_path: Path) -> None:
+    db_file = tmp_path / "md.sqlite3"
+    conn = _prep(db_file)
+    conn.execute(
+        """
+        INSERT INTO gold_ticker_latest(venue_id, market_id, instrument_id, price, bid_px, ask_px, bid_qty, ask_qty, ts_event, ts_recv, dt, raw_refs)
+        VALUES ('gmo','spot','btc_jpy',100.5,100,101,1,2,'2026-01-01T00:00:00Z','2099-01-01T00:00:00Z','2099-01-01','["r1"]')
+        """
+    )
+    conn.commit()
+
+    monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
+    monkeypatch.setattr(main._poller, "run_forever", _idle_poller)
+
+    class DownClickHouse:
+        def query_ticker_latest(self, **kwargs):
+            raise RuntimeError("down")
+
+        def query_bba_latest(self, **kwargs):
+            raise RuntimeError("down")
+
+        def query_ohlcv_range(self, **kwargs):
+            raise RuntimeError("down")
+
+    monkeypatch.setattr(main, "_clickhouse_store", DownClickHouse())
+    monkeypatch.setattr(main, "_valkey_cache", main.ValkeyHotCache(HotCache(default_ttl_seconds=0.1, jitter_seconds=0.0)))
+
+    with TestClient(main.app) as client:
+        resp = client.get("/markets/ticker/latest?venue=gmo&symbol=BTC_JPY")
+
+    assert resp.status_code == 200
+    assert resp.json()["price"] == 100.5

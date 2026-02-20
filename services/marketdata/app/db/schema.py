@@ -259,6 +259,36 @@ MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
             """,
         ),
     ),
+
+    (
+        "0006_marketdata_ops_orders_fills",
+        (
+            """
+            CREATE TABLE IF NOT EXISTS orders (
+                order_id TEXT PRIMARY KEY,
+                account_id TEXT,
+                venue_id TEXT,
+                symbol TEXT,
+                side TEXT,
+                order_type TEXT,
+                status TEXT,
+                ts_event TEXT
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS fills (
+                fill_id TEXT PRIMARY KEY,
+                order_id TEXT,
+                account_id TEXT,
+                venue_id TEXT,
+                symbol TEXT,
+                price REAL,
+                qty REAL,
+                ts_event TEXT
+            )
+            """,
+        ),
+    ),
 )
 
 
