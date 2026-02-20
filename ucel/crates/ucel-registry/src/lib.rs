@@ -1,23 +1,12 @@
 use serde::Deserialize;
 use std::{collections::HashSet, fs, path::Path};
-use ucel_core::{
-    AuthCapabilities, Capabilities, ErrorCode, FailoverPolicy, MarketDataCapabilities, OpMeta,
-    OpName, OperationalCapabilities, RateLimitCapabilities, RuntimePolicy, SafeDefaults,
-    TradingCapabilities, UcelError,
-};
+use ucel_core::{ErrorCode, OpMeta, OpName, UcelError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConnectionConfig {
     pub id: String,
     pub venue: String,
     pub enabled: bool,
-    pub policy: RuntimePolicy,
-    pub auth: AuthConfigRef,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AuthConfigRef {
-    pub key_pool: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -25,25 +14,16 @@ pub struct ExchangeCatalog {
     pub exchange: String,
     pub rest_endpoints: Vec<CatalogEntry>,
     pub ws_channels: Vec<CatalogEntry>,
-    #[serde(default)]
-    pub data_feeds: Vec<DataFeedEntry>,
 }
 
 pub type GmoCatalog = ExchangeCatalog;
 pub type BitbankCatalog = ExchangeCatalog;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct DataFeedEntry {
-    pub id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct CatalogEntry {
     pub id: String,
     #[serde(default)]
     pub visibility: String,
-    #[serde(default)]
-    pub requires_auth: Option<bool>,
     pub operation: Option<String>,
     pub method: Option<String>,
     pub base_url: Option<String>,
@@ -52,7 +32,6 @@ pub struct CatalogEntry {
     pub channel: Option<String>,
     pub ws: Option<CatalogWs>,
     pub auth: CatalogAuth,
-    #[serde(default)]
     pub requires_auth: Option<bool>,
 }
 
@@ -71,13 +50,13 @@ pub fn load_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, UcelError>
     let raw = fs::read_to_string(path).map_err(|e| {
         UcelError::new(
             ErrorCode::CatalogInvalid,
-            format!("failed to read {}: {e}", path.display()),
+            format!("read {}: {e}", path.display()),
         )
     })?;
     let catalog: ExchangeCatalog = serde_json::from_str(&raw).map_err(|e| {
         UcelError::new(
             ErrorCode::CatalogInvalid,
-            format!("failed to parse {}: {e}", path.display()),
+            format!("parse {}: {e}", path.display()),
         )
     })?;
     validate_catalog(&catalog)?;
@@ -88,36 +67,35 @@ pub fn load_catalog_from_repo_root(
     repo_root: &Path,
     exchange: &str,
 ) -> Result<ExchangeCatalog, UcelError> {
-    let exchange_dir = exchange.to_ascii_lowercase();
-    let path = repo_root
-        .join("docs")
-        .join("exchanges")
-        .join(exchange_dir)
-        .join("catalog.json");
-    load_catalog_from_path(&path)
+    load_catalog_from_path(
+        &repo_root
+            .join("docs")
+            .join("exchanges")
+            .join(exchange.to_ascii_lowercase())
+            .join("catalog.json"),
+    )
 }
 
 pub fn validate_catalog(catalog: &ExchangeCatalog) -> Result<(), UcelError> {
     if catalog.exchange.trim().is_empty() {
         return Err(UcelError::new(
             ErrorCode::CatalogMissingField,
-            "catalog.exchange must not be empty",
+            "catalog.exchange empty",
         ));
     }
-
     let mut seen = HashSet::new();
-    for entry in catalog
+    for e in catalog
         .rest_endpoints
         .iter()
         .chain(catalog.ws_channels.iter())
     {
-        validate_entry(entry)?;
-        if !seen.insert(entry.id.clone()) {
+        if e.id.trim().is_empty() {
             return Err(UcelError::new(
-                ErrorCode::CatalogDuplicateId,
-                format!("duplicate id found: {}", entry.id),
+                ErrorCode::CatalogMissingField,
+                "entry.id empty",
             ));
         }
+        if !seen.insert(e.id.clone()) {
     }
     Ok(())
 }
@@ -177,266 +155,33 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
         let expected_requires_auth = visibility == "private";
         if requires_auth != expected_requires_auth {
             return Err(UcelError::new(
-                ErrorCode::CatalogInvalid,
-                format!(
-                    "requires_auth conflicts with visibility for id={} (visibility={}, requires_auth={})",
-                    entry.id, visibility, requires_auth
-                ),
+                ErrorCode::CatalogDuplicateId,
+                format!("duplicate id {}", e.id),
             ));
         }
     }
-
-    let derived_requires_auth = visibility == "private";
-    if let Some(requires_auth) = entry.requires_auth {
-        if requires_auth != derived_requires_auth {
-            return Err(UcelError::new(
-                ErrorCode::CatalogInvalid,
-                format!(
-                    "requires_auth contradicts visibility for id={} (visibility={}, requires_auth={})",
-                    entry.id, entry.visibility, requires_auth
-                ),
-            ));
-        }
-    }
-
-    let resolved_ws_url = entry
-        .ws_url
-        .as_deref()
-        .or(entry.ws.as_ref().map(|ws| ws.url.as_str()));
-    let ws_base_url = entry
-        .base_url
-        .as_deref()
-        .filter(|base_url| base_url.starts_with("wss://") || base_url.starts_with("ws://"));
-    match (&entry.method, &entry.base_url, &entry.path, resolved_ws_url) {
-        (Some(method), Some(base_url), Some(path), None) => {
-            if method.trim().is_empty() || base_url.trim().is_empty() || path.trim().is_empty() {
-                return Err(UcelError::new(
-                    ErrorCode::CatalogMissingField,
-                    format!(
-                        "rest endpoint has empty method/base_url/path for id={}",
-                        entry.id
-                    ),
-                ));
-            }
-            if !method
-                .chars()
-                .all(|ch| ch.is_ascii_uppercase() || ch == '_' || ch == '-' || ch == '/')
-            {
-                return Err(UcelError::new(
-                    ErrorCode::CatalogInvalid,
-                    format!("invalid method for id={}: {method}", entry.id),
-                ));
-            }
-            let is_doc_ref =
-                entry.operation.as_deref() == Some("doc-ref") || entry.id.ends_with(".ref");
-            if !(base_url.starts_with("https://")
-                || base_url.starts_with("http://")
-                || base_url.starts_with("docs://"))
-            {
-                return Err(UcelError::new(
-                    ErrorCode::CatalogInvalid,
-                    format!("invalid base_url for id={}: {base_url}", entry.id),
-                ));
-            }
-            if !is_placeholder(path) && !path.starts_with('/') {
-                return Err(UcelError::new(
-                    ErrorCode::CatalogInvalid,
-                    format!("invalid path for id={}: {path}", entry.id),
-                ));
-            }
-        }
-        (None, _, None, Some(ws_url)) => {
-            if ws_url.trim().is_empty() {
-                return Err(UcelError::new(
-                    ErrorCode::CatalogMissingField,
-                    format!("ws endpoint has empty ws_url for id={}", entry.id),
-                ));
-            }
-            let is_non_socket_reference = entry.id == "other.public.ws.sbe.marketdata";
-            let is_tokenized_reference = entry.id.starts_with("crypto.private.ws.user.stream.")
-                && ws_url == "PubNub subscribe endpoint (tokenized)";
-            if !(ws_url.starts_with("wss://")
-                || ws_url.starts_with("ws://")
-                || (is_non_socket_reference && ws_url.contains("see docs"))
-                || is_tokenized_reference)
-            if !is_placeholder(ws_url)
-                && !(ws_url.starts_with("wss://")
-                    || ws_url.starts_with("ws://")
-                    || ws_url.starts_with("https://")
-                    || ws_url.starts_with("http://"))
-            {
-                return Err(UcelError::new(
-                    ErrorCode::CatalogInvalid,
-                    format!("invalid ws_url for id={}: {ws_url}", entry.id),
-                ));
-            }
-        }
-        (None, Some(base_url), None, None) if ws_base_url.is_some() => {
-            if base_url.trim().is_empty() {
-                return Err(UcelError::new(
-                    ErrorCode::CatalogMissingField,
-                    format!("ws endpoint has empty base_url for id={}", entry.id),
-                ));
-            }
-            if entry
-                .channel
-                .as_deref()
-                .unwrap_or_default()
-                .trim()
-                .is_empty()
-            {
-                return Err(UcelError::new(
-                    ErrorCode::CatalogMissingField,
-                    format!("ws endpoint requires non-empty channel for id={}", entry.id),
-                ));
-            }
-        }
-        _ => {
-            return Err(UcelError::new(
-                ErrorCode::CatalogInvalid,
-                format!(
-                    "catalog row must be either REST(method/base_url/path) or WS(ws.url/ws_url), id={}",
-                    entry.id
-                ),
-            ));
-        }
-    }
-
     Ok(())
 }
 
-fn is_placeholder(v: &str) -> bool {
-    let t = v.trim();
-    (t.starts_with("{{") && t.ends_with("}}")) || (t.starts_with("${") && t.ends_with("}"))
-}
-
-fn auth_type_requires_credentials(auth_type: &str) -> bool {
-    matches!(auth_type, "apiKey" | "token" | "oauth2")
-}
-
 pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
-    let op = map_operation(entry)?;
-    let requires_auth = entry_visibility(entry)? == "private";
-    Ok(OpMeta { op, requires_auth })
+    Ok(OpMeta {
+        op: map_operation(entry)?,
+        requires_auth: entry_visibility(entry) == "private",
+    })
 }
 
-fn entry_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
-    if !entry.visibility.trim().is_empty() {
-        return Ok(entry.visibility.to_ascii_lowercase());
+fn entry_visibility(entry: &CatalogEntry) -> String {
+    if !entry.visibility.is_empty() {
+        return entry.visibility.to_ascii_lowercase();
     }
-
     if entry.id.contains(".private.") {
-        return Ok("private".to_string());
+        "private".into()
+    } else {
+        "public".into()
     }
-    if entry.id.contains(".public.") {
-        return Ok("public".to_string());
-    }
-
-    Err(UcelError::new(
-        ErrorCode::CatalogMissingField,
-        format!("missing visibility for id={}", entry.id),
-    ))
 }
 
 pub fn map_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
-    if entry.id.starts_with("usdm.") {
-        return map_binance_usdm_operation(entry);
-    if entry.id.starts_with("bybit.") {
-        return map_bybit_operation(entry);
-    }
-
-    if let Some(operation) = entry.operation.as_deref() {
-        if let Some(op) = map_operation_literal(operation) {
-            return Ok(op);
-        }
-    }
-    if let Some(op) = map_bitmex_operation_by_id(&entry.id) {
-        return Ok(op);
-    }
-    map_operation_by_id(&entry.id)
-}
-
-fn map_binance_usdm_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
-    let op = match entry.id.as_str() {
-        "usdm.public.rest.general.ref"
-        | "usdm.public.rest.errors.ref"
-        | "usdm.public.rest.market.ref"
-        | "usdm.public.ws.wsapi.general" => OpName::FetchStatus,
-        "usdm.private.rest.trade.ref" | "usdm.private.rest.listenkey.ref" => OpName::PlaceOrder,
-        "usdm.private.rest.account.ref" => OpName::FetchBalances,
-        "usdm.public.ws.market.root"
-        | "usdm.public.ws.market.markprice"
-        | "usdm.public.ws.market.bookticker" => OpName::SubscribeTicker,
-        "usdm.public.ws.market.aggtrade" => OpName::SubscribeTrades,
-        "usdm.public.ws.market.kline" => OpName::FetchKlines,
-        "usdm.public.ws.market.depth.partial" | "usdm.public.ws.market.depth.diff" => {
-            OpName::SubscribeOrderbook
-        }
-        "usdm.public.ws.market.liquidation" | "usdm.private.ws.userdata.events" => {
-            OpName::SubscribeExecutionEvents
-        }
-        _ => {
-            return Err(UcelError::new(
-                ErrorCode::NotSupported,
-                format!(
-                    "unsupported binance-usdm operation mapping for id={}",
-                    entry.id
-                ),
-            ));
-        }
-    };
-    Ok(op)
-fn map_bitmex_operation_by_id(id: &str) -> Option<OpName> {
-    if let Some(channel) = id
-        .strip_prefix("public.ws.")
-        .and_then(|raw| raw.strip_suffix(".subscribe"))
-    {
-        return Some(map_bitmex_public_ws_channel(channel));
-    }
-
-    if let Some(channel) = id
-        .strip_prefix("private.ws.")
-        .and_then(|raw| raw.strip_suffix(".subscribe"))
-    {
-        return Some(map_bitmex_private_ws_channel(channel));
-    }
-
-    if !id.contains(".rest.") {
-        return None;
-    }
-
-    let mut parts = id.split('.');
-    let _visibility = parts.next()?;
-    let transport = parts.next()?;
-    if transport != "rest" {
-        return None;
-    }
-    let resource = parts.next()?;
-    let action = parts.next().unwrap_or_default();
-    Some(map_bitmex_rest_resource(resource, action))
-}
-
-fn map_bitmex_public_ws_channel(channel: &str) -> OpName {
-    if channel.starts_with("trade") {
-        OpName::SubscribeTrades
-    } else if channel.starts_with("orderbook") {
-        OpName::SubscribeOrderbook
-    } else if channel == "quote" || channel.starts_with("quotebin") || channel == "instrument" {
-        OpName::SubscribeTicker
-    } else {
-        OpName::FetchStatus
-    }
-}
-
-fn map_bitmex_private_ws_channel(channel: &str) -> OpName {
-    match channel {
-        "execution" | "transact" => OpName::SubscribeExecutionEvents,
-        "order" => OpName::SubscribeOrderEvents,
-        "position" | "margin" | "wallet" => OpName::SubscribePositionEvents,
-        _ => OpName::FetchStatus,
-    }
-}
-
 fn map_bitmex_rest_resource(resource: &str, action: &str) -> OpName {
     match resource {
         "order" => {
@@ -734,54 +479,35 @@ fn normalized_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
 
 fn map_bybit_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
     let id = entry.id.as_str();
-    let operation = entry
-        .operation
-        .as_deref()
-        .unwrap_or("")
-        .to_ascii_lowercase();
-
     let op = if id.contains(".ws.") {
-        if id.contains("orderbook") {
-            OpName::SubscribeOrderbook
-        } else if id.contains("ticker") {
+        if id.contains("ticker") {
             OpName::SubscribeTicker
-        } else if id.contains("execution") {
-            OpName::SubscribeExecutionEvents
+        } else if id.contains("trade") || id.contains("transaction") {
+            OpName::SubscribeTrades
+        } else if id.contains("depth") || id.contains("book") {
+            OpName::SubscribeOrderbook
         } else if id.contains("position") {
             OpName::SubscribePositionEvents
-        } else if id.contains("trade") || id.contains("kline") || id.contains("liquidation") {
-            OpName::SubscribeTrades
-        } else {
+        } else if id.contains("order") {
             OpName::SubscribeOrderEvents
+        } else {
+            OpName::FetchStatus
         }
-    } else if id.contains("create-order") || id.contains("batch-place") {
+    } else if id.contains("order.create") || id.contains("order.post") || id.contains("add_order") {
         OpName::PlaceOrder
-    } else if id.contains("amend") {
-        OpName::AmendOrder
     } else if id.contains("cancel") {
         OpName::CancelOrder
-    } else if id.contains("open-order") || id.contains("order-list") {
-        OpName::FetchOpenOrders
-    } else if id.contains("position-info") {
-        OpName::FetchOpenPositions
-    } else if id.contains("execution") || id.contains("close-pnl") || id.contains("transaction") {
-        OpName::FetchFills
-    } else if id.contains("wallet") || id.contains("balance") || id.contains("asset") {
+    } else if id.contains("assets") || id.contains("balance") {
         OpName::FetchBalances
     } else if id.contains("ticker") {
         OpName::FetchTicker
-    } else if id.contains("orderbook") {
+    } else if id.contains("depth") || id.contains("orderbook") {
         OpName::FetchOrderbookSnapshot
-    } else if id.contains("trade") {
+    } else if id.contains("trade") || id.contains("transactions") {
         OpName::FetchTrades
-    } else if id.contains("kline") || id.contains("iv") {
-        OpName::FetchKlines
-    } else if operation.contains("status") {
-        OpName::FetchStatus
     } else {
         OpName::FetchStatus
     };
-
     Ok(op)
 }
 
