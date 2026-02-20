@@ -1,6 +1,10 @@
 use serde::Deserialize;
 use std::{collections::HashSet, fs, path::Path};
-use ucel_core::{ErrorCode, OpMeta, OpName, UcelError};
+use ucel_core::{
+    AuthCapabilities, Capabilities, ErrorCode, FailoverPolicy, MarketDataCapabilities, OpMeta,
+    OpName, OperationalCapabilities, RateLimitCapabilities, RuntimePolicy, SafeDefaults,
+    TradingCapabilities, UcelError,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConnectionConfig {
@@ -30,6 +34,10 @@ pub struct CatalogEntry {
     pub id: String,
     #[serde(default)]
     pub visibility: String,
+    #[serde(default)]
+    pub requires_auth: Option<bool>,
+    #[serde(default)]
+    pub channel: Option<String>,
     pub operation: Option<String>,
     pub method: Option<String>,
     pub base_url: Option<String>,
@@ -77,13 +85,6 @@ pub fn load_catalog_from_repo_root(
         .join(exchange.to_ascii_lowercase())
         .join("catalog.json");
     load_catalog_from_path(&path)
-    load_catalog_from_path(
-        &repo_root
-            .join("docs")
-            .join("exchanges")
-            .join(exchange.to_ascii_lowercase())
-            .join("catalog.json"),
-    )
 }
 
 pub fn validate_catalog(catalog: &ExchangeCatalog) -> Result<(), UcelError> {
@@ -106,6 +107,12 @@ pub fn validate_catalog(catalog: &ExchangeCatalog) -> Result<(), UcelError> {
             ));
         }
         if !seen.insert(e.id.clone()) {
+            return Err(UcelError::new(
+                ErrorCode::CatalogDuplicateId,
+                format!("duplicate catalog id={}", e.id),
+            ));
+        }
+        validate_entry(e)?;
     }
     Ok(())
 }
@@ -135,7 +142,9 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
             return Err(UcelError::new(
                 ErrorCode::CatalogInvalid,
                 format!(
-                    "requires_auth contradicts visibility for id={} (visibility={}, requires_auth={})"
+                    "requires_auth contradicts visibility for id={} (visibility={}, requires_auth={})",
+                    entry.id, visibility, requires_auth
+                ),
             ));
         }
     }
@@ -210,16 +219,8 @@ pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
 }
 
 fn entry_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
-    if entry
-        .visibility
-        .as_deref()
-        .is_some_and(|v| !v.trim().is_empty())
-    {
-        return Ok(entry
-            .visibility
-            .as_deref()
-            .unwrap_or_default()
-            .to_ascii_lowercase());
+    if !entry.visibility.trim().is_empty() {
+        return Ok(entry.visibility.to_ascii_lowercase());
     }
 
     if entry.id.contains(".private.") {
@@ -376,6 +377,7 @@ mod tests {
                 id: "same".into(),
                 visibility: "public".into(),
                 requires_auth: None,
+                channel: None,
                 operation: None,
                 method: Some("GET".into()),
                 base_url: Some("https://api.x".into()),
