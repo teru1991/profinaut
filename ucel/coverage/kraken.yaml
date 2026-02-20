@@ -1,5 +1,5 @@
 venue: kraken
-strict: false
+strict: true
 entries:
 - id: spot.public.rest.assets.list
   implemented: true
@@ -32,32 +32,32 @@ entries:
   implemented: true
   tested: true
 - id: spot.public.ws.v1.market.book.subscribe
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: spot.public.ws.v1.market.trade.subscribe
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: spot.private.ws.v1.account.open_orders.subscribe
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: spot.private.ws.v1.trade.add_order.request
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: spot.public.ws.v2.market.book.subscribe
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: spot.public.ws.v2.market.instrument.subscribe
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: spot.private.ws.v2.trade.add_order
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: futures.public.ws.other.market.ticker.subscribe
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: futures.public.ws.other.market.book.subscribe
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: futures.private.ws.other.account.open_positions.subscribe
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true

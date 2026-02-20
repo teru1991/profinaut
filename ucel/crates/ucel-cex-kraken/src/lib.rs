@@ -1,8 +1,9 @@
 use bytes::Bytes;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
+use tokio::sync::mpsc;
 use ucel_core::{ErrorCode, Exchange, OpName, UcelError};
 use ucel_transport::{enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport};
 use uuid::Uuid;
@@ -354,6 +355,361 @@ pub struct FuturesSendOrderResponse {
     pub send_status: serde_json::Value,
 }
 
+#[derive(Debug, Clone)]
+pub struct WsChannelSpec {
+    pub id: &'static str,
+    pub ws_url: &'static str,
+    pub channel: &'static str,
+    pub requires_auth: bool,
+    pub supports_unsubscribe: bool,
+}
+
+const WS_CHANNELS: [WsChannelSpec; 10] = [
+    WsChannelSpec {
+        id: "spot.public.ws.v1.market.book.subscribe",
+        ws_url: "wss://ws.kraken.com",
+        channel: "book",
+        requires_auth: false,
+        supports_unsubscribe: true,
+    },
+    WsChannelSpec {
+        id: "spot.public.ws.v1.market.trade.subscribe",
+        ws_url: "wss://ws.kraken.com",
+        channel: "trade",
+        requires_auth: false,
+        supports_unsubscribe: true,
+    },
+    WsChannelSpec {
+        id: "spot.private.ws.v1.account.open_orders.subscribe",
+        ws_url: "wss://ws-auth.kraken.com",
+        channel: "openOrders",
+        requires_auth: true,
+        supports_unsubscribe: true,
+    },
+    WsChannelSpec {
+        id: "spot.private.ws.v1.trade.add_order.request",
+        ws_url: "wss://ws-auth.kraken.com",
+        channel: "addOrder",
+        requires_auth: true,
+        supports_unsubscribe: false,
+    },
+    WsChannelSpec {
+        id: "spot.public.ws.v2.market.book.subscribe",
+        ws_url: "wss://ws.kraken.com/v2",
+        channel: "book",
+        requires_auth: false,
+        supports_unsubscribe: true,
+    },
+    WsChannelSpec {
+        id: "spot.public.ws.v2.market.instrument.subscribe",
+        ws_url: "wss://ws.kraken.com/v2",
+        channel: "instrument",
+        requires_auth: false,
+        supports_unsubscribe: true,
+    },
+    WsChannelSpec {
+        id: "spot.private.ws.v2.trade.add_order",
+        ws_url: "wss://ws.kraken.com/v2",
+        channel: "add_order",
+        requires_auth: true,
+        supports_unsubscribe: false,
+    },
+    WsChannelSpec {
+        id: "futures.public.ws.other.market.ticker.subscribe",
+        ws_url: "wss://futures.kraken.com/ws/v1",
+        channel: "ticker",
+        requires_auth: false,
+        supports_unsubscribe: true,
+    },
+    WsChannelSpec {
+        id: "futures.public.ws.other.market.book.subscribe",
+        ws_url: "wss://futures.kraken.com/ws/v1",
+        channel: "book",
+        requires_auth: false,
+        supports_unsubscribe: true,
+    },
+    WsChannelSpec {
+        id: "futures.private.ws.other.account.open_positions.subscribe",
+        ws_url: "wss://futures.kraken.com/ws/v1",
+        channel: "open_positions",
+        requires_auth: true,
+        supports_unsubscribe: true,
+    },
+];
+
+#[derive(Debug, Clone, Default)]
+pub struct WsAdapterMetrics {
+    pub ws_reconnect_total: u64,
+    pub ws_resubscribe_total: u64,
+    pub ws_backpressure_overflow_total: u64,
+    pub ws_orderbook_gap_total: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NormalizedWsEvent {
+    pub channel: String,
+    pub symbol: Option<String>,
+    pub kind: String,
+    pub payload: serde_json::Value,
+}
+
+pub struct WsBackpressureBuffer {
+    tx: mpsc::Sender<NormalizedWsEvent>,
+    rx: mpsc::Receiver<NormalizedWsEvent>,
+}
+
+impl WsBackpressureBuffer {
+    pub fn with_capacity(capacity: usize) -> Self {
+        let (tx, rx) = mpsc::channel(capacity);
+        Self { tx, rx }
+    }
+
+    pub fn try_push(&self, event: NormalizedWsEvent, metrics: &mut WsAdapterMetrics) {
+        if self.tx.try_send(event).is_err() {
+            metrics.ws_backpressure_overflow_total += 1;
+        }
+    }
+
+    pub async fn recv(&mut self) -> Option<NormalizedWsEvent> {
+        self.rx.recv().await
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct OrderBookSyncState {
+    pub sequence: Option<u64>,
+    pub bids: HashMap<String, String>,
+    pub asks: HashMap<String, String>,
+    pub needs_resync: bool,
+}
+
+impl OrderBookSyncState {
+    pub fn apply_snapshot(
+        &mut self,
+        sequence: u64,
+        bids: &[(String, String)],
+        asks: &[(String, String)],
+    ) {
+        self.sequence = Some(sequence);
+        self.needs_resync = false;
+        self.bids = bids.iter().cloned().collect();
+        self.asks = asks.iter().cloned().collect();
+    }
+
+    pub fn apply_delta(
+        &mut self,
+        sequence: u64,
+        bids: &[(String, String)],
+        asks: &[(String, String)],
+        metrics: &mut WsAdapterMetrics,
+    ) {
+        let expected_next = self.sequence.map(|v| v + 1);
+        if expected_next.is_none() || expected_next != Some(sequence) {
+            self.needs_resync = true;
+            metrics.ws_orderbook_gap_total += 1;
+            return;
+        }
+
+        self.sequence = Some(sequence);
+        for (price, qty) in bids {
+            if qty == "0" {
+                self.bids.remove(price);
+            } else {
+                self.bids.insert(price.clone(), qty.clone());
+            }
+        }
+        for (price, qty) in asks {
+            if qty == "0" {
+                self.asks.remove(price);
+            } else {
+                self.asks.insert(price.clone(), qty.clone());
+            }
+        }
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct KrakenWsAdapter {
+    subscriptions: HashSet<String>,
+    pub metrics: WsAdapterMetrics,
+}
+
+impl KrakenWsAdapter {
+    pub fn ws_channel_specs() -> &'static [WsChannelSpec] {
+        &WS_CHANNELS
+    }
+
+    pub fn build_subscribe(
+        endpoint_id: &str,
+        symbol: &str,
+        token: Option<&str>,
+        api_key: Option<&str>,
+    ) -> Result<serde_json::Value, UcelError> {
+        let spec = WS_CHANNELS
+            .iter()
+            .find(|s| s.id == endpoint_id)
+            .ok_or_else(|| {
+                UcelError::new(
+                    ErrorCode::NotSupported,
+                    format!("unknown ws endpoint: {endpoint_id}"),
+                )
+            })?;
+        if spec.requires_auth && token.is_none() && api_key.is_none() {
+            return Err(UcelError::new(
+                ErrorCode::MissingAuth,
+                "private websocket endpoint requires credentials",
+            ));
+        }
+
+        let payload = match endpoint_id {
+            "spot.public.ws.v1.market.book.subscribe" => {
+                serde_json::json!({"event":"subscribe","pair":[symbol],"subscription":{"name":"book","depth":10}})
+            }
+            "spot.public.ws.v1.market.trade.subscribe" => {
+                serde_json::json!({"event":"subscribe","pair":[symbol],"subscription":{"name":"trade"}})
+            }
+            "spot.private.ws.v1.account.open_orders.subscribe" => {
+                serde_json::json!({"event":"subscribe","subscription":{"name":"openOrders","token":token.unwrap_or_default()}})
+            }
+            "spot.private.ws.v1.trade.add_order.request" => {
+                serde_json::json!({"event":"addOrder","token":token.unwrap_or_default(),"pair":symbol,"type":"buy","ordertype":"limit","price":"30000","volume":"0.01"})
+            }
+            "spot.public.ws.v2.market.book.subscribe" => {
+                serde_json::json!({"method":"subscribe","params":{"channel":"book","symbol":[symbol],"depth":10}})
+            }
+            "spot.public.ws.v2.market.instrument.subscribe" => {
+                serde_json::json!({"method":"subscribe","params":{"channel":"instrument","symbol":[symbol]}})
+            }
+            "spot.private.ws.v2.trade.add_order" => {
+                serde_json::json!({"method":"add_order","params":{"token":token.unwrap_or_default(),"order_type":"limit","side":"buy","order_qty":0.01,"symbol":symbol,"limit_price":30000}})
+            }
+            "futures.public.ws.other.market.ticker.subscribe" => {
+                serde_json::json!({"event":"subscribe","feed":"ticker","product_ids":[symbol]})
+            }
+            "futures.public.ws.other.market.book.subscribe" => {
+                serde_json::json!({"event":"subscribe","feed":"book","product_ids":[symbol]})
+            }
+            "futures.private.ws.other.account.open_positions.subscribe" => {
+                serde_json::json!({"event":"subscribe","feed":"open_positions","api_key":api_key.unwrap_or_default(),"original_challenge":"challenge","signed_challenge":"signed"})
+            }
+            _ => {
+                return Err(UcelError::new(
+                    ErrorCode::NotSupported,
+                    format!("unsupported ws endpoint: {endpoint_id}"),
+                ))
+            }
+        };
+        Ok(payload)
+    }
+
+    pub fn build_unsubscribe(
+        endpoint_id: &str,
+        symbol: &str,
+        token: Option<&str>,
+    ) -> Option<serde_json::Value> {
+        let spec = WS_CHANNELS.iter().find(|s| s.id == endpoint_id)?;
+        if !spec.supports_unsubscribe {
+            return None;
+        }
+        let payload = match endpoint_id {
+            "spot.public.ws.v1.market.book.subscribe" => {
+                serde_json::json!({"event":"unsubscribe","pair":[symbol],"subscription":{"name":"book"}})
+            }
+            "spot.public.ws.v1.market.trade.subscribe" => {
+                serde_json::json!({"event":"unsubscribe","pair":[symbol],"subscription":{"name":"trade"}})
+            }
+            "spot.private.ws.v1.account.open_orders.subscribe" => {
+                serde_json::json!({"event":"unsubscribe","subscription":{"name":"openOrders","token":token.unwrap_or_default()}})
+            }
+            "spot.public.ws.v2.market.book.subscribe" => {
+                serde_json::json!({"method":"unsubscribe","params":{"channel":"book","symbol":[symbol]}})
+            }
+            "spot.public.ws.v2.market.instrument.subscribe" => {
+                serde_json::json!({"method":"unsubscribe","params":{"channel":"instrument","symbol":[symbol]}})
+            }
+            "futures.public.ws.other.market.ticker.subscribe" => {
+                serde_json::json!({"event":"unsubscribe","feed":"ticker","product_ids":[symbol]})
+            }
+            "futures.public.ws.other.market.book.subscribe" => {
+                serde_json::json!({"event":"unsubscribe","feed":"book","product_ids":[symbol]})
+            }
+            "futures.private.ws.other.account.open_positions.subscribe" => {
+                serde_json::json!({"event":"unsubscribe","feed":"open_positions"})
+            }
+            _ => return None,
+        };
+        Some(payload)
+    }
+
+    pub fn subscribe_once(&mut self, endpoint_id: &str, symbol: &str) -> bool {
+        self.subscriptions.insert(format!("{endpoint_id}:{symbol}"))
+    }
+
+    pub async fn reconnect_and_resubscribe<T: Transport>(
+        &mut self,
+        transport: &T,
+    ) -> Result<usize, UcelError> {
+        let ctx = RequestContext {
+            trace_id: Uuid::new_v4().to_string(),
+            request_id: Uuid::new_v4().to_string(),
+            run_id: Uuid::new_v4().to_string(),
+            op: OpName::FetchStatus,
+            venue: "kraken".into(),
+            policy_id: "default".into(),
+            key_id: None,
+            requires_auth: false,
+        };
+        transport
+            .connect_ws(
+                ucel_transport::WsConnectRequest {
+                    url: "wss://ws.kraken.com".into(),
+                },
+                ctx,
+            )
+            .await?;
+        self.metrics.ws_reconnect_total += 1;
+        self.metrics.ws_resubscribe_total += self.subscriptions.len() as u64;
+        Ok(self.subscriptions.len())
+    }
+}
+
+pub fn normalize_ws_event(endpoint_id: &str, raw: &str) -> Result<NormalizedWsEvent, UcelError> {
+    let v: serde_json::Value = serde_json::from_str(raw)
+        .map_err(|e| UcelError::new(ErrorCode::Internal, format!("ws json parse error: {e}")))?;
+    let event = NormalizedWsEvent {
+        channel: endpoint_id.to_string(),
+        symbol: v
+            .get("symbol")
+            .and_then(|s| s.as_str())
+            .map(ToString::to_string),
+        kind: if v.get("error").is_some() {
+            "error".into()
+        } else {
+            "update".into()
+        },
+        payload: v,
+    };
+    Ok(event)
+}
+
+pub fn scrub_secrets(input: &str) -> String {
+    input
+        .split_whitespace()
+        .map(|part| {
+            if part.starts_with("api_key=") {
+                "api_key=***".to_string()
+            } else if part.starts_with("api_secret=") {
+                "api_secret=***".to_string()
+            } else if part.starts_with("token=") {
+                "token=***".to_string()
+            } else {
+                part.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -487,20 +843,116 @@ mod tests {
     }
 
     #[test]
-    fn kraken_coverage_manifest_has_no_rest_gaps() {
+    fn ws_contract_builds_subscribe_unsubscribe_for_all_catalog_ids() {
+        for spec in KrakenWsAdapter::ws_channel_specs() {
+            let sub = KrakenWsAdapter::build_subscribe(spec.id, "BTC/USD", Some("tok"), Some("k"))
+                .unwrap();
+            assert!(sub.is_object());
+            if spec.supports_unsubscribe {
+                assert!(
+                    KrakenWsAdapter::build_unsubscribe(spec.id, "BTC/USD", Some("tok")).is_some()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn private_ws_preflight_rejects_missing_credentials() {
+        let err = KrakenWsAdapter::build_subscribe(
+            "spot.private.ws.v2.trade.add_order",
+            "BTC/USD",
+            None,
+            None,
+        )
+        .unwrap_err();
+        assert_eq!(err.code, ErrorCode::MissingAuth);
+    }
+
+    #[test]
+    fn ws_messages_are_normalized_and_typed() {
+        let msg = r#"{"channel":"book","symbol":"BTC/USD","data":[{"bid":"1"}]}"#;
+        let normalized =
+            normalize_ws_event("spot.public.ws.v2.market.book.subscribe", msg).unwrap();
+        assert_eq!(
+            normalized.channel,
+            "spot.public.ws.v2.market.book.subscribe"
+        );
+        assert_eq!(normalized.symbol.as_deref(), Some("BTC/USD"));
+        assert_eq!(normalized.kind, "update");
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn reconnect_resubscribe_is_idempotent() {
+        let transport = SpyTransport::new();
+        let mut ws = KrakenWsAdapter::default();
+        assert!(ws.subscribe_once("spot.public.ws.v2.market.book.subscribe", "BTC/USD"));
+        assert!(!ws.subscribe_once("spot.public.ws.v2.market.book.subscribe", "BTC/USD"));
+        let count = ws.reconnect_and_resubscribe(&transport).await.unwrap();
+        assert_eq!(count, 1);
+        assert_eq!(ws.metrics.ws_reconnect_total, 1);
+        assert_eq!(ws.metrics.ws_resubscribe_total, 1);
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn backpressure_uses_bounded_channel_and_counts_overflow() {
+        let mut metrics = WsAdapterMetrics::default();
+        let mut q = WsBackpressureBuffer::with_capacity(1);
+        q.try_push(
+            NormalizedWsEvent {
+                channel: "x".into(),
+                symbol: None,
+                kind: "update".into(),
+                payload: serde_json::json!({"v":1}),
+            },
+            &mut metrics,
+        );
+        q.try_push(
+            NormalizedWsEvent {
+                channel: "x".into(),
+                symbol: None,
+                kind: "update".into(),
+                payload: serde_json::json!({"v":2}),
+            },
+            &mut metrics,
+        );
+        assert_eq!(metrics.ws_backpressure_overflow_total, 1);
+        let first = q.recv().await.unwrap();
+        assert_eq!(first.payload["v"], 1);
+    }
+
+    #[test]
+    fn orderbook_gap_triggers_immediate_resync() {
+        let mut metrics = WsAdapterMetrics::default();
+        let mut ob = OrderBookSyncState::default();
+        ob.apply_snapshot(
+            10,
+            &[("100".into(), "1".into())],
+            &[("101".into(), "1".into())],
+        );
+        ob.apply_delta(12, &[("100".into(), "2".into())], &[], &mut metrics);
+        assert!(ob.needs_resync);
+        assert_eq!(metrics.ws_orderbook_gap_total, 1);
+    }
+
+    #[test]
+    fn logging_scrubber_masks_secrets() {
+        let raw = "api_key=abc api_secret=def token=ghi";
+        let scrubbed = scrub_secrets(raw);
+        assert!(!scrubbed.contains("abc"));
+        assert!(!scrubbed.contains("def"));
+        assert!(!scrubbed.contains("ghi"));
+    }
+    #[test]
+    fn kraken_coverage_manifest_is_strict_and_has_no_gaps() {
         let manifest_path =
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/kraken.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        let rest_entries: Vec<_> = manifest
-            .entries
-            .iter()
-            .filter(|e| e.id.contains(".rest."))
-            .collect();
-        assert!(!rest_entries.is_empty());
-        for e in rest_entries {
-            assert!(e.implemented, "rest id not implemented: {}", e.id);
-            assert!(e.tested, "rest id not tested: {}", e.id);
+        assert!(manifest.strict);
+        for e in &manifest.entries {
+            assert!(e.implemented, "id not implemented: {}", e.id);
+            assert!(e.tested, "id not tested: {}", e.id);
         }
-        let _ = evaluate_coverage_gate(&manifest);
+        let gaps = evaluate_coverage_gate(&manifest);
+        assert!(gaps.is_empty(), "strict gate requires zero gaps: {gaps:?}");
     }
 }

@@ -241,22 +241,24 @@ mod tests {
         assert!(manifest.strict);
 
         let gaps = evaluate_coverage_gate(&manifest);
-        assert!(gaps.is_empty(), "strict coverage gate must have no gaps: {gaps:?}");
+        assert!(
+            gaps.is_empty(),
+            "strict coverage gate must have no gaps: {gaps:?}"
+        );
     }
 
     #[test]
-    fn coverage_gate_warns_for_kraken_in_warn_only_mode() {
-        let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/kraken.yaml");
+    fn coverage_gate_is_strict_for_kraken_and_has_no_gaps() {
+        let manifest_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/kraken.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
         assert_eq!(manifest.venue, "kraken");
-        assert!(!manifest.strict);
+        assert!(manifest.strict);
 
         let result = run_coverage_gate(&manifest);
         match result {
-            CoverageGateResult::WarnOnly(gaps) => {
-                assert!(!gaps.is_empty(), "warn-only mode should report missing coverage");
-            }
-            _ => panic!("kraken coverage gate should be warn-only with gaps"),
+            CoverageGateResult::Passed => {}
+            _ => panic!("kraken coverage gate should pass in strict mode"),
         }
     }
 }
