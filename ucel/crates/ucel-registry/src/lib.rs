@@ -1,4 +1,5 @@
 pub mod deribit;
+pub mod okx;
 use serde::Deserialize;
 use std::{collections::HashSet, fs, path::Path};
 use ucel_core::{ErrorCode, OpMeta, OpName, UcelError};
@@ -49,19 +50,31 @@ pub struct CatalogAuth {
 }
 
 pub fn load_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, UcelError> {
-    let raw = fs::read_to_string(path)
-        .map_err(|e| UcelError::new(ErrorCode::CatalogInvalid, format!("read {}: {e}", path.display())))?;
-    let catalog: ExchangeCatalog = serde_json::from_str(&raw)
-        .map_err(|e| UcelError::new(ErrorCode::CatalogInvalid, format!("parse {}: {e}", path.display())))?;
+    let raw = fs::read_to_string(path).map_err(|e| {
+        UcelError::new(
+            ErrorCode::CatalogInvalid,
+            format!("read {}: {e}", path.display()),
+        )
+    })?;
+    let catalog: ExchangeCatalog = serde_json::from_str(&raw).map_err(|e| {
+        UcelError::new(
+            ErrorCode::CatalogInvalid,
+            format!("parse {}: {e}", path.display()),
+        )
+    })?;
     validate_catalog(&catalog)?;
     Ok(catalog)
 }
 
-pub fn load_catalog_from_repo_root(repo_root: &Path, exchange: &str) -> Result<ExchangeCatalog, UcelError> {
+pub fn load_catalog_from_repo_root(
+    repo_root: &Path,
+    exchange: &str,
+) -> Result<ExchangeCatalog, UcelError> {
+    let exchange_dir = exchange.to_ascii_lowercase();
     let path = repo_root
         .join("docs")
         .join("exchanges")
-        .join(exchange.to_ascii_lowercase())
+        .join(&exchange_dir)
         .join("catalog.json");
 
     if exchange_dir == "deribit" {
@@ -73,12 +86,22 @@ pub fn load_catalog_from_repo_root(repo_root: &Path, exchange: &str) -> Result<E
 
 pub fn validate_catalog(catalog: &ExchangeCatalog) -> Result<(), UcelError> {
     if catalog.exchange.trim().is_empty() {
-        return Err(UcelError::new(ErrorCode::CatalogMissingField, "catalog.exchange empty"));
+        return Err(UcelError::new(
+            ErrorCode::CatalogMissingField,
+            "catalog.exchange empty",
+        ));
     }
     let mut seen = HashSet::new();
-    for e in catalog.rest_endpoints.iter().chain(catalog.ws_channels.iter()) {
+    for e in catalog
+        .rest_endpoints
+        .iter()
+        .chain(catalog.ws_channels.iter())
+    {
         if e.id.trim().is_empty() {
-            return Err(UcelError::new(ErrorCode::CatalogMissingField, "entry.id empty"));
+            return Err(UcelError::new(
+                ErrorCode::CatalogMissingField,
+                "entry.id empty",
+            ));
         }
         if !seen.insert(e.id.clone()) {
             return Err(UcelError::new(
@@ -98,17 +121,14 @@ pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
 }
 
 fn entry_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
-    if !entry.visibility.trim().is_empty() {
-        return Ok(entry.visibility.to_ascii_lowercase());
+    if let Some(visibility) = entry.visibility.as_ref().filter(|v| !v.trim().is_empty()) {
+        return Ok(visibility.to_ascii_lowercase());
     }
     if entry.id.contains(".private.") {
         return Ok("private".into());
     }
-    if entry.id.starts_with("bybit.") {
-        return map_bybit_operation(entry);
-    }
-    if let Some(op) = map_bitget_operation_by_id(&entry.id) {
-        return Ok(op);
+    if entry.id.contains(".public.") {
+        return Ok("public".into());
     }
     Err(UcelError::new(
         ErrorCode::CatalogMissingField,
