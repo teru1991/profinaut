@@ -1275,6 +1275,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucel-cex-htx"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "ucel-core",
+ "ucel-testkit",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
 name = "ucel-cex-kraken"
 version = "0.1.0"
 dependencies = [
@@ -1285,6 +1300,20 @@ dependencies = [
  "tokio",
  "ucel-core",
  "ucel-testkit",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-upbit"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "ucel-core",
  "ucel-transport",
  "uuid",
 ]
