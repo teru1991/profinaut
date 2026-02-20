@@ -1,3 +1,4 @@
+pub mod deribit;
 use serde::Deserialize;
 use std::{collections::HashSet, fs, path::Path};
 use ucel_core::{ErrorCode, OpMeta, OpName, UcelError};
@@ -22,7 +23,11 @@ pub struct ExchangeCatalog {
 pub struct CatalogEntry {
     pub id: String,
     #[serde(default)]
-    pub visibility: String,
+    pub visibility: Option<String>,
+    #[serde(default)]
+    pub access: String,
+    #[serde(default)]
+    pub requires_auth: Option<bool>,
     pub operation: Option<String>,
     pub method: Option<String>,
     pub base_url: Option<String>,
@@ -37,9 +42,9 @@ pub struct CatalogWs {
     pub url: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Default)]
 pub struct CatalogAuth {
-    #[serde(rename = "type")]
+    #[serde(rename = "type", default)]
     pub auth_type: String,
 }
 
@@ -58,6 +63,11 @@ pub fn load_catalog_from_repo_root(repo_root: &Path, exchange: &str) -> Result<E
         .join("exchanges")
         .join(exchange.to_ascii_lowercase())
         .join("catalog.json");
+
+    if exchange_dir == "deribit" {
+        return deribit::load_deribit_catalog_from_path(&path);
+    }
+
     load_catalog_from_path(&path)
 }
 
@@ -94,8 +104,11 @@ fn entry_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
     if entry.id.contains(".private.") {
         return Ok("private".into());
     }
-    if entry.id.contains(".public.") {
-        return Ok("public".into());
+    if entry.id.starts_with("bybit.") {
+        return map_bybit_operation(entry);
+    }
+    if let Some(op) = map_bitget_operation_by_id(&entry.id) {
+        return Ok(op);
     }
     Err(UcelError::new(
         ErrorCode::CatalogMissingField,
