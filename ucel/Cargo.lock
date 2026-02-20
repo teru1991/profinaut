@@ -1213,6 +1213,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucel-cex-bitflyer"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "ucel-core",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
 name = "ucel-cex-bitmex"
 version = "0.1.0"
 dependencies = [
@@ -1255,6 +1269,22 @@ dependencies = [
  "tracing-subscriber",
  "ucel-core",
  "ucel-testkit",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-coincheck"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "ucel-core",
  "ucel-transport",
  "uuid",
 ]
