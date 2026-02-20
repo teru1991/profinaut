@@ -225,7 +225,111 @@ pub fn map_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
             return Ok(op);
         }
     }
+    if let Some(op) = map_bitmex_operation_by_id(&entry.id) {
+        return Ok(op);
+    }
     map_operation_by_id(&entry.id)
+}
+
+fn map_bitmex_operation_by_id(id: &str) -> Option<OpName> {
+    if let Some(channel) = id
+        .strip_prefix("public.ws.")
+        .and_then(|raw| raw.strip_suffix(".subscribe"))
+    {
+        return Some(map_bitmex_public_ws_channel(channel));
+    }
+
+    if let Some(channel) = id
+        .strip_prefix("private.ws.")
+        .and_then(|raw| raw.strip_suffix(".subscribe"))
+    {
+        return Some(map_bitmex_private_ws_channel(channel));
+    }
+
+    if !id.contains(".rest.") {
+        return None;
+    }
+
+    let mut parts = id.split('.');
+    let _visibility = parts.next()?;
+    let transport = parts.next()?;
+    if transport != "rest" {
+        return None;
+    }
+    let resource = parts.next()?;
+    let action = parts.next().unwrap_or_default();
+    Some(map_bitmex_rest_resource(resource, action))
+}
+
+fn map_bitmex_public_ws_channel(channel: &str) -> OpName {
+    if channel.starts_with("trade") {
+        OpName::SubscribeTrades
+    } else if channel.starts_with("orderbook") {
+        OpName::SubscribeOrderbook
+    } else if channel == "quote" || channel.starts_with("quotebin") || channel == "instrument" {
+        OpName::SubscribeTicker
+    } else {
+        OpName::FetchStatus
+    }
+}
+
+fn map_bitmex_private_ws_channel(channel: &str) -> OpName {
+    match channel {
+        "execution" | "transact" => OpName::SubscribeExecutionEvents,
+        "order" => OpName::SubscribeOrderEvents,
+        "position" | "margin" | "wallet" => OpName::SubscribePositionEvents,
+        _ => OpName::FetchStatus,
+    }
+}
+
+fn map_bitmex_rest_resource(resource: &str, action: &str) -> OpName {
+    match resource {
+        "order" => {
+            if action == "order-new" {
+                OpName::PlaceOrder
+            } else if action == "order-amend" {
+                OpName::AmendOrder
+            } else if action == "order-cancel"
+                || action == "order-cancelall"
+                || action == "order-cancelallafter"
+            {
+                OpName::CancelOrder
+            } else if action == "order-closeposition" {
+                OpName::ClosePositionByOrder
+            } else {
+                OpName::FetchOpenOrders
+            }
+        }
+        "position" => {
+            if action == "position-get" {
+                OpName::FetchOpenPositions
+            } else {
+                OpName::FetchPositionSummary
+            }
+        }
+        "execution" => OpName::FetchFills,
+        "trade" => OpName::FetchTrades,
+        "quote" => OpName::FetchTicker,
+        "orderbook" => OpName::FetchOrderbookSnapshot,
+        "user" => {
+            if action == "user-getmargin" {
+                OpName::FetchMarginStatus
+            } else if action.starts_with("user-getwallet")
+                || action.starts_with("user-getdeposit")
+                || action.contains("withdrawal")
+                || action.contains("staking")
+            {
+                OpName::FetchBalances
+            } else {
+                OpName::FetchStatus
+            }
+        }
+        "wallet" | "address" | "porl" => OpName::FetchBalances,
+        "instrument" | "schema" | "stats" | "announcement" | "globalnotification"
+        | "leaderboard" | "liquidation" | "insurance" | "funding" | "guild" | "chat" | "apikey"
+        | "settlement" | "useraffiliates" | "userevent" => OpName::FetchStatus,
+        _ => OpName::FetchStatus,
+    }
 }
 
 fn map_operation_literal(operation: &str) -> Option<OpName> {
@@ -233,10 +337,9 @@ fn map_operation_literal(operation: &str) -> Option<OpName> {
         "Get service status" | "Get FX API status" | "List futures instruments" => {
             Some(OpName::FetchStatus)
         }
-        "Get ticker"
-        | "Get FX ticker"
-        | "Get ticker information"
-        | "Get futures tickers" => Some(OpName::FetchTicker),
+        "Get ticker" | "Get FX ticker" | "Get ticker information" | "Get futures tickers" => {
+            Some(OpName::FetchTicker)
+        }
         "Get order book" | "Get FX order book" => Some(OpName::FetchOrderbookSnapshot),
         "Get recent trades" | "Get FX trades" => Some(OpName::FetchTrades),
         "Get candlesticks" | "Get FX klines" => Some(OpName::FetchKlines),
@@ -430,8 +533,36 @@ mod tests {
         assert_eq!(catalog.rest_endpoints.len(), 10);
         assert_eq!(catalog.ws_channels.len(), 10);
 
-        for entry in catalog.rest_endpoints.iter().chain(catalog.ws_channels.iter()) {
-            assert!(map_operation(entry).is_ok(), "missing op mapping for {}", entry.id);
+        for entry in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+        {
+            assert!(
+                map_operation(entry).is_ok(),
+                "missing op mapping for {}",
+                entry.id
+            );
+        }
+    }
+
+    #[test]
+    fn loads_bitmex_catalog_and_maps_all_ops() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "bitmex").unwrap();
+        assert_eq!(catalog.rest_endpoints.len(), 95);
+        assert_eq!(catalog.ws_channels.len(), 30);
+
+        for entry in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+        {
+            assert!(
+                map_operation(entry).is_ok(),
+                "missing op mapping for {}",
+                entry.id
+            );
         }
     }
 }
