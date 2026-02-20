@@ -171,7 +171,7 @@ fn validate_visibility_auth_consistency(
     auth: &str,
 ) -> Result<(), UcelError> {
     let requires_auth = okx_requires_auth(visibility)?;
-    let auth_lower = auth.to_ascii_lowercase();
+    let auth_lower = auth.trim().to_ascii_lowercase();
     if requires_auth && auth_lower == "none" {
         return Err(UcelError::new(
             ErrorCode::CatalogInvalid,
