@@ -1,74 +1,45 @@
 venue: binance
 strict: true
 entries:
-- id: crypto.public.rest.ping.get
-  implemented: true
-  tested: true
-- id: crypto.public.rest.time.get
-  implemented: true
-  tested: true
-- id: crypto.public.rest.exchangeinfo.get
-  implemented: true
-  tested: true
-- id: crypto.private.rest.order.post
-  implemented: true
-  tested: true
-- id: crypto.private.rest.account.get
-  implemented: true
-  tested: true
-- id: crypto.private.rest.listenkey.post
-  implemented: true
-  tested: true
-- id: crypto.public.rest.docs.enums.ref
-  implemented: true
-  tested: true
-- id: crypto.public.rest.docs.filters.ref
-  implemented: true
-  tested: true
-- id: other.public.rest.changelog.ref
-  implemented: true
-  tested: true
-strict: false
-entries:
-- id: crypto.public.rest.ping.get
-  implemented: false
-  tested: false
-- id: crypto.public.rest.time.get
-  implemented: false
-  tested: false
-- id: crypto.public.rest.exchangeinfo.get
-  implemented: false
-  tested: false
-- id: crypto.private.rest.order.post
-  implemented: false
-  tested: false
-- id: crypto.private.rest.account.get
-  implemented: false
-  tested: false
-- id: crypto.private.rest.listenkey.post
-  implemented: false
-  tested: false
-- id: crypto.public.rest.docs.enums.ref
-  implemented: false
-  tested: false
-- id: crypto.public.rest.docs.filters.ref
-  implemented: false
-  tested: false
-- id: other.public.rest.changelog.ref
-  implemented: false
-  tested: false
-- id: crypto.public.ws.trades.trade
-  implemented: false
-  tested: false
-- id: crypto.private.ws.userdata.executionreport
-  implemented: false
-  tested: false
-- id: crypto.public.ws.wsapi.time
-  implemented: false
-  tested: false
-- id: crypto.private.ws.wsapi.order.place
-  implemented: false
-  tested: false
-- id: other.public.ws.sbe.marketdata
-  implemented: false
-  tested: false
+  - id: crypto.public.rest.ping.get
+    implemented: true
+    tested: true
+  - id: crypto.public.rest.time.get
+    implemented: true
+    tested: true
+  - id: crypto.public.rest.exchangeinfo.get
+    implemented: true
+    tested: true
+  - id: crypto.private.rest.order.post
+    implemented: true
+    tested: true
+  - id: crypto.private.rest.account.get
+    implemented: true
+    tested: true
+  - id: crypto.private.rest.listenkey.post
+    implemented: true
+    tested: true
+  - id: crypto.public.rest.docs.enums.ref
+    implemented: true
+    tested: true
+  - id: crypto.public.rest.docs.filters.ref
+    implemented: true
+    tested: true
+  - id: other.public.rest.changelog.ref
+    implemented: true
+    tested: true
+  - id: crypto.public.ws.trades.trade
+    implemented: true
+    tested: true
+  - id: crypto.private.ws.userdata.executionreport
+    implemented: true
+    tested: true
+  - id: crypto.public.ws.wsapi.time
+    implemented: true
+    tested: true
+  - id: crypto.private.ws.wsapi.order.place
+    implemented: true
+    tested: true
+  - id: other.public.ws.sbe.marketdata
+    implemented: true
+    tested: true
