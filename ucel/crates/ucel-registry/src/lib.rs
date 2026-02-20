@@ -1,23 +1,14 @@
+pub mod okx;
+
 use serde::Deserialize;
 use std::{collections::HashSet, fs, path::Path};
-use ucel_core::{
-    AuthCapabilities, Capabilities, ErrorCode, FailoverPolicy, MarketDataCapabilities, OpMeta,
-    OpName, OperationalCapabilities, RateLimitCapabilities, RuntimePolicy, SafeDefaults,
-    TradingCapabilities, UcelError,
-};
+use ucel_core::{ErrorCode, OpMeta, OpName, UcelError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConnectionConfig {
     pub id: String,
     pub venue: String,
     pub enabled: bool,
-    pub policy: RuntimePolicy,
-    pub auth: AuthConfigRef,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AuthConfigRef {
-    pub key_pool: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -30,7 +21,6 @@ pub struct ExchangeCatalog {
 }
 
 pub type GmoCatalog = ExchangeCatalog;
-pub type BitbankCatalog = ExchangeCatalog;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct DataFeedEntry {
@@ -42,14 +32,11 @@ pub struct CatalogEntry {
     pub id: String,
     #[serde(default)]
     pub visibility: String,
-    #[serde(default)]
-    pub requires_auth: Option<bool>,
     pub operation: Option<String>,
     pub method: Option<String>,
     pub base_url: Option<String>,
     pub path: Option<String>,
     pub ws_url: Option<String>,
-    pub channel: Option<String>,
     pub ws: Option<CatalogWs>,
     #[serde(default)]
     pub auth: CatalogAuth,
@@ -70,15 +57,17 @@ pub fn load_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, UcelError>
     let raw = fs::read_to_string(path).map_err(|e| {
         UcelError::new(
             ErrorCode::CatalogInvalid,
-            format!("failed to read {}: {e}", path.display()),
+            format!("read {}: {e}", path.display()),
         )
     })?;
+
     let catalog: ExchangeCatalog = serde_json::from_str(&raw).map_err(|e| {
         UcelError::new(
             ErrorCode::CatalogInvalid,
-            format!("failed to parse {}: {e}", path.display()),
+            format!("parse {}: {e}", path.display()),
         )
     })?;
+
     validate_catalog(&catalog)?;
     Ok(catalog)
 }
@@ -93,29 +82,35 @@ pub fn load_catalog_from_repo_root(
         .join(exchange.to_ascii_lowercase())
         .join("catalog.json");
     load_catalog_from_path(&path)
+    load_catalog_from_path(
+        &repo_root
+            .join("docs")
+            .join("exchanges")
+            .join(exchange.to_ascii_lowercase())
+            .join("catalog.json"),
+    )
 }
 
 pub fn validate_catalog(catalog: &ExchangeCatalog) -> Result<(), UcelError> {
     if catalog.exchange.trim().is_empty() {
         return Err(UcelError::new(
             ErrorCode::CatalogMissingField,
-            "catalog.exchange must not be empty",
+            "catalog.exchange empty",
         ));
     }
-
     let mut seen = HashSet::new();
-    for entry in catalog
+    for e in catalog
         .rest_endpoints
         .iter()
         .chain(catalog.ws_channels.iter())
     {
-        validate_entry(entry)?;
-        if !seen.insert(entry.id.clone()) {
+        if e.id.trim().is_empty() {
             return Err(UcelError::new(
-                ErrorCode::CatalogDuplicateId,
-                format!("duplicate id found: {}", entry.id),
+                ErrorCode::CatalogMissingField,
+                "entry.id empty",
             ));
         }
+        if !seen.insert(e.id.clone()) {
     }
 
     Ok(())
@@ -202,10 +197,36 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
         _ => {
             return Err(UcelError::new(
                 ErrorCode::CatalogInvalid,
+                format!("invalid ws_url for id={}: {url}", entry.id),
+            ));
+        }
+    } else {
+        let base_url = entry.base_url.as_deref().unwrap_or_default().trim();
+        if base_url.is_empty() {
+            return Err(UcelError::new(
+                ErrorCode::CatalogMissingField,
                 format!(
                     "catalog row must be either REST(method/base_url/path) or WS(ws_url/ws.url), id={}",
                     entry.id
                 ),
+            ));
+        }
+        if !(base_url.starts_with("wss://") || base_url.starts_with("ws://")) {
+            return Err(UcelError::new(
+                ErrorCode::CatalogInvalid,
+                format!("invalid ws base_url for id={}: {base_url}", entry.id),
+            ));
+        }
+        if entry
+            .channel
+            .as_deref()
+            .unwrap_or_default()
+            .trim()
+            .is_empty()
+        {
+            return Err(UcelError::new(
+                ErrorCode::CatalogMissingField,
+                format!("ws endpoint requires channel for id={}", entry.id),
             ));
         }
     }
@@ -339,11 +360,11 @@ fn map_rest_operation_by_id(id: &str) -> OpName {
     }
 }
 
-pub fn capabilities_from_catalog(name: &str, catalog: &ExchangeCatalog) -> Capabilities {
+pub fn default_capabilities(catalog: &ExchangeCatalog) -> Capabilities {
     Capabilities {
-        schema_version: "1.0.0".into(),
+        schema_version: "v1".into(),
         kind: "exchange".into(),
-        name: name.into(),
+        name: catalog.exchange.clone(),
         marketdata: MarketDataCapabilities {
             rest: !catalog.rest_endpoints.is_empty(),
             ws: !catalog.ws_channels.is_empty(),
@@ -379,6 +400,28 @@ pub fn default_policy(policy_id: &str) -> RuntimePolicy {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
+
+    #[test]
+    fn loads_upbit_catalog_and_maps_all_rows() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "upbit").unwrap();
+        assert_eq!(catalog.rest_endpoints.len(), 22);
+        assert_eq!(catalog.ws_channels.len(), 7);
+
+        for entry in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+        {
+            let op_meta = op_meta_from_entry(entry).unwrap();
+            assert_eq!(
+                op_meta.requires_auth,
+                entry.visibility.eq_ignore_ascii_case("private")
+            );
+            assert!(map_operation(entry).is_ok());
+        }
+    }
 
     #[test]
     fn loads_htx_catalog_and_maps_all_ops() {
@@ -411,7 +454,7 @@ mod tests {
             channel: None,
             ws: None,
             auth: CatalogAuth {
-                auth_type: "none".into(),
+                auth_type: "api-key+sign".into(),
             },
         };
         let catalog = ExchangeCatalog {
@@ -426,6 +469,9 @@ mod tests {
             }],
             data_feeds: vec![],
         };
+        let meta = op_meta_from_entry(&private).unwrap();
+        assert_eq!(meta.op, OpName::FetchBalances);
+        assert!(meta.requires_auth);
 
         let err = validate_catalog(&catalog).unwrap_err();
         assert_eq!(err.code, ErrorCode::CatalogDuplicateId);
