@@ -9,9 +9,8 @@ sed \
   -e "s/__OBJECTSTORE_SECRET_KEY__/${SECRET_KEY_ESCAPED}/g" \
   /etc/seaweedfs/s3-config.tmpl.json > /tmp/s3-config.json
 
-exec weed server \
-  -dir=/data \
+exec weed s3 \
+  -filer="${SEAWEEDFS_FILER_URL:-seaweedfs-filer:8888}" \
   -ip.bind=0.0.0.0 \
-  -volume.max=0 \
-  -s3 \
-  -s3.config=/tmp/s3-config.json
+  -port=8333 \
+  -config=/tmp/s3-config.json

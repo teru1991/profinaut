@@ -1,6 +1,11 @@
 version: "3.9"
 
-name: profinaut-dataplat
+name: ${COMPOSE_PROJECT_NAME:-profinaut-dataplat}
+
+networks:
+  dataplat:
+    name: ${COMPOSE_PROJECT_NAME:-profinaut-dataplat}-net
+    driver: bridge
 
 services:
   postgres:
@@ -8,40 +13,41 @@ services:
     container_name: profinaut-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-profinaut}
+      POSTGRES_USER: ${POSTGRES_USER:-profinaut_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-postgres}
     ports:
-      - "127.0.0.1:${POSTGRES_PORT}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432" # avoid CI blank-string in typed port field
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/init/postgres:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-profinaut_app} -d ${POSTGRES_DB:-profinaut}"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 20s
-    mem_limit: ${POSTGRES_MEM_LIMIT}
-    cpus: ${POSTGRES_CPUS:-1.0}
+    mem_limit: ${POSTGRES_MEM_LIMIT:-768m} # avoid CI blank-string in typed mem_limit field
+    cpus: ${POSTGRES_CPUS:-1.0} # avoid CI blank-string in typed cpus field
+    networks: [dataplat]
 
   clickhouse:
     image: clickhouse/clickhouse-server:24.8
     container_name: profinaut-clickhouse
     restart: unless-stopped
     environment:
-      CLICKHOUSE_DB: ${CLICKHOUSE_DB}
-      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
-      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-profinaut}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-profinaut_app}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-change-me-clickhouse}
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
     ports:
-      - "127.0.0.1:${CLICKHOUSE_HTTP_PORT}:8123"
-      - "127.0.0.1:${CLICKHOUSE_NATIVE_PORT}:9000"
+      - "127.0.0.1:${CLICKHOUSE_HTTP_PORT:-8123}:8123" # avoid CI blank-string in typed port field
+      - "127.0.0.1:${CLICKHOUSE_NATIVE_PORT:-9000}:9000" # avoid CI blank-string in typed port field
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./infra/init/clickhouse:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "clickhouse-client --host 127.0.0.1 --user ${CLICKHOUSE_USER} --password ${CLICKHOUSE_PASSWORD} --query 'SELECT 1' >/dev/null 2>&1"]
+      test: ["CMD-SHELL", "clickhouse-client --host 127.0.0.1 --user ${CLICKHOUSE_USER:-profinaut_app} --password ${CLICKHOUSE_PASSWORD:-change-me-clickhouse} --query 'SELECT 1' >/dev/null 2>&1"]
       interval: 10s
       timeout: 8s
       retries: 20
@@ -50,20 +56,21 @@ services:
       nofile:
         soft: 262144
         hard: 262144
-    mem_limit: ${CLICKHOUSE_MEM_LIMIT}
-    cpus: ${CLICKHOUSE_CPUS}
+    mem_limit: ${CLICKHOUSE_MEM_LIMIT:-2g} # avoid CI blank-string in typed mem_limit field
+    cpus: ${CLICKHOUSE_CPUS:-2.0} # avoid CI blank-string in typed cpus field
+    networks: [dataplat]
 
   valkey:
     image: valkey/valkey:7.2-alpine
     container_name: profinaut-valkey
     restart: unless-stopped
-    command: ["valkey-server", "--appendonly", "yes", "--requirepass", "${VALKEY_PASSWORD}"]
+    command: ["valkey-server", "--appendonly", "yes", "--requirepass", "${VALKEY_PASSWORD:-change-me-valkey}"]
     ports:
-      - "127.0.0.1:${VALKEY_PORT}:6379"
+      - "127.0.0.1:${VALKEY_PORT:-6379}:6379" # avoid CI blank-string in typed port field
     volumes:
       - valkey_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "valkey-cli -a \"${VALKEY_PASSWORD}\" --no-auth-warning ping | grep -q PONG"]
+      test: ["CMD-SHELL", "valkey-cli -a \"${VALKEY_PASSWORD:-change-me-valkey}\" --no-auth-warning ping | grep -q PONG"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -72,53 +79,124 @@ services:
       nofile:
         soft: 65535
         hard: 65535
-    mem_limit: ${VALKEY_MEM_LIMIT}
-    cpus: ${VALKEY_CPUS}
+    mem_limit: ${VALKEY_MEM_LIMIT:-512m} # avoid CI blank-string in typed mem_limit field
+    cpus: ${VALKEY_CPUS:-0.75} # avoid CI blank-string in typed cpus field
+    networks: [dataplat]
 
-  seaweedfs:
+  seaweedfs-master:
     image: chrislusf/seaweedfs:3.74
-    container_name: profinaut-seaweedfs
+    container_name: profinaut-seaweedfs-master
     restart: unless-stopped
-    environment:
-      OBJECTSTORE_ACCESS_KEY: ${OBJECTSTORE_ACCESS_KEY}
-      OBJECTSTORE_SECRET_KEY: ${OBJECTSTORE_SECRET_KEY}
-    entrypoint: ["/bin/sh", "/init/seaweedfs-entrypoint.sh"]
+    command: ["master", "-ip=seaweedfs-master", "-ip.bind=0.0.0.0", "-mdir=/data/master", "-defaultReplication=000"]
     ports:
-      - "127.0.0.1:${SEAWEEDFS_FILER_PORT}:8888"
-      - "127.0.0.1:${SEAWEEDFS_S3_PORT:-8333}:8333"
-      - "127.0.0.1:${SEAWEEDFS_MASTER_PORT:-9333}:9333"
+      - "127.0.0.1:${SEAWEEDFS_MASTER_PORT:-9333}:9333" # avoid CI blank-string; quoted typed port interpolation
     volumes:
-      - seaweedfs_data:/data
-      - ./infra/init/objectstore/s3-config.tmpl.json:/etc/seaweedfs/s3-config.tmpl.json:ro
-      - ./infra/init/objectstore/seaweedfs-entrypoint.sh:/init/seaweedfs-entrypoint.sh:ro
+      - seaweedfs_master_data:/data/master
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9333/cluster/status >/dev/null"]
       interval: 10s
       timeout: 5s
       retries: 15
+      start_period: 15s
+    mem_limit: ${OBJECTSTORE_MEM_LIMIT:-512m} # avoid CI blank-string in typed mem_limit field
+    cpus: ${OBJECTSTORE_CPUS:-1.0} # avoid CI blank-string in typed cpus field
+    networks: [dataplat]
+
+  seaweedfs-volume:
+    image: chrislusf/seaweedfs:3.74
+    container_name: profinaut-seaweedfs-volume
+    restart: unless-stopped
+    depends_on:
+      seaweedfs-master:
+        condition: service_healthy
+    command: ["volume", "-mserver=seaweedfs-master:9333", "-ip=seaweedfs-volume", "-ip.bind=0.0.0.0", "-dir=/data/volume", "-port=8080", "-max=0"]
+    volumes:
+      - seaweedfs_volume_data:/data/volume
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/status >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
       start_period: 20s
-    mem_limit: ${OBJECTSTORE_MEM_LIMIT:-512m}
-    cpus: ${OBJECTSTORE_CPUS:-1.0}
+    mem_limit: ${OBJECTSTORE_MEM_LIMIT:-512m} # avoid CI blank-string in typed mem_limit field
+    cpus: ${OBJECTSTORE_CPUS:-1.0} # avoid CI blank-string in typed cpus field
+    networks: [dataplat]
+
+  seaweedfs-filer:
+    image: chrislusf/seaweedfs:3.74
+    container_name: profinaut-seaweedfs-filer
+    restart: unless-stopped
+    depends_on:
+      seaweedfs-master:
+        condition: service_healthy
+      seaweedfs-volume:
+        condition: service_healthy
+    command: ["filer", "-master=seaweedfs-master:9333", "-ip.bind=0.0.0.0"]
+    ports:
+      - "127.0.0.1:${SEAWEEDFS_FILER_PORT:-8888}:8888" # avoid CI blank-string in typed port field
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8888/status >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+    mem_limit: ${OBJECTSTORE_MEM_LIMIT:-512m} # avoid CI blank-string in typed mem_limit field
+    cpus: ${OBJECTSTORE_CPUS:-1.0} # avoid CI blank-string in typed cpus field
+    networks: [dataplat]
+
+  seaweedfs-s3:
+    image: chrislusf/seaweedfs:3.74
+    container_name: profinaut-seaweedfs-s3
+    restart: unless-stopped
+    depends_on:
+      seaweedfs-filer:
+        condition: service_healthy
+    environment:
+      OBJECTSTORE_ACCESS_KEY: ${OBJECTSTORE_ACCESS_KEY:-change-me-objectstore-access}
+      OBJECTSTORE_SECRET_KEY: ${OBJECTSTORE_SECRET_KEY:-change-me-objectstore-secret}
+      SEAWEEDFS_FILER_URL: seaweedfs-filer:8888
+    entrypoint: ["/bin/sh", "/init/seaweedfs-entrypoint.sh"]
+    ports:
+      - "127.0.0.1:${SEAWEEDFS_S3_PORT:-8333}:8333" # avoid CI blank-string; quoted typed port interpolation
+    volumes:
+      - ./infra/init/objectstore/s3-config.tmpl.json:/etc/seaweedfs/s3-config.tmpl.json:ro
+      - ./infra/init/objectstore/seaweedfs-entrypoint.sh:/init/seaweedfs-entrypoint.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8333 >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+    mem_limit: ${OBJECTSTORE_MEM_LIMIT:-512m} # avoid CI blank-string in typed mem_limit field
+    cpus: ${OBJECTSTORE_CPUS:-1.0} # avoid CI blank-string in typed cpus field
+    networks: [dataplat]
 
   objectstore-init:
     image: amazon/aws-cli:2.17.44
     container_name: profinaut-objectstore-init
     depends_on:
-      seaweedfs:
+      seaweedfs-s3:
         condition: service_healthy
     environment:
-      AWS_ACCESS_KEY_ID: ${OBJECTSTORE_ACCESS_KEY}
-      AWS_SECRET_ACCESS_KEY: ${OBJECTSTORE_SECRET_KEY}
-      AWS_DEFAULT_REGION: ${OBJECTSTORE_REGION}
-      OBJECTSTORE_ENDPOINT: http://seaweedfs:8333
-      OBJECTSTORE_BUCKETS: ${OBJECTSTORE_BUCKETS}
+      AWS_ACCESS_KEY_ID: ${OBJECTSTORE_ACCESS_KEY:-change-me-objectstore-access}
+      AWS_SECRET_ACCESS_KEY: ${OBJECTSTORE_SECRET_KEY:-change-me-objectstore-secret}
+      AWS_DEFAULT_REGION: ${OBJECTSTORE_REGION:-us-east-1}
+      OBJECTSTORE_ENDPOINT: http://seaweedfs-s3:8333
+      OBJECTSTORE_BUCKETS: ${OBJECTSTORE_BUCKETS:-profinaut-bronze,profinaut-silver,profinaut-gold}
     entrypoint: ["/bin/sh", "/init/objectstore-bootstrap.sh"]
     volumes:
       - ./infra/init/objectstore/objectstore-bootstrap.sh:/init/objectstore-bootstrap.sh:ro
     restart: "no"
+    networks: [dataplat]
 
 volumes:
   postgres_data:
+    name: ${COMPOSE_PROJECT_NAME:-profinaut-dataplat}-postgres-data
   clickhouse_data:
+    name: ${COMPOSE_PROJECT_NAME:-profinaut-dataplat}-clickhouse-data
   valkey_data:
-  seaweedfs_data:
+    name: ${COMPOSE_PROJECT_NAME:-profinaut-dataplat}-valkey-data
+  seaweedfs_master_data:
+    name: ${COMPOSE_PROJECT_NAME:-profinaut-dataplat}-seaweedfs-master-data
+  seaweedfs_volume_data:
+    name: ${COMPOSE_PROJECT_NAME:-profinaut-dataplat}-seaweedfs-volume-data
