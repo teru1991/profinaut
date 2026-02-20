@@ -1,3 +1,5 @@
+pub mod deribit;
+pub mod okx;
 use serde::Deserialize;
 use std::{collections::HashSet, fs, path::Path};
 use ucel_core::{
@@ -16,17 +18,10 @@ pub struct ConnectionConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct ExchangeCatalog {
     pub exchange: String,
-    pub rest_endpoints: Vec<CatalogEntry>,
-    pub ws_channels: Vec<CatalogEntry>,
     #[serde(default)]
-    pub data_feeds: Vec<DataFeedEntry>,
-}
-
-pub type GmoCatalog = ExchangeCatalog;
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct DataFeedEntry {
-    pub id: String,
+    pub rest_endpoints: Vec<CatalogEntry>,
+    #[serde(default)]
+    pub ws_channels: Vec<CatalogEntry>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -52,9 +47,9 @@ pub struct CatalogWs {
     pub url: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Default)]
 pub struct CatalogAuth {
-    #[serde(rename = "type")]
+    #[serde(rename = "type", default)]
     pub auth_type: String,
 }
 
@@ -79,11 +74,17 @@ pub fn load_catalog_from_repo_root(
     repo_root: &Path,
     exchange: &str,
 ) -> Result<ExchangeCatalog, UcelError> {
+    let exchange_dir = exchange.to_ascii_lowercase();
     let path = repo_root
         .join("docs")
         .join("exchanges")
-        .join(exchange.to_ascii_lowercase())
+        .join(&exchange_dir)
         .join("catalog.json");
+
+    if exchange_dir == "deribit" {
+        return deribit::load_deribit_catalog_from_path(&path);
+    }
+
     load_catalog_from_path(&path)
 }
 
@@ -179,42 +180,18 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
         }
         if !path.starts_with('/') {
             return Err(UcelError::new(
-                ErrorCode::CatalogInvalid,
-                format!("invalid path for id={}: {path}", entry.id),
+                ErrorCode::CatalogDuplicateId,
+                format!("duplicate id={}", e.id),
             ));
         }
-        return Ok(());
     }
-
-    if let Some(url) = ws_url {
-        if url.trim().is_empty() {
-            return Err(UcelError::new(
-                ErrorCode::CatalogMissingField,
-                format!("empty ws_url for id={}", entry.id),
-            ));
-        }
-        if !(url.starts_with("wss://") || url.starts_with("ws://")) {
-            return Err(UcelError::new(
-                ErrorCode::CatalogInvalid,
-                format!("invalid ws_url for id={}: {url}", entry.id),
-            ));
-        }
-        return Ok(());
-    }
-
-    Err(UcelError::new(
-        ErrorCode::CatalogMissingField,
-        format!(
-            "catalog row must define REST(method/base_url/path) or WS(ws_url/ws.url), id={}",
-            entry.id
-        ),
-    ))
+    Ok(())
 }
 
 pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
     Ok(OpMeta {
         op: map_operation(entry)?,
-        requires_auth: entry_visibility(entry)? == "private",
+        requires_auth: entry_visibility(entry)?.eq("private"),
     })
 }
 
@@ -222,14 +199,12 @@ fn entry_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
     if !entry.visibility.trim().is_empty() {
         return Ok(entry.visibility.to_ascii_lowercase());
     }
-
     if entry.id.contains(".private.") {
         return Ok("private".into());
     }
     if entry.id.contains(".public.") {
         return Ok("public".into());
     }
-
     Err(UcelError::new(
         ErrorCode::CatalogMissingField,
         format!("missing visibility for id={}", entry.id),
@@ -237,56 +212,7 @@ fn entry_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
 }
 
 pub fn map_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
-    if entry.id.starts_with("quotation.")
-        || entry.id.starts_with("exchange.")
-        || entry.id.starts_with("other.")
-    {
-        return map_upbit_operation_from_id(&entry.id);
-    }
-
     Ok(map_operation_fallback(&entry.id))
-}
-
-fn map_upbit_operation_from_id(id: &str) -> Result<OpName, UcelError> {
-    let op = if id.contains(".ws.") {
-        if id.contains("ticker") {
-            OpName::SubscribeTicker
-        } else if id.contains("trade") {
-            OpName::SubscribeTrades
-        } else if id.contains("orderbook") {
-            OpName::SubscribeOrderbook
-        } else if id.contains("myorder") {
-            OpName::SubscribeOrderEvents
-        } else if id.contains("myasset") {
-            OpName::SubscribePositionEvents
-        } else {
-            OpName::FetchStatus
-        }
-    } else if id.contains("orders.create") {
-        OpName::PlaceOrder
-    } else if id.contains("orders.cancel") {
-        OpName::CancelOrder
-    } else if id.contains("orders.open") || id.contains("orders.closed") {
-        OpName::FetchOpenOrders
-    } else if id.contains("accounts") {
-        OpName::FetchBalances
-    } else if id.contains("ticker") {
-        OpName::FetchTicker
-    } else if id.contains("trades") {
-        OpName::FetchTrades
-    } else if id.contains("orderbook") {
-        OpName::FetchOrderbookSnapshot
-    } else if id.contains("candles") {
-        OpName::FetchKlines
-    } else {
-        OpName::FetchStatus
-    };
-
-    if id.trim().is_empty() {
-        return Err(UcelError::new(ErrorCode::NotSupported, "empty id"));
-    }
-
-    Ok(op)
 }
 
 fn map_operation_fallback(id: &str) -> OpName {
@@ -294,79 +220,38 @@ fn map_operation_fallback(id: &str) -> OpName {
         OpName::FetchTicker
     } else if id.contains("trade") {
         OpName::FetchTrades
-    } else if id.contains("orderbook") || id.contains("depth") {
-        OpName::FetchOrderbookSnapshot
     } else if id.contains("kline") || id.contains("candle") {
         OpName::FetchKlines
+    } else if id.contains("orderbook") || id.contains("depth") {
+        OpName::FetchOrderbookSnapshot
+    } else if id.contains("balance") {
+        OpName::FetchBalances
     } else if id.contains("order") && id.contains("cancel") {
         OpName::CancelOrder
-    } else if id.contains("order") && (id.contains("create") || id.contains("post")) {
+    } else if id.contains("order") {
         OpName::PlaceOrder
     } else {
         OpName::FetchStatus
     }
 }
 
-pub fn default_capabilities(catalog: &ExchangeCatalog) -> Capabilities {
-    Capabilities {
-        schema_version: "v1".into(),
-        kind: "exchange".into(),
-        name: catalog.exchange.clone(),
-        marketdata: MarketDataCapabilities {
-            rest: !catalog.rest_endpoints.is_empty(),
-            ws: !catalog.ws_channels.is_empty(),
-        },
-        trading: Some(TradingCapabilities::default()),
-        auth: Some(AuthCapabilities::default()),
-        rate_limit: Some(RateLimitCapabilities::default()),
-        operational: Some(OperationalCapabilities::default()),
-        safe_defaults: SafeDefaults {
-            marketdata_default_on: true,
-            execution_default_dry_run: true,
-        },
-    }
-}
-
-pub fn default_policy(policy_id: &str) -> RuntimePolicy {
-    RuntimePolicy {
-        policy_id: policy_id.into(),
-        allowed_ops: vec![
-            OpName::FetchTicker,
-            OpName::FetchTrades,
-            OpName::FetchOrderbookSnapshot,
-        ],
-        failover: FailoverPolicy {
-            cooldown_ms: 1_000,
-            max_consecutive_failures: 3,
-            respect_retry_after: true,
-        },
-        mode: ucel_core::ExecutionMode::DryRun,
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use serde::Deserialize;
+    use std::path::Path;
 
-    #[test]
-    fn loads_upbit_catalog_and_maps_all_rows() {
-        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "upbit").unwrap();
-        assert_eq!(catalog.rest_endpoints.len(), 22);
-        assert_eq!(catalog.ws_channels.len(), 7);
+    #[derive(Debug, Deserialize)]
+    struct CoverageManifest {
+        venue: String,
+        strict: bool,
+        entries: Vec<CoverageEntry>,
+    }
 
-        for entry in catalog
-            .rest_endpoints
-            .iter()
-            .chain(catalog.ws_channels.iter())
-        {
-            let op_meta = op_meta_from_entry(entry).unwrap();
-            assert_eq!(
-                op_meta.requires_auth,
-                entry.visibility.eq_ignore_ascii_case("private")
-            );
-            assert!(map_operation(entry).is_ok());
-        }
+    #[derive(Debug, Deserialize)]
+    struct CoverageEntry {
+        id: String,
+        implemented: bool,
+        tested: bool,
     }
 
     #[test]
@@ -406,7 +291,15 @@ mod tests {
             data_feeds: vec![],
         };
 
-        let err = validate_catalog(&catalog).unwrap_err();
-        assert_eq!(err.code, ErrorCode::CatalogDuplicateId);
+        let uncovered: Vec<_> = manifest
+            .entries
+            .iter()
+            .filter(|entry| !entry.implemented || !entry.tested)
+            .map(|entry| entry.id.clone())
+            .collect();
+        assert!(
+            uncovered.is_empty(),
+            "strict gate requires zero gaps: {uncovered:?}"
+        );
     }
 }

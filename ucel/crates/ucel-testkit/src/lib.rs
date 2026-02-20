@@ -1,3 +1,5 @@
+pub mod okx;
+
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::{fs, path::Path};
@@ -83,6 +85,7 @@ impl CatalogContractIndex {
     pub fn register_id(&mut self, id: &str) {
         self.registered_tests.insert(id.to_string());
     }
+
     pub fn missing_catalog_ids(&self, catalog: &ExchangeCatalog) -> Vec<String> {
         catalog
             .rest_endpoints
