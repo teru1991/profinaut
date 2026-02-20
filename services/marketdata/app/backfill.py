@@ -147,7 +147,11 @@ def run_backfill_ohlcv(
     from_dt = _parse_rfc3339(from_ts)
     to_dt = _parse_rfc3339(to_ts)
     symbol_value = symbol or os.getenv("MARKETDATA_SYMBOL", "BTC_JPY")
-    page = _load_cursor(venue=venue, market=market, tf=tf, from_ts=from_ts, to_ts=to_ts, cursor_file=cursor_file)
+    page = (
+        _load_cursor(venue=venue, market=market, tf=tf, from_ts=from_ts, to_ts=to_ts, cursor_file=cursor_file)
+        if cursor_file is not None
+        else 1
+    )
     resumed_from_page = page
     pages_processed = 0
     candles_seen = 0
@@ -207,7 +211,8 @@ def run_backfill_ohlcv(
                 candles_written += 1
 
         if not batch.has_more:
-            _save_cursor(venue=venue, market=market, tf=tf, from_ts=from_ts, to_ts=to_ts, page=None, cursor_file=cursor_file)
+            if cursor_file is not None:
+                _save_cursor(venue=venue, market=market, tf=tf, from_ts=from_ts, to_ts=to_ts, page=None, cursor_file=cursor_file)
             return BackfillSummary(
                 venue=venue,
                 market=market,
@@ -224,7 +229,8 @@ def run_backfill_ohlcv(
 
         page += 1
 
-    _save_cursor(venue=venue, market=market, tf=tf, from_ts=from_ts, to_ts=to_ts, page=page, cursor_file=cursor_file)
+    if cursor_file is not None:
+        _save_cursor(venue=venue, market=market, tf=tf, from_ts=from_ts, to_ts=to_ts, page=page, cursor_file=cursor_file)
     return BackfillSummary(
         venue=venue,
         market=market,

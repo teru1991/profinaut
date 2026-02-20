@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from services.marketdata.app.db.repository import MarketDataMetaRepository
-from services.marketdata.app.metrics import ingest_metrics, quality_gate_metrics
+from services.marketdata.app.metrics import ingest_metrics, normalization_metrics, quality_gate_metrics
 from services.marketdata.app.silver.orderbook import OrderbookEngine
 
 ORDERBOOK_GAP = "ORDERBOOK_GAP"
@@ -24,9 +24,9 @@ class NormalizeResult:
 
 
 _ORDERBOOK_LOCK = threading.Lock()
-_ORDERBOOK_ENGINES: dict[tuple[str, str], OrderbookEngine] = {}
-_ORDERBOOK_LAST_SEQ: dict[tuple[str, str], int | None] = {}
-_ORDERBOOK_REQUIRE_SNAPSHOT: dict[tuple[str, str], bool] = {}
+_ORDERBOOK_ENGINES: dict[tuple[int, str, str], OrderbookEngine] = {}
+_ORDERBOOK_LAST_SEQ: dict[tuple[int, str, str], int | None] = {}
+_ORDERBOOK_REQUIRE_SNAPSHOT: dict[tuple[int, str, str], bool] = {}
 
 
 def _as_float(value: object) -> float:
@@ -67,7 +67,8 @@ def _seeded_now() -> datetime:
 
 
 def _quality_gates_enabled() -> bool:
-    return os.getenv("QUALITY_GATES_ENABLED", "1").strip() not in {"0", "false", "False"}
+    value = os.getenv("MARKETDATA_QUALITY_GATES_ENABLED", os.getenv("QUALITY_GATES_ENABLED", "1"))
+    return str(value).strip() not in {"0", "false", "False"}
 
 
 def _record_data_invalid(
@@ -78,6 +79,7 @@ def _record_data_invalid(
     details: dict[str, Any],
 ) -> None:
     quality_gate_metrics.record_anomaly(code=code)
+    normalization_metrics.record_rejection(code)
     _insert_event_hub(
         repo,
         envelope,
@@ -139,16 +141,30 @@ def _insert_trade(repo: MarketDataMetaRepository, envelope: dict[str, Any], payl
     if instrument_id is None:
         instrument_id = envelope.get("market_id") or payload.get("symbol")
 
+    occurred_at = str(envelope.get("event_ts") or envelope["received_ts"])
+    side = str(payload["side"]).lower()
+    source_msg_key = envelope.get("source_msg_key")
+    if source_msg_key is None:
+        trade_id = payload.get("trade_id")
+        seq = envelope.get("seq")
+        if trade_id:
+            source_msg_key = f"trade|{envelope.get('venue_id') or ''}|{envelope.get('market_id') or ''}|{trade_id}"
+        else:
+            source_msg_key = (
+                f"trade|{envelope.get('venue_id') or ''}|{envelope.get('market_id') or ''}|"
+                f"{occurred_at}|{float(payload['price'])}|{float(payload['qty'])}|{side}|{seq or ''}"
+            )
+
     inserted = repo.insert_md_trade(
         raw_msg_id=str(envelope["raw_msg_id"]),
         venue_id=None if envelope.get("venue_id") is None else str(envelope.get("venue_id")),
         market_id=None if envelope.get("market_id") is None else str(envelope.get("market_id")),
         instrument_id=None if instrument_id is None else str(instrument_id),
-        source_msg_key=None if envelope.get("source_msg_key") is None else str(envelope.get("source_msg_key")),
+        source_msg_key=str(source_msg_key),
         price=_as_float(payload["price"]),
         qty=_as_float(payload["qty"]),
-        side=str(payload["side"]).lower(),
-        occurred_at=str(envelope.get("event_ts") or envelope["received_ts"]),
+        side=side,
+        occurred_at=occurred_at,
         received_ts=str(envelope["received_ts"]),
         extra_json={"payload": payload},
     )
@@ -227,12 +243,12 @@ def _insert_event_hub(
 def _warm_start_orderbook_if_needed(
     repo: MarketDataMetaRepository,
     *,
-    key: tuple[str, str],
+    key: tuple[int, str, str],
 ) -> tuple[OrderbookEngine, int | None]:
     if key in _ORDERBOOK_ENGINES:
         return _ORDERBOOK_ENGINES[key], _ORDERBOOK_LAST_SEQ.get(key)
 
-    venue_id, market_id = key
+    _, venue_id, market_id = key
     engine = OrderbookEngine()
     _ORDERBOOK_ENGINES[key] = engine
     _ORDERBOOK_LAST_SEQ[key] = None
@@ -271,7 +287,7 @@ def _warm_start_orderbook_if_needed(
 def _normalize_orderbook(repo: MarketDataMetaRepository, envelope: dict[str, Any], payload: dict[str, Any]) -> NormalizeResult:
     venue_id = str(envelope.get("venue_id") or "gmo")
     market_id = str(envelope.get("market_id") or payload.get("symbol") or "spot")
-    key = (venue_id, market_id)
+    key = (id(repo), venue_id, market_id)
     event_ts = str(envelope.get("event_ts") or envelope["received_ts"])
     seq = _parse_seq(envelope.get("seq") or payload.get("sequence") or payload.get("seq"))
 
@@ -457,7 +473,22 @@ def normalize_envelope(repo: MarketDataMetaRepository, envelope: dict[str, Any])
         if _quality_gates_enabled():
             ok, details = _validate_bba_payload(payload)
             if not ok:
+                venue_id = str(envelope.get("venue_id") or "gmo")
+                market_id = str(envelope.get("market_id") or payload.get("symbol") or "spot")
                 _record_data_invalid(repo, envelope, code=str(details.get("code") or "BBA_INVALID"), details=details)
+                repo.upsert_orderbook_state(
+                    venue_id=venue_id,
+                    market_id=market_id,
+                    bid_px=None,
+                    bid_qty=None,
+                    ask_px=None,
+                    ask_qty=None,
+                    as_of=str(envelope.get("event_ts") or envelope["received_ts"]),
+                    last_update_ts=str(envelope["received_ts"]),
+                    last_seq=None,
+                    degraded=True,
+                    reason=DATA_INVALID,
+                )
                 return NormalizeResult(target="md_events_json", event_type="md_data_anomaly")
         _insert_bba(repo, envelope, payload)
         return classified
