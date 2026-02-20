@@ -40,6 +40,8 @@ pub struct DataFeedEntry {
 pub struct CatalogEntry {
     pub id: String,
     pub visibility: String,
+    #[serde(default)]
+    pub requires_auth: Option<bool>,
     pub operation: Option<String>,
     pub method: Option<String>,
     pub base_url: Option<String>,
@@ -115,7 +117,10 @@ pub fn validate_catalog(catalog: &ExchangeCatalog) -> Result<(), UcelError> {
 }
 
 fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
-    if entry.id.trim().is_empty() || entry.visibility.trim().is_empty() {
+    if entry.id.trim().is_empty()
+        || entry.visibility.trim().is_empty()
+        || entry.auth.auth_type.trim().is_empty()
+    {
         return Err(UcelError::new(
             ErrorCode::CatalogMissingField,
             format!("missing required fields for id={}", entry.id),
@@ -146,12 +151,26 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                 ));
             }
         }
+        "public/private" => {}
         _ => {
             return Err(UcelError::new(
                 ErrorCode::CatalogInvalid,
                 format!(
                     "invalid visibility={} for id={}",
                     entry.visibility, entry.id
+                ),
+            ));
+        }
+    }
+
+    let derived_requires_auth = visibility == "private";
+    if let Some(requires_auth) = entry.requires_auth {
+        if requires_auth != derived_requires_auth {
+            return Err(UcelError::new(
+                ErrorCode::CatalogInvalid,
+                format!(
+                    "requires_auth contradicts visibility for id={} (visibility={}, requires_auth={})",
+                    entry.id, entry.visibility, requires_auth
                 ),
             ));
         }
@@ -174,7 +193,7 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
             }
             if !method
                 .chars()
-                .all(|ch| ch.is_ascii_uppercase() || ch == '_' || ch == '-')
+                .all(|ch| ch.is_ascii_uppercase() || ch == '_' || ch == '-' || ch == '/')
             {
                 return Err(UcelError::new(
                     ErrorCode::CatalogInvalid,
@@ -242,12 +261,48 @@ pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
 }
 
 pub fn map_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
+    if entry.id.starts_with("usdm.") {
+        return map_binance_usdm_operation(entry);
+    }
+
     if let Some(operation) = entry.operation.as_deref() {
         if let Some(op) = map_operation_literal(operation) {
             return Ok(op);
         }
     }
     map_operation_by_id(&entry.id)
+}
+
+fn map_binance_usdm_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
+    let op = match entry.id.as_str() {
+        "usdm.public.rest.general.ref"
+        | "usdm.public.rest.errors.ref"
+        | "usdm.public.rest.market.ref"
+        | "usdm.public.ws.wsapi.general" => OpName::FetchStatus,
+        "usdm.private.rest.trade.ref" | "usdm.private.rest.listenkey.ref" => OpName::PlaceOrder,
+        "usdm.private.rest.account.ref" => OpName::FetchBalances,
+        "usdm.public.ws.market.root"
+        | "usdm.public.ws.market.markprice"
+        | "usdm.public.ws.market.bookticker" => OpName::SubscribeTicker,
+        "usdm.public.ws.market.aggtrade" => OpName::SubscribeTrades,
+        "usdm.public.ws.market.kline" => OpName::FetchKlines,
+        "usdm.public.ws.market.depth.partial" | "usdm.public.ws.market.depth.diff" => {
+            OpName::SubscribeOrderbook
+        }
+        "usdm.public.ws.market.liquidation" | "usdm.private.ws.userdata.events" => {
+            OpName::SubscribeExecutionEvents
+        }
+        _ => {
+            return Err(UcelError::new(
+                ErrorCode::NotSupported,
+                format!(
+                    "unsupported binance-usdm operation mapping for id={}",
+                    entry.id
+                ),
+            ));
+        }
+    };
+    Ok(op)
 }
 
 fn map_operation_literal(operation: &str) -> Option<OpName> {
@@ -384,6 +439,7 @@ mod tests {
             rest_endpoints: vec![CatalogEntry {
                 id: "same".into(),
                 visibility: "public".into(),
+                requires_auth: None,
                 operation: Some("Get ticker".into()),
                 method: Some("GET".into()),
                 base_url: Some("https://x".into()),
@@ -397,6 +453,7 @@ mod tests {
             ws_channels: vec![CatalogEntry {
                 id: "same".into(),
                 visibility: "public".into(),
+                requires_auth: None,
                 operation: None,
                 method: None,
                 base_url: None,
@@ -418,6 +475,7 @@ mod tests {
         let private_entry = CatalogEntry {
             id: "crypto.private.ws.executionevents.update".into(),
             visibility: "private".into(),
+            requires_auth: None,
             operation: None,
             method: None,
             base_url: None,
@@ -431,6 +489,7 @@ mod tests {
         let public_entry = CatalogEntry {
             id: "crypto.public.rest.ticker.get".into(),
             visibility: "public".into(),
+            requires_auth: None,
             operation: Some("Get ticker".into()),
             method: Some("GET".into()),
             base_url: Some("https://api.coin.z.com".into()),
@@ -492,5 +551,46 @@ mod tests {
                 entry.id
             );
         }
+    }
+
+    #[test]
+    fn loads_binance_usdm_catalog_and_maps_all_ops() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "binance-usdm").unwrap();
+        assert_eq!(catalog.rest_endpoints.len(), 6);
+        assert_eq!(catalog.ws_channels.len(), 10);
+
+        for entry in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+        {
+            assert!(
+                map_operation(entry).is_ok(),
+                "missing op mapping for {}",
+                entry.id
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_requires_auth_contradiction() {
+        let entry = CatalogEntry {
+            id: "x.private.rest.y.get".into(),
+            visibility: "private".into(),
+            requires_auth: Some(false),
+            operation: Some("Get ticker".into()),
+            method: Some("GET".into()),
+            base_url: Some("https://x".into()),
+            path: Some("/ok".into()),
+            ws_url: None,
+            ws: None,
+            auth: CatalogAuth {
+                auth_type: "apiKey".into(),
+            },
+        };
+
+        let err = validate_entry(&entry).unwrap_err();
+        assert_eq!(err.code, ErrorCode::CatalogInvalid);
     }
 }
