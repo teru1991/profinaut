@@ -24,6 +24,37 @@ from services.marketdata.app.storage.fs_store import FilesystemObjectStore
 
 router = APIRouter()
 
+_ALLOWED_WRAPPER_KEYS = {
+    "tenant_id",
+    "source_type",
+    "received_ts",
+    "event_ts",
+    "payload_json",
+    "venue_id",
+    "market_id",
+    "stream_name",
+    "endpoint",
+    "source_msg_key",
+    "seq",
+    "source_event_id",
+    "idempotency_key",
+    "canonical_id",
+    "event_type",
+    "run_id",
+    "trace_id",
+    "record_id",
+    "headers",
+    "http",
+    "query",
+    "ws",
+    "quality_json",
+    "instrument_id",
+    "symbol_raw",
+    "raw_msg_id",
+    "parser_version",
+    "source",
+}
+
 _CROCKFORD32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 _BRONZE_WRITER: BronzeWriter | None = None
 _BRONZE_WRITER_ROOT: str | None = None
@@ -142,6 +173,11 @@ def ingest_raw_envelope(body: dict[str, Any], *, settings: ServiceSettings | Non
         ingest_metrics.record_failure()
         return 400, {"error": "INVALID_REQUEST", "reason": "BODY_MUST_BE_OBJECT"}
 
+    unknown_fields = sorted(set(body.keys()) - _ALLOWED_WRAPPER_KEYS)
+    if unknown_fields:
+        ingest_metrics.record_failure()
+        return 400, {"error": "INVALID_REQUEST", "reason": "UNKNOWN_WRAPPER_FIELDS"}
+
     for required in ("tenant_id", "source_type", "received_ts", "payload_json"):
         if required not in body:
             ingest_metrics.record_failure()
@@ -150,6 +186,16 @@ def ingest_raw_envelope(body: dict[str, Any], *, settings: ServiceSettings | Non
     if not isinstance(body["payload_json"], dict):
         ingest_metrics.record_failure()
         return 400, {"error": "INVALID_REQUEST", "reason": "PAYLOAD_JSON_MUST_BE_OBJECT"}
+
+    payload_bytes = len(json.dumps(body["payload_json"], separators=(",", ":"), ensure_ascii=False).encode("utf-8"))
+    if payload_bytes > 512 * 1024:
+        ingest_metrics.record_failure()
+        return 400, {"error": "INVALID_REQUEST", "reason": "PAYLOAD_TOO_LARGE"}
+
+    headers_bytes = len(json.dumps({"headers": body.get("headers") or {}, "http": body.get("http") or {}}, separators=(",", ":"), ensure_ascii=False).encode("utf-8"))
+    if headers_bytes > 16 * 1024:
+        ingest_metrics.record_failure()
+        return 400, {"error": "INVALID_REQUEST", "reason": "HEADERS_TOO_LARGE"}
 
     envelope = dict(body)
     envelope.setdefault("raw_msg_id", _new_ulid())

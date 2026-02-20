@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gzip
+import hashlib
 import json
 import os
 import queue
@@ -140,6 +141,14 @@ class BronzeWriter:
         now_monotonic: Callable[[], float] | None = None,
         idempotency_store_path: str | None = None,
         spool_dir: str | None = None,
+        max_payload_bytes: int = 512 * 1024,
+        max_headers_bytes: int = 16 * 1024,
+        compact_interval_seconds: float = 60,
+        spool_max_bytes: int = 64 * 1024 * 1024,
+        write_retry_max_attempts: int = 4,
+        write_retry_base_seconds: float = 0.2,
+        circuit_breaker_threshold: int = 3,
+        circuit_breaker_cooldown_seconds: float = 10.0,
     ):
         self._store = store
         self._bucket = bucket
@@ -155,6 +164,17 @@ class BronzeWriter:
         self._last_success_ts: str | None = None
         self._spool_dir = Path(spool_dir or os.getenv("BRONZE_SPOOL_DIR", "data/bronze_spool"))
         self._spool_dir.mkdir(parents=True, exist_ok=True)
+        self._spool_max_bytes = spool_max_bytes
+        self._max_payload_bytes = max_payload_bytes
+        self._max_headers_bytes = max_headers_bytes
+        self._compact_interval_seconds = compact_interval_seconds
+        self._last_compact_monotonic = self._now()
+        self._write_retry_max_attempts = max(write_retry_max_attempts, 1)
+        self._write_retry_base_seconds = max(write_retry_base_seconds, 0.01)
+        self._circuit_breaker_threshold = max(circuit_breaker_threshold, 1)
+        self._circuit_breaker_cooldown_seconds = max(circuit_breaker_cooldown_seconds, 0.1)
+        self._consecutive_write_failures = 0
+        self._circuit_opened_monotonic: float | None = None
         dedupe_path = idempotency_store_path or os.getenv("BRONZE_IDEMPOTENCY_DB", "data/bronze/idempotency.sqlite3")
         self._dedupe = IdempotencyStore(dedupe_path)
         self.metrics: dict[str, float] = {
@@ -173,7 +193,7 @@ class BronzeWriter:
         source = _normalize_segment(record.source.get("asset_class"), "unknown")
         venue = _normalize_segment(record.source.get("exchange") or record.source.get("venue"), "unknown")
         ts = _parse_rfc3339(record.ingested_at)
-        return f"bronze/{source}/{venue}/{ts.strftime('%Y/%m/%d/%H')}"
+        return f"bronze/{source}/{venue}/dt={ts.strftime('%Y-%m-%d')}/hh={ts.strftime('%H')}"
 
     def _new_part_key(self, prefix: str) -> str:
         seq = self._counters.get(prefix, 0) + 1
@@ -188,7 +208,41 @@ class BronzeWriter:
         ts = _parse_rfc3339(record.ingested_at)
         exchange = _normalize_segment(record.source.get("exchange"), "unknown")
         part = key.split("/")[-1]
-        return f"raw://bronze/{exchange}/{record.event_type}/dt={ts.strftime('%Y-%m-%d')}/hh={ts.strftime('%H')}/{part}#{record.source_event_id}"
+        return f"raw://bronze/{exchange}/{record.event_type}/dt={ts.strftime('%Y-%m-%d')}/hh={ts.strftime('%H')}/{part}#{record.idempotency_key}"
+
+    def _headers_bytes(self, record: BronzeRecord) -> int:
+        headers = record.meta.get("headers") or {}
+        http_info = record.meta.get("http") or {}
+        return len(json.dumps({"headers": headers, "http": http_info}, separators=(",", ":"), ensure_ascii=False).encode("utf-8"))
+
+    def _derive_idempotency_key(
+        self,
+        envelope: dict[str, Any],
+        source: dict[str, Any],
+        payload: dict[str, Any],
+        event_type: str,
+        event_time: str,
+    ) -> str:
+        explicit = envelope.get("idempotency_key")
+        if isinstance(explicit, str) and explicit.strip():
+            return explicit.strip()
+        for key in ("canonical_id", "source_event_id", "raw_msg_id"):
+            value = envelope.get(key)
+            if isinstance(value, str) and value.strip():
+                return f"{source.get('exchange', 'unknown')}:{value.strip()}"
+        canonical = json.dumps(
+            {
+                "event_type": event_type,
+                "exchange": str(source.get("exchange") or "unknown"),
+                "symbol": str(envelope.get("market_id") or payload.get("symbol") or "unknown"),
+                "event_time": event_time,
+                "payload": payload,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+        return f"sha256:{hashlib.sha256(canonical.encode('utf-8')).hexdigest()}"
 
     def _check_secret(self, value: Any, path: str = "") -> bool:
         if isinstance(value, dict):
@@ -218,8 +272,10 @@ class BronzeWriter:
         _parse_rfc3339(record.ingested_at)
         if not isinstance(record.payload, dict):
             raise ValueError("payload must be object")
-        if len(json.dumps(record.payload, separators=(",", ":"))) > 512 * 1024:
+        if len(json.dumps(record.payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")) > self._max_payload_bytes:
             raise ValueError("payload too large")
+        if self._headers_bytes(record) > self._max_headers_bytes:
+            raise ValueError("headers too large")
         src = record.source
         if str(src.get("asset_class", "unknown")).lower() not in _ALLOWED_ASSET_CLASS:
             raise ValueError("source.asset_class invalid")
@@ -245,15 +301,14 @@ class BronzeWriter:
         source_event_id = str(envelope.get("source_event_id") or envelope.get("raw_msg_id") or "")
         event_time = str(envelope.get("event_ts") or envelope.get("event_time") or envelope.get("received_ts"))
         ingested_at = str(envelope.get("received_ts") or envelope.get("ingested_at"))
-        source_exchange = source["exchange"]
-        symbol = str(envelope.get("market_id") or payload.get("symbol") or "unknown")
-        idempotency_key = str(envelope.get("idempotency_key") or f"{source_exchange}:{symbol}:{source_event_id}")
+        idempotency_key = self._derive_idempotency_key(envelope, source, payload, event_type, event_time)
         meta = {
             "schema_version": "bronze.v1",
             "collector": "marketdata",
             "quality": envelope.get("quality_json") or {},
             "headers": envelope.get("headers") or {},
             "http": envelope.get("http") or {},
+            "query": envelope.get("query") or {},
             "ws": envelope.get("ws") or {},
             "run_id": envelope.get("run_id"),
             "trace_id": envelope.get("trace_id"),
@@ -279,14 +334,33 @@ class BronzeWriter:
             return None
         part = self._open_part
         started = time.perf_counter()
+        compressed = gzip.compress(bytes(self._buffer))
         try:
-            self._store.put_bytes(part.key, gzip.compress(bytes(self._buffer)), content_type="application/gzip")
-            self._last_success_ts = datetime.now(UTC).isoformat().replace("+00:00", "Z")
-            self._degraded_reason = None
+            if self._circuit_opened_monotonic is not None:
+                elapsed = self._now() - self._circuit_opened_monotonic
+                if elapsed < self._circuit_breaker_cooldown_seconds:
+                    raise RuntimeError("circuit breaker open")
+
+            for attempt in range(1, self._write_retry_max_attempts + 1):
+                try:
+                    self._store.put_bytes(part.key, compressed, content_type="application/gzip")
+                    self._last_success_ts = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+                    self._degraded_reason = None
+                    self._consecutive_write_failures = 0
+                    self._circuit_opened_monotonic = None
+                    break
+                except Exception:
+                    self._consecutive_write_failures += 1
+                    if self._consecutive_write_failures >= self._circuit_breaker_threshold:
+                        self._circuit_opened_monotonic = self._now()
+                    if attempt >= self._write_retry_max_attempts:
+                        raise
+                    time.sleep(min(self._write_retry_base_seconds * (2 ** (attempt - 1)), 5.0))
         except Exception as exc:
             self._degraded_reason = str(exc)
             spool = self._spool_dir / f"{int(time.time() * 1000)}-{random.randint(1000,9999)}.jsonl"
             spool.write_bytes(bytes(self._buffer))
+            self._trim_spool()
         finally:
             self.metrics["write_latency_ms"] = max((time.perf_counter() - started) * 1000.0, 0.0)
         key = part.key
@@ -339,7 +413,12 @@ class BronzeWriter:
             with self._lock:
                 self.metrics["reject_schema_total"] += 1
             raise
-        if self._check_secret(record.payload) or self._check_secret(record.meta.get("headers") or {}) or self._check_secret(record.meta.get("http") or {}):
+        if (
+            self._check_secret(record.payload)
+            or self._check_secret(record.meta.get("headers") or {})
+            or self._check_secret(record.meta.get("http") or {})
+            or self._check_secret(record.meta.get("query") or {})
+        ):
             with self._lock:
                 self.metrics["reject_secret_total"] += 1
             raise ValueError("secret detected")
@@ -348,6 +427,10 @@ class BronzeWriter:
             with self._lock:
                 self.metrics["dedupe_drop_total"] += 1
             return "dedupe://dropped"
+
+        if (self._now() - self._last_compact_monotonic) >= self._compact_interval_seconds:
+            self._dedupe.compact(datetime.now(UTC))
+            self._last_compact_monotonic = self._now()
 
         result_q: queue.Queue[str] = queue.Queue(maxsize=1)
         self._queue.put((record, result_q))
@@ -385,7 +468,18 @@ class BronzeWriter:
             "last_success_ts": self._last_success_ts,
             "queue_depth": self._queue.qsize(),
             "spool_bytes": spool_bytes,
+            "circuit_open": self._circuit_opened_monotonic is not None
+            and (self._now() - self._circuit_opened_monotonic) < self._circuit_breaker_cooldown_seconds,
         }
+
+    def _trim_spool(self) -> None:
+        files = sorted(self._spool_dir.glob("*.jsonl"), key=lambda p: p.stat().st_mtime)
+        total = sum(path.stat().st_size for path in files)
+        while total > self._spool_max_bytes and files:
+            oldest = files.pop(0)
+            size = oldest.stat().st_size
+            oldest.unlink(missing_ok=True)
+            total -= size
 
     def close(self) -> None:
         self._queue.put(None)
