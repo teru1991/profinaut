@@ -220,6 +220,10 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
     Ok(())
 }
 
+fn auth_type_requires_credentials(auth_type: &str) -> bool {
+    matches!(auth_type, "apiKey" | "token" | "oauth2")
+}
+
 pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
     let op = map_operation(entry)?;
     let requires_auth = resolved_visibility(entry)?.eq_ignore_ascii_case("private");
@@ -253,14 +257,14 @@ fn map_operation_literal(operation: &str) -> Option<OpName> {
         "Get account assets"
         | "Get FX account assets"
         | "Get account balances"
-        | "Get account information" => Some(OpName::FetchBalances),
+        | "Get account information"
+        | "Account information" => Some(OpName::FetchBalances),
         "Get margin status" => Some(OpName::FetchMarginStatus),
         "Get active orders" | "Get FX active orders" => Some(OpName::FetchOpenOrders),
         "Get execution history" => Some(OpName::FetchFills),
         "Get latest execution per order" => Some(OpName::FetchLatestExecutions),
-        "Create order" | "Create FX order" | "Add order" | "Send futures order" => {
-            Some(OpName::PlaceOrder)
-        }
+        "Create order" | "Create FX order" | "Add order" | "Send futures order"
+        | "Place new order" => Some(OpName::PlaceOrder),
         "Amend order" => Some(OpName::AmendOrder),
         "Cancel order" | "Cancel FX order" => Some(OpName::CancelOrder),
         "Get open positions" | "Get FX open positions" => Some(OpName::FetchOpenPositions),
@@ -309,6 +313,11 @@ fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
         | "futures.private.rest.order.send"
         | "spot.private.ws.v1.trade.add_order.request"
         | "spot.private.ws.v2.trade.add_order" => OpName::PlaceOrder,
+        "crypto.public.ws.trades.trade" => OpName::SubscribeTrades,
+        "crypto.private.ws.userdata.executionreport" => OpName::SubscribeExecutionEvents,
+        "crypto.public.ws.wsapi.time" => OpName::FetchStatus,
+        "crypto.private.ws.wsapi.order.place" => OpName::PlaceOrder,
+        "other.public.ws.sbe.marketdata" => OpName::SubscribeOrderbook,
         _ => {
             return Err(UcelError::new(
                 ErrorCode::NotSupported,
