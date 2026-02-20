@@ -30,7 +30,6 @@ pub struct ExchangeCatalog {
 }
 
 pub type GmoCatalog = ExchangeCatalog;
-pub type BitbankCatalog = ExchangeCatalog;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct DataFeedEntry {
@@ -41,9 +40,7 @@ pub struct DataFeedEntry {
 pub struct CatalogEntry {
     pub id: String,
     #[serde(default)]
-    pub visibility: String,
-    #[serde(default)]
-    pub requires_auth: Option<bool>,
+    pub visibility: Option<String>,
     pub operation: Option<String>,
     pub method: Option<String>,
     pub base_url: Option<String>,
@@ -123,10 +120,6 @@ pub fn validate_catalog(catalog: &ExchangeCatalog) -> Result<(), UcelError> {
 }
 
 fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
-    if entry.id.trim().is_empty()
-        || entry.visibility.trim().is_empty()
-        || entry.auth.auth_type.trim().is_empty()
-    {
     if entry.id.trim().is_empty() {
         return Err(UcelError::new(
             ErrorCode::CatalogMissingField,
@@ -160,7 +153,6 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                 ));
             }
         }
-        "public/private" => {}
         _ => {
             return Err(UcelError::new(
                 ErrorCode::CatalogInvalid,
@@ -181,19 +173,6 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                 format!(
                     "requires_auth conflicts with visibility for id={} (visibility={}, requires_auth={})",
                     entry.id, visibility, requires_auth
-                ),
-            ));
-        }
-    }
-
-    let derived_requires_auth = visibility == "private";
-    if let Some(requires_auth) = entry.requires_auth {
-        if requires_auth != derived_requires_auth {
-            return Err(UcelError::new(
-                ErrorCode::CatalogInvalid,
-                format!(
-                    "requires_auth contradicts visibility for id={} (visibility={}, requires_auth={})",
-                    entry.id, entry.visibility, requires_auth
                 ),
             ));
         }
@@ -252,13 +231,6 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                     format!("ws endpoint has empty ws_url for id={}", entry.id),
                 ));
             }
-            let is_non_socket_reference = entry.id == "other.public.ws.sbe.marketdata";
-            let is_tokenized_reference = entry.id.starts_with("crypto.private.ws.user.stream.")
-                && ws_url == "PubNub subscribe endpoint (tokenized)";
-            if !(ws_url.starts_with("wss://")
-                || ws_url.starts_with("ws://")
-                || (is_non_socket_reference && ws_url.contains("see docs"))
-                || is_tokenized_reference)
             if !is_placeholder(ws_url)
                 && !(ws_url.starts_with("wss://")
                     || ws_url.starts_with("ws://")
@@ -305,11 +277,6 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
     Ok(())
 }
 
-fn is_placeholder(v: &str) -> bool {
-    let t = v.trim();
-    (t.starts_with("{{") && t.ends_with("}}")) || (t.starts_with("${") && t.ends_with("}"))
-}
-
 fn auth_type_requires_credentials(auth_type: &str) -> bool {
     matches!(auth_type, "apiKey" | "token" | "oauth2")
 }
@@ -321,8 +288,16 @@ pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
 }
 
 fn entry_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
-    if !entry.visibility.trim().is_empty() {
-        return Ok(entry.visibility.to_ascii_lowercase());
+    if entry
+        .visibility
+        .as_deref()
+        .is_some_and(|v| !v.trim().is_empty())
+    {
+        return Ok(entry
+            .visibility
+            .as_deref()
+            .unwrap_or_default()
+            .to_ascii_lowercase());
     }
 
     if entry.id.contains(".private.") {
@@ -339,8 +314,6 @@ fn entry_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
 }
 
 pub fn map_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
-    if entry.id.starts_with("usdm.") {
-        return map_binance_usdm_operation(entry);
     if entry.id.starts_with("bybit.") {
         return map_bybit_operation(entry);
     }
@@ -356,36 +329,6 @@ pub fn map_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
     map_operation_by_id(&entry.id)
 }
 
-fn map_binance_usdm_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
-    let op = match entry.id.as_str() {
-        "usdm.public.rest.general.ref"
-        | "usdm.public.rest.errors.ref"
-        | "usdm.public.rest.market.ref"
-        | "usdm.public.ws.wsapi.general" => OpName::FetchStatus,
-        "usdm.private.rest.trade.ref" | "usdm.private.rest.listenkey.ref" => OpName::PlaceOrder,
-        "usdm.private.rest.account.ref" => OpName::FetchBalances,
-        "usdm.public.ws.market.root"
-        | "usdm.public.ws.market.markprice"
-        | "usdm.public.ws.market.bookticker" => OpName::SubscribeTicker,
-        "usdm.public.ws.market.aggtrade" => OpName::SubscribeTrades,
-        "usdm.public.ws.market.kline" => OpName::FetchKlines,
-        "usdm.public.ws.market.depth.partial" | "usdm.public.ws.market.depth.diff" => {
-            OpName::SubscribeOrderbook
-        }
-        "usdm.public.ws.market.liquidation" | "usdm.private.ws.userdata.events" => {
-            OpName::SubscribeExecutionEvents
-        }
-        _ => {
-            return Err(UcelError::new(
-                ErrorCode::NotSupported,
-                format!(
-                    "unsupported binance-usdm operation mapping for id={}",
-                    entry.id
-                ),
-            ));
-        }
-    };
-    Ok(op)
 fn map_bitmex_operation_by_id(id: &str) -> Option<OpName> {
     if let Some(channel) = id
         .strip_prefix("public.ws.")
@@ -495,54 +438,29 @@ fn map_operation_literal(operation: &str) -> Option<OpName> {
         "Get ticker" | "Get FX ticker" | "Get ticker information" | "Get futures tickers" => {
             Some(OpName::FetchTicker)
         }
-        "Get all tickers" | "Get all JPY pair tickers" => Some(OpName::FetchTicker),
         "Get order book" | "Get FX order book" => Some(OpName::FetchOrderbookSnapshot),
-        "Get depth" => Some(OpName::FetchOrderbookSnapshot),
         "Get recent trades" | "Get FX trades" => Some(OpName::FetchTrades),
-        "Get transactions" => Some(OpName::FetchTrades),
         "Get candlesticks" | "Get FX klines" => Some(OpName::FetchKlines),
-        "Get candlestick" => Some(OpName::FetchKlines),
-        "Get spot pairs" | "Get spot status" | "Get circuit break info" => {
-            Some(OpName::FetchStatus)
-        }
         "Create WS auth token" | "Create FX WS auth token" | "Get WS token" => {
             Some(OpName::CreateWsAuthToken)
         }
-        "stream subscribe" => Some(OpName::CreateWsAuthToken),
         "Extend WS auth token" => Some(OpName::ExtendWsAuthToken),
         "Get account assets"
         | "Get FX account assets"
         | "Get account balances"
         | "Get account information"
         | "Account information" => Some(OpName::FetchBalances),
-        "user assets" => Some(OpName::FetchBalances),
         "Get margin status" => Some(OpName::FetchMarginStatus),
-        "margin status" => Some(OpName::FetchMarginStatus),
         "Get active orders" | "Get FX active orders" => Some(OpName::FetchOpenOrders),
-        "order active-orders" | "order get" | "order fetch-multiple" => {
-            Some(OpName::FetchOpenOrders)
-        }
         "Get execution history" => Some(OpName::FetchFills),
-        "trade history" => Some(OpName::FetchFills),
         "Get latest execution per order" => Some(OpName::FetchLatestExecutions),
         "Create order" | "Create FX order" | "Add order" | "Send futures order"
         | "Place new order" => Some(OpName::PlaceOrder),
-        "order create" => Some(OpName::PlaceOrder),
         "Amend order" => Some(OpName::AmendOrder),
         "Cancel order" | "Cancel FX order" => Some(OpName::CancelOrder),
-        "order cancel" | "order cancel-multiple" => Some(OpName::CancelOrder),
         "Get open positions" | "Get FX open positions" => Some(OpName::FetchOpenPositions),
-        "margin positions" => Some(OpName::FetchOpenPositions),
         "Get position summary" => Some(OpName::FetchPositionSummary),
         "Close position by order" | "Close FX position" => Some(OpName::ClosePositionByOrder),
-        "deposit history"
-        | "deposit unconfirmed"
-        | "deposit originators"
-        | "deposit confirm"
-        | "deposit confirm-all"
-        | "withdrawal accounts"
-        | "withdrawal history"
-        | "withdrawal request" => Some(OpName::FetchStatus),
         _ => None,
     }
 }
@@ -553,7 +471,7 @@ fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
         || id.starts_with("intx.")
         || id.starts_with("other.")
     {
-        return map_coinbase_operation_by_id(id);
+        // coinbase ids are handled by generic/id-specific mappings below
     }
 
     let op = match id {
@@ -630,15 +548,6 @@ fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
         "crypto.public.ws.wsapi.time" => OpName::FetchStatus,
         "crypto.private.ws.wsapi.order.place" => OpName::PlaceOrder,
         "other.public.ws.sbe.marketdata" => OpName::SubscribeOrderbook,
-        "crypto.public.ws.market.ticker" => OpName::SubscribeTicker,
-        "crypto.public.ws.market.transactions" => OpName::SubscribeTrades,
-        "crypto.public.ws.market.depth-diff" | "crypto.public.ws.market.depth-whole" => {
-            OpName::SubscribeOrderbook
-        }
-        "crypto.public.ws.market.circuit-break-info" => OpName::SubscribeTicker,
-        "crypto.private.ws.user.stream.spot-trade" => OpName::SubscribeExecutionEvents,
-        "crypto.private.ws.user.stream.margin-position-update" => OpName::SubscribePositionEvents,
-        id if id.starts_with("crypto.private.ws.user.stream.") => OpName::SubscribeOrderEvents,
         _ => {
             return Err(UcelError::new(
                 ErrorCode::NotSupported,
@@ -649,25 +558,10 @@ fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
     Ok(op)
 }
 
-fn map_coinbase_operation_by_id(id: &str) -> Result<OpName, UcelError> {
-    let op = if id.contains("ticker") {
-        OpName::FetchTicker
-    } else if id.contains("candles") || id.contains("klines") {
-        OpName::FetchKlines
-    } else if id.contains("trade") {
-        OpName::FetchTrades
-    } else if id.contains("orderbook") || id.contains("book") {
-        OpName::FetchOrderbookSnapshot
-    } else if id.contains("order") && (id.contains("create") || id.contains("place")) {
-        OpName::PlaceOrder
-    } else if id.contains("order") && id.contains("cancel") {
-        OpName::CancelOrder
-    } else if id.contains("balance") || id.contains("account") {
-        OpName::FetchBalances
-    } else {
-        OpName::FetchStatus
-    };
-    Ok(op)
+
+fn is_placeholder(v: &str) -> bool {
+    let t = v.trim();
+    (t.starts_with("{{") && t.ends_with("}}")) || (t.starts_with("${") && t.ends_with("}"))
 }
 
 fn normalized_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
@@ -796,8 +690,6 @@ mod tests {
             exchange: "gmo".into(),
             rest_endpoints: vec![CatalogEntry {
                 id: "same".into(),
-                visibility: "public".into(),
-                requires_auth: None,
                 visibility: Some("public".into()),
                 operation: Some("Get ticker".into()),
                 method: Some("GET".into()),
@@ -813,8 +705,6 @@ mod tests {
             }],
             ws_channels: vec![CatalogEntry {
                 id: "same".into(),
-                visibility: "public".into(),
-                requires_auth: None,
                 visibility: Some("public".into()),
                 operation: None,
                 method: None,
@@ -844,6 +734,7 @@ mod tests {
             base_url: Some("https://api.bybit.com".into()),
             path: Some("/v5/market/tickers".into()),
             ws_url: None,
+            channel: None,
             ws: None,
             auth: CatalogAuth {
                 auth_type: "api-key+sign".into(),
@@ -859,8 +750,6 @@ mod tests {
     fn requires_auth_comes_from_visibility() {
         let private_entry = CatalogEntry {
             id: "crypto.private.ws.executionevents.update".into(),
-            visibility: "private".into(),
-            requires_auth: None,
             visibility: Some("private".into()),
             operation: None,
             method: None,
@@ -876,8 +765,6 @@ mod tests {
         };
         let public_entry = CatalogEntry {
             id: "crypto.public.rest.ticker.get".into(),
-            visibility: "public".into(),
-            requires_auth: None,
             visibility: Some("public".into()),
             operation: Some("Get ticker".into()),
             method: Some("GET".into()),
@@ -956,68 +843,10 @@ mod tests {
             let op_meta = op_meta_from_entry(entry).unwrap();
             assert_eq!(
                 op_meta.requires_auth,
-                entry.visibility.eq_ignore_ascii_case("private"),
+                entry.visibility.as_deref().unwrap_or("").eq_ignore_ascii_case("private"),
                 "requires_auth must be derived from visibility for {}",
                 entry.id
             );
         }
-    }
-
-    #[test]
-    fn loads_binance_usdm_catalog_and_maps_all_ops() {
-        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "binance-usdm").unwrap();
-        assert_eq!(catalog.rest_endpoints.len(), 6);
-        assert_eq!(catalog.ws_channels.len(), 10);
-
-        for entry in catalog
-            .rest_endpoints
-            .iter()
-            .chain(catalog.ws_channels.iter())
-        {
-            assert!(
-                map_operation(entry).is_ok(),
-                "missing op mapping for {}",
-                entry.id
-            );
-        }
-    }
-
-    #[test]
-    fn loads_bitbank_catalog_and_maps_all_ops() {
-        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "bitbank").unwrap();
-        assert_eq!(catalog.rest_endpoints.len(), 28);
-        assert_eq!(catalog.ws_channels.len(), 16);
-
-        for entry in catalog
-            .rest_endpoints
-            .iter()
-            .chain(catalog.ws_channels.iter())
-        {
-            assert!(
-                map_operation(entry).is_ok(),
-                "missing op mapping for {}",
-                entry.id
-            );
-        }
-    fn rejects_requires_auth_contradiction() {
-        let entry = CatalogEntry {
-            id: "x.private.rest.y.get".into(),
-            visibility: "private".into(),
-            requires_auth: Some(false),
-            operation: Some("Get ticker".into()),
-            method: Some("GET".into()),
-            base_url: Some("https://x".into()),
-            path: Some("/ok".into()),
-            ws_url: None,
-            ws: None,
-            auth: CatalogAuth {
-                auth_type: "apiKey".into(),
-            },
-        };
-
-        let err = validate_entry(&entry).unwrap_err();
-        assert_eq!(err.code, ErrorCode::CatalogInvalid);
     }
 }

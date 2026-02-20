@@ -11,6 +11,7 @@ members = [
   "crates/ucel-cex-binance-coinm",
   "crates/ucel-cex-bitmex",
   "crates/ucel-cex-binance",
+  "crates/ucel-cex-binance-options",
   "crates/ucel-chain-ethereum",
 ]
 resolver = "2"

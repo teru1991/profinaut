@@ -1057,7 +1057,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "63e71662fa4b2a2c3a26f570f037eb95bb1f85397f3cd8076caed2f026a6d100"
 dependencies = [
  "pin-project-lite",
+ "tracing-attributes",
  "tracing-core",
+]
+
+[[package]]
+name = "tracing-attributes"
+version = "0.1.31"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7490cfa5ec963746568740651ac6781f701c9c5ea257c58e057f3ba8cf69e8da"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -1076,6 +1088,66 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
+name = "ucel-cex-binance"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "ucel-core",
+ "ucel-testkit",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-binance-coinm"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tokio",
+ "ucel-core",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-binance-options"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "ucel-core",
+ "ucel-testkit",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-bitmex"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "ucel-core",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
 name = "ucel-cex-bybit"
 version = "0.1.0"
 dependencies = [
@@ -1085,6 +1157,21 @@ dependencies = [
  "serde_json",
  "tokio",
  "ucel-core",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-coinbase"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "ucel-core",
+ "ucel-testkit",
  "ucel-transport",
  "uuid",
 ]
