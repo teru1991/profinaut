@@ -413,17 +413,6 @@ mod tests {
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bitbank.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
         assert_eq!(manifest.venue, "bitbank");
-    fn coverage_gate_warns_for_binance_usdm_until_full_coverage() {
-        let manifest_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-usdm.yaml");
-        let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "binance-usdm");
-    fn coverage_gate_warns_for_binance_coinm_gaps() {
-        let manifest_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-coinm.yaml");
-        let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "binance-coinm");
-        assert!(!manifest.strict);
 
         let result = run_coverage_gate(&manifest);
         match result {
@@ -432,14 +421,38 @@ mod tests {
                 assert_eq!(gaps.get("tested").map(Vec::len), Some(44));
             }
             _ => panic!("bitbank coverage gate should warn while manifest has gaps"),
+        }
+    }
+
+    #[test]
+    fn coverage_gate_warns_for_binance_usdm_until_full_coverage() {
+        let manifest_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-usdm.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "binance-usdm");
+
+        let result = run_coverage_gate(&manifest);
+        match result {
+            CoverageGateResult::WarnOnly(gaps) => {
                 assert_eq!(gaps.get("implemented").map(Vec::len), Some(16));
                 assert_eq!(gaps.get("tested").map(Vec::len), Some(16));
             }
             _ => panic!("binance-usdm coverage gate should warn while manifest has gaps"),
-                assert_eq!(gaps.get("implemented").map(Vec::len), Some(25));
-                assert_eq!(gaps.get("tested").map(Vec::len), Some(25));
-            }
-            _ => panic!("binance-coinm coverage gate should warn in non-strict mode"),
+        }
+    }
+
+    #[test]
+    fn coverage_gate_warns_for_binance_coinm_gaps() {
+        let manifest_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-coinm.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "binance-coinm");
+        assert!(manifest.strict);
+
+        let result = run_coverage_gate(&manifest);
+        match result {
+            CoverageGateResult::Passed => {}
+            _ => panic!("binance-coinm coverage gate should pass in strict mode"),
         }
     }
 }
