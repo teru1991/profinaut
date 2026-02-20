@@ -1260,6 +1260,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucel-cex-coincheck"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "ucel-core",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
 name = "ucel-cex-gmocoin"
 version = "0.1.0"
 dependencies = [
