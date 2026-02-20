@@ -23,7 +23,7 @@ services:
       retries: 10
       start_period: 20s
     mem_limit: ${POSTGRES_MEM_LIMIT}
-    cpus: ${POSTGRES_CPUS}
+    cpus: ${POSTGRES_CPUS:-1.0}
 
   clickhouse:
     image: clickhouse/clickhouse-server:24.8

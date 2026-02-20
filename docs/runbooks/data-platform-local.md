@@ -28,6 +28,7 @@ All credentials and ports are centralized in `infra/env/.env` (never commit real
 - `SEAWEEDFS_S3_PORT` → `8333`
 - `OBJECTSTORE_MEM_LIMIT` → `512m`
 - `OBJECTSTORE_CPUS` → `1.0`
+- `POSTGRES_CPUS` (compose numeric fallback) → `1.0`
 
 Override options (highest precedence first):
 1. Exported shell variables (e.g. `export OBJECTSTORE_CPUS=2.0`)
@@ -45,6 +46,7 @@ export SEAWEEDFS_S3_PORT=18333
 export SEAWEEDFS_MASTER_PORT=19333
 export OBJECTSTORE_MEM_LIMIT=768m
 export OBJECTSTORE_CPUS=2.0
+export POSTGRES_CPUS=2.0
 docker compose config | sed -n '/seaweedfs:/,/objectstore-init:/p'
 ```
 
