@@ -1077,6 +1077,8 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "ucel-cex-binance"
+name = "ucel-cex-binance-usdm"
+name = "ucel-cex-bybit"
 version = "0.1.0"
 dependencies = [
  "bytes",
@@ -1115,7 +1117,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "ucel-core",
- "ucel-testkit",
+ "ucel-registry",
  "ucel-transport",
  "uuid",
 ]
