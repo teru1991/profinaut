@@ -22,6 +22,29 @@ entries:
 - id: other.other.public.rest.docs.root
   implemented: true
   tested: true
+strict: false
+entries:
+- id: advanced.crypto.public.rest.reference.introduction
+  implemented: true
+  tested: true
+- id: advanced.crypto.private.rest.reference.introduction
+  implemented: true
+  tested: true
+- id: exchange.crypto.public.rest.reference.introduction
+  implemented: true
+  tested: true
+- id: exchange.crypto.private.rest.reference.introduction
+  implemented: true
+  tested: true
+- id: intx.crypto.public.rest.reference.welcome
+  implemented: true
+  tested: true
+- id: intx.crypto.private.rest.reference.welcome
+  implemented: true
+  tested: true
+- id: other.other.public.rest.docs.root
+  implemented: true
+  tested: true
 - id: advanced.crypto.public.ws.reference.channels
   implemented: true
   tested: true

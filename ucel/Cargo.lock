@@ -1148,6 +1148,23 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "ucel-cex-binance"
+name = "ucel-cex-binance-usdm"
+name = "ucel-cex-bybit"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "ucel-core",
+ "ucel-testkit",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-binance-coinm"
 version = "0.1.0"
 dependencies = [
  "bytes",
@@ -1204,6 +1221,75 @@ dependencies = [
  "tracing-subscriber",
  "ucel-core",
  "ucel-testkit",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-binance-usdm"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+name = "ucel-cex-binance-coinm"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "ucel-core",
+ "ucel-testkit",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-binance-coinm"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "ucel-core",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-bitbank"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "ucel-core",
+ "ucel-registry",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-bitmex"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "ucel-core",
  "ucel-transport",
  "uuid",
 ]
