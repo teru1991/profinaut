@@ -1,0 +1,6 @@
+venue: bitget
+strict: true
+entries:
+- id: other.public.rest.nav.blocked
+  implemented: true
+  tested: true
