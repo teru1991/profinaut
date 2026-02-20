@@ -45,6 +45,7 @@ pub struct CatalogEntry {
     pub base_url: Option<String>,
     pub path: Option<String>,
     pub ws_url: Option<String>,
+    pub channel: Option<String>,
     pub ws: Option<CatalogWs>,
     pub auth: CatalogAuth,
 }
@@ -161,6 +162,10 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
         .ws_url
         .as_deref()
         .or(entry.ws.as_ref().map(|ws| ws.url.as_str()));
+    let ws_base_url = entry
+        .base_url
+        .as_deref()
+        .filter(|base_url| base_url.starts_with("wss://") || base_url.starts_with("ws://"));
     match (&entry.method, &entry.base_url, &entry.path, resolved_ws_url) {
         (Some(method), Some(base_url), Some(path), None) => {
             if method.trim().is_empty() || base_url.trim().is_empty() || path.trim().is_empty() {
@@ -174,7 +179,7 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
             }
             if !method
                 .chars()
-                .all(|ch| ch.is_ascii_uppercase() || ch == '_' || ch == '-')
+                .all(|ch| ch.is_ascii_uppercase() || ch == '_' || ch == '-' || ch == '/')
             {
                 return Err(UcelError::new(
                     ErrorCode::CatalogInvalid,
@@ -199,7 +204,7 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                 ));
             }
         }
-        (None, None, None, Some(ws_url)) => {
+        (None, _, None, Some(ws_url)) => {
             if ws_url.trim().is_empty() {
                 return Err(UcelError::new(
                     ErrorCode::CatalogMissingField,
@@ -214,6 +219,26 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                 return Err(UcelError::new(
                     ErrorCode::CatalogInvalid,
                     format!("invalid ws_url for id={}: {ws_url}", entry.id),
+                ));
+            }
+        }
+        (None, Some(base_url), None, None) if ws_base_url.is_some() => {
+            if base_url.trim().is_empty() {
+                return Err(UcelError::new(
+                    ErrorCode::CatalogMissingField,
+                    format!("ws endpoint has empty base_url for id={}", entry.id),
+                ));
+            }
+            if entry
+                .channel
+                .as_deref()
+                .unwrap_or_default()
+                .trim()
+                .is_empty()
+            {
+                return Err(UcelError::new(
+                    ErrorCode::CatalogMissingField,
+                    format!("ws endpoint requires non-empty channel for id={}", entry.id),
                 ));
             }
         }
@@ -292,6 +317,20 @@ fn map_operation_literal(operation: &str) -> Option<OpName> {
 
 fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
     let op = match id {
+        "options.public.rest.general.ref"
+        | "options.public.rest.errors.ref"
+        | "options.public.rest.market.ref" => OpName::FetchStatus,
+        "options.private.rest.trade.ref" => OpName::PlaceOrder,
+        "options.private.rest.account.ref" => OpName::FetchBalances,
+        "options.private.rest.listenkey.post" => OpName::CreateWsAuthToken,
+        "options.private.rest.listenkey.put" => OpName::ExtendWsAuthToken,
+        "options.private.rest.listenkey.delete" => OpName::CancelOrder,
+        "options.public.ws.trade" => OpName::SubscribeTrades,
+        "options.public.ws.ticker"
+        | "options.public.ws.markprice"
+        | "options.public.ws.indexprice" => OpName::SubscribeTicker,
+        "options.public.ws.depth" => OpName::SubscribeOrderbook,
+        "options.public.ws.kline" => OpName::FetchKlines,
         "crypto.public.ws.ticker.update"
         | "fx.public.ws.ticker.update"
         | "futures.public.ws.other.market.ticker.subscribe" => OpName::SubscribeTicker,
@@ -389,6 +428,7 @@ mod tests {
                 base_url: Some("https://x".into()),
                 path: Some("/ok".into()),
                 ws_url: None,
+                channel: None,
                 ws: None,
                 auth: CatalogAuth {
                     auth_type: "none".into(),
@@ -402,6 +442,7 @@ mod tests {
                 base_url: None,
                 path: None,
                 ws_url: Some("wss://x".into()),
+                channel: None,
                 ws: None,
                 auth: CatalogAuth {
                     auth_type: "none".into(),
@@ -423,6 +464,7 @@ mod tests {
             base_url: None,
             path: None,
             ws_url: Some("wss://api.coin.z.com/ws/private/v1/xxx".into()),
+            channel: None,
             ws: None,
             auth: CatalogAuth {
                 auth_type: "token".into(),
@@ -436,6 +478,7 @@ mod tests {
             base_url: Some("https://api.coin.z.com".into()),
             path: Some("/public/v1/ticker".into()),
             ws_url: None,
+            channel: None,
             ws: None,
             auth: CatalogAuth {
                 auth_type: "none".into(),
@@ -489,6 +532,28 @@ mod tests {
             assert!(
                 map_operation(entry).is_ok(),
                 "missing op mapping for {}",
+                entry.id
+            );
+        }
+    }
+
+    #[test]
+    fn loads_binance_options_catalog_and_maps_all_ops() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "binance-options").unwrap();
+        assert_eq!(catalog.rest_endpoints.len(), 8);
+        assert_eq!(catalog.ws_channels.len(), 6);
+
+        for entry in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+        {
+            let op_meta = op_meta_from_entry(entry).unwrap();
+            assert_eq!(
+                op_meta.requires_auth,
+                entry.visibility.eq_ignore_ascii_case("private"),
+                "requires_auth must be derived from visibility for {}",
                 entry.id
             );
         }
