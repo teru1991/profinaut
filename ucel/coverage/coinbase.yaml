@@ -1,71 +1,48 @@
 venue: coinbase
 strict: true
 entries:
-- id: advanced.crypto.public.rest.reference.introduction
-  implemented: true
-  tested: true
-- id: advanced.crypto.private.rest.reference.introduction
-  implemented: true
-  tested: true
-- id: exchange.crypto.public.rest.reference.introduction
-  implemented: true
-  tested: true
-- id: exchange.crypto.private.rest.reference.introduction
-  implemented: true
-  tested: true
-- id: intx.crypto.public.rest.reference.welcome
-  implemented: true
-  tested: true
-- id: intx.crypto.private.rest.reference.welcome
-  implemented: true
-  tested: true
-- id: other.other.public.rest.docs.root
-  implemented: true
-  tested: true
-strict: false
-entries:
-- id: advanced.crypto.public.rest.reference.introduction
-  implemented: false
-  tested: false
-- id: advanced.crypto.private.rest.reference.introduction
-  implemented: false
-  tested: false
-- id: exchange.crypto.public.rest.reference.introduction
-  implemented: false
-  tested: false
-- id: exchange.crypto.private.rest.reference.introduction
-  implemented: false
-  tested: false
-- id: intx.crypto.public.rest.reference.welcome
-  implemented: false
-  tested: false
-- id: intx.crypto.private.rest.reference.welcome
-  implemented: false
-  tested: false
-- id: other.other.public.rest.docs.root
-  implemented: false
-  tested: false
-- id: advanced.crypto.public.ws.reference.channels
-  implemented: false
-  tested: false
-- id: advanced.crypto.private.ws.reference.guide
-  implemented: false
-  tested: false
-- id: exchange.crypto.public.ws.reference.overview
-  implemented: false
-  tested: false
-- id: exchange.crypto.private.ws.not_applicable.current_scope
-  implemented: false
-  tested: false
-- id: intx.crypto.public.ws.reference.overview
-  implemented: false
-  tested: false
-- id: intx.crypto.private.ws.reference.welcome
-  implemented: false
-  tested: false
-- id: other.crypto.public.ws.common.protocol
-  implemented: false
-  tested: false
-- id: other.other.public.ws.docs.root
-  implemented: false
-  tested: false
+  - id: advanced.crypto.public.rest.reference.introduction
+    implemented: true
+    tested: true
+  - id: advanced.crypto.private.rest.reference.introduction
+    implemented: true
+    tested: true
+  - id: exchange.crypto.public.rest.reference.introduction
+    implemented: true
+    tested: true
+  - id: exchange.crypto.private.rest.reference.introduction
+    implemented: true
+    tested: true
+  - id: intx.crypto.public.rest.reference.welcome
+    implemented: true
+    tested: true
+  - id: intx.crypto.private.rest.reference.welcome
+    implemented: true
+    tested: true
+  - id: other.other.public.rest.docs.root
+    implemented: true
+    tested: true
+  - id: advanced.crypto.public.ws.reference.channels
+    implemented: true
+    tested: true
+  - id: advanced.crypto.private.ws.reference.guide
+    implemented: true
+    tested: true
+  - id: exchange.crypto.public.ws.reference.overview
+    implemented: true
+    tested: true
+  - id: exchange.crypto.private.ws.not_applicable.current_scope
+    implemented: true
+    tested: true
+  - id: intx.crypto.public.ws.reference.overview
+    implemented: true
+    tested: true
+  - id: intx.crypto.private.ws.reference.welcome
+    implemented: true
+    tested: true
+  - id: other.crypto.public.ws.common.protocol
+    implemented: true
+    tested: true
+  - id: other.other.public.ws.docs.root
+    implemented: true
+    tested: true
