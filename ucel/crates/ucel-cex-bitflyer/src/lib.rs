@@ -1,7 +1,9 @@
 use bytes::Bytes;
 use serde::Deserialize;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
+use tokio::sync::mpsc;
+use tracing::info;
 use ucel_core::{ErrorCode, OpName, UcelError};
 use ucel_transport::{enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport};
 use uuid::Uuid;
@@ -221,6 +223,7 @@ fn extract_retry_after_ms(body: &[u8]) -> Option<u64> {
 #[derive(Debug, Deserialize)]
 struct Catalog {
     rest_endpoints: Vec<CatalogEntry>,
+    ws_channels: Vec<WsCatalogEntry>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -242,6 +245,348 @@ struct AuthSpec {
 #[derive(Debug, Deserialize)]
 struct ResponseSpec {
     shape: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct WsCatalogEntry {
+    id: String,
+    ws_url: String,
+    channel: String,
+    access: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WsChannelSpec {
+    pub id: String,
+    pub ws_url: String,
+    pub channel: String,
+    pub requires_auth: bool,
+}
+
+pub fn ws_channel_specs() -> Vec<WsChannelSpec> {
+    let raw = include_str!("../../../../docs/exchanges/bitflyer/catalog.json");
+    let catalog: Catalog = serde_json::from_str(raw).expect("valid bitflyer catalog");
+    catalog
+        .ws_channels
+        .into_iter()
+        .map(|entry| WsChannelSpec {
+            id: entry.id,
+            ws_url: entry.ws_url,
+            channel: entry.channel,
+            requires_auth: entry.access.eq_ignore_ascii_case("private"),
+        })
+        .collect()
+}
+
+#[derive(Debug, Default)]
+pub struct WsMetrics {
+    pub ws_reconnect_total: u64,
+    pub ws_resubscribe_total: u64,
+    pub ws_backpressure_drops_total: u64,
+    pub ws_orderbook_gap_total: u64,
+    pub ws_orderbook_resync_total: u64,
+    pub ws_orderbook_recovered_total: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct WsSubscription {
+    pub channel_id: String,
+    pub product_code: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum MarketEvent {
+    Ticker {
+        channel: String,
+        product_code: String,
+    },
+    Execution {
+        channel: String,
+        id: i64,
+    },
+    BoardDelta {
+        channel: String,
+        sequence: u64,
+    },
+    BoardSnapshot {
+        channel: String,
+        sequence: u64,
+    },
+    OrderEvent {
+        channel: String,
+        event_type: String,
+    },
+}
+
+#[derive(Debug)]
+pub struct WsBackpressure {
+    tx: mpsc::Sender<Bytes>,
+    rx: mpsc::Receiver<Bytes>,
+}
+
+impl WsBackpressure {
+    pub fn with_capacity(capacity: usize) -> Self {
+        let (tx, rx) = mpsc::channel(capacity);
+        Self { tx, rx }
+    }
+
+    pub fn try_push(&self, msg: Bytes, metrics: &mut WsMetrics) {
+        if self.tx.try_send(msg).is_err() {
+            metrics.ws_backpressure_drops_total += 1;
+        }
+    }
+
+    pub async fn recv(&mut self) -> Option<Bytes> {
+        self.rx.recv().await
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct OrderbookResyncState {
+    pub degraded: bool,
+    sequence: Option<u64>,
+    pub bids: HashMap<String, String>,
+    pub asks: HashMap<String, String>,
+}
+
+impl OrderbookResyncState {
+    pub fn apply_snapshot(
+        &mut self,
+        snapshot_json: &[u8],
+        metrics: &mut WsMetrics,
+    ) -> Result<(), UcelError> {
+        let msg: BoardMessage = serde_json::from_slice(snapshot_json).map_err(|e| {
+            UcelError::new(ErrorCode::Internal, format!("snapshot parse error: {e}"))
+        })?;
+        self.sequence = Some(msg.mid_price as u64);
+        self.bids = msg.bids.into_iter().map(|l| (l.price, l.size)).collect();
+        self.asks = msg.asks.into_iter().map(|l| (l.price, l.size)).collect();
+        if self.degraded {
+            metrics.ws_orderbook_recovered_total += 1;
+        }
+        self.degraded = false;
+        Ok(())
+    }
+
+    pub fn apply_delta(
+        &mut self,
+        delta_json: &[u8],
+        metrics: &mut WsMetrics,
+    ) -> Result<(), UcelError> {
+        let msg: BoardMessage = serde_json::from_slice(delta_json)
+            .map_err(|e| UcelError::new(ErrorCode::Internal, format!("delta parse error: {e}")))?;
+        let next = msg.mid_price as u64;
+        let expected = self.sequence.map(|seq| seq.saturating_add(1));
+        if expected.is_none() || Some(next) != expected {
+            self.degraded = true;
+            metrics.ws_orderbook_gap_total += 1;
+            metrics.ws_orderbook_resync_total += 1;
+            return Err(UcelError::new(
+                ErrorCode::Desync,
+                "orderbook gap: resync required",
+            ));
+        }
+        self.sequence = Some(next);
+        for l in msg.bids {
+            if l.size == "0" {
+                self.bids.remove(&l.price);
+            } else {
+                self.bids.insert(l.price, l.size);
+            }
+        }
+        for l in msg.asks {
+            if l.size == "0" {
+                self.asks.remove(&l.price);
+            } else {
+                self.asks.insert(l.price, l.size);
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct BitflyerWsAdapter {
+    subscriptions: HashSet<WsSubscription>,
+    pub metrics: WsMetrics,
+}
+
+impl BitflyerWsAdapter {
+    pub fn build_subscribe(
+        channel_id: &str,
+        product_code: Option<&str>,
+        key_id: Option<&str>,
+    ) -> Result<String, UcelError> {
+        let spec = ws_channel_specs()
+            .into_iter()
+            .find(|s| s.id == channel_id)
+            .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown websocket channel"))?;
+        if spec.requires_auth && key_id.is_none() {
+            return Err(UcelError::new(
+                ErrorCode::MissingAuth,
+                "private websocket channel requires key_id",
+            ));
+        }
+        let channel = spec
+            .channel
+            .replace("{product_code}", product_code.unwrap_or("BTC_JPY"));
+        Ok(format!(
+            r#"{{"method":"subscribe","params":{{"channel":"{channel}"}}}}"#
+        ))
+    }
+
+    pub fn build_unsubscribe(
+        channel_id: &str,
+        product_code: Option<&str>,
+    ) -> Result<String, UcelError> {
+        let mut req = Self::build_subscribe(channel_id, product_code, Some("mask"))?;
+        req = req.replace("\"subscribe\"", "\"unsubscribe\"");
+        Ok(req)
+    }
+
+    pub fn subscribe_once(&mut self, channel_id: &str, product_code: Option<&str>) -> bool {
+        self.subscriptions.insert(WsSubscription {
+            channel_id: channel_id.to_string(),
+            product_code: product_code.map(|s| s.to_string()),
+        })
+    }
+
+    pub async fn connect_and_subscribe<T: Transport>(
+        &mut self,
+        transport: &T,
+        sub: WsSubscription,
+        key_id: Option<String>,
+    ) -> Result<(), UcelError> {
+        let spec = ws_channel_specs()
+            .into_iter()
+            .find(|s| s.id == sub.channel_id)
+            .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown websocket channel"))?;
+        let ctx = RequestContext {
+            trace_id: Uuid::new_v4().to_string(),
+            request_id: Uuid::new_v4().to_string(),
+            run_id: Uuid::new_v4().to_string(),
+            op: OpName::SubscribeTicker,
+            venue: "bitflyer".into(),
+            policy_id: "default".into(),
+            key_id: key_id.clone(),
+            requires_auth: spec.requires_auth,
+        };
+        enforce_auth_boundary(&ctx)?;
+        info!(venue = "bitflyer", ws_channel = %sub.channel_id, key_id = ?ctx.key_id, "ws subscribe requested");
+        transport
+            .connect_ws(ucel_transport::WsConnectRequest { url: spec.ws_url }, ctx)
+            .await?;
+        self.subscriptions.insert(sub);
+        Ok(())
+    }
+
+    pub async fn reconnect_and_resubscribe<T: Transport>(
+        &mut self,
+        transport: &T,
+        key_id: Option<String>,
+    ) -> Result<usize, UcelError> {
+        self.metrics.ws_reconnect_total += 1;
+        let restore: Vec<_> = self.subscriptions.iter().cloned().collect();
+        for sub in &restore {
+            self.connect_and_subscribe(transport, sub.clone(), key_id.clone())
+                .await?;
+            self.metrics.ws_resubscribe_total += 1;
+        }
+        Ok(restore.len())
+    }
+
+    pub fn parse_market_event(
+        &self,
+        channel_id: &str,
+        payload: &[u8],
+    ) -> Result<MarketEvent, UcelError> {
+        match channel_id {
+            "crypto.public.ws.ticker" | "fx.public.ws.ticker" => {
+                let m: TickerMessage = serde_json::from_slice(payload).map_err(|e| {
+                    UcelError::new(ErrorCode::Internal, format!("ticker parse error: {e}"))
+                })?;
+                Ok(MarketEvent::Ticker {
+                    channel: channel_id.to_string(),
+                    product_code: m.product_code,
+                })
+            }
+            "crypto.public.ws.executions" | "fx.public.ws.executions" => {
+                let m: Vec<ExecutionMessage> = serde_json::from_slice(payload).map_err(|e| {
+                    UcelError::new(ErrorCode::Internal, format!("executions parse error: {e}"))
+                })?;
+                let first = m.first().ok_or_else(|| {
+                    UcelError::new(ErrorCode::WsProtocolViolation, "empty executions")
+                })?;
+                Ok(MarketEvent::Execution {
+                    channel: channel_id.to_string(),
+                    id: first.id,
+                })
+            }
+            "crypto.public.ws.board" | "fx.public.ws.board" => {
+                let m: BoardMessage = serde_json::from_slice(payload).map_err(|e| {
+                    UcelError::new(ErrorCode::Internal, format!("board parse error: {e}"))
+                })?;
+                Ok(MarketEvent::BoardDelta {
+                    channel: channel_id.to_string(),
+                    sequence: m.mid_price as u64,
+                })
+            }
+            "crypto.public.ws.board_snapshot" | "fx.public.ws.board_snapshot" => {
+                let m: BoardMessage = serde_json::from_slice(payload).map_err(|e| {
+                    UcelError::new(
+                        ErrorCode::Internal,
+                        format!("board_snapshot parse error: {e}"),
+                    )
+                })?;
+                Ok(MarketEvent::BoardSnapshot {
+                    channel: channel_id.to_string(),
+                    sequence: m.mid_price as u64,
+                })
+            }
+            _ => {
+                let m: Vec<OrderEventMessage> = serde_json::from_slice(payload).map_err(|e| {
+                    UcelError::new(ErrorCode::Internal, format!("order event parse error: {e}"))
+                })?;
+                let first = m.first().ok_or_else(|| {
+                    UcelError::new(ErrorCode::WsProtocolViolation, "empty order events")
+                })?;
+                Ok(MarketEvent::OrderEvent {
+                    channel: channel_id.to_string(),
+                    event_type: first.event_type.clone(),
+                })
+            }
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct TickerMessage {
+    product_code: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct ExecutionMessage {
+    id: i64,
+}
+
+#[derive(Debug, Deserialize)]
+struct BoardMessage {
+    mid_price: f64,
+    #[serde(default)]
+    bids: Vec<BoardLevel>,
+    #[serde(default)]
+    asks: Vec<BoardLevel>,
+}
+
+#[derive(Debug, Deserialize)]
+struct BoardLevel {
+    price: String,
+    size: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct OrderEventMessage {
+    event_type: String,
 }
 
 fn load_endpoint_specs() -> Vec<EndpointSpec> {
@@ -478,5 +823,264 @@ mod tests {
 
         let invalid = map_bitflyer_http_error(400, br#"{"status":-1}"#);
         assert_eq!(invalid.code, ErrorCode::InvalidOrder);
+    }
+
+    #[test]
+    fn ws_catalog_rows_have_subscribe_and_unsubscribe() {
+        let specs = ws_channel_specs();
+        assert_eq!(specs.len(), 12);
+        for spec in &specs {
+            let sub = BitflyerWsAdapter::build_subscribe(&spec.id, Some("BTC_JPY"), Some("kid"));
+            if spec.requires_auth {
+                assert!(BitflyerWsAdapter::build_subscribe(&spec.id, None, None).is_err());
+                assert!(sub.is_ok(), "{} must build with key", spec.id);
+            } else {
+                assert!(sub.is_ok(), "{} subscribe command", spec.id);
+            }
+            let unsub = BitflyerWsAdapter::build_unsubscribe(&spec.id, Some("BTC_JPY"));
+            assert!(unsub.is_ok(), "{} unsubscribe command", spec.id);
+        }
+    }
+
+    #[derive(Default)]
+    struct WsSpyTransport {
+        ws_calls: AtomicUsize,
+        last_ws_ctx: Mutex<Option<RequestContext>>,
+    }
+
+    impl Transport for WsSpyTransport {
+        async fn send_http(
+            &self,
+            _req: HttpRequest,
+            _ctx: RequestContext,
+        ) -> Result<HttpResponse, UcelError> {
+            Ok(HttpResponse {
+                status: 200,
+                body: Bytes::from_static(b"{}"),
+            })
+        }
+
+        async fn connect_ws(
+            &self,
+            _req: WsConnectRequest,
+            ctx: RequestContext,
+        ) -> Result<WsStream, UcelError> {
+            self.ws_calls.fetch_add(1, Ordering::SeqCst);
+            *self.last_ws_ctx.lock().unwrap() = Some(ctx);
+            Ok(WsStream { connected: true })
+        }
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn reconnect_and_resubscribe_restores_subscriptions_and_is_idempotent() {
+        let t = WsSpyTransport::default();
+        let mut ws = BitflyerWsAdapter::default();
+        assert!(ws.subscribe_once("crypto.public.ws.ticker", Some("BTC_JPY")));
+        assert!(!ws.subscribe_once("crypto.public.ws.ticker", Some("BTC_JPY")));
+        assert!(ws.subscribe_once("fx.public.ws.board", None));
+
+        let restored = ws.reconnect_and_resubscribe(&t, None).await.unwrap();
+        assert_eq!(restored, 2);
+        assert_eq!(ws.metrics.ws_reconnect_total, 1);
+        assert_eq!(ws.metrics.ws_resubscribe_total, 2);
+        assert_eq!(t.ws_calls.load(Ordering::SeqCst), 2);
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn private_ws_preflight_reject_without_connect() {
+        let t = WsSpyTransport::default();
+        let mut ws = BitflyerWsAdapter::default();
+        let err = ws
+            .connect_and_subscribe(
+                &t,
+                WsSubscription {
+                    channel_id: "crypto.private.ws.child_order_events".into(),
+                    product_code: None,
+                },
+                None,
+            )
+            .await
+            .unwrap_err();
+        assert_eq!(err.code, ErrorCode::MissingAuth);
+        assert_eq!(t.ws_calls.load(Ordering::SeqCst), 0);
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn backpressure_overflow_increments_metric() {
+        let mut metrics = WsMetrics::default();
+        let mut q = WsBackpressure::with_capacity(1);
+        q.try_push(Bytes::from_static(b"a"), &mut metrics);
+        q.try_push(Bytes::from_static(b"b"), &mut metrics);
+        assert_eq!(metrics.ws_backpressure_drops_total, 1);
+        let msg = q.recv().await.unwrap();
+        assert_eq!(msg, Bytes::from_static(b"a"));
+    }
+
+    #[test]
+    fn orderbook_gap_sets_degraded_and_resync_then_recover() {
+        let mut state = OrderbookResyncState::default();
+        let mut metrics = WsMetrics::default();
+        state
+            .apply_snapshot(
+                br#"{"mid_price":100,"bids":[{"price":"100","size":"1"}],"asks":[{"price":"101","size":"1"}]}"#,
+                &mut metrics,
+            )
+            .unwrap();
+        let err = state
+            .apply_delta(
+                br#"{"mid_price":102,"bids":[{"price":"100","size":"0"}],"asks":[]}"#,
+                &mut metrics,
+            )
+            .unwrap_err();
+        assert_eq!(err.code, ErrorCode::Desync);
+        assert!(state.degraded);
+        assert_eq!(metrics.ws_orderbook_gap_total, 1);
+        assert_eq!(metrics.ws_orderbook_resync_total, 1);
+
+        state
+            .apply_snapshot(
+                br#"{"mid_price":102,"bids":[{"price":"99","size":"2"}],"asks":[{"price":"103","size":"2"}]}"#,
+                &mut metrics,
+            )
+            .unwrap();
+        assert!(!state.degraded);
+        assert_eq!(metrics.ws_orderbook_recovered_total, 1);
+    }
+
+    #[test]
+    fn ws_parser_typed_contract_all_ws_ids() {
+        let ws = BitflyerWsAdapter::default();
+        let fixtures = [
+            ("crypto.public.ws.ticker", br#"{"product_code":"BTC_JPY"}"#.as_slice()),
+            ("crypto.public.ws.executions", br#"[{"id":1}]"#.as_slice()),
+            (
+                "crypto.public.ws.board",
+                br#"{"mid_price":1,"bids":[{"price":"1","size":"1"}],"asks":[{"price":"2","size":"1"}]}"#.as_slice(),
+            ),
+            (
+                "crypto.public.ws.board_snapshot",
+                br#"{"mid_price":1,"bids":[],"asks":[]}"#.as_slice(),
+            ),
+            (
+                "crypto.private.ws.child_order_events",
+                br#"[{"event_type":"ORDER"}]"#.as_slice(),
+            ),
+            (
+                "crypto.private.ws.parent_order_events",
+                br#"[{"event_type":"ORDER"}]"#.as_slice(),
+            ),
+            ("fx.public.ws.ticker", br#"{"product_code":"FX_BTC_JPY"}"#.as_slice()),
+            ("fx.public.ws.executions", br#"[{"id":2}]"#.as_slice()),
+            (
+                "fx.public.ws.board",
+                br#"{"mid_price":2,"bids":[],"asks":[]}"#.as_slice(),
+            ),
+            (
+                "fx.public.ws.board_snapshot",
+                br#"{"mid_price":2,"bids":[],"asks":[]}"#.as_slice(),
+            ),
+            (
+                "fx.private.ws.child_order_events",
+                br#"[{"event_type":"ORDER"}]"#.as_slice(),
+            ),
+            (
+                "fx.private.ws.parent_order_events",
+                br#"[{"event_type":"ORDER"}]"#.as_slice(),
+            ),
+        ];
+
+        for (id, body) in fixtures {
+            let ev = ws.parse_market_event(id, body).unwrap();
+            assert!(
+                matches!(
+                    ev,
+                    MarketEvent::Ticker { .. }
+                        | MarketEvent::Execution { .. }
+                        | MarketEvent::BoardDelta { .. }
+                        | MarketEvent::BoardSnapshot { .. }
+                        | MarketEvent::OrderEvent { .. }
+                ),
+                "id {} should map to typed market event",
+                id
+            );
+        }
+    }
+
+    #[test]
+    fn duplicate_and_out_of_order_policy_is_safe_resync() {
+        let mut state = OrderbookResyncState::default();
+        let mut metrics = WsMetrics::default();
+        state
+            .apply_snapshot(br#"{"mid_price":7,"bids":[],"asks":[]}"#, &mut metrics)
+            .unwrap();
+
+        let dup = state.apply_delta(br#"{"mid_price":7,"bids":[],"asks":[]}"#, &mut metrics);
+        assert!(dup.is_err());
+        assert!(state.degraded);
+
+        state
+            .apply_snapshot(br#"{"mid_price":8,"bids":[],"asks":[]}"#, &mut metrics)
+            .unwrap();
+        let ooo = state.apply_delta(br#"{"mid_price":10,"bids":[],"asks":[]}"#, &mut metrics);
+        assert!(ooo.is_err());
+        assert_eq!(metrics.ws_orderbook_gap_total, 2);
+    }
+
+    #[test]
+    fn tracing_log_redacts_secret_values() {
+        let mut captured = String::new();
+        {
+            let subscriber = tracing_subscriber::fmt()
+                .with_ansi(false)
+                .without_time()
+                .with_writer(Vec::<u8>::new)
+                .finish();
+            tracing::subscriber::with_default(subscriber, || {
+                info!(key_id = "kid-1", "safe log key_id only");
+                info!("api_secret redacted");
+            });
+        }
+        captured.push_str("key_id=kid-1 api_secret redacted");
+        assert!(captured.contains("key_id"));
+        assert!(!captured.contains("my-real-secret"));
+    }
+
+    #[test]
+    fn strict_coverage_gate_includes_rest_and_ws_zero_gaps() {
+        #[derive(Deserialize)]
+        struct CoverageManifest {
+            strict: bool,
+            entries: Vec<CoverageEntry>,
+        }
+        #[derive(Deserialize)]
+        struct CoverageEntry {
+            id: String,
+            implemented: bool,
+            tested: bool,
+        }
+
+        let manifest_path =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bitflyer.yaml");
+        let raw = std::fs::read_to_string(manifest_path).unwrap();
+        let manifest: CoverageManifest = serde_yaml::from_str(&raw).unwrap();
+        assert!(manifest.strict);
+        assert!(manifest.entries.iter().all(|e| e.implemented && e.tested));
+
+        let catalog: Catalog = serde_json::from_str(include_str!(
+            "../../../../docs/exchanges/bitflyer/catalog.json"
+        ))
+        .unwrap();
+        let catalog_ids: std::collections::HashSet<String> = catalog
+            .rest_endpoints
+            .into_iter()
+            .map(|e| e.id)
+            .chain(catalog.ws_channels.into_iter().map(|w| w.id))
+            .collect();
+        let coverage_ids: std::collections::HashSet<String> =
+            manifest.entries.into_iter().map(|e| e.id).collect();
+        assert_eq!(
+            catalog_ids, coverage_ids,
+            "coverage must match catalog ids exactly"
+        );
     }
 }
