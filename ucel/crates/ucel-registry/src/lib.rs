@@ -1,4 +1,5 @@
 pub mod deribit;
+pub mod okx;
 use serde::Deserialize;
 use std::{collections::HashSet, fs, path::Path};
 use ucel_core::{ErrorCode, OpMeta, OpName, UcelError};
@@ -58,10 +59,11 @@ pub fn load_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, UcelError>
 }
 
 pub fn load_catalog_from_repo_root(repo_root: &Path, exchange: &str) -> Result<ExchangeCatalog, UcelError> {
+    let exchange_dir = exchange.to_ascii_lowercase();
     let path = repo_root
         .join("docs")
         .join("exchanges")
-        .join(exchange.to_ascii_lowercase())
+        .join(&exchange_dir)
         .join("catalog.json");
 
     if exchange_dir == "deribit" {
@@ -98,17 +100,16 @@ pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
 }
 
 fn entry_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
-    if !entry.visibility.trim().is_empty() {
-        return Ok(entry.visibility.to_ascii_lowercase());
+    if let Some(v) = &entry.visibility {
+        if !v.trim().is_empty() {
+            return Ok(v.to_ascii_lowercase());
+        }
     }
     if entry.id.contains(".private.") {
         return Ok("private".into());
     }
-    if entry.id.starts_with("bybit.") {
-        return map_bybit_operation(entry);
-    }
-    if let Some(op) = map_bitget_operation_by_id(&entry.id) {
-        return Ok(op);
+    if entry.id.contains(".public.") {
+        return Ok("public".into());
     }
     Err(UcelError::new(
         ErrorCode::CatalogMissingField,
