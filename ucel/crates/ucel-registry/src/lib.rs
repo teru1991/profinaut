@@ -1,3 +1,4 @@
+pub mod deribit;
 use serde::Deserialize;
 use std::{collections::HashSet, fs, path::Path};
 use ucel_core::{
@@ -92,8 +93,13 @@ pub fn load_catalog_from_repo_root(
     let path = repo_root
         .join("docs")
         .join("exchanges")
-        .join(exchange_dir)
+        .join(exchange_dir.clone())
         .join("catalog.json");
+
+    if exchange_dir == "deribit" {
+        return deribit::load_deribit_catalog_from_path(&path);
+    }
+
     load_catalog_from_path(&path)
 }
 
@@ -315,6 +321,10 @@ fn auth_type_requires_credentials(auth_type: &str) -> bool {
 }
 
 pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
+    if entry.id.starts_with("jsonrpc.") || entry.id.starts_with("ws.") {
+        return deribit::map_deribit_operation(entry);
+    }
+
     let op = map_operation(entry)?;
     let requires_auth = entry_visibility(entry)? == "private";
     Ok(OpMeta { op, requires_auth })
@@ -1055,5 +1065,33 @@ mod tests {
 
         let err = validate_entry(&entry).unwrap_err();
         assert_eq!(err.code, ErrorCode::CatalogInvalid);
+    }
+}
+
+#[cfg(test)]
+mod deribit_registry_tests {
+    use super::{load_catalog_from_repo_root, op_meta_from_entry};
+    use std::path::Path;
+
+    #[test]
+    fn loads_deribit_catalog_and_maps_all_rows() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "deribit").unwrap();
+        assert_eq!(catalog.rest_endpoints.len(), 9);
+        assert_eq!(catalog.ws_channels.len(), 19);
+
+        for entry in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+        {
+            let op_meta = op_meta_from_entry(entry).unwrap();
+            assert_eq!(
+                op_meta.requires_auth,
+                entry.id.contains(".private."),
+                "requires_auth must derive from visibility for {}",
+                entry.id
+            );
+        }
     }
 }
