@@ -1,3 +1,5 @@
+pub mod okx;
+
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::{fs, path::Path};
@@ -228,16 +230,29 @@ mod tests {
     }
 
     #[test]
-    fn coverage_gate_warns_for_unimplemented_entries_in_non_strict_mode() {
-        let manifest = CoverageManifest {
-            venue: "sbivc".into(),
-            strict: false,
-            entries: vec![CoverageEntry {
-                id: "sbivc.public.rest.market.ticker".into(),
-                implemented: false,
-                tested: false,
-            }],
-        };
+    fn coverage_gate_warns_for_okx_until_full_coverage() {
+        let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/okx.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "okx");
+        assert!(!manifest.strict);
+
+        let result = run_coverage_gate(&manifest);
+        match result {
+            CoverageGateResult::WarnOnly(gaps) => {
+                assert_eq!(gaps.get("implemented").map(Vec::len), Some(7));
+                assert_eq!(gaps.get("tested").map(Vec::len), Some(7));
+            }
+            _ => panic!("okx coverage gate should warn while manifest has gaps"),
+        }
+    }
+
+    #[test]
+    fn coverage_gate_warns_for_binance_options_until_full_coverage() {
+        let manifest_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-options.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "binance-options");
+        assert!(!manifest.strict);
 
         let result = run_coverage_gate(&manifest);
         match result {
