@@ -25,10 +25,27 @@ class RawIngestMeta:
     quality_json: dict[str, Any]
     parser_version: str | None
 
+class _NamedTupleRow(tuple):
+    def __new__(cls, columns: tuple[str, ...], values: tuple[Any, ...]):
+        obj = super().__new__(cls, values)
+        obj._columns = columns
+        return obj
+
+    def __getitem__(self, index: Any):
+        if isinstance(index, str):
+            return super().__getitem__(self._columns.index(index))
+        return super().__getitem__(index)
+
+
+def _named_tuple_row_factory(cursor: sqlite3.Cursor, row: tuple[Any, ...]) -> _NamedTupleRow:
+    columns = tuple(str(desc[0]) for desc in cursor.description or ())
+    return _NamedTupleRow(columns, tuple(row))
+
 
 class MarketDataMetaRepository:
     def __init__(self, conn: sqlite3.Connection):
         self._conn = conn
+        self._conn.row_factory = _named_tuple_row_factory
 
     def insert_raw_ingest_meta(self, row: RawIngestMeta) -> None:
         self._conn.execute(

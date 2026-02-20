@@ -9,6 +9,7 @@ import os
 import random
 import time
 import sqlite3
+import types
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -114,7 +115,7 @@ class TickerSnapshot:
 
 @dataclass
 class DBHealthConfig:
-    database_url: str | None = os.getenv("DATABASE_URL")
+    database_url: str | None = os.getenv("DATABASE_URL") or os.getenv("DB_DSN")
     timeout_ms: int = int(os.getenv("DB_PING_TIMEOUT_MS", "500"))
 
 
@@ -482,22 +483,27 @@ async def _db_health_snapshot() -> tuple[bool, float | None, str | None]:
 @app.get("/healthz")
 async def healthz() -> dict[str, Any]:
     db_ok, db_latency_ms, db_reason = await _db_health_snapshot()
+    runtime_storage_backend = os.getenv("OBJECT_STORE_BACKEND")
+    storage_ready = bool(runtime_storage_backend)
     degraded_reasons: list[str] = []
     if db_reason is not None:
         degraded_reasons.append(db_reason)
 
-    if _registry_error is not None:
-        degraded_reasons.append(f"REGISTRY_INVALID:{_registry_error}")
-
     bronze_health = _get_bronze_writer().health()
-    if bronze_health.get("degraded"):
-        degraded_reasons.append("BRONZE_WRITER_DEGRADED")
+    if not db_ok and db_reason is None and os.getenv("DB_DSN") is None and os.getenv("DATABASE_URL") is None:
+        degraded_reasons.append("DB_NOT_CONFIGURED")
 
+    checks = [
+        {"name": "object_store", "ok": storage_ready and not bronze_health.get("degraded", False)},
+        {"name": "db", "ok": db_ok},
+    ]
     payload = {
         "status": "degraded" if degraded_reasons else "ok",
         "db_ok": db_ok,
         "db_latency_ms": db_latency_ms,
         "degraded_reasons": degraded_reasons,
+        "checks": checks,
+        "ts": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "registry_ok": _registry_error is None and _registry is not None,
         "registry_venue": _registry_venue,
         "bronze": bronze_health,
@@ -542,6 +548,9 @@ async def get_capabilities() -> dict[str, Any]:
         degraded = degraded_reason is not None
 
     db_ok, db_latency_ms, db_reason = await _db_health_snapshot()
+    runtime_storage_backend = os.getenv("OBJECT_STORE_BACKEND")
+    runtime_db_dsn = os.getenv("DB_DSN")
+    silver_enabled = os.getenv("SILVER_ENABLED", "0").strip() == "1"
 
     degraded_reasons: list[str] = []
     if degraded_reason is not None:
@@ -549,15 +558,30 @@ async def get_capabilities() -> dict[str, Any]:
     if _gmo_ws_connector.degraded_reason is not None:
         degraded_reasons.append(_gmo_ws_connector.degraded_reason)
     degraded_reasons.extend(_object_store_status.degraded_reasons)
-    if db_reason is not None:
+    is_default_ping = isinstance(_db_checker.ping, types.MethodType) and _db_checker.ping.__func__ is DBHealthChecker.ping
+    if not runtime_storage_backend:
+        degraded_reasons.append("STORAGE_NOT_CONFIGURED")
+    if runtime_db_dsn is None:
+        degraded_reasons.append("DB_NOT_CONFIGURED")
+    if db_reason is not None and (not is_default_ping or (runtime_db_dsn is not None and _db_checker._config.database_url is not None)):
         degraded_reasons.append(db_reason)
+
+    if runtime_db_dsn is None:
+        db_ok = False
+        db_latency_ms = None
+
+    degraded = degraded or bool(degraded_reasons)
 
     return {
         "service": "marketdata",
         "version": "0.1.0",
-        "status": "degraded" if degraded or bool(_object_store_status.degraded_reasons) or (not db_ok) else "ok",
+        "status": "degraded" if degraded else "ok",
         "features": ["ticker_latest", "gmo_poller", "gmo_ws_connector"],
-        "storage_backend": _object_store_status.backend,
+        "storage_backend": runtime_storage_backend,
+        "ingest_raw_enabled": bool(runtime_storage_backend and runtime_db_dsn),
+        "silver_enabled": silver_enabled,
+        "db_enabled": bool(runtime_db_dsn),
+        "degraded": degraded,
         "db_ok": db_ok,
         "db_latency_ms": db_latency_ms,
         "degraded_reason": degraded_reason,
