@@ -39,12 +39,10 @@ pub enum Step {
 pub struct RestMockServer {
     pub responses: VecDeque<(u16, String)>,
 }
-
 impl RestMockServer {
     pub fn enqueue(&mut self, status: u16, body: impl Into<String>) {
         self.responses.push_back((status, body.into()));
     }
-
     pub fn next_response(&mut self) -> Option<(u16, String)> {
         self.responses.pop_front()
     }
@@ -56,16 +54,13 @@ pub struct WsMockServer {
     pub events: VecDeque<String>,
     pub dropped: bool,
 }
-
 impl WsMockServer {
     pub fn accept(&mut self) {
         self.accepted = true;
     }
-
     pub fn send_json(&mut self, msg: impl Into<String>) {
         self.events.push_back(msg.into());
     }
-
     pub fn drop_connection(&mut self) {
         self.dropped = true;
     }
@@ -84,25 +79,20 @@ pub fn degraded_health(reason: &str, code: ErrorCode) -> HealthStatus {
 pub struct CatalogContractIndex {
     registered_tests: HashSet<String>,
 }
-
 impl CatalogContractIndex {
     pub fn register_id(&mut self, id: &str) {
         self.registered_tests.insert(id.to_string());
     }
-
     pub fn missing_catalog_ids(&self, catalog: &ExchangeCatalog) -> Vec<String> {
-        let mut missing = Vec::new();
-        for id in catalog
+        catalog
             .rest_endpoints
             .iter()
             .chain(catalog.ws_channels.iter())
+            .filter_map(|e| (!self.registered_tests.contains(&e.id)).then(|| e.id.clone()))
             .map(|e| e.id.as_str())
-        {
-            if !self.registered_tests.contains(id) {
-                missing.push(id.to_string());
-            }
-        }
-        missing
+            .filter(|id| !self.registered_tests.contains(*id))
+            .map(|s| s.to_string())
+            .collect()
     }
 }
 
@@ -112,7 +102,6 @@ pub struct CoverageManifest {
     pub strict: bool,
     pub entries: Vec<CoverageEntry>,
 }
-
 #[derive(Debug, Clone, Deserialize)]
 pub struct CoverageEntry {
     pub id: String,
@@ -121,28 +110,32 @@ pub struct CoverageEntry {
 }
 
 pub fn load_coverage_manifest(path: &Path) -> Result<CoverageManifest, Box<dyn std::error::Error>> {
-    let raw = fs::read_to_string(path)?;
-    Ok(serde_yaml::from_str(&raw)?)
+    Ok(serde_yaml::from_str(&fs::read_to_string(path)?)?)
 }
 
 pub fn evaluate_coverage_gate(manifest: &CoverageManifest) -> HashMap<String, Vec<String>> {
-    let mut missing: HashMap<String, Vec<String>> = HashMap::new();
-
+    let mut gaps: HashMap<String, Vec<String>> = HashMap::new();
     for entry in &manifest.entries {
         if !entry.implemented {
+            gaps.entry("implemented".to_string())
+    let mut missing: HashMap<String, Vec<String>> = HashMap::new();
+    for e in &manifest.entries {
+        if !e.implemented {
             missing
-                .entry("implemented".to_string())
+                .entry("implemented".into())
                 .or_default()
-                .push(entry.id.clone());
+                .push(e.id.clone());
         }
         if !entry.tested {
+            gaps.entry("tested".to_string())
+        if !e.tested {
             missing
-                .entry("tested".to_string())
+                .entry("tested".into())
                 .or_default()
-                .push(entry.id.clone());
+                .push(e.id.clone());
         }
     }
-
+    gaps
     missing
 }
 
@@ -192,6 +185,39 @@ mod tests {
     #[test]
     fn coverage_gate_loads_sbivc_manifest() {
         let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/sbivc.yaml");
+    fn contract_index_detects_unregistered_upbit_rows() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "upbit").unwrap();
+
+        let index = CatalogContractIndex::default();
+        let missing = index.missing_catalog_ids(&catalog);
+        assert_eq!(missing.len(), 29);
+    }
+
+    #[test]
+    fn coverage_gate_warns_for_upbit_until_full_coverage() {
+        let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/upbit.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "upbit");
+        assert!(!manifest.strict);
+    fn coverage_gate_is_strict_and_has_no_gaps() {
+        let manifest_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/gmocoin.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "gmocoin");
+        assert!(manifest.strict);
+
+        let gaps = evaluate_coverage_gate(&manifest);
+        assert!(
+            gaps.is_empty(),
+            "strict coverage gate must have no gaps: {gaps:?}"
+        );
+    }
+
+    #[test]
+    fn coverage_gate_warns_for_bybit_gaps() {
+        let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/BYBIT.yaml");
+        master
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
         assert_eq!(manifest.venue, "sbivc");
         assert!(!manifest.strict);
@@ -220,6 +246,33 @@ mod tests {
                 assert_eq!(gaps.get("tested").map(Vec::len), Some(1));
             }
             _ => panic!("non-strict gate must warn when gaps exist"),
+    fn coverage_gate_is_strict_for_binance_usdm_and_has_no_gaps() {
+        let manifest_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-usdm.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "binance-usdm");
+        master
+
+        let result = run_coverage_gate(&manifest);
+        match result {
+            CoverageGateResult::WarnOnly(gaps) => {
+                assert_eq!(gaps.get("implemented").map(Vec::len), Some(29));
+                assert_eq!(gaps.get("tested").map(Vec::len), Some(29));
+            }
+            _ => panic!("upbit coverage gate should warn while manifest has gaps"),
+    fn coverage_gate_is_strict_for_binance_coinm_and_has_no_gaps() {
+        let manifest_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-coinm.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "binance-coinm");
+        assert!(manifest.strict);
+
+        let result = run_coverage_gate(&manifest);
+        match result {
+            CoverageGateResult::Passed => {}
+            _ => panic!("binance-coinm coverage gate should pass in strict mode"),
+        master
+        master
         }
     }
 }
