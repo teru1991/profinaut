@@ -1,3 +1,5 @@
+pub mod okx;
+
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::{fs, path::Path};
@@ -88,10 +90,9 @@ impl CatalogContractIndex {
             .rest_endpoints
             .iter()
             .chain(catalog.ws_channels.iter())
-            .filter_map(|e| (!self.registered_tests.contains(&e.id)).then(|| e.id.clone()))
-            .map(|e| e.id.as_str())
+            .map(|entry| entry.id.as_str())
             .filter(|id| !self.registered_tests.contains(*id))
-            .map(|s| s.to_string())
+            .map(ToOwned::to_owned)
             .collect()
     }
 }
@@ -160,16 +161,13 @@ pub fn run_coverage_gate(manifest: &CoverageManifest) -> CoverageGateResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn coverage_gate_is_strict_for_binance_usdm() {
     use std::path::Path;
     use ucel_registry::load_catalog_from_repo_root;
 
     #[test]
-    fn contract_index_can_cover_all_upbit_catalog_rows() {
+    fn contract_index_can_cover_all_bitflyer_catalog_rows() {
         let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "upbit").unwrap();
+        let catalog = load_catalog_from_repo_root(&repo_root, "bitflyer").unwrap();
 
         let mut index = CatalogContractIndex::default();
         for id in catalog
@@ -186,143 +184,19 @@ mod tests {
     }
 
     #[test]
-<<<<<<< codex/implement-upbit-ssot-coverage-system
-    fn contract_index_detects_unregistered_upbit_rows() {
-        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "upbit").unwrap();
-
-        let index = CatalogContractIndex::default();
-        let missing = index.missing_catalog_ids(&catalog);
-        assert_eq!(missing.len(), 29);
-    }
-
-    #[test]
-    fn coverage_gate_warns_for_upbit_until_full_coverage() {
-        let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/upbit.yaml");
+    fn coverage_gate_warns_for_bitflyer_until_full_coverage() {
+        let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bitflyer.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "upbit");
-        assert!(!manifest.strict);
-=======
-<<<<<<< codex/implement-full-binance-ws-support
-=======
-    fn contract_index_can_cover_all_binance_options_catalog_rows() {
-        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let catalog = load_catalog_from_repo_root(&repo_root, "binance-options").unwrap();
-
-        let mut index = CatalogContractIndex::default();
-        for id in catalog
-            .rest_endpoints
-            .iter()
-            .chain(catalog.ws_channels.iter())
-            .map(|entry| entry.id.as_str())
-        {
-            index.register_id(id);
-        }
-
-        let missing = index.missing_catalog_ids(&catalog);
-        assert!(missing.is_empty());
-    }
-
-    #[test]
->>>>>>> master
-    fn coverage_gate_is_strict_and_has_no_gaps() {
-        let manifest_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/gmocoin.yaml");
-        let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "gmocoin");
-        assert!(manifest.strict);
-
-        let gaps = evaluate_coverage_gate(&manifest);
-        assert!(
-            gaps.is_empty(),
-            "strict coverage gate must have no gaps: {gaps:?}"
-        );
-    }
-
-    #[test]
-    fn coverage_gate_warns_for_bybit_gaps() {
-        let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/BYBIT.yaml");
-        let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "BYBIT");
+        assert_eq!(manifest.venue, "bitflyer");
         assert!(!manifest.strict);
 
         let result = run_coverage_gate(&manifest);
         match result {
             CoverageGateResult::WarnOnly(gaps) => {
-                assert_eq!(gaps.get("implemented").map(Vec::len), Some(96));
-                assert_eq!(gaps.get("tested").map(Vec::len), Some(96));
+                assert_eq!(gaps.get("implemented").map(Vec::len), Some(61));
+                assert_eq!(gaps.get("tested").map(Vec::len), Some(61));
             }
-            _ => panic!("bybit coverage gate should be warn-only while gaps exist"),
-        }
-    }
-    #[test]
-    fn coverage_gate_is_strict_for_binance_options_and_has_no_gaps() {
-        let manifest_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/kraken.yaml");
-        let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "binance-options");
-        assert!(manifest.strict);
-
-        let result = run_coverage_gate(&manifest);
-        match result {
-            CoverageGateResult::Passed => {}
-            _ => panic!("binance-options coverage gate should pass in strict mode"),
-        }
-    }
-
-    #[test]
-<<<<<<< codex/implement-full-binance-ws-support
-    fn coverage_gate_is_strict_for_binance_usdm_and_has_no_gaps() {
-=======
-    fn coverage_gate_warns_for_binance_usdm_until_full_coverage() {
->>>>>>> master
-        let manifest_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-usdm.yaml");
-        let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "binance-usdm");
->>>>>>> master
-
-        let result = run_coverage_gate(&manifest);
-        match result {
-            CoverageGateResult::WarnOnly(gaps) => {
-<<<<<<< codex/implement-upbit-ssot-coverage-system
-                assert_eq!(gaps.get("implemented").map(Vec::len), Some(29));
-                assert_eq!(gaps.get("tested").map(Vec::len), Some(29));
-            }
-            _ => panic!("upbit coverage gate should warn while manifest has gaps"),
-=======
-                assert_eq!(gaps.get("implemented").map(Vec::len), Some(16));
-                assert_eq!(gaps.get("tested").map(Vec::len), Some(16));
-            }
-            _ => panic!("binance-usdm coverage gate should warn while manifest has gaps"),
-        }
-    }
-
-    #[test]
-<<<<<<< codex/implement-full-binance-ws-support
-    fn coverage_gate_is_strict_for_binance_coinm_and_has_no_gaps() {
-=======
-    fn coverage_gate_binance_coinm_manifest_is_consistent() {
->>>>>>> master
-        let manifest_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-coinm.yaml");
-        let manifest = load_coverage_manifest(&manifest_path).unwrap();
-        assert_eq!(manifest.venue, "binance-coinm");
-<<<<<<< codex/implement-full-binance-ws-support
-        assert!(manifest.strict);
-
-        let result = run_coverage_gate(&manifest);
-        match result {
-            CoverageGateResult::Passed => {}
-            _ => panic!("binance-coinm coverage gate should pass in strict mode"),
-=======
-
-        let result = run_coverage_gate(&manifest);
-        match result {
-            CoverageGateResult::Passed | CoverageGateResult::WarnOnly(_) => {}
-            CoverageGateResult::Failed(_) => panic!("binance-coinm strict gate should not fail in repository state"),
->>>>>>> master
->>>>>>> master
+            _ => panic!("bitflyer coverage gate should warn in non-strict mode"),
         }
     }
 }

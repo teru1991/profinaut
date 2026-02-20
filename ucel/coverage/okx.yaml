@@ -1,0 +1,24 @@
+venue: okx
+strict: false
+entries:
+- id: okx.rest.overview
+  implemented: false
+  tested: false
+- id: okx.rest.auth
+  implemented: false
+  tested: false
+- id: okx.rest.public
+  implemented: false
+  tested: false
+- id: okx.rest.private
+  implemented: false
+  tested: false
+- id: okx.ws.overview
+  implemented: false
+  tested: false
+- id: okx.ws.public
+  implemented: false
+  tested: false
+- id: okx.ws.private
+  implemented: false
+  tested: false
