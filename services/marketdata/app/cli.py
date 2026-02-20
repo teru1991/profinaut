@@ -9,6 +9,7 @@ from services.marketdata.app.backfill import run_backfill_ohlcv
 from services.marketdata.app.replay import run_replay
 from services.marketdata.app.silver.iceberg_pipeline import run_recompute
 from services.marketdata.app.gold_materializer import materialize_gold
+from services.marketdata.app.e2e_harness import main_cli as e2e_main_cli
 import sqlite3
 
 
@@ -46,6 +47,10 @@ def _build_parser() -> argparse.ArgumentParser:
     ohlcv.add_argument("--state-path", default="services/marketdata/.state/ohlcv_backfill_cursor.json")
 
     recompute = subparsers.add_parser("silver-recompute", help="Recompute Silver Iceberg outputs from Bronze")
+    e2e = subparsers.add_parser("dataplat-e2e", help="Run deterministic data platform e2e harness")
+    e2e.add_argument("--seed", type=int, default=7)
+    e2e.add_argument("--rate", type=int, default=50)
+    e2e.add_argument("--duration", type=int, default=3)
     gold = subparsers.add_parser("gold-materialize", help="Materialize Gold marts from Silver tables")
     gold.add_argument("--db-dsn", required=True, help="DB DSN (sqlite:///...)")
     gold.add_argument("--watermark-ts", default=None, help="Optional watermark timestamp")
@@ -126,6 +131,9 @@ def main() -> int:
         )
         print(json.dumps(report.__dict__, separators=(",", ":"), ensure_ascii=False, sort_keys=True))
         return 0
+
+    if args.command == "dataplat-e2e":
+        return e2e_main_cli(["--seed", str(args.seed), "--rate", str(args.rate), "--duration", str(args.duration)])
 
     if args.command == "gold-materialize":
         if not str(args.db_dsn).startswith("sqlite:///"):
