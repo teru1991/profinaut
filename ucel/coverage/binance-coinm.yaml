@@ -1,0 +1,24 @@
+venue: binance-coinm
+strict: true
+entries:
+- id: coinm.public.rest.general.ref
+  implemented: true
+  tested: true
+- id: coinm.public.rest.errors.ref
+  implemented: true
+  tested: true
+- id: coinm.public.rest.common.ref
+  implemented: true
+  tested: true
+- id: coinm.public.rest.market.ref
+  implemented: true
+  tested: true
+- id: coinm.private.rest.trade.ref
+  implemented: true
+  tested: true
+- id: coinm.private.rest.account.ref
+  implemented: true
+  tested: true
+- id: coinm.private.rest.listenkey.ref
+  implemented: true
+  tested: true
