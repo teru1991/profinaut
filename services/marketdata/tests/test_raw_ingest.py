@@ -76,7 +76,7 @@ def test_raw_ingest_stores_bronze_and_db(monkeypatch, tmp_path: Path) -> None:
     assert body["dup_suspect"] is False
     assert body["degraded"] is False
     assert len(body["raw_msg_id"]) == 26
-    assert body["object_key"].startswith("bronze/crypto/gmo/2026/02/16/00/part-")
+    assert body["object_key"].startswith("bronze/crypto/gmo/dt=2026-02-16/hh=00/part-")
 
     files = list(bronze_root.rglob("*.jsonl.gz"))
     assert len(files) == 1
@@ -264,3 +264,27 @@ def test_gmo_trade_composite_source_msg_key_is_stable_on_reordered_arrival(monke
     src_key = conn.execute("SELECT source_msg_key FROM md_trades LIMIT 1").fetchone()[0]
     assert count == 1
     assert src_key == "gmo:trade:v1:gmo:spot:2026-02-16T00:00:10Z:101.0:0.75:sell:20"
+
+
+def test_raw_ingest_rejects_unknown_wrapper_field(monkeypatch, tmp_path: Path) -> None:
+    db_file = tmp_path / "md.sqlite3"
+    bronze_root = tmp_path / "bronze"
+
+    monkeypatch.setenv("OBJECT_STORE_BACKEND", "fs")
+    monkeypatch.setenv("DB_DSN", f"sqlite:///{db_file}")
+    monkeypatch.setenv("BRONZE_FS_ROOT", str(bronze_root))
+    monkeypatch.setattr(main._poller, "run_forever", _idle_poller)
+
+    with TestClient(main.app) as client:
+        resp = client.post(
+            "/raw/ingest",
+            json={
+                "tenant_id": "tenant-a",
+                "source_type": "WS_PUBLIC",
+                "received_ts": "2026-02-16T00:00:01Z",
+                "payload_json": {"symbol": "BTC_JPY"},
+                "unexpected": "x",
+            },
+        )
+    assert resp.status_code == 400
+    assert resp.json()["reason"] == "UNKNOWN_WRAPPER_FIELDS"

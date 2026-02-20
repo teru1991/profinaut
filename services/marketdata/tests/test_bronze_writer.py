@@ -34,7 +34,7 @@ def test_writer_generates_partitioned_jsonl_gz_and_raw_ref(tmp_path: Path) -> No
     key = writer.append(_envelope("2026-01-02T03:04:05Z"))
     writer.close()
 
-    assert key.startswith("bronze/crypto/gmo/2026/01/02/03/part-")
+    assert key.startswith("bronze/crypto/gmo/dt=2026-01-02/hh=03/part-")
     assert key.endswith(".jsonl.gz")
 
     stored = _read_jsonl_gz(tmp_path / key)[0]
@@ -42,7 +42,7 @@ def test_writer_generates_partitioned_jsonl_gz_and_raw_ref(tmp_path: Path) -> No
     assert stored["meta"]["raw_ref"].startswith("raw://bronze/gmo/trade/dt=2026-01-02/hh=03/")
 
 
-def test_denylist_rejects_secret_payload(tmp_path: Path) -> None:
+def test_denylist_rejects_secret_payload_and_query(tmp_path: Path) -> None:
     writer = BronzeWriter(FilesystemObjectStore(tmp_path), idempotency_store_path=str(tmp_path / "dedupe.sqlite"))
     envelope = _envelope("2026-01-02T03:04:05Z")
     envelope["payload_json"] = {"authorization": "Bearer token-value"}
@@ -50,6 +50,14 @@ def test_denylist_rejects_secret_payload(tmp_path: Path) -> None:
     try:
         writer.append(envelope)
         assert False, "expected secret rejection"
+    except ValueError as exc:
+        assert "secret" in str(exc)
+
+    envelope = _envelope("2026-01-02T03:04:06Z", seq=2)
+    envelope["query"] = {"signature": "abc"}
+    try:
+        writer.append(envelope)
+        assert False, "expected query secret rejection"
     except ValueError as exc:
         assert "secret" in str(exc)
 
@@ -79,3 +87,15 @@ def test_idempotency_drops_duplicates_across_restart(tmp_path: Path) -> None:
 
     assert key1.endswith(".jsonl.gz")
     assert key2 == "dedupe://dropped"
+
+
+def test_idempotency_key_derivation_uses_fallback_hash(tmp_path: Path) -> None:
+    writer = BronzeWriter(FilesystemObjectStore(tmp_path), idempotency_store_path=str(tmp_path / "dedupe.sqlite"))
+    envelope = _envelope("2026-01-02T03:04:05Z", seq=50)
+    envelope.pop("idempotency_key")
+    envelope.pop("raw_msg_id")
+    envelope.pop("canonical_id", None)
+
+    key = writer.append(envelope)
+    writer.close()
+    assert key.endswith(".jsonl.gz")
