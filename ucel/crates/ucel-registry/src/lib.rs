@@ -30,6 +30,7 @@ pub struct ExchangeCatalog {
 }
 
 pub type GmoCatalog = ExchangeCatalog;
+pub type BitbankCatalog = ExchangeCatalog;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct DataFeedEntry {
@@ -207,9 +208,12 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                 ));
             }
             let is_non_socket_reference = entry.id == "other.public.ws.sbe.marketdata";
+            let is_tokenized_reference = entry.id.starts_with("crypto.private.ws.user.stream.")
+                && ws_url == "PubNub subscribe endpoint (tokenized)";
             if !(ws_url.starts_with("wss://")
                 || ws_url.starts_with("ws://")
-                || (is_non_socket_reference && ws_url.contains("see docs")))
+                || (is_non_socket_reference && ws_url.contains("see docs"))
+                || is_tokenized_reference)
             {
                 return Err(UcelError::new(
                     ErrorCode::CatalogInvalid,
@@ -263,29 +267,54 @@ fn map_operation_literal(operation: &str) -> Option<OpName> {
         "Get ticker" | "Get FX ticker" | "Get ticker information" | "Get futures tickers" => {
             Some(OpName::FetchTicker)
         }
+        "Get all tickers" | "Get all JPY pair tickers" => Some(OpName::FetchTicker),
         "Get order book" | "Get FX order book" => Some(OpName::FetchOrderbookSnapshot),
+        "Get depth" => Some(OpName::FetchOrderbookSnapshot),
         "Get recent trades" | "Get FX trades" => Some(OpName::FetchTrades),
+        "Get transactions" => Some(OpName::FetchTrades),
         "Get candlesticks" | "Get FX klines" => Some(OpName::FetchKlines),
+        "Get candlestick" => Some(OpName::FetchKlines),
+        "Get spot pairs" | "Get spot status" | "Get circuit break info" => {
+            Some(OpName::FetchStatus)
+        }
         "Create WS auth token" | "Create FX WS auth token" | "Get WS token" => {
             Some(OpName::CreateWsAuthToken)
         }
+        "stream subscribe" => Some(OpName::CreateWsAuthToken),
         "Extend WS auth token" => Some(OpName::ExtendWsAuthToken),
         "Get account assets"
         | "Get FX account assets"
         | "Get account balances"
         | "Get account information"
         | "Account information" => Some(OpName::FetchBalances),
+        "user assets" => Some(OpName::FetchBalances),
         "Get margin status" => Some(OpName::FetchMarginStatus),
+        "margin status" => Some(OpName::FetchMarginStatus),
         "Get active orders" | "Get FX active orders" => Some(OpName::FetchOpenOrders),
+        "order active-orders" | "order get" | "order fetch-multiple" => {
+            Some(OpName::FetchOpenOrders)
+        }
         "Get execution history" => Some(OpName::FetchFills),
+        "trade history" => Some(OpName::FetchFills),
         "Get latest execution per order" => Some(OpName::FetchLatestExecutions),
         "Create order" | "Create FX order" | "Add order" | "Send futures order"
         | "Place new order" => Some(OpName::PlaceOrder),
+        "order create" => Some(OpName::PlaceOrder),
         "Amend order" => Some(OpName::AmendOrder),
         "Cancel order" | "Cancel FX order" => Some(OpName::CancelOrder),
+        "order cancel" | "order cancel-multiple" => Some(OpName::CancelOrder),
         "Get open positions" | "Get FX open positions" => Some(OpName::FetchOpenPositions),
+        "margin positions" => Some(OpName::FetchOpenPositions),
         "Get position summary" => Some(OpName::FetchPositionSummary),
         "Close position by order" | "Close FX position" => Some(OpName::ClosePositionByOrder),
+        "deposit history"
+        | "deposit unconfirmed"
+        | "deposit originators"
+        | "deposit confirm"
+        | "deposit confirm-all"
+        | "withdrawal accounts"
+        | "withdrawal history"
+        | "withdrawal request" => Some(OpName::FetchStatus),
         _ => None,
     }
 }
@@ -326,6 +355,15 @@ fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
         "crypto.public.ws.wsapi.time" => OpName::FetchStatus,
         "crypto.private.ws.wsapi.order.place" => OpName::PlaceOrder,
         "other.public.ws.sbe.marketdata" => OpName::SubscribeOrderbook,
+        "crypto.public.ws.market.ticker" => OpName::SubscribeTicker,
+        "crypto.public.ws.market.transactions" => OpName::SubscribeTrades,
+        "crypto.public.ws.market.depth-diff" | "crypto.public.ws.market.depth-whole" => {
+            OpName::SubscribeOrderbook
+        }
+        "crypto.public.ws.market.circuit-break-info" => OpName::SubscribeTicker,
+        "crypto.private.ws.user.stream.spot-trade" => OpName::SubscribeExecutionEvents,
+        "crypto.private.ws.user.stream.margin-position-update" => OpName::SubscribePositionEvents,
+        id if id.starts_with("crypto.private.ws.user.stream.") => OpName::SubscribeOrderEvents,
         _ => {
             return Err(UcelError::new(
                 ErrorCode::NotSupported,
@@ -480,6 +518,26 @@ mod tests {
         let catalog = load_catalog_from_repo_root(&repo_root, "binance").unwrap();
         assert_eq!(catalog.rest_endpoints.len(), 9);
         assert_eq!(catalog.ws_channels.len(), 5);
+
+        for entry in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+        {
+            assert!(
+                map_operation(entry).is_ok(),
+                "missing op mapping for {}",
+                entry.id
+            );
+        }
+    }
+
+    #[test]
+    fn loads_bitbank_catalog_and_maps_all_ops() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "bitbank").unwrap();
+        assert_eq!(catalog.rest_endpoints.len(), 28);
+        assert_eq!(catalog.ws_channels.len(), 16);
 
         for entry in catalog
             .rest_endpoints
