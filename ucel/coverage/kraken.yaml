@@ -2,35 +2,35 @@ venue: kraken
 strict: false
 entries:
 - id: spot.public.rest.assets.list
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: spot.public.rest.asset-pairs.list
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: spot.public.rest.ticker.get
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: spot.private.rest.balance.get
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: spot.private.rest.order.add
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: spot.private.rest.token.ws.get
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: futures.public.rest.instruments.list
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: futures.public.rest.tickers.list
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: futures.private.rest.accounts.get
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: futures.private.rest.order.send
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: spot.public.ws.v1.market.book.subscribe
   implemented: false
   tested: false
