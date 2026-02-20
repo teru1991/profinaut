@@ -30,8 +30,6 @@ pub struct CatalogEntry {
     pub id: String,
     #[serde(default)]
     pub visibility: Option<String>,
-    pub visibility: String,
-    #[serde(default)]
     pub operation: Option<String>,
     pub method: Option<String>,
     pub base_url: Option<String>,
@@ -119,7 +117,7 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
 
     let visibility = normalized_visibility(entry)?;
     match visibility.as_str() {
-        "public" | "private" => {}
+        "public" | "private" | "public/private" => {}
         _ => {
             return Err(UcelError::new(
                 ErrorCode::CatalogInvalid,
@@ -161,7 +159,9 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                 ));
             }
             if !is_placeholder(base_url)
-                && !(base_url.starts_with("https://") || base_url.starts_with("http://"))
+                && !(base_url.starts_with("https://")
+                    || base_url.starts_with("http://")
+                    || base_url.starts_with("docs://"))
             {
                 return Err(UcelError::new(
                     ErrorCode::CatalogInvalid,
@@ -183,6 +183,8 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                 ));
             }
             if !is_placeholder(ws_url)
+                && !is_tokenized_pubnub
+                && !is_docs_reference
                 && !(ws_url.starts_with("wss://")
                     || ws_url.starts_with("ws://")
                     || ws_url.starts_with("https://")
@@ -191,6 +193,20 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                 return Err(UcelError::new(
                     ErrorCode::CatalogInvalid,
                     format!("invalid ws_url for id={}: {ws_url}", entry.id),
+                ));
+            }
+        }
+        (None, Some(base_url), None, None) if ws_base_url.is_some() => {
+            if base_url.trim().is_empty() {
+                return Err(UcelError::new(
+                    ErrorCode::CatalogMissingField,
+                    format!("ws endpoint has empty base_url for id={}", entry.id),
+                ));
+            }
+            if entry.channel.as_deref().unwrap_or_default().trim().is_empty() {
+                return Err(UcelError::new(
+                    ErrorCode::CatalogMissingField,
+                    format!("ws endpoint requires non-empty channel for id={}", entry.id),
                 ));
             }
         }
@@ -525,6 +541,7 @@ mod tests {
             base_url: Some("https://api.bybit.com".into()),
             path: Some("/v5/market/tickers".into()),
             ws_url: None,
+            channel: None,
             ws: None,
             auth: CatalogAuth {
                 auth_type: "api-key+sign".into(),
