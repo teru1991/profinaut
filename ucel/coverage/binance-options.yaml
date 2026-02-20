@@ -1,0 +1,45 @@
+venue: binance-options
+strict: false
+entries:
+- id: options.public.rest.general.ref
+  implemented: false
+  tested: false
+- id: options.public.rest.errors.ref
+  implemented: false
+  tested: false
+- id: options.public.rest.market.ref
+  implemented: false
+  tested: false
+- id: options.private.rest.trade.ref
+  implemented: false
+  tested: false
+- id: options.private.rest.account.ref
+  implemented: false
+  tested: false
+- id: options.private.rest.listenkey.post
+  implemented: false
+  tested: false
+- id: options.private.rest.listenkey.put
+  implemented: false
+  tested: false
+- id: options.private.rest.listenkey.delete
+  implemented: false
+  tested: false
+- id: options.public.ws.trade
+  implemented: false
+  tested: false
+- id: options.public.ws.ticker
+  implemented: false
+  tested: false
+- id: options.public.ws.kline
+  implemented: false
+  tested: false
+- id: options.public.ws.depth
+  implemented: false
+  tested: false
+- id: options.public.ws.markprice
+  implemented: false
+  tested: false
+- id: options.public.ws.indexprice
+  implemented: false
+  tested: false
