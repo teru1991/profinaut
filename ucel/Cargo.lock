@@ -1077,12 +1077,18 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "ucel-cex-coinbase"
+name = "ucel-cex-binance-coinm"
+name = "ucel-cex-bitmex"
+name = "ucel-cex-binance"
 version = "0.1.0"
 dependencies = [
  "bytes",
  "reqwest",
  "serde",
  "serde_json",
+ "serde_yaml",
+ "tokio",
+ "ucel-core",
  "tokio",
  "ucel-core",
  "ucel-testkit",
