@@ -88,7 +88,7 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
         ws_channels.push(CatalogEntry {
             id: row.id.clone(),
             visibility: Some(derive_visibility_from_id(&row.id)?),
-            access: row.method.clone(),
+            access: String::new(),
             operation: row.operation,
             method: None,
             base_url: None,
@@ -115,7 +115,7 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
         ws_channels.push(CatalogEntry {
             id: row.id.clone(),
             visibility: Some(derive_visibility_from_id(&row.id)?),
-            access: row.channel.clone(),
+            access: String::new(),
             operation: Some(row.channel.clone()),
             method: None,
             base_url: None,
@@ -239,7 +239,7 @@ mod tests {
         let entry = CatalogEntry {
             id: "jsonrpc.ws.private.trading.private_buy".to_string(),
             visibility: Some("private".to_string()),
-            access: "private/buy".to_string(),
+            access: "private".to_string(),
             operation: Some("place buy order".to_string()),
             method: None,
             base_url: None,

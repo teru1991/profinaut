@@ -82,3 +82,24 @@ entries:
 - id: other.rest.host.info
   implemented: true
   tested: true
+- id: public.ws.market.kline
+  implemented: true
+  tested: true
+- id: public.ws.market.depth
+  implemented: true
+  tested: true
+- id: public.ws.market.bbo
+  implemented: true
+  tested: true
+- id: public.ws.market.detail
+  implemented: true
+  tested: true
+- id: public.ws.market.trade.detail
+  implemented: true
+  tested: true
+- id: private.ws.accounts.update
+  implemented: true
+  tested: true
+- id: private.ws.trade.clearing
+  implemented: true
+  tested: true

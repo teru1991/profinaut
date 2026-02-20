@@ -1,160 +1,148 @@
 use bytes::Bytes;
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use serde::Deserialize;
+use std::collections::{BTreeMap, HashSet, VecDeque};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
-use ucel_core::{ErrorCode, OpName, UcelError};
-use ucel_transport::{
-    classify_error, enforce_auth_boundary, next_retry_delay_ms, HttpRequest, RequestContext,
-    RetryClass, RetryPolicy, Transport,
+use tokio::sync::mpsc;
+use tracing::info;
+use ucel_core::{
+    ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, TradeEvent, UcelError,
 };
+use ucel_transport::{enforce_auth_boundary, RequestContext, Transport, WsConnectRequest};
 use uuid::Uuid;
 
-#[derive(Debug, Clone)]
-pub struct EndpointSpec {
-    pub id: &'static str,
-    pub method: &'static str,
-    pub base_url: &'static str,
-    pub path: &'static str,
-    pub requires_auth: bool,
+#[derive(Debug, Clone, Deserialize)]
+struct Catalog {
+    ws_channels: Vec<WsSpec>,
 }
 
-pub const REST_ENDPOINTS: [EndpointSpec; 27] = [
-    EndpointSpec { id: "public.rest.common.symbols.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/common/symbols", requires_auth: false },
-    EndpointSpec { id: "public.rest.common.currencys.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/common/currencys", requires_auth: false },
-    EndpointSpec { id: "public.rest.common.timestamp.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/common/timestamp", requires_auth: false },
-    EndpointSpec { id: "public.rest.market.kline.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/market/history/kline", requires_auth: false },
-    EndpointSpec { id: "public.rest.market.depth.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/market/depth", requires_auth: false },
-    EndpointSpec { id: "public.rest.market.detail.merged.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/market/detail/merged", requires_auth: false },
-    EndpointSpec { id: "public.rest.market.trade.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/market/trade", requires_auth: false },
-    EndpointSpec { id: "public.rest.market.history.trade.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/market/history/trade", requires_auth: false },
-    EndpointSpec { id: "public.rest.market.tickers.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/market/tickers", requires_auth: false },
-    EndpointSpec { id: "private.rest.account.accounts.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/account/accounts", requires_auth: true },
-    EndpointSpec { id: "private.rest.account.balance.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/account/accounts/{account-id}/balance", requires_auth: true },
-    EndpointSpec { id: "private.rest.order.place.post", method: "POST", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/order/orders/place", requires_auth: true },
-    EndpointSpec { id: "private.rest.order.cancel.post", method: "POST", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/order/orders/{order-id}/submitcancel", requires_auth: true },
-    EndpointSpec { id: "private.rest.order.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/order/orders/{order-id}", requires_auth: true },
-    EndpointSpec { id: "private.rest.order.list.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/order/orders", requires_auth: true },
-    EndpointSpec { id: "private.rest.order.open.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/order/openOrders", requires_auth: true },
-    EndpointSpec { id: "private.rest.order.matchresults.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/order/matchresults", requires_auth: true },
-    EndpointSpec { id: "private.rest.order.matchresults.byorder.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/order/orders/{order-id}/matchresults", requires_auth: true },
-    EndpointSpec { id: "private.rest.order.batchcancel.post", method: "POST", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/order/orders/batchcancel", requires_auth: true },
-    EndpointSpec { id: "private.rest.order.batchcancel.open.post", method: "POST", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/order/orders/batchCancelOpenOrders", requires_auth: true },
-    EndpointSpec { id: "private.rest.wallet.withdraw.create.post", method: "POST", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/dw/withdraw/api/create", requires_auth: true },
-    EndpointSpec { id: "private.rest.wallet.withdraw.cancel.post", method: "POST", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/dw/withdraw-virtual/{withdraw-id}/cancel", requires_auth: true },
-    EndpointSpec { id: "private.rest.wallet.depositwithdraw.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/query/deposit-withdraw", requires_auth: true },
-    EndpointSpec { id: "private.rest.retail.maintain.time.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/retail/maintain/time", requires_auth: true },
-    EndpointSpec { id: "private.rest.retail.order.place.post", method: "POST", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/retail/order/place", requires_auth: true },
-    EndpointSpec { id: "private.rest.retail.order.list.get", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/v1/retail/order/list", requires_auth: true },
-    EndpointSpec { id: "other.rest.host.info", method: "GET", base_url: "https://api-cloud.bittrade.co.jp", path: "/", requires_auth: false },
-];
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum BittradeScalar {
-    Text(String),
-    Int(i64),
-    Float(f64),
-    Bool(bool),
+#[derive(Debug, Clone, Deserialize)]
+pub struct WsSpec {
+    pub id: String,
+    pub access: String,
+    pub ws_url: String,
+    pub channel: String,
 }
 
-pub type DynamicObject = BTreeMap<String, BittradeScalar>;
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct ListObjectResponse {
-    pub status: String,
-    pub data: Vec<DynamicObject>,
+pub fn ws_specs() -> Vec<WsSpec> {
+    serde_json::from_str::<Catalog>(include_str!(
+        "../../../../docs/exchanges/bittrade/catalog.json"
+    ))
+    .expect("bittrade catalog")
+    .ws_channels
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct ListStringResponse {
-    pub status: String,
-    pub data: Vec<String>,
+#[derive(Debug, Default)]
+pub struct WsCounters {
+    pub ws_backpressure_drops_total: AtomicU64,
+    pub ws_reconnect_total: AtomicU64,
+    pub ws_resubscribe_total: AtomicU64,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct NumberDataResponse {
-    pub status: String,
-    pub data: i64,
+pub struct BittradeWsBackpressure {
+    tx: mpsc::Sender<Bytes>,
+    rx: mpsc::Receiver<Bytes>,
+    counters: Arc<WsCounters>,
+}
+impl BittradeWsBackpressure {
+    pub fn new(cap: usize, counters: Arc<WsCounters>) -> Self {
+        let (tx, rx) = mpsc::channel(cap);
+        Self { tx, rx, counters }
+    }
+    pub fn try_enqueue(&self, msg: Bytes) {
+        if self.tx.try_send(msg).is_err() {
+            self.counters
+                .ws_backpressure_drops_total
+                .fetch_add(1, Ordering::Relaxed);
+        }
+    }
+    pub async fn recv(&mut self) -> Option<Bytes> {
+        self.rx.recv().await
+    }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct TsListObjectResponse {
-    pub status: String,
-    pub ts: i64,
-    pub data: Vec<DynamicObject>,
+#[derive(Debug, Clone, PartialEq)]
+pub enum MarketEvent {
+    Kline {
+        ch: String,
+        close: f64,
+    },
+    OrderBookDelta(OrderBookDelta),
+    Bbo {
+        ch: String,
+        bid: f64,
+        ask: f64,
+    },
+    Ticker {
+        ch: String,
+        close: f64,
+    },
+    Trade(TradeEvent),
+    AccountUpdate {
+        ch: String,
+        count: usize,
+    },
+    TradeClearing {
+        ch: String,
+        fields: BTreeMap<String, String>,
+    },
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct TickObjectResponse {
-    pub status: String,
-    pub ts: i64,
-    pub tick: DynamicObject,
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct WsSubscription {
+    pub channel_id: String,
+    pub symbol: String,
+    pub period_or_type: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct DataObjectResponse {
-    pub status: String,
-    pub data: DynamicObject,
+pub struct BittradeWsAdapter {
+    counters: Arc<WsCounters>,
+    active: HashSet<WsSubscription>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct HostInfoResponse {
-    pub status: String,
-}
-
-#[derive(Debug, Clone)]
-pub enum BittradeRestResponse {
-    ListObject(ListObjectResponse),
-    ListString(ListStringResponse),
-    NumberData(NumberDataResponse),
-    TsListObject(TsListObjectResponse),
-    TickObject(TickObjectResponse),
-    DataObject(DataObjectResponse),
-    HostInfo(HostInfoResponse),
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct RequestArgs {
-    pub path_params: BTreeMap<String, String>,
-    pub query_params: BTreeMap<String, String>,
-    pub body: Option<Bytes>,
-}
-
-#[derive(Debug, Clone)]
-pub struct BittradeRestClient<T: Transport> {
-    transport: Arc<T>,
-    pub retry_policy: RetryPolicy,
-    pub timeout: Duration,
-    pub max_retries: u32,
-}
-
-impl<T: Transport> BittradeRestClient<T> {
-    pub fn new(transport: Arc<T>) -> Self {
+impl BittradeWsAdapter {
+    pub fn new(counters: Arc<WsCounters>) -> Self {
         Self {
-            transport,
-            retry_policy: RetryPolicy {
-                base_delay_ms: 50,
-                max_delay_ms: 1_000,
-                jitter_ms: 10,
-                respect_retry_after: true,
-            },
-            timeout: Duration::from_secs(5),
-            max_retries: 2,
+            counters,
+            active: HashSet::new(),
         }
     }
 
-    pub async fn execute(
-        &self,
-        endpoint_id: &str,
-        args: RequestArgs,
+    pub fn subscribe_command(&self, sub: &WsSubscription) -> Result<String, UcelError> {
+        let spec = ws_specs()
+            .into_iter()
+            .find(|s| s.id == sub.channel_id)
+            .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown channel"))?;
+        Ok(format!(
+            r#"{{\"sub\":\"{}\",\"id\":\"{}\"}}"#,
+            render_channel(&spec.channel, sub),
+            sub.symbol
+        ))
+    }
+
+    pub fn unsubscribe_command(&self, sub: &WsSubscription) -> Result<String, UcelError> {
+        let spec = ws_specs()
+            .into_iter()
+            .find(|s| s.id == sub.channel_id)
+            .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown channel"))?;
+        Ok(format!(
+            r#"{{\"unsub\":\"{}\",\"id\":\"{}\"}}"#,
+            render_channel(&spec.channel, sub),
+            sub.symbol
+        ))
+    }
+
+    pub async fn connect_and_subscribe<T: Transport>(
+        &mut self,
+        t: &T,
+        sub: WsSubscription,
         key_id: Option<String>,
-    ) -> Result<BittradeRestResponse, UcelError> {
-        let spec = REST_ENDPOINTS
-            .iter()
-            .find(|s| s.id == endpoint_id)
-            .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown endpoint"))?;
+    ) -> Result<(), UcelError> {
+        let spec = ws_specs()
+            .into_iter()
+            .find(|s| s.id == sub.channel_id)
+            .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown channel"))?;
         let ctx = RequestContext {
             trace_id: Uuid::new_v4().to_string(),
             request_id: Uuid::new_v4().to_string(),

@@ -1260,16 +1260,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "ucel-cex-bitmex"
+name = "ucel-cex-bittrade"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "serde",
  "serde_json",
- "serde_yaml",
  "tokio",
  "tracing",
  "tracing-subscriber",
  "ucel-core",
+ "ucel-registry",
+ "ucel-testkit",
  "ucel-transport",
  "uuid",
 ]
