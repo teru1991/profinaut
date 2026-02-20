@@ -125,12 +125,12 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
     let visibility = entry.visibility.to_ascii_lowercase();
     match visibility.as_str() {
         "public" => {
-            if entry.auth.auth_type != "none" {
+            if auth_type_requires_credentials(&entry.auth.auth_type) {
                 return Err(UcelError::new(
                     ErrorCode::CatalogInvalid,
                     format!(
-                        "public endpoint must use auth.type=none for id={}",
-                        entry.id
+                        "public endpoint must not require credentials for id={} (auth.type={})",
+                        entry.id, entry.auth.auth_type
                     ),
                 ));
             }
@@ -172,7 +172,21 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                     ),
                 ));
             }
-            if !(base_url.starts_with("https://") || base_url.starts_with("http://")) {
+            if !method
+                .chars()
+                .all(|ch| ch.is_ascii_uppercase() || ch == '_' || ch == '-')
+            {
+                return Err(UcelError::new(
+                    ErrorCode::CatalogInvalid,
+                    format!("invalid method for id={}: {method}", entry.id),
+                ));
+            }
+            let is_doc_ref =
+                entry.operation.as_deref() == Some("doc-ref") || entry.id.ends_with(".ref");
+            if !(base_url.starts_with("https://")
+                || base_url.starts_with("http://")
+                || (is_doc_ref && base_url.starts_with("docs://")))
+            {
                 return Err(UcelError::new(
                     ErrorCode::CatalogInvalid,
                     format!("invalid base_url for id={}: {base_url}", entry.id),
@@ -192,7 +206,11 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                     format!("ws endpoint has empty ws_url for id={}", entry.id),
                 ));
             }
-            if !(ws_url.starts_with("wss://") || ws_url.starts_with("ws://")) {
+            let is_non_socket_reference = entry.id == "other.public.ws.sbe.marketdata";
+            if !(ws_url.starts_with("wss://")
+                || ws_url.starts_with("ws://")
+                || (is_non_socket_reference && ws_url.contains("see docs")))
+            {
                 return Err(UcelError::new(
                     ErrorCode::CatalogInvalid,
                     format!("invalid ws_url for id={}: {ws_url}", entry.id),
@@ -211,6 +229,10 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
     }
 
     Ok(())
+}
+
+fn auth_type_requires_credentials(auth_type: &str) -> bool {
+    matches!(auth_type, "apiKey" | "token" | "oauth2")
 }
 
 pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
@@ -233,10 +255,14 @@ fn map_operation_literal(operation: &str) -> Option<OpName> {
         "Get service status" | "Get FX API status" | "List futures instruments" => {
             Some(OpName::FetchStatus)
         }
-        "Get ticker"
-        | "Get FX ticker"
-        | "Get ticker information"
-        | "Get futures tickers" => Some(OpName::FetchTicker),
+        "Test connectivity"
+        | "Get server time"
+        | "Exchange/symbol metadata"
+        | "Start user data stream (legacy)"
+        | "doc-ref" => Some(OpName::FetchStatus),
+        "Get ticker" | "Get FX ticker" | "Get ticker information" | "Get futures tickers" => {
+            Some(OpName::FetchTicker)
+        }
         "Get order book" | "Get FX order book" => Some(OpName::FetchOrderbookSnapshot),
         "Get recent trades" | "Get FX trades" => Some(OpName::FetchTrades),
         "Get candlesticks" | "Get FX klines" => Some(OpName::FetchKlines),
@@ -247,14 +273,14 @@ fn map_operation_literal(operation: &str) -> Option<OpName> {
         "Get account assets"
         | "Get FX account assets"
         | "Get account balances"
-        | "Get account information" => Some(OpName::FetchBalances),
+        | "Get account information"
+        | "Account information" => Some(OpName::FetchBalances),
         "Get margin status" => Some(OpName::FetchMarginStatus),
         "Get active orders" | "Get FX active orders" => Some(OpName::FetchOpenOrders),
         "Get execution history" => Some(OpName::FetchFills),
         "Get latest execution per order" => Some(OpName::FetchLatestExecutions),
-        "Create order" | "Create FX order" | "Add order" | "Send futures order" => {
-            Some(OpName::PlaceOrder)
-        }
+        "Create order" | "Create FX order" | "Add order" | "Send futures order"
+        | "Place new order" => Some(OpName::PlaceOrder),
         "Amend order" => Some(OpName::AmendOrder),
         "Cancel order" | "Cancel FX order" => Some(OpName::CancelOrder),
         "Get open positions" | "Get FX open positions" => Some(OpName::FetchOpenPositions),
@@ -295,6 +321,11 @@ fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
         | "futures.private.rest.order.send"
         | "spot.private.ws.v1.trade.add_order.request"
         | "spot.private.ws.v2.trade.add_order" => OpName::PlaceOrder,
+        "crypto.public.ws.trades.trade" => OpName::SubscribeTrades,
+        "crypto.private.ws.userdata.executionreport" => OpName::SubscribeExecutionEvents,
+        "crypto.public.ws.wsapi.time" => OpName::FetchStatus,
+        "crypto.private.ws.wsapi.order.place" => OpName::PlaceOrder,
+        "other.public.ws.sbe.marketdata" => OpName::SubscribeOrderbook,
         _ => {
             return Err(UcelError::new(
                 ErrorCode::NotSupported,
@@ -430,8 +461,36 @@ mod tests {
         assert_eq!(catalog.rest_endpoints.len(), 10);
         assert_eq!(catalog.ws_channels.len(), 10);
 
-        for entry in catalog.rest_endpoints.iter().chain(catalog.ws_channels.iter()) {
-            assert!(map_operation(entry).is_ok(), "missing op mapping for {}", entry.id);
+        for entry in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+        {
+            assert!(
+                map_operation(entry).is_ok(),
+                "missing op mapping for {}",
+                entry.id
+            );
+        }
+    }
+
+    #[test]
+    fn loads_binance_catalog_and_maps_all_ops() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "binance").unwrap();
+        assert_eq!(catalog.rest_endpoints.len(), 9);
+        assert_eq!(catalog.ws_channels.len(), 5);
+
+        for entry in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+        {
+            assert!(
+                map_operation(entry).is_ok(),
+                "missing op mapping for {}",
+                entry.id
+            );
         }
     }
 }
