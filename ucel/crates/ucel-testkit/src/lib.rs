@@ -298,6 +298,21 @@ mod tests {
     }
 
     #[test]
+    fn coverage_gate_is_strict_for_binance_usdm_and_has_no_gaps() {
+        let manifest_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-usdm.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "binance-usdm");
+        assert!(manifest.strict);
+
+        let result = run_coverage_gate(&manifest);
+        match result {
+            CoverageGateResult::Passed => {}
+            _ => panic!("binance-usdm coverage gate should pass in strict mode"),
+        }
+    }
+
+    #[test]
     fn coverage_gate_warns_for_binance_coinm_gaps() {
         let manifest_path =
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-coinm.yaml");

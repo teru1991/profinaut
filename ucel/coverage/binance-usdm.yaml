@@ -1,0 +1,21 @@
+venue: binance-usdm
+strict: true
+entries:
+- id: usdm.public.rest.general.ref
+  implemented: true
+  tested: true
+- id: usdm.public.rest.errors.ref
+  implemented: true
+  tested: true
+- id: usdm.public.rest.market.ref
+  implemented: true
+  tested: true
+- id: usdm.private.rest.trade.ref
+  implemented: true
+  tested: true
+- id: usdm.private.rest.account.ref
+  implemented: true
+  tested: true
+- id: usdm.private.rest.listenkey.ref
+  implemented: true
+  tested: true
