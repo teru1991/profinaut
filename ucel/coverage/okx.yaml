@@ -1,4 +1,18 @@
 venue: okx
+strict: true
+entries:
+- id: okx.rest.overview
+  implemented: true
+  tested: true
+- id: okx.rest.auth
+  implemented: true
+  tested: true
+- id: okx.rest.public
+  implemented: true
+  tested: true
+- id: okx.rest.private
+  implemented: true
+  tested: true
 strict: false
 entries:
 - id: okx.rest.overview
