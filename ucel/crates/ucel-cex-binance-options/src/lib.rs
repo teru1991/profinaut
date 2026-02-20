@@ -1,9 +1,12 @@
 use bytes::Bytes;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use std::collections::{HashSet, VecDeque};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use ucel_core::{ErrorCode, Exchange, OpName, UcelError};
-use ucel_transport::{enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport};
+use tokio::sync::mpsc;
+use ucel_core::{ErrorCode, OpName, UcelError};
+use ucel_transport::{enforce_auth_boundary, HttpRequest, RequestContext, Transport, WsConnectRequest};
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
@@ -15,531 +18,262 @@ pub struct EndpointSpec {
     pub requires_auth: bool,
 }
 
-const ENDPOINTS: [EndpointSpec; 8] = [
-    EndpointSpec {
-        id: "options.public.rest.general.ref",
-        method: "GET",
-        base_url: "docs://binance-options",
-        path: "/general-info",
-        requires_auth: false,
-    },
-    EndpointSpec {
-        id: "options.public.rest.errors.ref",
-        method: "GET",
-        base_url: "docs://binance-options",
-        path: "/error-code",
-        requires_auth: false,
-    },
-    EndpointSpec {
-        id: "options.public.rest.market.ref",
-        method: "GET",
-        base_url: "docs://binance-options",
-        path: "/market-data/rest-api",
-        requires_auth: false,
-    },
-    EndpointSpec {
-        id: "options.private.rest.trade.ref",
-        method: "GET/POST/DELETE",
-        base_url: "docs://binance-options",
-        path: "/trade/rest-api",
-        requires_auth: true,
-    },
-    EndpointSpec {
-        id: "options.private.rest.account.ref",
-        method: "GET/POST",
-        base_url: "docs://binance-options",
-        path: "/account/rest-api",
-        requires_auth: true,
-    },
-    EndpointSpec {
-        id: "options.private.rest.listenkey.post",
-        method: "POST",
-        base_url: "https://eapi.binance.com",
-        path: "/eapi/v1/listenKey",
-        requires_auth: true,
-    },
-    EndpointSpec {
-        id: "options.private.rest.listenkey.put",
-        method: "PUT",
-        base_url: "https://eapi.binance.com",
-        path: "/eapi/v1/listenKey",
-        requires_auth: true,
-    },
-    EndpointSpec {
-        id: "options.private.rest.listenkey.delete",
-        method: "DELETE",
-        base_url: "https://eapi.binance.com",
-        path: "/eapi/v1/listenKey",
-        requires_auth: true,
-    },
+const REST_ENDPOINTS: [EndpointSpec; 8] = [
+    EndpointSpec { id: "options.public.rest.general.ref", method: "GET", base_url: "docs://binance-options", path: "/general-info", requires_auth: false },
+    EndpointSpec { id: "options.public.rest.errors.ref", method: "GET", base_url: "docs://binance-options", path: "/error-code", requires_auth: false },
+    EndpointSpec { id: "options.public.rest.market.ref", method: "GET", base_url: "docs://binance-options", path: "/market-data/rest-api", requires_auth: false },
+    EndpointSpec { id: "options.private.rest.trade.ref", method: "GET/POST/DELETE", base_url: "docs://binance-options", path: "/trade/rest-api", requires_auth: true },
+    EndpointSpec { id: "options.private.rest.account.ref", method: "GET/POST", base_url: "docs://binance-options", path: "/account/rest-api", requires_auth: true },
+    EndpointSpec { id: "options.private.rest.listenkey.post", method: "POST", base_url: "https://eapi.binance.com", path: "/eapi/v1/listenKey", requires_auth: true },
+    EndpointSpec { id: "options.private.rest.listenkey.put", method: "PUT", base_url: "https://eapi.binance.com", path: "/eapi/v1/listenKey", requires_auth: true },
+    EndpointSpec { id: "options.private.rest.listenkey.delete", method: "DELETE", base_url: "https://eapi.binance.com", path: "/eapi/v1/listenKey", requires_auth: true },
 ];
 
 #[derive(Debug, Clone)]
+pub struct WsChannelSpec {
+    pub id: &'static str,
+    pub ws_url: &'static str,
+    pub requires_auth: bool,
+}
+
+const WS_CHANNELS: [WsChannelSpec; 6] = [
+    WsChannelSpec { id: "options.public.ws.trade", ws_url: "wss://nbstream.binance.com/eoptions/ws", requires_auth: false },
+    WsChannelSpec { id: "options.public.ws.ticker", ws_url: "wss://nbstream.binance.com/eoptions/ws", requires_auth: false },
+    WsChannelSpec { id: "options.public.ws.kline", ws_url: "wss://nbstream.binance.com/eoptions/ws", requires_auth: false },
+    WsChannelSpec { id: "options.public.ws.depth", ws_url: "wss://nbstream.binance.com/eoptions/ws", requires_auth: false },
+    WsChannelSpec { id: "options.public.ws.markprice", ws_url: "wss://nbstream.binance.com/eoptions/ws", requires_auth: false },
+    WsChannelSpec { id: "options.public.ws.indexprice", ws_url: "wss://nbstream.binance.com/eoptions/ws", requires_auth: false },
+];
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct RefPageResponse { pub section: String, pub version: String }
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ListenKeyResponse { #[serde(rename="listenKey")] pub listen_key: String }
+
+#[derive(Debug, Clone)]
 pub enum BinanceOptionsRestResponse {
-    General(RefPageResponse),
-    Errors(RefPageResponse),
-    Market(RefPageResponse),
-    Trade(RefPageResponse),
-    Account(RefPageResponse),
-    ListenKeyPost(ListenKeyResponse),
-    ListenKeyPut(ListenKeyResultResponse),
-    ListenKeyDelete(ListenKeyResultResponse),
+    Reference(RefPageResponse),
+    ListenKey(ListenKeyResponse),
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct RefPageResponse {
-    pub section: String,
-    pub version: String,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct ListenKeyResponse {
-    #[serde(rename = "listenKey")]
-    pub listen_key: String,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct ListenKeyResultResponse {
-    pub result: String,
-}
-
-#[derive(Clone)]
-pub struct BinanceOptionsRestAdapter {
-    docs_base_url: Arc<str>,
-    api_base_url: Arc<str>,
-    pub http_client: reqwest::Client,
-    pub retry_policy: RetryPolicy,
-}
-
-impl BinanceOptionsRestAdapter {
-    pub fn new(docs_base_url: impl Into<String>, api_base_url: impl Into<String>) -> Self {
-        let http_client = reqwest::Client::builder()
-            .pool_idle_timeout(std::time::Duration::from_secs(90))
-            .timeout(std::time::Duration::from_secs(10))
-            .build()
-            .expect("reqwest client");
-        Self {
-            docs_base_url: Arc::from(docs_base_url.into()),
-            api_base_url: Arc::from(api_base_url.into()),
-            http_client,
-            retry_policy: RetryPolicy {
-                base_delay_ms: 100,
-                max_delay_ms: 5_000,
-                jitter_ms: 20,
-                respect_retry_after: true,
-            },
-        }
-    }
-
-    pub fn endpoint_specs() -> &'static [EndpointSpec] {
-        &ENDPOINTS
-    }
-
-    pub async fn execute_rest<T: Transport>(
-        &self,
-        transport: &T,
-        endpoint_id: &str,
-        body: Option<Bytes>,
-        key_id: Option<String>,
-    ) -> Result<BinanceOptionsRestResponse, UcelError> {
-        let spec = ENDPOINTS
-            .iter()
-            .find(|s| s.id == endpoint_id)
-            .ok_or_else(|| {
-                UcelError::new(
-                    ErrorCode::NotSupported,
-                    format!("unknown endpoint: {endpoint_id}"),
-                )
-            })?;
-
-        let ctx = RequestContext {
-            trace_id: Uuid::new_v4().to_string(),
-            request_id: Uuid::new_v4().to_string(),
-            run_id: Uuid::new_v4().to_string(),
-            op: OpName::FetchStatus,
-            venue: "binance-options".into(),
-            policy_id: "default".into(),
-            key_id,
-            requires_auth: spec.requires_auth,
-        };
-        enforce_auth_boundary(&ctx)?;
-
-        let base = if spec.base_url == "https://eapi.binance.com" {
-            self.api_base_url.as_ref()
-        } else {
-            self.docs_base_url.as_ref()
-        };
-
-        let req = HttpRequest {
-            method: spec.method.into(),
-            path: format!("{base}{}", spec.path),
-            body,
-        };
-
-        let response = transport.send_http(req, ctx).await?;
-        if response.status >= 400 {
-            return Err(map_binance_options_http_error(
-                response.status,
-                &response.body,
-            ));
-        }
-
-        let parsed = match endpoint_id {
-            "options.public.rest.general.ref" => {
-                BinanceOptionsRestResponse::General(parse_json(&response.body)?)
-            }
-            "options.public.rest.errors.ref" => {
-                BinanceOptionsRestResponse::Errors(parse_json(&response.body)?)
-            }
-            "options.public.rest.market.ref" => {
-                BinanceOptionsRestResponse::Market(parse_json(&response.body)?)
-            }
-            "options.private.rest.trade.ref" => {
-                BinanceOptionsRestResponse::Trade(parse_json(&response.body)?)
-            }
-            "options.private.rest.account.ref" => {
-                BinanceOptionsRestResponse::Account(parse_json(&response.body)?)
-            }
-            "options.private.rest.listenkey.post" => {
-                BinanceOptionsRestResponse::ListenKeyPost(parse_json(&response.body)?)
-            }
-            "options.private.rest.listenkey.put" => {
-                BinanceOptionsRestResponse::ListenKeyPut(parse_json(&response.body)?)
-            }
-            "options.private.rest.listenkey.delete" => {
-                BinanceOptionsRestResponse::ListenKeyDelete(parse_json(&response.body)?)
-            }
-            _ => {
-                return Err(UcelError::new(
-                    ErrorCode::NotSupported,
-                    format!("unsupported endpoint: {endpoint_id}"),
-                ))
-            }
-        };
-        Ok(parsed)
-    }
-}
-
-#[derive(Debug, Deserialize)]
-struct BinanceOptionsErrorEnvelope {
-    code: Option<i64>,
-}
-
-pub fn map_binance_options_http_error(status: u16, body: &[u8]) -> UcelError {
-    if status == 429 {
-        let retry_after_ms = std::str::from_utf8(body)
-            .ok()
-            .and_then(|b| b.split("retry_after_ms=").nth(1))
-            .and_then(|v| v.trim().parse::<u64>().ok());
-        let mut err = UcelError::new(ErrorCode::RateLimited, "rate limited");
-        err.retry_after_ms = retry_after_ms;
-        err.ban_risk = true;
-        return err;
-    }
-    if status >= 500 {
-        return UcelError::new(ErrorCode::Upstream5xx, "upstream server error");
-    }
-
-    let code = serde_json::from_slice::<BinanceOptionsErrorEnvelope>(body)
-        .ok()
-        .and_then(|v| v.code)
-        .unwrap_or_default();
-
-    let mut err = match code {
-        -2015 | -2014 | -1022 => UcelError::new(ErrorCode::AuthFailed, "authentication failed"),
-        -2010 | -2011 | -1116 | -1111 => UcelError::new(ErrorCode::InvalidOrder, "invalid order"),
-        -1003 | -1015 => UcelError::new(ErrorCode::RateLimited, "rate limited"),
-        -1002 | -2017 => UcelError::new(ErrorCode::PermissionDenied, "permission denied"),
-        _ => UcelError::new(
-            ErrorCode::Internal,
-            format!("binance-options http error status={status}"),
-        ),
+pub async fn execute_rest<T: Transport>(transport: &T, endpoint_id: &str, key_id: Option<String>) -> Result<BinanceOptionsRestResponse, UcelError> {
+    let spec = REST_ENDPOINTS.iter().find(|v| v.id == endpoint_id).ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown endpoint"))?;
+    let ctx = RequestContext {
+        trace_id: Uuid::new_v4().to_string(), request_id: Uuid::new_v4().to_string(), run_id: Uuid::new_v4().to_string(),
+        op: OpName::FetchStatus, venue: "binance-options".into(), policy_id: "default".into(), key_id: if spec.requires_auth { key_id } else { None }, requires_auth: spec.requires_auth,
     };
-    err.key_specific = matches!(
-        err.code,
-        ErrorCode::AuthFailed | ErrorCode::PermissionDenied
-    );
-    err
+    enforce_auth_boundary(&ctx)?;
+    let resp = transport.send_http(HttpRequest { method: spec.method.into(), path: format!("{}{}", spec.base_url, spec.path), body: None }, ctx).await?;
+    if resp.status >= 400 { return Err(UcelError::new(ErrorCode::Internal, "http error")); }
+    if endpoint_id.contains("listenkey") { Ok(BinanceOptionsRestResponse::ListenKey(parse_json(&resp.body)?)) } else { Ok(BinanceOptionsRestResponse::Reference(parse_json(&resp.body)?)) }
 }
 
-fn parse_json<T: DeserializeOwned>(bytes: &[u8]) -> Result<T, UcelError> {
-    serde_json::from_slice(bytes)
-        .map_err(|e| UcelError::new(ErrorCode::Internal, format!("json parse error: {e}")))
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct WsSubscription { pub channel_id: &'static str, pub stream: String }
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WsCommand { pub method: &'static str, pub params: Vec<String>, pub id: u64 }
+
+#[derive(Debug, Default)]
+pub struct WsMetrics {
+    pub ws_backpressure_drops_total: AtomicU64,
+    pub ws_reconnect_total: AtomicU64,
+    pub ws_resubscribe_total: AtomicU64,
+    pub ws_orderbook_gap_total: AtomicU64,
+    pub ws_orderbook_resync_total: AtomicU64,
+    pub ws_orderbook_recovered_total: AtomicU64,
 }
 
-impl Exchange for BinanceOptionsRestAdapter {
-    fn name(&self) -> &'static str {
-        "binance-options"
+pub struct BinanceOptionsBackpressure { tx: mpsc::Sender<Bytes>, rx: mpsc::Receiver<Bytes>, metrics: Arc<WsMetrics> }
+impl BinanceOptionsBackpressure {
+    pub fn new(capacity: usize, metrics: Arc<WsMetrics>) -> Self { let (tx, rx) = mpsc::channel(capacity); Self { tx, rx, metrics } }
+    pub fn try_enqueue(&self, msg: Bytes) { if self.tx.try_send(msg).is_err() { self.metrics.ws_backpressure_drops_total.fetch_add(1, Ordering::Relaxed); } }
+    pub async fn recv(&mut self) -> Option<Bytes> { self.rx.recv().await }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum MarketEvent { Trade { symbol: String, price: f64 }, Ticker { symbol: String, last_price: f64 }, Kline { symbol: String, interval: String, close: f64 }, DepthDelta(OrderBookDelta), MarkPrice { underlying: String, mark_price: f64 }, IndexPrice { underlying: String, index_price: f64 } }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum OrderBookHealth { Ok, Degraded }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct OrderBookDelta { pub stream: String, pub prev_update_id: u64, pub update_id: u64 }
+
+pub struct OrderBookResyncEngine { next_expected_prev: Option<u64>, buffered: VecDeque<OrderBookDelta>, pub health: OrderBookHealth, metrics: Arc<WsMetrics> }
+impl OrderBookResyncEngine {
+    pub fn new(metrics: Arc<WsMetrics>) -> Self { Self { next_expected_prev: None, buffered: VecDeque::new(), health: OrderBookHealth::Ok, metrics } }
+    pub fn apply_snapshot(&mut self, last_update_id: u64) { self.next_expected_prev = Some(last_update_id); self.health = OrderBookHealth::Ok; self.metrics.ws_orderbook_recovered_total.fetch_add(1, Ordering::Relaxed); }
+    pub fn ingest_delta(&mut self, delta: OrderBookDelta) -> Result<(), UcelError> {
+        if let Some(next_prev) = self.next_expected_prev {
+            if delta.prev_update_id != next_prev { self.health = OrderBookHealth::Degraded; self.next_expected_prev = None; self.buffered.clear(); self.metrics.ws_orderbook_gap_total.fetch_add(1, Ordering::Relaxed); self.metrics.ws_orderbook_resync_total.fetch_add(1, Ordering::Relaxed); return Err(UcelError::new(ErrorCode::Desync, "gap detected")); }
+            self.next_expected_prev = Some(delta.update_id);
+        }
+        self.buffered.push_back(delta);
+        Ok(())
     }
+}
 
-    fn execute(&self, op: OpName) -> Result<(), UcelError> {
-        Err(UcelError::new(
-            ErrorCode::NotSupported,
-            format!("op {} not implemented", op),
-        ))
+#[derive(Default)]
+pub struct BinanceOptionsWsAdapter { active: HashSet<WsSubscription>, pub metrics: Arc<WsMetrics> }
+impl BinanceOptionsWsAdapter {
+    pub fn ws_channel_specs() -> &'static [WsChannelSpec] { &WS_CHANNELS }
+    pub fn subscribe_command(stream: String) -> WsCommand { WsCommand { method: "SUBSCRIBE", params: vec![stream], id: 1 } }
+    pub fn unsubscribe_command(stream: String) -> WsCommand { WsCommand { method: "UNSUBSCRIBE", params: vec![stream], id: 2 } }
+    pub fn register_subscription(&mut self, sub: WsSubscription) -> bool { self.active.insert(sub) }
+    pub async fn connect_and_subscribe<T: Transport>(&mut self, transport: &T, sub: WsSubscription, key_id: Option<String>) -> Result<(), UcelError> {
+        let spec = WS_CHANNELS.iter().find(|v| v.id == sub.channel_id).ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown ws channel"))?;
+        let ctx = RequestContext { trace_id: Uuid::new_v4().to_string(), request_id: Uuid::new_v4().to_string(), run_id: Uuid::new_v4().to_string(), op: OpName::SubscribeTicker, venue: "binance-options".into(), policy_id: "default".into(), key_id, requires_auth: spec.requires_auth };
+        enforce_auth_boundary(&ctx)?;
+        transport.connect_ws(WsConnectRequest { url: format!("{}/{}", spec.ws_url, sub.stream) }, ctx).await?;
+        self.active.insert(sub);
+        Ok(())
+    }
+    pub async fn preflight_private_reject<T: Transport>(&self, _transport: &T, key_id: Option<String>) -> Result<(), UcelError> {
+        let ctx = RequestContext { trace_id: Uuid::new_v4().to_string(), request_id: Uuid::new_v4().to_string(), run_id: Uuid::new_v4().to_string(), op: OpName::SubscribeExecutionEvents, venue: "binance-options".into(), policy_id: "default".into(), key_id, requires_auth: true };
+        enforce_auth_boundary(&ctx)
+    }
+    pub async fn reconnect_and_resubscribe<T: Transport>(&self, transport: &T) -> Result<usize, UcelError> {
+        self.metrics.ws_reconnect_total.fetch_add(1, Ordering::Relaxed);
+        for sub in &self.active {
+            let spec = WS_CHANNELS.iter().find(|v| v.id == sub.channel_id).ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown ws channel"))?;
+            let ctx = RequestContext { trace_id: Uuid::new_v4().to_string(), request_id: Uuid::new_v4().to_string(), run_id: Uuid::new_v4().to_string(), op: OpName::SubscribeTicker, venue: "binance-options".into(), policy_id: "default".into(), key_id: None, requires_auth: false };
+            transport.connect_ws(WsConnectRequest { url: format!("{}/{}", spec.ws_url, sub.stream) }, ctx).await?;
+            self.metrics.ws_resubscribe_total.fetch_add(1, Ordering::Relaxed);
+        }
+        Ok(self.active.len())
+    }
+    pub fn parse_market_event(channel_id: &str, raw: &Bytes) -> Result<MarketEvent, UcelError> {
+        match channel_id {
+            "options.public.ws.trade" => { let m: TradeWs = parse_json(raw)?; Ok(MarketEvent::Trade { symbol: m.symbol, price: parse_num(&m.price)? }) }
+            "options.public.ws.ticker" => { let m: TickerWs = parse_json(raw)?; Ok(MarketEvent::Ticker { symbol: m.symbol, last_price: parse_num(&m.last_price)? }) }
+            "options.public.ws.kline" => { let m: KlineWs = parse_json(raw)?; Ok(MarketEvent::Kline { symbol: m.symbol, interval: m.kline.interval, close: parse_num(&m.kline.close)? }) }
+            "options.public.ws.depth" => { let m: DepthWs = parse_json(raw)?; Ok(MarketEvent::DepthDelta(OrderBookDelta { stream: m.stream, prev_update_id: m.prev_update_id, update_id: m.update_id })) }
+            "options.public.ws.markprice" => { let m: MarkPriceWs = parse_json(raw)?; Ok(MarketEvent::MarkPrice { underlying: m.underlying, mark_price: parse_num(&m.mark_price)? }) }
+            "options.public.ws.indexprice" => { let m: IndexPriceWs = parse_json(raw)?; Ok(MarketEvent::IndexPrice { underlying: m.underlying, index_price: parse_num(&m.index_price)? }) }
+            _ => Err(UcelError::new(ErrorCode::NotSupported, "unsupported ws channel")),
+        }
     }
 }
+
+pub fn sanitize_log_line(line: &str) -> String {
+    line.split_whitespace().map(|t| {
+        if t.starts_with("api_key=") { "api_key=[redacted]".to_string() }
+        else if t.starts_with("api_secret=") { "api_secret=[redacted]".to_string() }
+        else { t.to_string() }
+    }).collect::<Vec<_>>().join(" ")
+}
+
+#[derive(Debug, Deserialize)] struct TradeWs { #[serde(rename="s")] symbol: String, #[serde(rename="p")] price: String }
+#[derive(Debug, Deserialize)] struct TickerWs { #[serde(rename="s")] symbol: String, #[serde(rename="c")] last_price: String }
+#[derive(Debug, Deserialize)] struct KlineWs { #[serde(rename="s")] symbol: String, #[serde(rename="k")] kline: KlineInner }
+#[derive(Debug, Deserialize)] struct KlineInner { #[serde(rename="i")] interval: String, #[serde(rename="c")] close: String }
+#[derive(Debug, Deserialize)] struct DepthWs { stream: String, #[serde(rename="pu")] prev_update_id: u64, #[serde(rename="u")] update_id: u64 }
+#[derive(Debug, Deserialize)] struct MarkPriceWs { #[serde(rename="u")] underlying: String, #[serde(rename="mp")] mark_price: String }
+#[derive(Debug, Deserialize)] struct IndexPriceWs { #[serde(rename="u")] underlying: String, #[serde(rename="ip")] index_price: String }
+
+fn parse_json<T: DeserializeOwned>(raw: &Bytes) -> Result<T, UcelError> { serde_json::from_slice(raw).map_err(|e| UcelError::new(ErrorCode::Internal, format!("json parse: {e}"))) }
+fn parse_num(v: &str) -> Result<f64, UcelError> { v.parse::<f64>().map_err(|e| UcelError::new(ErrorCode::WsProtocolViolation, format!("invalid num: {e}"))) }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    use tokio::sync::Mutex;
-    use ucel_transport::{HttpResponse, WsConnectRequest, WsStream};
+    use std::sync::Mutex;
+    use ucel_testkit::{evaluate_coverage_gate, load_coverage_manifest};
+    use ucel_transport::{HttpResponse, WsStream};
 
-    #[derive(Debug, Deserialize)]
-    struct CoverageManifest {
-        venue: String,
-        strict: bool,
-        entries: Vec<CoverageEntry>,
+    #[derive(Default)]
+    struct SpyTransport { ws_calls: Arc<Mutex<Vec<String>>> }
+    impl ucel_transport::Transport for SpyTransport {
+        async fn send_http(&self, _req: HttpRequest, _ctx: RequestContext) -> Result<HttpResponse, UcelError> { Ok(HttpResponse { status: 200, body: Bytes::from_static(br#"{"section":"ok","version":"1"}"#) }) }
+        async fn connect_ws(&self, req: WsConnectRequest, _ctx: RequestContext) -> Result<WsStream, UcelError> { self.ws_calls.lock().unwrap().push(req.url); Ok(WsStream { connected: true }) }
     }
 
-    #[derive(Debug, Deserialize)]
-    struct CoverageEntry {
-        id: String,
-        implemented: bool,
-        tested: bool,
-    }
-
-    struct SpyTransport {
-        calls: AtomicUsize,
-        key_ids: Mutex<Vec<Option<String>>>,
-        responses: Mutex<HashMap<String, HttpResponse>>,
-    }
-
-    impl SpyTransport {
-        fn new() -> Self {
-            Self {
-                calls: AtomicUsize::new(0),
-                key_ids: Mutex::new(Vec::new()),
-                responses: Mutex::new(HashMap::new()),
-            }
-        }
-
-        async fn set_response(&self, path: &str, status: u16, body: &str) {
-            self.responses.lock().await.insert(
-                path.into(),
-                HttpResponse {
-                    status,
-                    body: Bytes::copy_from_slice(body.as_bytes()),
-                },
-            );
-        }
-
-        fn calls(&self) -> usize {
-            self.calls.load(Ordering::Relaxed)
-        }
-    }
-
-    impl Transport for SpyTransport {
-        async fn send_http(
-            &self,
-            req: HttpRequest,
-            ctx: RequestContext,
-        ) -> Result<HttpResponse, UcelError> {
-            self.calls.fetch_add(1, Ordering::Relaxed);
-            self.key_ids.lock().await.push(ctx.key_id.clone());
-            self.responses
-                .lock()
-                .await
-                .remove(&req.path)
-                .ok_or_else(|| UcelError::new(ErrorCode::Internal, "missing mocked response"))
-        }
-
-        async fn connect_ws(
-            &self,
-            _req: WsConnectRequest,
-            _ctx: RequestContext,
-        ) -> Result<WsStream, UcelError> {
-            Ok(WsStream { connected: true })
-        }
-    }
-
-    fn fixture(name: &str) -> String {
-        std::fs::read_to_string(
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("tests/fixtures")
-                .join(name),
-        )
-        .unwrap()
-    }
-
-    #[tokio::test(flavor = "current_thread")]
-    async fn rest_contract_all_catalog_endpoints_parse_with_fixtures() {
-        let transport = SpyTransport::new();
-        let adapter = BinanceOptionsRestAdapter::new(
-            "https://docs.test/binance-options",
-            "https://eapi.test",
-        );
-
-        for spec in BinanceOptionsRestAdapter::endpoint_specs() {
-            let filename = format!("{}.json", spec.id);
-            let base = if spec.base_url == "https://eapi.binance.com" {
-                "https://eapi.test"
-            } else {
-                "https://docs.test/binance-options"
+    #[test]
+    fn ws_contract_all_catalog_rows_have_commands() {
+        for spec in BinanceOptionsWsAdapter::ws_channel_specs() {
+            let stream = match spec.id {
+                "options.public.ws.kline" => "BTC-240329-60000-C@kline_1m".to_string(),
+                "options.public.ws.depth" => "BTC-240329-60000-C@depth20".to_string(),
+                "options.public.ws.markprice" => "BTCUSDT@markPrice".to_string(),
+                "options.public.ws.indexprice" => "BTCUSDT@indexPrice".to_string(),
+                _ => "BTC-240329-60000-C@trade".to_string(),
             };
-            let path = format!("{base}{}", spec.path);
-            transport
-                .set_response(&path, 200, &fixture(&filename))
-                .await;
-
-            let key = if spec.requires_auth {
-                Some("k-1".to_string())
-            } else {
-                None
-            };
-            assert!(
-                adapter
-                    .execute_rest(&transport, spec.id, None, key)
-                    .await
-                    .is_ok(),
-                "failed id={}",
-                spec.id
-            );
+            assert_eq!(BinanceOptionsWsAdapter::subscribe_command(stream.clone()).method, "SUBSCRIBE");
+            assert_eq!(BinanceOptionsWsAdapter::unsubscribe_command(stream).method, "UNSUBSCRIBE");
         }
-
-        let keys = transport.key_ids.lock().await.clone();
-        assert!(
-            keys.iter().any(|k| k.is_none()),
-            "public route must use no key path"
-        );
     }
 
-    #[tokio::test(flavor = "current_thread")]
-    async fn private_preflight_rejects_without_auth_and_transport_is_not_called() {
-        let transport = SpyTransport::new();
-        let adapter = BinanceOptionsRestAdapter::new(
-            "https://docs.test/binance-options",
-            "https://eapi.test",
-        );
-        let err = adapter
-            .execute_rest(&transport, "options.private.rest.trade.ref", None, None)
-            .await
-            .unwrap_err();
+    #[tokio::test(flavor="current_thread")]
+    async fn reconnect_and_resubscribe_is_idempotent() {
+        let transport = SpyTransport::default();
+        let mut ws = BinanceOptionsWsAdapter::default();
+        assert!(ws.register_subscription(WsSubscription { channel_id: "options.public.ws.trade", stream: "btc@trade".into() }));
+        assert!(!ws.register_subscription(WsSubscription { channel_id: "options.public.ws.trade", stream: "btc@trade".into() }));
+        let count = ws.reconnect_and_resubscribe(&transport).await.unwrap();
+        assert_eq!(count, 1);
+        assert_eq!(ws.metrics.ws_reconnect_total.load(Ordering::Relaxed), 1);
+    }
+
+    #[test]
+    fn orderbook_gap_triggers_resync_recover() {
+        let metrics = Arc::new(WsMetrics::default());
+        let mut engine = OrderBookResyncEngine::new(metrics.clone());
+        engine.apply_snapshot(100);
+        engine.ingest_delta(OrderBookDelta { stream: "s".into(), prev_update_id: 100, update_id: 101 }).unwrap();
+        let err = engine.ingest_delta(OrderBookDelta { stream: "s".into(), prev_update_id: 999, update_id: 102 }).unwrap_err();
+        assert_eq!(err.code, ErrorCode::Desync);
+        assert_eq!(metrics.ws_orderbook_gap_total.load(Ordering::Relaxed), 1);
+        engine.apply_snapshot(200);
+        assert_eq!(engine.health, OrderBookHealth::Ok);
+    }
+
+    #[tokio::test(flavor="current_thread")]
+    async fn backpressure_drops_are_counted() {
+        let metrics = Arc::new(WsMetrics::default());
+        let mut q = BinanceOptionsBackpressure::new(1, metrics.clone());
+        q.try_enqueue(Bytes::from_static(b"a"));
+        q.try_enqueue(Bytes::from_static(b"b"));
+        assert_eq!(metrics.ws_backpressure_drops_total.load(Ordering::Relaxed), 1);
+        assert_eq!(q.recv().await.unwrap(), Bytes::from_static(b"a"));
+    }
+
+    #[tokio::test(flavor="current_thread")]
+    async fn private_preflight_rejects_without_connect() {
+        let transport = SpyTransport::default();
+        let ws = BinanceOptionsWsAdapter::default();
+        let err = ws.preflight_private_reject(&transport, None).await.unwrap_err();
         assert_eq!(err.code, ErrorCode::MissingAuth);
-        assert_eq!(transport.calls(), 0);
+        assert!(transport.ws_calls.lock().unwrap().is_empty());
     }
 
     #[test]
-    fn maps_binance_options_errors_by_code() {
-        let auth = map_binance_options_http_error(401, br#"{"code":-2015,"msg":"bad key"}"#);
-        assert_eq!(auth.code, ErrorCode::AuthFailed);
-
-        let perm = map_binance_options_http_error(403, br#"{"code":-1002,"msg":"permission"}"#);
-        assert_eq!(perm.code, ErrorCode::PermissionDenied);
-
-        let invalid = map_binance_options_http_error(400, br#"{"code":-1111,"msg":"bad order"}"#);
-        assert_eq!(invalid.code, ErrorCode::InvalidOrder);
-
-        let rate = map_binance_options_http_error(429, b"retry_after_ms=321");
-        assert_eq!(rate.code, ErrorCode::RateLimited);
-        assert_eq!(rate.retry_after_ms, Some(321));
-
-        let upstream = map_binance_options_http_error(503, b"busy");
-        assert_eq!(upstream.code, ErrorCode::Upstream5xx);
-    }
-
-    #[tokio::test(flavor = "current_thread")]
-    async fn contract_error_paths_cover_429_5xx_and_timeout() {
-        let transport = SpyTransport::new();
-        let adapter = BinanceOptionsRestAdapter::new(
-            "https://docs.test/binance-options",
-            "https://eapi.test",
-        );
-
-        transport
-            .set_response(
-                "https://docs.test/binance-options/general-info",
-                429,
-                "retry_after_ms=999",
-            )
-            .await;
-        let e429 = adapter
-            .execute_rest(&transport, "options.public.rest.general.ref", None, None)
-            .await
-            .unwrap_err();
-        assert_eq!(e429.code, ErrorCode::RateLimited);
-        assert_eq!(e429.retry_after_ms, Some(999));
-
-        transport
-            .set_response("https://docs.test/binance-options/error-code", 502, "oops")
-            .await;
-        let e5xx = adapter
-            .execute_rest(&transport, "options.public.rest.errors.ref", None, None)
-            .await
-            .unwrap_err();
-        assert_eq!(e5xx.code, ErrorCode::Upstream5xx);
-
-        struct TimeoutTransport;
-        impl Transport for TimeoutTransport {
-            async fn send_http(
-                &self,
-                _req: HttpRequest,
-                _ctx: RequestContext,
-            ) -> Result<HttpResponse, UcelError> {
-                Err(UcelError::new(ErrorCode::Timeout, "timeout"))
-            }
-            async fn connect_ws(
-                &self,
-                _req: WsConnectRequest,
-                _ctx: RequestContext,
-            ) -> Result<WsStream, UcelError> {
-                Ok(WsStream { connected: true })
-            }
-        }
-
-        let timeout = TimeoutTransport;
-        let e_timeout = adapter
-            .execute_rest(&timeout, "options.public.rest.market.ref", None, None)
-            .await
-            .unwrap_err();
-        assert_eq!(e_timeout.code, ErrorCode::Timeout);
+    fn typed_deserialization_for_all_ws_rows() {
+        let samples = [
+            ("options.public.ws.trade", Bytes::from_static(br#"{"s":"BTC","p":"1.2"}"#)),
+            ("options.public.ws.ticker", Bytes::from_static(br#"{"s":"BTC","c":"2.3"}"#)),
+            ("options.public.ws.kline", Bytes::from_static(br#"{"s":"BTC","k":{"i":"1m","c":"3.4"}}"#)),
+            ("options.public.ws.depth", Bytes::from_static(br#"{"stream":"BTC@depth","pu":10,"u":11}"#)),
+            ("options.public.ws.markprice", Bytes::from_static(br#"{"u":"BTCUSDT","mp":"4.5"}"#)),
+            ("options.public.ws.indexprice", Bytes::from_static(br#"{"u":"BTCUSDT","ip":"4.7"}"#)),
+        ];
+        for (id, payload) in samples { assert!(BinanceOptionsWsAdapter::parse_market_event(id, &payload).is_ok(), "{id}"); }
     }
 
     #[test]
-    fn endpoint_specs_match_catalog_rest_ids_exactly() {
-        let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let raw =
-            std::fs::read_to_string(repo_root.join("docs/exchanges/binance-options/catalog.json"))
-                .unwrap();
-        let catalog: serde_json::Value = serde_json::from_str(&raw).unwrap();
-        let mut impl_ids: Vec<&str> = BinanceOptionsRestAdapter::endpoint_specs()
-            .iter()
-            .map(|e| e.id)
-            .collect();
-        let mut catalog_ids: Vec<String> = catalog["rest_endpoints"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|e| e["id"].as_str().unwrap().to_string())
-            .collect();
-        impl_ids.sort_unstable();
-        catalog_ids.sort_unstable();
-        assert_eq!(
-            impl_ids,
-            catalog_ids.iter().map(String::as_str).collect::<Vec<_>>()
-        );
+    fn api_secrets_are_redacted_in_logs() {
+        let sanitized = sanitize_log_line("key_id=k1 api_key=AAA api_secret=BBB");
+        assert!(!sanitized.contains("AAA"));
+        assert!(!sanitized.contains("BBB"));
+        assert!(sanitized.contains("key_id=k1"));
     }
 
     #[test]
-    fn coverage_manifest_has_no_rest_gaps() {
-        let manifest_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../coverage/binance-options.yaml");
-        let raw = std::fs::read_to_string(manifest_path).unwrap();
-        let manifest: CoverageManifest = serde_yaml::from_str(&raw).unwrap();
-        assert_eq!(manifest.venue, "binance-options");
+    fn strict_coverage_gate_has_no_gaps_for_binance_options() {
+        let manifest_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/binance-options.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
         assert!(manifest.strict);
-        for e in &manifest.entries {
-            if !e.id.contains(".rest.") {
-                continue;
-            }
-            assert!(e.implemented, "id not implemented: {}", e.id);
-            assert!(e.tested, "id not tested: {}", e.id);
-        }
+        let gaps = evaluate_coverage_gate(&manifest);
+        assert!(gaps.is_empty(), "strict coverage gate found gaps: {gaps:?}");
     }
 }

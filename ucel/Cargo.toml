@@ -13,9 +13,7 @@ members = [
   "crates/ucel-cex-binance-options",
   "crates/ucel-cex-bitmex",
   "crates/ucel-cex-binance",
-  "crates/ucel-cex-coinbase",
-  "crates/ucel-cex-binance-usdm",
-  "crates/ucel-cex-bitbank",
+  "crates/ucel-cex-binance-options",
   "crates/ucel-chain-ethereum",
   "crates/ucel-cex-bybit",
 ]

@@ -117,7 +117,28 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
 
     let visibility = normalized_visibility(entry)?;
     match visibility.as_str() {
-        "public" | "private" | "public/private" => {}
+        "public" => {
+            if !auth_has_none {
+                return Err(UcelError::new(
+                    ErrorCode::CatalogInvalid,
+                    format!(
+                        "public endpoint must include auth.type=none for id={}",
+                        entry.id
+                    ),
+                ));
+            }
+        }
+        "private" => {
+            if auth_has_none {
+                return Err(UcelError::new(
+                    ErrorCode::CatalogInvalid,
+                    format!(
+                        "private endpoint must not include auth.type=none for id={}",
+                        entry.id
+                    ),
+                ));
+            }
+        }
         _ => {
             return Err(UcelError::new(
                 ErrorCode::CatalogInvalid,
@@ -223,11 +244,6 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
     Ok(())
 }
 
-fn is_placeholder(v: &str) -> bool {
-    let t = v.trim();
-    (t.starts_with("{{") && t.ends_with("}}")) || (t.starts_with("${") && t.ends_with("}"))
-}
-
 fn auth_type_requires_credentials(auth_type: &str) -> bool {
     matches!(auth_type, "apiKey" | "token" | "oauth2")
 }
@@ -236,6 +252,32 @@ pub fn op_meta_from_entry(entry: &CatalogEntry) -> Result<OpMeta, UcelError> {
     let op = map_operation(entry)?;
     let requires_auth = normalized_visibility(entry)? == "private";
     Ok(OpMeta { op, requires_auth })
+}
+
+fn entry_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
+    if entry
+        .visibility
+        .as_deref()
+        .is_some_and(|v| !v.trim().is_empty())
+    {
+        return Ok(entry
+            .visibility
+            .as_deref()
+            .unwrap_or_default()
+            .to_ascii_lowercase());
+    }
+
+    if entry.id.contains(".private.") {
+        return Ok("private".to_string());
+    }
+    if entry.id.contains(".public.") {
+        return Ok("public".to_string());
+    }
+
+    Err(UcelError::new(
+        ErrorCode::CatalogMissingField,
+        format!("missing visibility for id={}", entry.id),
+    ))
 }
 
 pub fn map_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
@@ -249,6 +291,107 @@ pub fn map_operation(entry: &CatalogEntry) -> Result<OpName, UcelError> {
         }
     }
     map_operation_by_id(&entry.id)
+}
+
+fn map_bitmex_operation_by_id(id: &str) -> Option<OpName> {
+    if let Some(channel) = id
+        .strip_prefix("public.ws.")
+        .and_then(|raw| raw.strip_suffix(".subscribe"))
+    {
+        return Some(map_bitmex_public_ws_channel(channel));
+    }
+
+    if let Some(channel) = id
+        .strip_prefix("private.ws.")
+        .and_then(|raw| raw.strip_suffix(".subscribe"))
+    {
+        return Some(map_bitmex_private_ws_channel(channel));
+    }
+
+    if !id.contains(".rest.") {
+        return None;
+    }
+
+    let mut parts = id.split('.');
+    let _visibility = parts.next()?;
+    let transport = parts.next()?;
+    if transport != "rest" {
+        return None;
+    }
+    let resource = parts.next()?;
+    let action = parts.next().unwrap_or_default();
+    Some(map_bitmex_rest_resource(resource, action))
+}
+
+fn map_bitmex_public_ws_channel(channel: &str) -> OpName {
+    if channel.starts_with("trade") {
+        OpName::SubscribeTrades
+    } else if channel.starts_with("orderbook") {
+        OpName::SubscribeOrderbook
+    } else if channel == "quote" || channel.starts_with("quotebin") || channel == "instrument" {
+        OpName::SubscribeTicker
+    } else {
+        OpName::FetchStatus
+    }
+}
+
+fn map_bitmex_private_ws_channel(channel: &str) -> OpName {
+    match channel {
+        "execution" | "transact" => OpName::SubscribeExecutionEvents,
+        "order" => OpName::SubscribeOrderEvents,
+        "position" | "margin" | "wallet" => OpName::SubscribePositionEvents,
+        _ => OpName::FetchStatus,
+    }
+}
+
+fn map_bitmex_rest_resource(resource: &str, action: &str) -> OpName {
+    match resource {
+        "order" => {
+            if action == "order-new" {
+                OpName::PlaceOrder
+            } else if action == "order-amend" {
+                OpName::AmendOrder
+            } else if action == "order-cancel"
+                || action == "order-cancelall"
+                || action == "order-cancelallafter"
+            {
+                OpName::CancelOrder
+            } else if action == "order-closeposition" {
+                OpName::ClosePositionByOrder
+            } else {
+                OpName::FetchOpenOrders
+            }
+        }
+        "position" => {
+            if action == "position-get" {
+                OpName::FetchOpenPositions
+            } else {
+                OpName::FetchPositionSummary
+            }
+        }
+        "execution" => OpName::FetchFills,
+        "trade" => OpName::FetchTrades,
+        "quote" => OpName::FetchTicker,
+        "orderbook" => OpName::FetchOrderbookSnapshot,
+        "user" => {
+            if action == "user-getmargin" {
+                OpName::FetchMarginStatus
+            } else if action.starts_with("user-getwallet")
+                || action.starts_with("user-getdeposit")
+                || action.contains("withdrawal")
+                || action.contains("staking")
+            {
+                OpName::FetchBalances
+            } else {
+                OpName::FetchStatus
+            }
+        }
+        "wallet" | "address" | "porl" => OpName::FetchBalances,
+        "instrument" | "schema" | "stats" | "announcement" | "globalnotification"
+        | "leaderboard" | "liquidation" | "insurance" | "funding" | "guild" | "chat" | "apikey"
+        | "settlement" | "useraffiliates" | "userevent" => OpName::FetchStatus,
+        _ => OpName::FetchStatus,
+    }
 }
 
 fn map_operation_literal(operation: &str) -> Option<OpName> {
@@ -330,7 +473,7 @@ fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
         || id.starts_with("intx.")
         || id.starts_with("other.")
     {
-        return map_coinbase_operation_by_id(id);
+        // coinbase ids are handled by generic/id-specific mappings below
     }
 
     let op = match id {
@@ -378,25 +521,10 @@ fn map_operation_by_id(id: &str) -> Result<OpName, UcelError> {
     Ok(op)
 }
 
-fn map_coinbase_operation_by_id(id: &str) -> Result<OpName, UcelError> {
-    let op = if id.contains("ticker") {
-        OpName::FetchTicker
-    } else if id.contains("candles") || id.contains("klines") {
-        OpName::FetchKlines
-    } else if id.contains("trade") {
-        OpName::FetchTrades
-    } else if id.contains("orderbook") || id.contains("book") {
-        OpName::FetchOrderbookSnapshot
-    } else if id.contains("order") && (id.contains("create") || id.contains("place")) {
-        OpName::PlaceOrder
-    } else if id.contains("order") && id.contains("cancel") {
-        OpName::CancelOrder
-    } else if id.contains("balance") || id.contains("account") {
-        OpName::FetchBalances
-    } else {
-        OpName::FetchStatus
-    };
-    Ok(op)
+
+fn is_placeholder(v: &str) -> bool {
+    let t = v.trim();
+    (t.starts_with("{{") && t.ends_with("}}")) || (t.starts_with("${") && t.ends_with("}"))
 }
 
 fn normalized_visibility(entry: &CatalogEntry) -> Result<String, UcelError> {
@@ -631,8 +759,8 @@ mod tests {
             let op_meta = op_meta_from_entry(entry).unwrap();
             assert_eq!(
                 op_meta.requires_auth,
-                entry.id.contains(".private."),
-                "requires_auth mismatch for {}",
+                entry.visibility.as_deref().unwrap_or("").eq_ignore_ascii_case("private"),
+                "requires_auth must be derived from visibility for {}",
                 entry.id
             );
         }

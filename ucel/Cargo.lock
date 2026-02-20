@@ -1217,9 +1217,23 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "tokio",
- "tracing",
- "tracing-subscriber",
  "ucel-core",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-binance-options"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "ucel-core",
+ "ucel-testkit",
  "ucel-transport",
  "uuid",
 ]
@@ -1242,13 +1256,27 @@ dependencies = [
 name = "ucel-cex-bybit"
 version = "0.1.0"
 dependencies = [
+ "bytes",
+ "reqwest",
  "serde",
  "serde_json",
- "serde_yaml",
  "tokio",
- "tracing",
- "tracing-subscriber",
  "ucel-core",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-coinbase"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "ucel-core",
+ "ucel-testkit",
  "ucel-transport",
  "uuid",
 ]

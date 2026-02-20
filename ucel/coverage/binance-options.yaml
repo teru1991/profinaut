@@ -26,20 +26,20 @@ entries:
   implemented: true
   tested: true
 - id: options.public.ws.trade
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: options.public.ws.ticker
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: options.public.ws.kline
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: options.public.ws.depth
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: options.public.ws.markprice
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: options.public.ws.indexprice
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true

@@ -5,13 +5,12 @@ edition = "2021"
 
 [dependencies]
 bytes = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
+serde = { workspace = true }
 serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+uuid = { version = "1", features = ["v4"] }
 ucel-core = { path = "../ucel-core" }
 ucel-transport = { path = "../ucel-transport" }
-uuid = { version = "1", features = ["v4"] }
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "http2"] }
-
-[dev-dependencies]
-tokio = { workspace = true, features = ["macros", "rt"] }
-serde_yaml = { workspace = true }
+ucel-testkit = { path = "../ucel-testkit" }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
