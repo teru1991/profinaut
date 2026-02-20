@@ -1367,17 +1367,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "ucel-cex-upbit"
+name = "ucel-cex-sbivc"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "serde",
  "serde_json",
  "serde_yaml",
  "tokio",
  "tracing",
+ "tracing-subscriber",
  "ucel-core",
- "ucel-transport",
- "uuid",
 ]
 
 [[package]]
