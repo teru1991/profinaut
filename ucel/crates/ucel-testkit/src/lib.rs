@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::{fs, path::Path};
 use ucel_core::ErrorCode;
-use ucel_registry::GmoCatalog;
+use ucel_registry::ExchangeCatalog;
 use ucel_transport::{HealthLevel, HealthStatus};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -90,7 +90,7 @@ impl CatalogContractIndex {
         self.registered_tests.insert(id.to_string());
     }
 
-    pub fn missing_catalog_ids(&self, catalog: &GmoCatalog) -> Vec<String> {
+    pub fn missing_catalog_ids(&self, catalog: &ExchangeCatalog) -> Vec<String> {
         let mut missing = Vec::new();
         for id in catalog
             .rest_endpoints
@@ -146,6 +146,24 @@ pub fn evaluate_coverage_gate(manifest: &CoverageManifest) -> HashMap<String, Ve
     missing
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CoverageGateResult {
+    Passed,
+    WarnOnly(HashMap<String, Vec<String>>),
+    Failed(HashMap<String, Vec<String>>),
+}
+
+pub fn run_coverage_gate(manifest: &CoverageManifest) -> CoverageGateResult {
+    let gaps = evaluate_coverage_gate(manifest);
+    if gaps.is_empty() {
+        CoverageGateResult::Passed
+    } else if manifest.strict {
+        CoverageGateResult::Failed(gaps)
+    } else {
+        CoverageGateResult::WarnOnly(gaps)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -196,6 +214,25 @@ mod tests {
     }
 
     #[test]
+    fn contract_index_can_cover_all_kraken_catalog_rows() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "kraken").unwrap();
+
+        let mut index = CatalogContractIndex::default();
+        for id in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+            .map(|entry| entry.id.as_str())
+        {
+            index.register_id(id);
+        }
+
+        let missing = index.missing_catalog_ids(&catalog);
+        assert!(missing.is_empty());
+    }
+
+    #[test]
     fn coverage_gate_is_strict_and_has_no_gaps() {
         let manifest_path =
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/gmocoin.yaml");
@@ -205,5 +242,21 @@ mod tests {
 
         let gaps = evaluate_coverage_gate(&manifest);
         assert!(gaps.is_empty(), "strict coverage gate must have no gaps: {gaps:?}");
+    }
+
+    #[test]
+    fn coverage_gate_warns_for_kraken_in_warn_only_mode() {
+        let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/kraken.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "kraken");
+        assert!(!manifest.strict);
+
+        let result = run_coverage_gate(&manifest);
+        match result {
+            CoverageGateResult::WarnOnly(gaps) => {
+                assert!(!gaps.is_empty(), "warn-only mode should report missing coverage");
+            }
+            _ => panic!("kraken coverage gate should be warn-only with gaps"),
+        }
     }
 }
