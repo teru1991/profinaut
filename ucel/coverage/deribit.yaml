@@ -1,87 +1,30 @@
 venue: deribit
-strict: false
+strict: true
 entries:
-- id: jsonrpc.http.public.market_data.public_get_instruments
-  implemented: false
-  tested: false
-- id: jsonrpc.http.public.market_data.public_ticker
-  implemented: false
-  tested: false
-- id: jsonrpc.http.public.market_data.public_get_order_book
-  implemented: false
-  tested: false
-- id: jsonrpc.http.public.market_data.public_get_tradingview_chart_data
-  implemented: false
-  tested: false
-- id: jsonrpc.http.private.auth.public_auth
-  implemented: false
-  tested: false
-- id: jsonrpc.http.private.account.private_get_account_summary
-  implemented: false
-  tested: false
-- id: jsonrpc.http.private.trading.private_buy
-  implemented: false
-  tested: false
-- id: jsonrpc.http.private.trading.private_sell
-  implemented: false
-  tested: false
-- id: jsonrpc.http.private.trading.private_cancel
-  implemented: false
-  tested: false
-- id: jsonrpc.ws.public.auth.public_auth
-  implemented: false
-  tested: false
-- id: jsonrpc.ws.public.market_data.public_get_instruments
-  implemented: false
-  tested: false
-- id: jsonrpc.ws.public.market_data.public_ticker
-  implemented: false
-  tested: false
-- id: jsonrpc.ws.public.market_data.public_get_order_book
-  implemented: false
-  tested: false
-- id: jsonrpc.ws.public.market_data.public_get_tradingview_chart_data
-  implemented: false
-  tested: false
-- id: jsonrpc.ws.private.account.private_get_account_summary
-  implemented: false
-  tested: false
-- id: jsonrpc.ws.private.trading.private_buy
-  implemented: false
-  tested: false
-- id: jsonrpc.ws.private.trading.private_sell
-  implemented: false
-  tested: false
-- id: jsonrpc.ws.private.trading.private_cancel
-  implemented: false
-  tested: false
-- id: jsonrpc.ws.public.system.public_set_heartbeat
-  implemented: false
-  tested: false
-- id: ws.public.sub.book.instrument.raw
-  implemented: false
-  tested: false
-- id: ws.public.sub.ticker.instrument.interval
-  implemented: false
-  tested: false
-- id: ws.public.sub.trades.instrument.interval
-  implemented: false
-  tested: false
-- id: ws.public.sub.deribit_price_index.index
-  implemented: false
-  tested: false
-- id: ws.public.sub.chart.instrument.resolution
-  implemented: false
-  tested: false
-- id: ws.private.sub.user.orders.instrument.raw
-  implemented: false
-  tested: false
-- id: ws.private.sub.user.trades.instrument.interval
-  implemented: false
-  tested: false
-- id: ws.private.sub.user.portfolio.currency
-  implemented: false
-  tested: false
-- id: ws.private.sub.user.changes.instrument.raw
-  implemented: false
-  tested: false
+  - id: jsonrpc.http.public.market_data.public_get_instruments
+    implemented: true
+    tested: true
+  - id: jsonrpc.http.public.market_data.public_ticker
+    implemented: true
+    tested: true
+  - id: jsonrpc.http.public.market_data.public_get_order_book
+    implemented: true
+    tested: true
+  - id: jsonrpc.http.public.market_data.public_get_tradingview_chart_data
+    implemented: true
+    tested: true
+  - id: jsonrpc.http.private.auth.public_auth
+    implemented: true
+    tested: true
+  - id: jsonrpc.http.private.account.private_get_account_summary
+    implemented: true
+    tested: true
+  - id: jsonrpc.http.private.trading.private_buy
+    implemented: true
+    tested: true
+  - id: jsonrpc.http.private.trading.private_sell
+    implemented: true
+    tested: true
+  - id: jsonrpc.http.private.trading.private_cancel
+    implemented: true
+    tested: true
