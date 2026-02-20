@@ -201,3 +201,45 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod deribit_testkit_tests {
+    use super::{load_coverage_manifest, run_coverage_gate, CatalogContractIndex, CoverageGateResult};
+    use std::path::Path;
+    use ucel_registry::load_catalog_from_repo_root;
+
+    #[test]
+    fn contract_index_can_cover_all_deribit_catalog_rows() {
+        let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalog = load_catalog_from_repo_root(&repo_root, "deribit").unwrap();
+
+        let mut index = CatalogContractIndex::default();
+        for id in catalog
+            .rest_endpoints
+            .iter()
+            .chain(catalog.ws_channels.iter())
+            .map(|entry| entry.id.as_str())
+        {
+            index.register_id(id);
+        }
+
+        let missing = index.missing_catalog_ids(&catalog);
+        assert!(missing.is_empty());
+    }
+
+    #[test]
+    fn coverage_gate_warns_for_deribit_until_task3() {
+        let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/deribit.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert_eq!(manifest.venue, "deribit");
+        assert!(!manifest.strict);
+
+        match run_coverage_gate(&manifest) {
+            CoverageGateResult::WarnOnly(gaps) => {
+                assert_eq!(gaps.get("implemented").map(Vec::len), Some(28));
+                assert_eq!(gaps.get("tested").map(Vec::len), Some(28));
+            }
+            other => panic!("deribit coverage gate should be warn-only, got {other:?}"),
+        }
+    }
+}
