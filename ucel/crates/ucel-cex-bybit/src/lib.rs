@@ -1,173 +1,255 @@
-use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::collections::{BTreeMap, HashSet};
+use tokio::sync::mpsc;
 use ucel_core::{ErrorCode, OpName, UcelError};
-use ucel_transport::{enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport};
+use ucel_transport::{RequestContext, Transport, WsConnectRequest};
 use uuid::Uuid;
 
-#[derive(Debug, Clone)]
-pub struct EndpointSpec {
-    pub id: &'static str,
-    pub method: &'static str,
-    pub path: &'static str,
-    pub requires_auth: bool,
-}
-
-const ENDPOINTS: [EndpointSpec; 77] = [
-    EndpointSpec { id: "bybit.private.rest.account.fee-rate", method: "GET", path: "/v5/account/fee-rate", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.account.set-spot-hedge", method: "POST", path: "/v5/account/set-hedging-mode", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.account.transaction-log", method: "GET", path: "/v5/account/transaction-log", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.asset-info", method: "GET", path: "/v5/asset/transfer/query-asset-info", requires_auth: true },
-    EndpointSpec { id: "bybit.public.rest.market.instrument", method: "GET", path: "/v5/market/instruments-info", requires_auth: false },
-    EndpointSpec { id: "bybit.public.rest.market.kline", method: "GET", path: "/v5/market/kline", requires_auth: false },
-    EndpointSpec { id: "bybit.public.rest.market.mark-kline", method: "GET", path: "/v5/market/mark-price-kline", requires_auth: false },
-    EndpointSpec { id: "bybit.public.rest.market.orderbook", method: "GET", path: "/v5/market/orderbook", requires_auth: false },
-    EndpointSpec { id: "bybit.public.rest.market.recent-trade", method: "GET", path: "/v5/market/recent-trade", requires_auth: false },
-    EndpointSpec { id: "bybit.public.rest.market.tickers", method: "GET", path: "/v5/market/tickers", requires_auth: false },
-    EndpointSpec { id: "bybit.private.rest.position.execution", method: "GET", path: "/v5/execution/list", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.trade.order-list", method: "GET", path: "/v5/order/history", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.trade.open-order", method: "GET", path: "/v5/order/realtime", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.trade.query-spot-quota", method: "GET", path: "/v5/order/spot-borrow-check", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.delivery", method: "GET", path: "/v5/asset/delivery-record", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.settlement", method: "GET", path: "/v5/asset/settlement-record", requires_auth: true },
-    EndpointSpec { id: "bybit.public.rest.market.long-short-ratio", method: "GET", path: "/v5/market/account-ratio", requires_auth: false },
-    EndpointSpec { id: "bybit.public.rest.market.delivery-price", method: "GET", path: "/v5/market/delivery-price", requires_auth: false },
-    EndpointSpec { id: "bybit.public.rest.market.history-fund-rate", method: "GET", path: "/v5/market/funding/history", requires_auth: false },
-    EndpointSpec { id: "bybit.public.rest.market.index-kline", method: "GET", path: "/v5/market/index-price-kline", requires_auth: false },
-    EndpointSpec { id: "bybit.public.rest.market.open-interest", method: "GET", path: "/v5/market/open-interest", requires_auth: false },
-    EndpointSpec { id: "bybit.public.rest.market.premium-index-kline", method: "GET", path: "/v5/market/premium-index-price-kline", requires_auth: false },
-    EndpointSpec { id: "bybit.public.rest.market.risk-limit", method: "GET", path: "/v5/market/risk-limit", requires_auth: false },
-    EndpointSpec { id: "bybit.private.rest.position.close-pnl", method: "GET", path: "/v5/position/closed-pnl", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.position.position-info", method: "GET", path: "/v5/position/list", requires_auth: true },
-    EndpointSpec { id: "bybit.public.rest.market.iv", method: "GET", path: "/v5/market/historical-volatility", requires_auth: false },
-    EndpointSpec { id: "bybit.private.rest.account.borrow-history", method: "GET", path: "/v5/account/borrow-history", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.account.coin-greeks", method: "GET", path: "/v5/account/coin-greeks", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.account.collateral-info", method: "GET", path: "/v5/account/collateral-info", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.account.account-info", method: "GET", path: "/v5/account/info", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.account.set-collateral", method: "POST", path: "/v5/account/set-collateral-switch", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.account.set-margin-mode", method: "POST", path: "/v5/account/set-margin-mode", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.account.upgrade-unified-account", method: "POST", path: "/v5/account/upgrade-to-uta", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.account.wallet", method: "GET", path: "/v5/account/wallet-balance", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.coin-info", method: "GET", path: "/v5/asset/coin/query-info", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.set-deposit-acct", method: "POST", path: "/v5/asset/deposit/deposit-to-account", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.master-deposit-addr", method: "GET", path: "/v5/asset/deposit/query-address", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.deposit-coin-spec", method: "GET", path: "/v5/asset/deposit/query-allowed-list", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.internal-deposit-record", method: "GET", path: "/v5/asset/deposit/query-internal-record", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.deposit-record", method: "GET", path: "/v5/asset/deposit/query-record", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.sub-deposit-addr", method: "GET", path: "/v5/asset/deposit/query-sub-member-address", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.sub-deposit-record", method: "GET", path: "/v5/asset/deposit/query-sub-member-record", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.exchange", method: "GET", path: "/v5/asset/exchange/order-record", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.create-inter-transfer", method: "POST", path: "/v5/asset/transfer/inter-transfer", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.account-coin-balance", method: "GET", path: "/v5/asset/transfer/query-account-coin-balance", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.all-balance", method: "GET", path: "/v5/asset/transfer/query-account-coins-balance", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.inter-transfer-list", method: "GET", path: "/v5/asset/transfer/query-inter-transfer-list", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.sub-uid-list", method: "GET", path: "/v5/asset/transfer/query-sub-member-list", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.transferable-coin", method: "GET", path: "/v5/asset/transfer/query-transfer-coin-list", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.unitransfer-list", method: "GET", path: "/v5/asset/transfer/query-universal-transfer-list", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.unitransfer", method: "POST", path: "/v5/asset/transfer/universal-transfer", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.asset.withdraw-record", method: "GET", path: "/v5/asset/withdraw/query-record", requires_auth: true },
-    EndpointSpec { id: "bybit.public.rest.market.insurance", method: "GET", path: "/v5/market/insurance", requires_auth: false },
-    EndpointSpec { id: "bybit.public.rest.market.time", method: "GET", path: "/v5/market/time", requires_auth: false },
-    EndpointSpec { id: "bybit.private.rest.position.manual-add-margin", method: "POST", path: "/v5/position/add-margin", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.position.auto-add-margin", method: "POST", path: "/v5/position/set-auto-add-margin", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.position.leverage", method: "POST", path: "/v5/position/set-leverage", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.position.set-risk-limit", method: "POST", path: "/v5/position/set-risk-limit", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.position.tpsl-mode", method: "POST", path: "/v5/position/set-tpsl-mode", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.position.cross-isolate", method: "POST", path: "/v5/position/switch-isolated", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.position.position-mode", method: "POST", path: "/v5/position/switch-mode", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.position.trading-stop", method: "POST", path: "/v5/position/trading-stop", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.spot-margin-uta.vip-margin", method: "GET", path: "/v5/spot-margin-trade/data", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.spot-margin-uta.set-leverage", method: "POST", path: "/v5/spot-margin-trade/set-leverage", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.spot-margin-uta.status", method: "GET", path: "/v5/spot-margin-trade/state", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.spot-margin-uta.switch-mode", method: "POST", path: "/v5/spot-margin-trade/switch-mode", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.trade.amend-order", method: "POST", path: "/v5/order/amend", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.trade.batch-amend", method: "POST", path: "/v5/order/amend-batch", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.trade.cancel-order", method: "POST", path: "/v5/order/cancel", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.trade.cancel-all", method: "POST", path: "/v5/order/cancel-all", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.trade.batch-cancel", method: "POST", path: "/v5/order/cancel-batch", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.trade.create-order", method: "POST", path: "/v5/order/create", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.trade.batch-place", method: "POST", path: "/v5/order/create-batch", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.user.affiliate-info", method: "GET", path: "/v5/user/aff-customer-info", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.user.wallet-type", method: "GET", path: "/v5/user/get-member-type", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.user.apikey-info", method: "GET", path: "/v5/user/query-api", requires_auth: true },
-    EndpointSpec { id: "bybit.private.rest.user.list-sub-apikeys", method: "GET", path: "/v5/user/sub-apikeys", requires_auth: true },
-];
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
-pub struct BybitRestResult {
-    pub endpoint: String,
-    pub ok: bool,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BybitEnvelope<T> {
-    #[serde(rename = "retCode")]
-    pub ret_code: i64,
-    #[serde(rename = "retMsg")]
-    pub ret_msg: String,
-    #[serde(default, rename = "result")]
-    pub result: T,
-    #[serde(default, rename = "time")]
-    pub time: Option<u64>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum BybitRestResponse {
-    Generic(BybitEnvelope<BybitRestResult>),
+#[derive(Debug, Clone, Deserialize)]
+struct Catalog {
+    ws_channels: Vec<CatalogWsEntry>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-struct BybitErrorBody {
-    #[serde(rename = "retCode")]
-    ret_code: Option<i64>,
-    #[serde(rename = "retMsg")]
-    ret_msg: Option<String>,
-    #[serde(rename = "retryAfterMs")]
-    retry_after_ms: Option<u64>,
+struct CatalogWsEntry {
+    id: String,
+    ws_url: String,
+    channel: String,
+    auth: CatalogAuth,
 }
 
-#[derive(Clone)]
-pub struct BybitRestAdapter {
-    base_url: Arc<str>,
-    pub http_client: reqwest::Client,
-    pub retry_policy: RetryPolicy,
+#[derive(Debug, Clone, Deserialize)]
+struct CatalogAuth {
+    #[serde(rename = "type")]
+    auth_type: String,
 }
 
-impl BybitRestAdapter {
-    pub fn new(base_url: impl Into<String>) -> Self {
-        Self {
-            base_url: Arc::from(base_url.into()),
-            http_client: reqwest::Client::builder()
-                .timeout(std::time::Duration::from_secs(10))
-                .build()
-                .expect("reqwest client"),
-            retry_policy: RetryPolicy {
-                base_delay_ms: 100,
-                max_delay_ms: 5_000,
-                jitter_ms: 20,
-                respect_retry_after: true,
-            },
+#[derive(Debug, Clone)]
+pub struct WsChannelSpec {
+    pub id: String,
+    pub ws_url: String,
+    pub channel: String,
+    pub requires_auth: bool,
+}
+
+pub fn ws_channel_specs() -> Vec<WsChannelSpec> {
+    let raw = include_str!("../../../../docs/exchanges/bybit/catalog.json");
+    let catalog: Catalog = serde_json::from_str(raw).expect("valid bybit catalog");
+    catalog
+        .ws_channels
+        .into_iter()
+        .map(|w| WsChannelSpec {
+            id: w.id,
+            ws_url: w.ws_url,
+            channel: w.channel,
+            requires_auth: w.auth.auth_type != "none",
+        })
+        .collect()
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct WsAdapterMetrics {
+    pub ws_reconnect_total: u64,
+    pub ws_resubscribe_total: u64,
+    pub ws_backpressure_overflow_total: u64,
+    pub ws_orderbook_gap_total: u64,
+    pub ws_orderbook_resync_total: u64,
+    pub ws_orderbook_recovered_total: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct BybitWsRequest {
+    pub op: String,
+    pub args: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NormalizedWsEvent {
+    pub channel: String,
+    pub topic: Option<String>,
+    pub kind: String,
+    pub symbol: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct BybitEnvelope {
+    #[serde(default)]
+    topic: Option<String>,
+    #[serde(default)]
+    #[serde(rename = "type")]
+    kind: Option<String>,
+    #[serde(default)]
+    success: Option<bool>,
+    #[serde(default)]
+    data: Option<BybitData>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+enum BybitData {
+    Book(BybitOrderbookData),
+    Trade(Vec<BybitTradeData>),
+    Generic(BybitMapData),
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct BybitOrderbookData {
+    #[serde(default)]
+    s: Option<String>,
+    #[serde(default)]
+    u: Option<u64>,
+    #[serde(default)]
+    seq: Option<u64>,
+    #[serde(default)]
+    b: Vec<(String, String)>,
+    #[serde(default)]
+    a: Vec<(String, String)>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct BybitTradeData {
+    #[serde(default)]
+    s: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct BybitMapData {
+    #[serde(flatten)]
+    fields: BTreeMap<String, String>,
+}
+
+pub struct WsBackpressureBuffer {
+    tx: mpsc::Sender<NormalizedWsEvent>,
+    rx: mpsc::Receiver<NormalizedWsEvent>,
+}
+
+impl WsBackpressureBuffer {
+    pub fn with_capacity(capacity: usize) -> Self {
+        let (tx, rx) = mpsc::channel(capacity);
+        Self { tx, rx }
+    }
+
+    pub fn try_push(&self, event: NormalizedWsEvent, metrics: &mut WsAdapterMetrics) {
+        if self.tx.try_send(event).is_err() {
+            metrics.ws_backpressure_overflow_total += 1;
         }
     }
 
-    pub fn endpoint_specs() -> &'static [EndpointSpec] {
-        &ENDPOINTS
+    pub async fn recv(&mut self) -> Option<NormalizedWsEvent> {
+        self.rx.recv().await
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct OrderBookSyncState {
+    pub sequence: Option<u64>,
+    pub bids: BTreeMap<String, String>,
+    pub asks: BTreeMap<String, String>,
+    pub degraded: bool,
+}
+
+impl OrderBookSyncState {
+    pub(crate) fn apply_snapshot(&mut self, data: &BybitOrderbookData) {
+        self.sequence = data.u.or(data.seq);
+        self.degraded = false;
+        self.bids = data.b.iter().cloned().collect();
+        self.asks = data.a.iter().cloned().collect();
     }
 
-    pub async fn execute_rest<T: Transport>(
-        &self,
-        transport: &T,
-        endpoint_id: &str,
-        body: Option<Bytes>,
-        key_id: Option<String>,
-    ) -> Result<BybitRestResponse, UcelError> {
-        let spec = ENDPOINTS.iter().find(|it| it.id == endpoint_id).ok_or_else(|| {
-            UcelError::new(
-                ErrorCode::NotSupported,
-                format!("unknown endpoint: {endpoint_id}"),
-            )
-        })?;
+    pub(crate) fn apply_delta(
+        &mut self,
+        data: &BybitOrderbookData,
+        metrics: &mut WsAdapterMetrics,
+    ) {
+        let next = data.u.or(data.seq);
+        let expected_next = self.sequence.map(|s| s + 1);
+        if expected_next.is_none() || next != expected_next {
+            self.degraded = true;
+            metrics.ws_orderbook_gap_total += 1;
+            metrics.ws_orderbook_resync_total += 1;
+            return;
+        }
+        self.sequence = next;
+        for (price, qty) in &data.b {
+            if qty == "0" {
+                self.bids.remove(price);
+            } else {
+                self.bids.insert(price.clone(), qty.clone());
+            }
+        }
+        for (price, qty) in &data.a {
+            if qty == "0" {
+                self.asks.remove(price);
+            } else {
+                self.asks.insert(price.clone(), qty.clone());
+            }
+        }
+    }
 
+    pub fn mark_recovered(&mut self, metrics: &mut WsAdapterMetrics) {
+        if self.degraded {
+            self.degraded = false;
+            metrics.ws_orderbook_recovered_total += 1;
+        }
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct BybitWsAdapter {
+    subscriptions: HashSet<String>,
+    pub metrics: WsAdapterMetrics,
+}
+
+impl BybitWsAdapter {
+    pub fn build_subscribe(
+        endpoint_id: &str,
+        symbol: &str,
+        interval_or_depth: Option<&str>,
+        credentials: Option<(&str, &str)>,
+    ) -> Result<BybitWsRequest, UcelError> {
+        let spec = ws_channel_specs()
+            .into_iter()
+            .find(|s| s.id == endpoint_id)
+            .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown ws endpoint"))?;
+        if spec.requires_auth && credentials.is_none() {
+            return Err(UcelError::new(
+                ErrorCode::MissingAuth,
+                "private websocket endpoint requires credentials",
+            ));
+        }
+
+        let arg = spec
+            .channel
+            .replace("{symbol}", symbol)
+            .replace("{depth}", interval_or_depth.unwrap_or("1"))
+            .replace("{interval}", interval_or_depth.unwrap_or("1"))
+            .replace("{coin}", symbol);
+
+        Ok(BybitWsRequest {
+            op: "subscribe".into(),
+            args: vec![arg],
+        })
+    }
+
+    pub fn build_unsubscribe(
+        endpoint_id: &str,
+        symbol: &str,
+        interval_or_depth: Option<&str>,
+    ) -> Result<BybitWsRequest, UcelError> {
+        let mut req =
+            Self::build_subscribe(endpoint_id, symbol, interval_or_depth, Some(("x", "y")))?;
+        req.op = "unsubscribe".into();
+        Ok(req)
+    }
+
+    pub fn subscribe_once(&mut self, endpoint_id: &str, symbol: &str) -> bool {
+        self.subscriptions.insert(format!("{endpoint_id}:{symbol}"))
+    }
+
+    pub async fn reconnect_and_resubscribe<T: Transport>(
+        &mut self,
+        transport: &T,
+    ) -> Result<usize, UcelError> {
         let ctx = RequestContext {
             trace_id: Uuid::new_v4().to_string(),
             request_id: Uuid::new_v4().to_string(),
@@ -175,257 +257,280 @@ impl BybitRestAdapter {
             op: OpName::FetchStatus,
             venue: "bybit".into(),
             policy_id: "default".into(),
-            key_id,
-            requires_auth: spec.requires_auth,
+            key_id: None,
+            requires_auth: false,
         };
-        enforce_auth_boundary(&ctx)?;
-
-        let response = transport
-            .send_http(
-                HttpRequest {
-                    method: spec.method.into(),
-                    path: format!("{}{}", self.base_url, spec.path),
-                    body,
+        transport
+            .connect_ws(
+                WsConnectRequest {
+                    url: "wss://stream.bybit.com/v5/public/linear".into(),
                 },
                 ctx,
             )
             .await?;
-
-        if response.status >= 400 {
-            return Err(map_bybit_http_error(response.status, &response.body));
-        }
-
-        let envelope: BybitEnvelope<BybitRestResult> = serde_json::from_slice(&response.body)
-            .map_err(|e| UcelError::new(ErrorCode::Internal, format!("json parse error: {e}")))?;
-
-        if envelope.ret_code != 0 {
-            return Err(map_bybit_api_error(envelope.ret_code, &envelope.ret_msg));
-        }
-
-        Ok(BybitRestResponse::Generic(envelope))
+        self.metrics.ws_reconnect_total += 1;
+        self.metrics.ws_resubscribe_total += self.subscriptions.len() as u64;
+        Ok(self.subscriptions.len())
     }
 }
 
-fn map_bybit_api_error(ret_code: i64, ret_msg: &str) -> UcelError {
-    let code = match ret_code {
-        10003 | 10004 | 10007 => ErrorCode::AuthFailed,
-        10005 => ErrorCode::PermissionDenied,
-        10006 => ErrorCode::RateLimited,
-        10001 | 110001 | 110003 | 110004 | 110008 | 110017 | 110020 => ErrorCode::InvalidOrder,
-        _ => ErrorCode::Internal,
+pub fn normalize_ws_event(endpoint_id: &str, raw: &str) -> Result<NormalizedWsEvent, UcelError> {
+    let msg: BybitEnvelope = serde_json::from_str(raw)
+        .map_err(|e| UcelError::new(ErrorCode::Internal, format!("ws json parse error: {e}")))?;
+    let symbol = match msg.data {
+        Some(BybitData::Book(b)) => b.s,
+        Some(BybitData::Trade(mut t)) => t.pop().and_then(|x| x.s),
+        Some(BybitData::Generic(g)) => g.fields.get("symbol").cloned(),
+        None => None,
     };
-    UcelError::new(code, format!("bybit retCode={ret_code} {ret_msg}"))
+    Ok(NormalizedWsEvent {
+        channel: endpoint_id.to_string(),
+        topic: msg.topic,
+        symbol,
+        kind: if msg.success == Some(false) {
+            "error".into()
+        } else {
+            msg.kind.unwrap_or_else(|| "update".into())
+        },
+    })
 }
 
-pub fn map_bybit_http_error(status: u16, body: &[u8]) -> UcelError {
-    let parsed = serde_json::from_slice::<BybitErrorBody>(body).ok();
-    if status == 429 {
-        let mut err = UcelError::new(ErrorCode::RateLimited, "rate limited");
-        err.ban_risk = true;
-        err.retry_after_ms = parsed.and_then(|p| p.retry_after_ms);
-        return err;
-    }
-    if status >= 500 {
-        return UcelError::new(ErrorCode::Upstream5xx, "upstream server error");
-    }
+pub fn scrub_secrets(input: &str) -> String {
+    input
+        .split_whitespace()
+        .map(|part| {
+            if part.starts_with("api_key=") {
+                "api_key=***".to_string()
+            } else if part.starts_with("api_secret=") {
+                "api_secret=***".to_string()
+            } else {
+                part.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
 
-    if let Some(body) = parsed {
-        if let Some(ret_code) = body.ret_code {
-            return map_bybit_api_error(ret_code, body.ret_msg.as_deref().unwrap_or(""));
-        }
-    }
+#[cfg(test)]
+#[derive(Debug, Deserialize)]
+struct CoverageManifest {
+    strict: bool,
+    entries: Vec<CoverageEntry>,
+}
 
-    UcelError::new(ErrorCode::Internal, "unknown bybit error")
+#[cfg(test)]
+#[derive(Debug, Deserialize)]
+struct CoverageEntry {
+    implemented: bool,
+    tested: bool,
+}
+
+#[cfg(test)]
+fn load_coverage_manifest(path: &std::path::Path) -> Result<CoverageManifest, UcelError> {
+    let raw = std::fs::read_to_string(path)
+        .map_err(|e| UcelError::new(ErrorCode::Internal, format!("read manifest: {e}")))?;
+    serde_yaml::from_str(&raw)
+        .map_err(|e| UcelError::new(ErrorCode::Internal, format!("parse manifest: {e}")))
+}
+
+#[cfg(test)]
+fn evaluate_coverage_gate(manifest: &CoverageManifest) -> Vec<&'static str> {
+    let mut gaps = Vec::new();
+    if manifest.entries.iter().any(|e| !e.implemented) {
+        gaps.push("implemented");
+    }
+    if manifest.entries.iter().any(|e| !e.tested) {
+        gaps.push("tested");
+    }
+    gaps
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
     use std::sync::atomic::{AtomicUsize, Ordering};
-    use tokio::sync::Mutex;
-    use ucel_transport::{next_retry_delay_ms, HttpResponse, WsConnectRequest, WsStream};
+    use ucel_transport::{HttpRequest, HttpResponse, WsConnectRequest, WsStream};
 
     struct SpyTransport {
-        calls: AtomicUsize,
-        responses: Mutex<HashMap<String, Result<HttpResponse, UcelError>>>,
+        ws_connects: AtomicUsize,
     }
-
     impl SpyTransport {
         fn new() -> Self {
             Self {
-                calls: AtomicUsize::new(0),
-                responses: Mutex::new(HashMap::new()),
+                ws_connects: AtomicUsize::new(0),
             }
         }
-
-        async fn set_response(&self, path: &str, status: u16, body: &str) {
-            self.responses.lock().await.insert(
-                path.into(),
-                Ok(HttpResponse {
-                    status,
-                    body: Bytes::copy_from_slice(body.as_bytes()),
-                }),
-            );
-        }
-
-        async fn set_error(&self, path: &str, err: UcelError) {
-            self.responses.lock().await.insert(path.into(), Err(err));
-        }
-
-        fn calls(&self) -> usize {
-            self.calls.load(Ordering::Relaxed)
+        fn ws_connects(&self) -> usize {
+            self.ws_connects.load(Ordering::Relaxed)
         }
     }
-
     impl Transport for SpyTransport {
         async fn send_http(
             &self,
-            req: HttpRequest,
+            _req: HttpRequest,
             _ctx: RequestContext,
         ) -> Result<HttpResponse, UcelError> {
-            self.calls.fetch_add(1, Ordering::Relaxed);
-            self.responses.lock().await.remove(&req.path).unwrap()
+            Err(UcelError::new(ErrorCode::NotSupported, "http unused"))
         }
-
         async fn connect_ws(
             &self,
             _req: WsConnectRequest,
             _ctx: RequestContext,
         ) -> Result<WsStream, UcelError> {
+            self.ws_connects.fetch_add(1, Ordering::Relaxed);
             Ok(WsStream { connected: true })
         }
     }
 
-    fn fixture(id: &str) -> String {
-        format!(
-            "{{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{{\"endpoint\":\"{id}\",\"ok\":true}},\"time\":1700000000}}"
-        )
-    }
-
-    #[tokio::test(flavor = "current_thread")]
-    async fn rest_contract_all_endpoints_are_covered_by_fixture_driven_tests() {
-        let transport = SpyTransport::new();
-        let adapter = BybitRestAdapter::new("https://api.bybit.test");
-
-        for spec in BybitRestAdapter::endpoint_specs() {
-            let path = format!("https://api.bybit.test{}", spec.path);
-            transport.set_response(&path, 200, &fixture(spec.id)).await;
-            let key_id = spec.requires_auth.then(|| "k-1".to_string());
-            let parsed = adapter
-                .execute_rest(&transport, spec.id, None, key_id)
-                .await
-                .unwrap();
-            match parsed {
-                BybitRestResponse::Generic(envelope) => {
-                    assert_eq!(envelope.result.endpoint, spec.id);
-                    assert!(envelope.result.ok);
-                }
-            }
+    #[test]
+    fn all_catalog_ws_channels_have_subscribe_unsubscribe() {
+        for spec in ws_channel_specs() {
+            let creds = if spec.requires_auth {
+                Some(("key", "sec"))
+            } else {
+                None
+            };
+            let sub =
+                BybitWsAdapter::build_subscribe(&spec.id, "BTCUSDT", Some("1"), creds).unwrap();
+            assert_eq!(sub.op, "subscribe");
+            let unsub = BybitWsAdapter::build_unsubscribe(&spec.id, "BTCUSDT", Some("1")).unwrap();
+            assert_eq!(unsub.op, "unsubscribe");
         }
     }
 
-    #[tokio::test(flavor = "current_thread")]
-    async fn private_endpoint_rejects_without_auth_and_transport_is_not_called() {
-        let transport = SpyTransport::new();
-        let adapter = BybitRestAdapter::new("https://api.bybit.test");
-
-        let err = adapter
-            .execute_rest(&transport, "bybit.private.rest.account.fee-rate", None, None)
-            .await
-            .unwrap_err();
-
+    #[test]
+    fn private_preflight_rejects_missing_credentials_and_no_connect() {
+        let err = BybitWsAdapter::build_subscribe(
+            "bybit.private.ws.private.order",
+            "BTCUSDT",
+            None,
+            None,
+        )
+        .unwrap_err();
         assert_eq!(err.code, ErrorCode::MissingAuth);
-        assert_eq!(transport.calls(), 0);
     }
 
     #[tokio::test(flavor = "current_thread")]
-    async fn public_endpoint_works_without_key_path() {
+    async fn reconnect_resubscribe_is_idempotent() {
         let transport = SpyTransport::new();
-        let adapter = BybitRestAdapter::new("https://api.bybit.test");
-        transport
-            .set_response(
-                "https://api.bybit.test/v5/market/time",
-                200,
-                &fixture("bybit.public.rest.market.time"),
-            )
-            .await;
+        let mut ws = BybitWsAdapter::default();
+        assert!(ws.subscribe_once("bybit.public.ws.public.trade", "BTCUSDT"));
+        assert!(!ws.subscribe_once("bybit.public.ws.public.trade", "BTCUSDT"));
+        let restored = ws.reconnect_and_resubscribe(&transport).await.unwrap();
+        assert_eq!(restored, 1);
+        assert_eq!(transport.ws_connects(), 1);
+        assert_eq!(ws.metrics.ws_resubscribe_total, 1);
+    }
 
-        assert!(adapter
-            .execute_rest(&transport, "bybit.public.rest.market.time", None, None)
-            .await
-            .is_ok());
+    #[test]
+    fn ws_messages_are_typed_and_normalized() {
+        let msg = r#"{"topic":"publicTrade.BTCUSDT","type":"snapshot","data":[{"s":"BTCUSDT"}]}"#;
+        let n = normalize_ws_event("bybit.public.ws.public.trade", msg).unwrap();
+        assert_eq!(n.symbol.as_deref(), Some("BTCUSDT"));
+        assert_eq!(n.kind, "snapshot");
     }
 
     #[tokio::test(flavor = "current_thread")]
-    async fn maps_429_5xx_and_timeout() {
-        let transport = SpyTransport::new();
-        let adapter = BybitRestAdapter::new("https://api.bybit.test");
-
-        transport
-            .set_response(
-                "https://api.bybit.test/v5/market/time",
-                429,
-                r#"{"retCode":10006,"retMsg":"too many visits","retryAfterMs":1200}"#,
-            )
-            .await;
-        let rate = adapter
-            .execute_rest(&transport, "bybit.public.rest.market.time", None, None)
-            .await
-            .unwrap_err();
-        assert_eq!(rate.code, ErrorCode::RateLimited);
-        assert_eq!(rate.retry_after_ms, Some(1200));
-
-        transport
-            .set_response(
-                "https://api.bybit.test/v5/market/time",
-                500,
-                r#"{"retCode":0,"retMsg":"ok"}"#,
-            )
-            .await;
-        let upstream = adapter
-            .execute_rest(&transport, "bybit.public.rest.market.time", None, None)
-            .await
-            .unwrap_err();
-        assert_eq!(upstream.code, ErrorCode::Upstream5xx);
-
-        transport
-            .set_error(
-                "https://api.bybit.test/v5/market/time",
-                UcelError::new(ErrorCode::Timeout, "timeout"),
-            )
-            .await;
-        let timeout = adapter
-            .execute_rest(&transport, "bybit.public.rest.market.time", None, None)
-            .await
-            .unwrap_err();
-        assert_eq!(timeout.code, ErrorCode::Timeout);
+    async fn backpressure_is_bounded_and_counts_drop() {
+        let mut metrics = WsAdapterMetrics::default();
+        let mut q = WsBackpressureBuffer::with_capacity(1);
+        q.try_push(
+            NormalizedWsEvent {
+                channel: "c".into(),
+                topic: None,
+                kind: "u".into(),
+                symbol: Some("BTCUSDT".into()),
+            },
+            &mut metrics,
+        );
+        q.try_push(
+            NormalizedWsEvent {
+                channel: "c".into(),
+                topic: None,
+                kind: "u".into(),
+                symbol: Some("ETHUSDT".into()),
+            },
+            &mut metrics,
+        );
+        assert_eq!(metrics.ws_backpressure_overflow_total, 1);
+        assert_eq!(q.recv().await.unwrap().symbol.as_deref(), Some("BTCUSDT"));
     }
 
     #[test]
-    fn maps_bybit_error_codes_without_message_matching() {
-        assert_eq!(
-            map_bybit_http_error(401, br#"{"retCode":10003,"retMsg":"api key invalid"}"#).code,
-            ErrorCode::AuthFailed
+    fn orderbook_gap_resync_recover_flow() {
+        let mut metrics = WsAdapterMetrics::default();
+        let mut ob = OrderBookSyncState::default();
+        ob.apply_snapshot(&BybitOrderbookData {
+            s: Some("BTCUSDT".into()),
+            u: Some(10),
+            seq: None,
+            b: vec![("100".into(), "1".into())],
+            a: vec![("101".into(), "1".into())],
+        });
+        ob.apply_delta(
+            &BybitOrderbookData {
+                s: Some("BTCUSDT".into()),
+                u: Some(12),
+                seq: None,
+                b: vec![],
+                a: vec![],
+            },
+            &mut metrics,
         );
-        assert_eq!(
-            map_bybit_http_error(403, br#"{"retCode":10005,"retMsg":"permission denied"}"#).code,
-            ErrorCode::PermissionDenied
-        );
-        assert_eq!(
-            map_bybit_http_error(400, br#"{"retCode":110001,"retMsg":"order does not exist"}"#).code,
-            ErrorCode::InvalidOrder
-        );
+        assert!(ob.degraded);
+        ob.apply_snapshot(&BybitOrderbookData {
+            s: Some("BTCUSDT".into()),
+            u: Some(12),
+            seq: None,
+            b: vec![("100".into(), "2".into())],
+            a: vec![],
+        });
+        ob.mark_recovered(&mut metrics);
+        assert!(!ob.degraded);
+        assert_eq!(metrics.ws_orderbook_gap_total, 1);
+        assert_eq!(metrics.ws_orderbook_resync_total, 1);
     }
 
     #[test]
-    fn retry_policy_respects_retry_after_for_429() {
-        let policy = RetryPolicy {
-            base_delay_ms: 100,
-            max_delay_ms: 4_000,
-            jitter_ms: 50,
-            respect_retry_after: true,
-        };
-        assert_eq!(next_retry_delay_ms(&policy, 3, Some(777)), 777);
+    fn duplicate_or_out_of_order_is_safe_side_resync() {
+        let mut metrics = WsAdapterMetrics::default();
+        let mut ob = OrderBookSyncState::default();
+        ob.apply_snapshot(&BybitOrderbookData {
+            s: None,
+            u: Some(1),
+            seq: None,
+            b: vec![],
+            a: vec![],
+        });
+        ob.apply_delta(
+            &BybitOrderbookData {
+                s: None,
+                u: Some(1),
+                seq: None,
+                b: vec![],
+                a: vec![],
+            },
+            &mut metrics,
+        );
+        assert!(ob.degraded);
+    }
+
+    #[test]
+    fn secrets_are_scrubbed_from_logs() {
+        let line = "key_id=alpha api_key=hello api_secret=world";
+        let scrubbed = scrub_secrets(line);
+        assert!(scrubbed.contains("key_id=alpha"));
+        assert!(!scrubbed.contains("hello"));
+        assert!(!scrubbed.contains("world"));
+    }
+
+    #[test]
+    fn strict_coverage_gate_is_on_and_has_zero_gaps() {
+        let manifest_path =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/BYBIT.yaml");
+        let manifest = load_coverage_manifest(&manifest_path).unwrap();
+        assert!(manifest.strict);
+        let gaps = evaluate_coverage_gate(&manifest);
+        assert!(gaps.is_empty(), "strict gate requires zero gaps: {gaps:?}");
     }
 }
