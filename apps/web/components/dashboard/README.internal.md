@@ -19,3 +19,17 @@
 - Shared design tokens + CSS variables in `app/globals.css`.
 - Reusable classes: `card`, `card-grid`, `btn`, `badge`, `notice`, `page-header`, table utilities.
 - Components commonly use a mix of utility classes and small inline style objects for layout tuning.
+
+---
+## UI-DASH-002 progress notes
+- what_done:
+  - Added widget registry/runtime utilities, core widgets, panel chrome, widget catalog, and grid layout drag/resize.
+  - Refactored `DashboardWorkspace` to use registry-driven panel rendering with duplicate/remove/lock/pin/protect controls.
+- what_next:
+  - Verify pointer drag/resize ergonomics against live browser interactions and tune if needed.
+- errors:
+  - None during implementation.
+- commands_next:
+  - `cd apps/web`
+  - `npm install --no-package-lock`
+  - `npm run build`
