@@ -1,27 +1,22 @@
 {
-  "active_task": "AUDIT-REPO-STATE-001",
+  "active_task": "UCEL-HUB-ROUTER-001A",
   "what_done": [
-    "Executed repo-state audit preflight and SSOT checks (README_AI/status/handoff/decisions/trace-index).",
-    "Collected git history, recent PR timeline, and Actions status via GitHub REST API fallback (gh unavailable).",
-    "Created append-only audit report: docs/status/progress-updates/AUDIT-REPO-STATE-20260220-1525JST.md.",
-    "Synchronized status.json to current observed state: open_prs=[], locks_held=[] (released stale LOCK:shared-docs), active_task moved to audit task."
+    "Completed crate graph + catalog type audit and added ucel/docs/ARCH_UCEL_CRATE_GRAPH.md.",
+    "Implemented ucel-registry hub module (mod/registry/rest/ws/config/errors) with ExchangeId keyed REST+WS entry.",
+    "Added usage docs/examples and updated status/progress evidence artifacts.",
+    "Ran ucel quality checks (workspace-wide commands exposed pre-existing failures; package-scoped ucel-registry checks passed)."
   ],
   "what_next": [
-    "From a maintainer-authenticated environment, inspect failed run logs for IDs 22209816671 / 22209474150 / 22208983745 and append root-cause evidence.",
-    "Run ucel quality gates after formatting fix: cargo fmt --check && cargo clippy --all-targets --all-features -- -D warnings && cargo test."
+    "Create/merge PR for task scope UCEL-HUB-ROUTER-001A."
   ],
   "open_pr": "",
   "locks_held": [],
   "errors": [
-    "gh CLI not installed in this environment.",
-    "GitHub Actions job logs endpoint returned 403 (admin rights required), so detailed failed-step stderr was not retrievable."
+    "Workspace-wide clippy/test currently fail in unrelated crates (existing unresolved test/import/dead-code issues)."
   ],
   "commands_next": [
-    "gh auth status",
-    "gh run view 22209816671 --log-failed",
-    "gh run view 22209474150 --log-failed",
-    "gh run view 22208983745 --log-failed",
-    "cd ucel && cargo fmt --check && cargo clippy --all-targets --all-features -- -D warnings && cargo test"
+    "cd ucel && cargo clippy -p ucel-registry --all-targets --all-features -- -D warnings",
+    "cd ucel && cargo test -p ucel-registry --all-features"
   ],
-  "updated_at": "2026-02-20T06:26:05Z"
+  "updated_at": "2026-02-21T09:07:07Z"
 }

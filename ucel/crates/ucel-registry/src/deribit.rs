@@ -54,11 +54,9 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
             ));
         }
 
-        let visibility = derive_visibility_from_id(&row.id)?;
         rest_endpoints.push(CatalogEntry {
             id: row.id.clone(),
-            visibility: Some(derive_visibility_from_id(&row.id)?),
-            access: String::new(),
+            visibility: derive_visibility_from_id(&row.id)?,
             operation: row.operation,
             method: Some("POST".to_string()),
             base_url: Some(row.base_url),
@@ -67,6 +65,7 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
             ws: None,
             auth: row.auth,
             requires_auth: None,
+            channel: None,
         });
     }
 
@@ -84,11 +83,9 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
             ));
         }
 
-        let visibility = derive_visibility_from_id(&row.id)?;
         ws_channels.push(CatalogEntry {
             id: row.id.clone(),
-            visibility: Some(derive_visibility_from_id(&row.id)?),
-            access: String::new(),
+            visibility: derive_visibility_from_id(&row.id)?,
             operation: row.operation,
             method: None,
             base_url: None,
@@ -97,6 +94,7 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
             ws: None,
             auth: row.auth,
             requires_auth: None,
+            channel: None,
         });
     }
 
@@ -111,11 +109,9 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
             ));
         }
 
-        let visibility = Some(derive_visibility_from_id(&row.id)?);
         ws_channels.push(CatalogEntry {
             id: row.id.clone(),
-            visibility: Some(derive_visibility_from_id(&row.id)?),
-            access: String::new(),
+            visibility: derive_visibility_from_id(&row.id)?,
             operation: Some(row.channel.clone()),
             method: None,
             base_url: None,
@@ -124,6 +120,7 @@ pub fn load_deribit_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, Uc
             ws: None,
             auth: row.auth,
             requires_auth: None,
+            channel: Some(row.channel),
         });
     }
 
@@ -164,8 +161,6 @@ pub fn map_deribit_op_name(id: &str) -> OpName {
         OpName::SubscribeOrderEvents
     } else if id.contains("user.trades") || id.contains("user.changes") {
         OpName::SubscribeExecutionEvents
-    } else if id.contains("set_heartbeat") {
-        OpName::FetchStatus
     } else {
         OpName::FetchStatus
     }
@@ -238,8 +233,7 @@ mod tests {
     fn derives_requires_auth_from_visibility_for_deribit() {
         let entry = CatalogEntry {
             id: "jsonrpc.ws.private.trading.private_buy".to_string(),
-            visibility: Some("private".to_string()),
-            access: String::new(),
+            visibility: "private".to_string(),
             operation: Some("place buy order".to_string()),
             method: None,
             base_url: None,
@@ -250,6 +244,7 @@ mod tests {
                 auth_type: "token".to_string(),
             },
             requires_auth: Some(false),
+            channel: Some("user.orders.BTC-PERPETUAL.raw".to_string()),
         };
         let meta = map_deribit_operation(&entry).unwrap();
         assert_eq!(meta.op, OpName::PlaceOrder);

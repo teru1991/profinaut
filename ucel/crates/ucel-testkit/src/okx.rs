@@ -12,7 +12,7 @@ impl CatalogContractIndex {
             .map(|row| row.id.as_str())
             .chain(catalog.ws_channels.iter().map(|row| row.id.as_str()))
         {
-            if !self.registered_tests.contains(&id.to_string()) {
+            if !self.registered_tests.contains(id) {
                 missing.push(id.to_string());
             }
         }

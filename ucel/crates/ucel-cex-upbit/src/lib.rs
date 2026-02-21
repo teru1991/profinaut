@@ -62,13 +62,35 @@ pub struct UpbitSubscribeFrame {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum MarketEvent {
-    Ticker { code: String, trade_price: f64 },
-    Trade { code: String, trade_price: f64, trade_volume: f64 },
-    Orderbook { code: String, total_ask_size: Option<f64>, total_bid_size: Option<f64> },
-    Candle { code: String, trade_price: f64 },
-    SubscriptionList { channels: Vec<String> },
-    MyOrder { code: Option<String>, state: Option<String> },
-    MyAsset { currency: Option<String>, balance: Option<String> },
+    Ticker {
+        code: String,
+        trade_price: f64,
+    },
+    Trade {
+        code: String,
+        trade_price: f64,
+        trade_volume: f64,
+    },
+    Orderbook {
+        code: String,
+        total_ask_size: Option<f64>,
+        total_bid_size: Option<f64>,
+    },
+    Candle {
+        code: String,
+        trade_price: f64,
+    },
+    SubscriptionList {
+        channels: Vec<String>,
+    },
+    MyOrder {
+        code: Option<String>,
+        state: Option<String>,
+    },
+    MyAsset {
+        currency: Option<String>,
+        balance: Option<String>,
+    },
 }
 
 #[derive(Debug, Deserialize)]
@@ -77,17 +99,33 @@ enum UpbitMessage {
     #[serde(rename = "ticker")]
     Ticker { code: String, trade_price: f64 },
     #[serde(rename = "trade")]
-    Trade { code: String, trade_price: f64, trade_volume: f64 },
+    Trade {
+        code: String,
+        trade_price: f64,
+        trade_volume: f64,
+    },
     #[serde(rename = "orderbook")]
-    Orderbook { code: String, total_ask_size: Option<f64>, total_bid_size: Option<f64>, timestamp: Option<u64> },
+    Orderbook {
+        code: String,
+        total_ask_size: Option<f64>,
+        total_bid_size: Option<f64>,
+        #[serde(rename = "timestamp")]
+        _timestamp: Option<u64>,
+    },
     #[serde(rename = "candle")]
     Candle { code: String, trade_price: f64 },
     #[serde(rename = "list_subscriptions")]
     ListSubscriptions { codes: Vec<String> },
     #[serde(rename = "myOrder")]
-    MyOrder { code: Option<String>, state: Option<String> },
+    MyOrder {
+        code: Option<String>,
+        state: Option<String>,
+    },
     #[serde(rename = "myAsset")]
-    MyAsset { currency: Option<String>, balance: Option<String> },
+    MyAsset {
+        currency: Option<String>,
+        balance: Option<String>,
+    },
 }
 
 pub fn normalize_ws_message(raw: &str) -> Result<MarketEvent, UcelError> {
@@ -95,14 +133,29 @@ pub fn normalize_ws_message(raw: &str) -> Result<MarketEvent, UcelError> {
         .map_err(|e| UcelError::new(ErrorCode::Internal, format!("typed ws parse error: {e}")))?;
     Ok(match msg {
         UpbitMessage::Ticker { code, trade_price } => MarketEvent::Ticker { code, trade_price },
-        UpbitMessage::Trade { code, trade_price, trade_volume } => {
-            MarketEvent::Trade { code, trade_price, trade_volume }
-        }
-        UpbitMessage::Orderbook { code, total_ask_size, total_bid_size, .. } => {
-            MarketEvent::Orderbook { code, total_ask_size, total_bid_size }
-        }
+        UpbitMessage::Trade {
+            code,
+            trade_price,
+            trade_volume,
+        } => MarketEvent::Trade {
+            code,
+            trade_price,
+            trade_volume,
+        },
+        UpbitMessage::Orderbook {
+            code,
+            total_ask_size,
+            total_bid_size,
+            ..
+        } => MarketEvent::Orderbook {
+            code,
+            total_ask_size,
+            total_bid_size,
+        },
         UpbitMessage::Candle { code, trade_price } => MarketEvent::Candle { code, trade_price },
-        UpbitMessage::ListSubscriptions { codes } => MarketEvent::SubscriptionList { channels: codes },
+        UpbitMessage::ListSubscriptions { codes } => {
+            MarketEvent::SubscriptionList { channels: codes }
+        }
         UpbitMessage::MyOrder { code, state } => MarketEvent::MyOrder { code, state },
         UpbitMessage::MyAsset { currency, balance } => MarketEvent::MyAsset { currency, balance },
     })
@@ -120,13 +173,20 @@ impl OrderbookSync {
         self.degraded = false;
     }
 
-    pub fn apply_delta(&mut self, ts: u64, metrics: &mut WsAdapterMetrics) -> Result<(), UcelError> {
+    pub fn apply_delta(
+        &mut self,
+        ts: u64,
+        metrics: &mut WsAdapterMetrics,
+    ) -> Result<(), UcelError> {
         match self.last_ts {
             Some(prev) if ts <= prev => {
                 self.degraded = true;
                 metrics.ws_orderbook_gap_total += 1;
                 metrics.ws_orderbook_resync_total += 1;
-                Err(UcelError::new(ErrorCode::Desync, "gap/mismatch detected, immediate resync"))
+                Err(UcelError::new(
+                    ErrorCode::Desync,
+                    "gap/mismatch detected, immediate resync",
+                ))
             }
             Some(_) => {
                 self.last_ts = Some(ts);
@@ -184,13 +244,20 @@ pub struct UpbitWsAdapter {
     pub metrics: WsAdapterMetrics,
 }
 impl UpbitWsAdapter {
-    pub fn build_subscribe(endpoint_id: &str, code: &str, key_id: Option<&str>) -> Result<UpbitSubscribeFrame, UcelError> {
+    pub fn build_subscribe(
+        endpoint_id: &str,
+        code: &str,
+        key_id: Option<&str>,
+    ) -> Result<UpbitSubscribeFrame, UcelError> {
         let spec = ws_channel_specs()
             .into_iter()
             .find(|s| s.id == endpoint_id)
             .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown ws endpoint"))?;
         if spec.requires_auth && key_id.is_none() {
-            return Err(UcelError::new(ErrorCode::MissingAuth, "private ws endpoint requires auth"));
+            return Err(UcelError::new(
+                ErrorCode::MissingAuth,
+                "private ws endpoint requires auth",
+            ));
         }
         if spec.requires_auth {
             info!(target: "upbit.auth", key_id = %key_id.unwrap_or(""), "private ws subscribe preflight passed");
@@ -202,7 +269,10 @@ impl UpbitWsAdapter {
         })
     }
 
-    pub fn build_unsubscribe(endpoint_id: &str, code: &str) -> Result<UpbitSubscribeFrame, UcelError> {
+    pub fn build_unsubscribe(
+        endpoint_id: &str,
+        code: &str,
+    ) -> Result<UpbitSubscribeFrame, UcelError> {
         Self::build_subscribe(endpoint_id, code, Some("dummy"))
     }
 
@@ -210,7 +280,10 @@ impl UpbitWsAdapter {
         self.subscriptions.insert(format!("{endpoint_id}:{code}"))
     }
 
-    pub async fn reconnect_and_resubscribe<T: Transport>(&mut self, transport: &T) -> Result<usize, UcelError> {
+    pub async fn reconnect_and_resubscribe<T: Transport>(
+        &mut self,
+        transport: &T,
+    ) -> Result<usize, UcelError> {
         let ctx = RequestContext {
             trace_id: Uuid::new_v4().to_string(),
             request_id: Uuid::new_v4().to_string(),
@@ -221,7 +294,14 @@ impl UpbitWsAdapter {
             key_id: None,
             requires_auth: false,
         };
-        transport.connect_ws(WsConnectRequest { url: "wss://api.upbit.com/websocket/v1".into() }, ctx).await?;
+        transport
+            .connect_ws(
+                WsConnectRequest {
+                    url: "wss://api.upbit.com/websocket/v1".into(),
+                },
+                ctx,
+            )
+            .await?;
         self.metrics.ws_reconnect_total += 1;
         self.metrics.ws_resubscribe_total += self.subscriptions.len() as u64;
         Ok(self.subscriptions.len())
@@ -231,9 +311,13 @@ impl UpbitWsAdapter {
 pub fn scrub_secrets(line: &str) -> String {
     line.split_whitespace()
         .map(|x| {
-            if x.starts_with("api_key=") { "api_key=***".to_string() }
-            else if x.starts_with("api_secret=") { "api_secret=***".to_string() }
-            else { x.to_string() }
+            if x.starts_with("api_key=") {
+                "api_key=***".to_string()
+            } else if x.starts_with("api_secret=") {
+                "api_secret=***".to_string()
+            } else {
+                x.to_string()
+            }
         })
         .collect::<Vec<_>>()
         .join(" ")
@@ -245,13 +329,29 @@ mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
     use ucel_transport::{HttpRequest, HttpResponse, WsConnectRequest, WsStream};
 
-    struct SpyTransport { ws_connects: AtomicUsize }
-    impl SpyTransport { fn new() -> Self { Self { ws_connects: AtomicUsize::new(0) } } }
+    struct SpyTransport {
+        ws_connects: AtomicUsize,
+    }
+    impl SpyTransport {
+        fn new() -> Self {
+            Self {
+                ws_connects: AtomicUsize::new(0),
+            }
+        }
+    }
     impl Transport for SpyTransport {
-        async fn send_http(&self, _req: HttpRequest, _ctx: RequestContext) -> Result<HttpResponse, UcelError> {
+        async fn send_http(
+            &self,
+            _req: HttpRequest,
+            _ctx: RequestContext,
+        ) -> Result<HttpResponse, UcelError> {
             Err(UcelError::new(ErrorCode::NotSupported, "unused"))
         }
-        async fn connect_ws(&self, _req: WsConnectRequest, _ctx: RequestContext) -> Result<WsStream, UcelError> {
+        async fn connect_ws(
+            &self,
+            _req: WsConnectRequest,
+            _ctx: RequestContext,
+        ) -> Result<WsStream, UcelError> {
             self.ws_connects.fetch_add(1, Ordering::Relaxed);
             Ok(WsStream { connected: true })
         }
@@ -260,15 +360,31 @@ mod tests {
     #[test]
     fn all_ws_catalog_rows_build_subscribe_unsubscribe() {
         for spec in ws_channel_specs() {
-            let key = if spec.requires_auth { Some("kid") } else { None };
-            assert_eq!(UpbitWsAdapter::build_subscribe(&spec.id, "KRW-BTC", key).unwrap().channel_type, spec.channel);
-            assert_eq!(UpbitWsAdapter::build_unsubscribe(&spec.id, "KRW-BTC").unwrap().channel_type, spec.channel);
+            let key = if spec.requires_auth {
+                Some("kid")
+            } else {
+                None
+            };
+            assert_eq!(
+                UpbitWsAdapter::build_subscribe(&spec.id, "KRW-BTC", key)
+                    .unwrap()
+                    .channel_type,
+                spec.channel
+            );
+            assert_eq!(
+                UpbitWsAdapter::build_unsubscribe(&spec.id, "KRW-BTC")
+                    .unwrap()
+                    .channel_type,
+                spec.channel
+            );
         }
     }
 
     #[test]
     fn private_preflight_reject_no_connect() {
-        let err = UpbitWsAdapter::build_subscribe("exchange.private.ws.myasset.stream", "KRW-BTC", None).unwrap_err();
+        let err =
+            UpbitWsAdapter::build_subscribe("exchange.private.ws.myasset.stream", "KRW-BTC", None)
+                .unwrap_err();
         assert_eq!(err.code, ErrorCode::MissingAuth);
     }
 
@@ -286,7 +402,8 @@ mod tests {
 
     #[test]
     fn typed_deserialize_and_normalize() {
-        let t = normalize_ws_message(r#"{"type":"ticker","code":"KRW-BTC","trade_price":1.0}"#).unwrap();
+        let t = normalize_ws_message(r#"{"type":"ticker","code":"KRW-BTC","trade_price":1.0}"#)
+            .unwrap();
         assert!(matches!(t, MarketEvent::Ticker { .. }));
     }
 
@@ -294,10 +411,24 @@ mod tests {
     async fn bounded_backpressure_and_metrics() {
         let mut q = BackpressureQueue::with_capacity(1);
         let mut m = WsAdapterMetrics::default();
-        q.try_push(MarketEvent::Candle { code: "KRW-BTC".into(), trade_price: 1.0 }, &mut m);
-        q.try_push(MarketEvent::Candle { code: "KRW-ETH".into(), trade_price: 2.0 }, &mut m);
+        q.try_push(
+            MarketEvent::Candle {
+                code: "KRW-BTC".into(),
+                trade_price: 1.0,
+            },
+            &mut m,
+        );
+        q.try_push(
+            MarketEvent::Candle {
+                code: "KRW-ETH".into(),
+                trade_price: 2.0,
+            },
+            &mut m,
+        );
         assert_eq!(m.ws_backpressure_drops_total, 1);
-        assert!(matches!(q.recv().await.unwrap(), MarketEvent::Candle { code, .. } if code == "KRW-BTC"));
+        assert!(
+            matches!(q.recv().await.unwrap(), MarketEvent::Candle { code, .. } if code == "KRW-BTC")
+        );
     }
 
     #[test]
@@ -334,7 +465,8 @@ mod tests {
 
     #[test]
     fn strict_gate_enabled_and_zero_gaps() {
-        let manifest: serde_yaml::Value = serde_yaml::from_str(include_str!("../../../coverage/upbit.yaml")).unwrap();
+        let manifest: serde_yaml::Value =
+            serde_yaml::from_str(include_str!("../../../coverage/upbit.yaml")).unwrap();
         assert_eq!(manifest["strict"], true);
         let entries = manifest["entries"].as_sequence().unwrap();
         for e in entries {

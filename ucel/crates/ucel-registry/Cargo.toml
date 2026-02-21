@@ -5,8 +5,18 @@ edition = "2021"
 
 [dependencies]
 ucel-core = { path = "../ucel-core" }
+ucel-transport = { path = "../ucel-transport" }
 serde = { workspace = true }
 serde_json = { workspace = true }
+bytes = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "sync", "time"] }
+thiserror = { workspace = true }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
+futures-util = "0.3"
+rand = "0.8"
+tokio-stream = "0.1"
 
 [dev-dependencies]
 serde_yaml = { workspace = true }
+httpmock = "0.7"
