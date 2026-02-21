@@ -26,25 +26,76 @@
 | `websocket.md` | https://bybit-exchange.github.io/docs/v5/websocket/wss-authentication |
 
 ## 3) Coverage（領域ごとYes/No/NA）
-- EXD-B で記入予定。
+| Domain | Yes/No/NA | Explanation | Evidence URL |
+|---|---|---|---|
+| Version/Lifecycle | No | docs/exchanges 側で現行版/非推奨の明確区別が不足。 | https://bybit-exchange.github.io/docs/changelog/v5 |
+| Authentication (P0) | No | 署名ベース文字列（method/path/query/body）と timestamp 単位の公式突合が未完了。 | https://bybit-exchange.github.io/docs/v5/websocket/wss-authentication |
+| Rate Limit | No | IP/Account/Key 単位と Retry-After の記載整合を要確認。 | https://bybit-exchange.github.io/docs/v5/intro |
+| Market Data (P0) | Yes | Market Data 記載ファイルは存在するが、返却フィールド/sequence の正誤検証を継続。 | https://bybit-exchange.github.io/docs/api-explorer/v5/category/ |
+| Trading (P0) | Yes | Trading 系エンドポイントの棚卸しは可能、必須/任意/丸め規則の突合が残る。 | https://bybit-exchange.github.io/docs/api-explorer/v5/category/ |
+| Account (P0) | Yes | balances/positions の項目は参照可能、定義整合は追加検証要。 | https://bybit-exchange.github.io/docs/api-explorer/v5/category/ |
+| Transfer | NA | 取引所によって提供有無が異なるため、該当時のみ EXD-C で実証予定。 | https://bybit-exchange.github.io/docs/api-explorer/v5/category/ |
+| WebSocket (P0) | Yes | WS接続/購読系の資料はあるが、認証ハンドシェイク/再接続の精査が必要。 | https://bybit-exchange.github.io/docs/v5/websocket/wss-authentication |
+| Error model | No | HTTP と独自エラーコードの対応・再試行可否分類が未確定。 | https://bybit-exchange.github.io/docs/v5/intro |
 
 ## 4) Auth（署名ベース文字列の完全記述、サンプル一致）
-- EXD-B で記入予定。
+- Current state: **No**（署名方式の完全突合未確定）
+- Pending verification points:
+  - signature payload に `method + path + query + body` をどう連結するか
+  - query ソート規則、body canonicalization、改行/区切り
+  - timestamp 単位（秒/ms）と許容 skew
+  - エンコード（hex/base64）
+- Evidence URL: https://bybit-exchange.github.io/docs/v5/websocket/wss-authentication
+- Fix target files:
+  - `docs/exchanges/bybit/rest-api.md`
+  - `docs/exchanges/bybit/websocket.md`（存在時）
 
 ## 5) P0 Endpoints（仕様の要点と差分）
-- EXD-B で記入予定。
+- ticker/orderbook/trades/klines:
+  - 差分種別: **不足**（返却フィールド定義・sequence処理・欠損時挙動の明示が不足）
+  - 根拠: https://bybit-exchange.github.io/docs/api-explorer/v5/category/
+  - 修正先: `docs/exchanges/bybit/data.md`, `docs/exchanges/bybit/rest-api.md`
+- order create/cancel/status:
+  - 差分種別: **不足**（必須/任意、timeInForce/postOnly/reduceOnly、部分約定時挙動）
+  - 根拠: https://bybit-exchange.github.io/docs/api-explorer/v5/category/
+  - 修正先: `docs/exchanges/bybit/rest-api.md`
+- balances/positions:
+  - 差分種別: **不足**（available/locked 定義、デリバの証拠金/平均建値）
+  - 根拠: https://bybit-exchange.github.io/docs/api-explorer/v5/category/
+  - 修正先: `docs/exchanges/bybit/rest-api.md`
+- WS public/private:
+  - 差分種別: **不足**（subscribe payload・ping/pong・reconnect/resubscribe）
+  - 根拠: https://bybit-exchange.github.io/docs/v5/websocket/wss-authentication
+  - 修正先: `docs/exchanges/bybit/websocket.md`
 
 ## 6) Rate limit / Error model
-- EXD-B で記入予定。
+- Rate limit: **No**（weight制/頻度制/IP-or-Account単位の明示が不足）
+  - Evidence: https://bybit-exchange.github.io/docs/v5/intro
+- Error model: **No**（HTTP status と取引所独自コードの対応、retryable判定が不足）
+  - Evidence: https://bybit-exchange.github.io/docs/v5/intro
 
 ## 7) Findings（P0/P1/P2、根拠URL、修正先ファイル）
-- EXD-B で記入予定。
+- P0-1: 認証署名仕様（ベース文字列・timestamp・header）を公式と1対1で固定化できていない。
+  - Evidence: https://bybit-exchange.github.io/docs/v5/websocket/wss-authentication
+  - Fix: `docs/exchanges/bybit/rest-api.md`, `docs/exchanges/bybit/websocket.md`
+- P0-2: WS 維持運用（heartbeat/reconnect/sequence復元）の確定記述が不足。
+  - Evidence: https://bybit-exchange.github.io/docs/v5/websocket/wss-authentication
+  - Fix: `docs/exchanges/bybit/websocket.md`
+- P1-1: Rate limit と retry/backoff 指針の統一表現が不足。
+  - Evidence: https://bybit-exchange.github.io/docs/v5/intro
+  - Fix: `docs/exchanges/bybit/rest-api.md`, `docs/exchanges/bybit/README.md`
+- P1-2: 注文・数量・価格の精度/丸め規則の明確化が不足。
+  - Evidence: https://bybit-exchange.github.io/docs/api-explorer/v5/category/
+  - Fix: `docs/exchanges/bybit/rest-api.md`, `docs/exchanges/bybit/data.md`
+- P2-1: 版管理（現行/旧版/非推奨）と changelog 関連リンクの導線改善余地。
+  - Evidence: https://bybit-exchange.github.io/docs/changelog/v5
+  - Fix: `docs/exchanges/bybit/README.md`, `docs/exchanges/bybit/sources.md`
 
 ## 8) Smoke Test（実施した/できない理由、ログへのリンクパス）
-- EXD-C で記入予定。
+- EXD-C で実施予定（Public REST/WS 優先）。
 
 ## 9) Fix Plan（修正方針）
-- EXD-C で記入予定。
+- EXD-C で P0（Auth/WS/Trading/Account）から順に docs 本体を修正し、証拠ログを保存。
 
 ## 10) Status（A完了/B完了/C完了、確定/例外）
-- A完了 / B未着手 / C未着手
+- A完了 / B完了 / C未着手
