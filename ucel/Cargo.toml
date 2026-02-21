@@ -18,6 +18,7 @@ members = [
   "crates/ucel-cex-bitflyer",
   "crates/ucel-cex-binance",
   "crates/ucel-chain-ethereum",
+  "crates/ucel-ir",
 ]
 resolver = "2"
 

@@ -1,0 +1,16 @@
+{
+  "metadata": {"status": "200"},
+  "results": [
+    {
+      "docID": "S100AAA1",
+      "edinetCode": "E00001",
+      "secCode": "72030",
+      "docDescription": "Annual Securities Report"
+    },
+    {
+      "docID": "S100AAA2",
+      "secCode": "67580",
+      "docDescription": "Amendment Report"
+    }
+  ]
+}

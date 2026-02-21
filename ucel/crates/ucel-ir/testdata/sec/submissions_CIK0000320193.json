@@ -1,0 +1,9 @@
+{
+  "ticker": "AAPL",
+  "filings": {
+    "recent": [
+      {"accessionNumber":"0000320193-24-000123","filingDate":"2024-11-01","form":"10-K"},
+      {"accessionNumber":"0000320193-24-000111","filingDate":"2024-08-01","form":"10-Q"}
+    ]
+  }
+}
