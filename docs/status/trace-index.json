@@ -251,6 +251,33 @@
         "LOCK: ucel/**",
         "LOCK:shared-docs"
       ]
+    },
+    "UCEL-INVOKER-FULL-COVERAGE-UNIFIED-003": {
+      "branch": "work",
+      "pr_urls": [
+        "TBD (created via make_pr)"
+      ],
+      "commit_shas": [],
+      "verification_evidence": [
+        "ucel/crates/ucel-registry/src/invoker/mod.rs",
+        "ucel/crates/ucel-registry/src/invoker/registry.rs",
+        "ucel/docs/ARCH_UCEL_INVOKER.md",
+        "ucel/docs/USAGE_INVOKER.md",
+        "docs/status/progress-updates/UCEL-INVOKER-FULL-COVERAGE-UNIFIED-003-20260221.md"
+      ],
+      "verification_commands": [
+        "cd ucel && cargo fmt --check",
+        "cd ucel && cargo clippy --all-targets --all-features -- -D warnings",
+        "cd ucel && cargo test --all-features",
+        "cd ucel && cargo test -p ucel-registry --all-features",
+        "cd ucel && cargo run --example invoker_list",
+        "cd ucel && cargo run --example invoker_rest_any",
+        "cd ucel && cargo run --example invoker_ws_any"
+      ],
+      "locks": [
+        "LOCK: ucel/**",
+        "LOCK: shared-docs"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
