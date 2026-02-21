@@ -88,3 +88,6 @@ entries:
 - id: coincheck.ws.private.execution_events
   implemented: true
   tested: true
+- id: coincheck.data.none.official_bulk
+  implemented: true
+  tested: true

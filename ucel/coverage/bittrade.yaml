@@ -103,3 +103,6 @@ entries:
 - id: private.ws.trade.clearing
   implemented: true
   tested: true
+- id: data.none.official.bulk
+  implemented: true
+  tested: true

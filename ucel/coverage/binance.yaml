@@ -43,3 +43,18 @@ entries:
   - id: other.public.ws.sbe.marketdata
     implemented: true
     tested: true
+  - id: data.market.realtime.json
+    implemented: true
+    tested: true
+  - id: data.account.realtime.json
+    implemented: true
+    tested: true
+  - id: data.market.realtime.sbe
+    implemented: true
+    tested: true
+  - id: data.tradeevents.session.fix
+    implemented: true
+    tested: true
+  - id: data.market.snapshot.json
+    implemented: true
+    tested: true

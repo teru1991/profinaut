@@ -7,3 +7,6 @@ entries:
   - id: other.public.ws.nav.blocked
     implemented: true
     tested: true
+  - id: data.other.unknown.unknown
+    implemented: true
+    tested: true

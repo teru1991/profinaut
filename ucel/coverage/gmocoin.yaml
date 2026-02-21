@@ -127,3 +127,6 @@ entries:
 - id: fx.private.ws.positionevents.update
   implemented: true
   tested: true
+- id: data.snapshots.daily.csv.gz
+  implemented: true
+  tested: true

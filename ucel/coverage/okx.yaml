@@ -22,3 +22,9 @@ entries:
   - id: okx.ws.private
     implemented: true
     tested: true
+  - id: okx.data.public-rest
+    implemented: true
+    tested: true
+  - id: okx.data.public-ws
+    implemented: true
+    tested: true
