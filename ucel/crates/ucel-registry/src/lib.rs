@@ -1,5 +1,7 @@
 pub mod deribit;
+pub mod hub;
 pub mod okx;
+
 use serde::Deserialize;
 use std::{collections::HashSet, fs, path::Path};
 use ucel_core::{
@@ -42,15 +44,37 @@ pub struct CatalogEntry {
     pub auth: CatalogAuth,
 }
 
+pub type EndpointSpec = CatalogEntry;
+pub type WsChannelSpec = CatalogEntry;
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct CatalogWs {
     pub url: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct CatalogAuth {
-    #[serde(rename = "type", default)]
     pub auth_type: String,
+}
+
+impl<'de> Deserialize<'de> for CatalogAuth {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        if let Some(s) = value.as_str() {
+            return Ok(Self {
+                auth_type: s.to_string(),
+            });
+        }
+        let auth_type = value
+            .get("type")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+            .to_string();
+        Ok(Self { auth_type })
+    }
 }
 
 pub fn load_catalog_from_path(path: &Path) -> Result<ExchangeCatalog, UcelError> {
@@ -96,36 +120,29 @@ pub fn validate_catalog(catalog: &ExchangeCatalog) -> Result<(), UcelError> {
         ));
     }
     let mut seen = HashSet::new();
-    for e in catalog
+    for entry in catalog
         .rest_endpoints
         .iter()
         .chain(catalog.ws_channels.iter())
     {
-        if e.id.trim().is_empty() {
+        if entry.id.trim().is_empty() {
             return Err(UcelError::new(
                 ErrorCode::CatalogMissingField,
                 "entry.id empty",
             ));
         }
-        if !seen.insert(e.id.clone()) {
+        if !seen.insert(entry.id.clone()) {
             return Err(UcelError::new(
                 ErrorCode::CatalogDuplicateId,
-                format!("duplicate catalog id={}", e.id),
+                format!("duplicate catalog id={}", entry.id),
             ));
         }
-        validate_entry(e)?;
+        validate_entry(entry)?;
     }
     Ok(())
 }
 
 fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
-    if entry.id.trim().is_empty() {
-        return Err(UcelError::new(
-            ErrorCode::CatalogMissingField,
-            "catalog row has empty id",
-        ));
-    }
-
     let visibility = entry_visibility(entry)?;
     if visibility != "public" && visibility != "private" && visibility != "public/private" {
         return Err(UcelError::new(
@@ -150,11 +167,6 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
         }
     }
 
-    let ws_url = entry
-        .ws_url
-        .as_deref()
-        .or_else(|| entry.ws.as_ref().map(|ws| ws.url.as_str()));
-
     if let (Some(method), Some(base_url), Some(path)) = (
         entry.method.as_deref(),
         entry.base_url.as_deref(),
@@ -172,7 +184,10 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
                 format!("invalid method for id={}: {method}", entry.id),
             ));
         }
-        if !(base_url.starts_with("https://") || base_url.starts_with("http://")) {
+        if !(base_url.starts_with("https://")
+            || base_url.starts_with("http://")
+            || base_url.starts_with("docs://"))
+        {
             return Err(UcelError::new(
                 ErrorCode::CatalogInvalid,
                 format!("invalid base_url for id={}: {base_url}", entry.id),
@@ -180,8 +195,8 @@ fn validate_entry(entry: &CatalogEntry) -> Result<(), UcelError> {
         }
         if !path.starts_with('/') {
             return Err(UcelError::new(
-                ErrorCode::CatalogDuplicateId,
-                format!("duplicate id={}", e.id),
+                ErrorCode::CatalogInvalid,
+                format!("invalid path for id={}: {path}", entry.id),
             ));
         }
     }
@@ -235,24 +250,46 @@ fn map_operation_fallback(id: &str) -> OpName {
     }
 }
 
+pub fn default_capabilities(exchange: &str) -> Capabilities {
+    Capabilities {
+        schema_version: "1.0.0".into(),
+        kind: "exchange".into(),
+        name: exchange.into(),
+        marketdata: MarketDataCapabilities {
+            rest: true,
+            ws: true,
+        },
+        trading: Some(TradingCapabilities::default()),
+        auth: Some(AuthCapabilities::default()),
+        rate_limit: Some(RateLimitCapabilities::default()),
+        operational: Some(OperationalCapabilities::default()),
+        safe_defaults: SafeDefaults {
+            marketdata_default_on: true,
+            execution_default_dry_run: true,
+        },
+    }
+}
+
+pub fn default_runtime_policy(policy_id: impl Into<String>) -> RuntimePolicy {
+    RuntimePolicy {
+        policy_id: policy_id.into(),
+        allowed_ops: vec![
+            OpName::FetchTicker,
+            OpName::FetchTrades,
+            OpName::FetchOrderbookSnapshot,
+        ],
+        failover: FailoverPolicy {
+            cooldown_ms: 1000,
+            max_consecutive_failures: 3,
+            respect_retry_after: true,
+        },
+        mode: ucel_core::ExecutionMode::DryRun,
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use serde::Deserialize;
-    use std::path::Path;
-
-    #[derive(Debug, Deserialize)]
-    struct CoverageManifest {
-        venue: String,
-        strict: bool,
-        entries: Vec<CoverageEntry>,
-    }
-
-    #[derive(Debug, Deserialize)]
-    struct CoverageEntry {
-        id: String,
-        implemented: bool,
-        tested: bool,
-    }
+    use super::*;
 
     #[test]
     fn rejects_duplicate_catalog_ids() {
@@ -269,9 +306,7 @@ mod tests {
                 path: Some("/ok".into()),
                 ws_url: None,
                 ws: None,
-                auth: CatalogAuth {
-                    auth_type: "none".into(),
-                },
+                auth: CatalogAuth::default(),
             }],
             ws_channels: vec![CatalogEntry {
                 id: "same".into(),
@@ -284,22 +319,10 @@ mod tests {
                 ws_url: Some("wss://api.x/ws".into()),
                 channel: Some("ticker".into()),
                 ws: None,
-                auth: CatalogAuth {
-                    auth_type: "none".into(),
-                },
+                auth: CatalogAuth::default(),
             }],
-            data_feeds: vec![],
         };
-
-        let uncovered: Vec<_> = manifest
-            .entries
-            .iter()
-            .filter(|entry| !entry.implemented || !entry.tested)
-            .map(|entry| entry.id.clone())
-            .collect();
-        assert!(
-            uncovered.is_empty(),
-            "strict gate requires zero gaps: {uncovered:?}"
-        );
+        let err = validate_catalog(&catalog).unwrap_err();
+        assert_eq!(err.code, ErrorCode::CatalogDuplicateId);
     }
 }

@@ -226,6 +226,31 @@
           "Redis"
         ]
       }
+    },
+    "UCEL-HUB-ROUTER-001A": {
+      "branch": "work",
+      "pr_urls": [
+        "TBD (created via make_pr)"
+      ],
+      "commit_shas": [],
+      "verification_evidence": [
+        "ucel/docs/ARCH_UCEL_CRATE_GRAPH.md",
+        "ucel/docs/USAGE_HUB.md",
+        "docs/status/progress-updates/UCEL-HUB-ROUTER-001A-20260221.md",
+        "docs/status/status.json",
+        "docs/handoff/HANDOFF.json"
+      ],
+      "verification_commands": [
+        "cd ucel && cargo fmt --check",
+        "cd ucel && cargo clippy --all-targets --all-features -- -D warnings",
+        "cd ucel && cargo test --all-features",
+        "cd ucel && cargo clippy -p ucel-registry --all-targets --all-features -- -D warnings",
+        "cd ucel && cargo test -p ucel-registry --all-features"
+      ],
+      "locks": [
+        "LOCK: ucel/**",
+        "LOCK:shared-docs"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
