@@ -21,6 +21,7 @@ members = [
   "crates/ucel-ir",
 ]
 resolver = "2"
+default-members = ["crates/ucel-registry"]
 
 [workspace.package]
 edition = "2021"

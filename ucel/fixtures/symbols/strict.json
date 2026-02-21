@@ -1,0 +1,21 @@
+{
+  "binance": ["SPOT:BTC/USDT"],
+  "binance-coinm": ["PERP:BTC/USD"],
+  "binance-options": ["SPOT:BTC/USDT"],
+  "binance-usdm": ["PERP:BTC/USDT"],
+  "bitbank": ["SPOT:BTC/JPY"],
+  "bitflyer": ["SPOT:BTC/JPY"],
+  "bitget": ["SPOT:BTC/USDT"],
+  "bitmex": ["PERP:BTC/USD"],
+  "bittrade": ["SPOT:BTC/JPY"],
+  "bybit": ["PERP:BTC/USDT"],
+  "coinbase": ["SPOT:BTC/USD"],
+  "coincheck": ["SPOT:BTC/JPY"],
+  "deribit": ["PERP:BTC/USD"],
+  "gmocoin": ["SPOT:BTC/JPY"],
+  "htx": ["SPOT:BTC/USDT"],
+  "kraken": ["SPOT:BTC/USD"],
+  "okx": ["PERP:BTC/USDT"],
+  "sbivc": ["SPOT:BTC/JPY"],
+  "upbit": ["SPOT:BTC/KRW"]
+}

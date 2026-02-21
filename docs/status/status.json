@@ -1,13 +1,13 @@
 {
   "base_branch": "master",
-  "active_task": "UCEL-HUB-ROUTER-001A",
+  "active_task": "UCEL-INVOKER-FULL-COVERAGE-UNIFIED-003",
   "owner": "codex",
   "state": "done",
   "open_prs": [],
   "locks_held": [],
   "next_actions": [
-    "Open PR for UCEL-HUB-ROUTER-001A and request review."
+    "Open PR for UCEL-INVOKER-FULL-COVERAGE-UNIFIED-003 and request review."
   ],
-  "last_updated": "2026-02-21T09:07:07Z",
-  "notes": "UCEL hub single-entry REST+WS router implemented in ucel-registry with SSOT-backed registry and docs/examples/tests evidence."
+  "last_updated": "2026-02-21T11:05:00Z",
+  "notes": "Implemented ID-driven UCEL invoker with coverage-driven registry/gate, unified venue/symbol inputs, and usage examples/docs."
 }

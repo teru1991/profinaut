@@ -1,22 +1,21 @@
 {
-  "active_task": "UCEL-HUB-ROUTER-001A",
+  "active_task": "UCEL-INVOKER-FULL-COVERAGE-UNIFIED-003",
   "what_done": [
-    "Completed crate graph + catalog type audit and added ucel/docs/ARCH_UCEL_CRATE_GRAPH.md.",
-    "Implemented ucel-registry hub module (mod/registry/rest/ws/config/errors) with ExchangeId keyed REST+WS entry.",
-    "Added usage docs/examples and updated status/progress evidence artifacts.",
-    "Ran ucel quality checks (workspace-wide commands exposed pre-existing failures; package-scoped ucel-registry checks passed)."
+    "Implemented ucel_registry::invoker (registry, ids, symbol codec, binder, REST/WS executors).",
+    "Added strict coverage auto-discovery from ucel/coverage and strict fixture gate.",
+    "Added docs/examples/fixtures and task progress evidence updates."
   ],
   "what_next": [
-    "Create/merge PR for task scope UCEL-HUB-ROUTER-001A."
+    "Create/merge PR for UCEL-INVOKER-FULL-COVERAGE-UNIFIED-003."
   ],
   "open_pr": "",
   "locks_held": [],
   "errors": [
-    "Workspace-wide clippy/test currently fail in unrelated crates (existing unresolved test/import/dead-code issues)."
+    "Workspace-wide fmt/clippy/test currently fail due pre-existing unrelated crate issues."
   ],
   "commands_next": [
-    "cd ucel && cargo clippy -p ucel-registry --all-targets --all-features -- -D warnings",
-    "cd ucel && cargo test -p ucel-registry --all-features"
+    "cd ucel && cargo test -p ucel-registry --all-features",
+    "cd ucel && cargo run --example invoker_list"
   ],
-  "updated_at": "2026-02-21T09:07:07Z"
+  "updated_at": "2026-02-21T11:05:00Z"
 }
