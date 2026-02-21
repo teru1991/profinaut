@@ -61,3 +61,6 @@ entries:
 - id: futures.private.ws.other.account.open_positions.subscribe
   implemented: true
   tested: true
+- id: data.market-candles.minute.json
+  implemented: true
+  tested: true

@@ -43,3 +43,9 @@ entries:
 - id: options.public.ws.indexprice
   implemented: true
   tested: true
+- id: options.data.ws.market
+  implemented: true
+  tested: true
+- id: options.data.rest.market
+  implemented: true
+  tested: true

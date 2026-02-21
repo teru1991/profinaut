@@ -184,3 +184,6 @@ entries:
 - id: fx.private.ws.parent_order_events
   implemented: true
   tested: true
+- id: bitflyer.data.bulk.not_documented
+  implemented: true
+  tested: true

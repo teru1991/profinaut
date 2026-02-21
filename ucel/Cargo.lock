@@ -1219,11 +1219,8 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "serde_yaml",
  "tokio",
- "tracing",
  "ucel-core",
- "ucel-registry",
  "ucel-testkit",
  "ucel-transport",
  "uuid",
@@ -1237,7 +1234,10 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "serde_yaml",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
  "ucel-core",
  "ucel-transport",
  "uuid",
@@ -1251,18 +1251,14 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "serde_yaml",
  "tokio",
- "tracing",
  "ucel-core",
- "ucel-registry",
- "ucel-testkit",
  "ucel-transport",
  "uuid",
 ]
 
 [[package]]
-name = "ucel-cex-bitget"
+name = "ucel-cex-bybit"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -1326,21 +1322,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ucel-cex-htx"
-version = "0.1.0"
-dependencies = [
- "bytes",
- "reqwest",
- "serde",
- "serde_json",
- "tokio",
- "ucel-core",
- "ucel-testkit",
- "ucel-transport",
- "uuid",
-]
-
-[[package]]
 name = "ucel-cex-kraken"
 version = "0.1.0"
 dependencies = [
@@ -1356,17 +1337,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "ucel-cex-okx"
+name = "ucel-cex-upbit"
 version = "0.1.0"
 dependencies = [
- "bytes",
- "reqwest",
  "serde",
  "serde_json",
  "serde_yaml",
  "tokio",
  "tracing",
- "tracing-subscriber",
  "ucel-core",
  "ucel-transport",
  "uuid",

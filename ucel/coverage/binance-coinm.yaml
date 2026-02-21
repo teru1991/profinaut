@@ -76,3 +76,15 @@ entries:
   - id: coinm.private.ws.userdata.events
     implemented: true
     tested: true
+  - id: coinm.data.market.realtime.streams
+    implemented: true
+    tested: true
+  - id: coinm.data.market.snapshot.rest.depth
+    implemented: true
+    tested: true
+  - id: coinm.data.account.realtime.userdata
+    implemented: true
+    tested: true
+  - id: coinm.data.rpc.realtime.wsapi
+    implemented: true
+    tested: true

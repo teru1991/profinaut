@@ -49,3 +49,15 @@ entries:
   - id: usdm.private.ws.userdata.events
     implemented: true
     tested: true
+  - id: usdm.data.market.realtime.streams
+    implemented: true
+    tested: true
+  - id: usdm.data.market.snapshot.rest.depth
+    implemented: true
+    tested: true
+  - id: usdm.data.account.realtime.userdata
+    implemented: true
+    tested: true
+  - id: usdm.data.rpc.realtime.wsapi
+    implemented: true
+    tested: true

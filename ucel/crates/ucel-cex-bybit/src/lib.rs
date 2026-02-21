@@ -527,7 +527,7 @@ mod tests {
     #[test]
     fn strict_coverage_gate_is_on_and_has_zero_gaps() {
         let manifest_path =
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/BYBIT.yaml");
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bybit.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
         assert!(manifest.strict);
         let gaps = evaluate_coverage_gate(&manifest);

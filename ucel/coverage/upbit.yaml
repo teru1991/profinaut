@@ -88,3 +88,6 @@ entries:
 - id: exchange.private.ws.myasset.stream
   implemented: true
   tested: true
+- id: data.other.not_applicable.json
+  implemented: true
+  tested: true
