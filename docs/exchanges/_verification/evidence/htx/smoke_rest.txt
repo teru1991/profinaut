@@ -1,0 +1,11 @@
+# smoke_rest (htx)
+
+- checked_at: 2026-02-21T04:05:07.784186+00:00
+- endpoint: https://api.huobi.pro/market/detail/merged?symbol=btcusdt
+
+- result: failed
+
+## error
+```
+<urlopen error [Errno -5] No address associated with hostname>
+```

@@ -1,0 +1,6 @@
+# smoke_rest (sbivc)
+
+- checked_at: 2026-02-21T04:05:07.784186+00:00
+- endpoint: N/A
+- result: not_executed
+- reason: 公式一次情報（sources.md）上で公開REST endpointがFAQ中心で、直接叩けるAPI endpointを特定できず。

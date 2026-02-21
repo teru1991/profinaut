@@ -1,0 +1,11 @@
+# smoke_rest (bitmex)
+
+- checked_at: 2026-02-21T04:05:07.784186+00:00
+- endpoint: https://www.bitmex.com/api/v1/instrument?symbol=XBTUSD&count=1
+
+- result: failed
+
+## error
+```
+<urlopen error [Errno -5] No address associated with hostname>
+```
