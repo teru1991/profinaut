@@ -93,10 +93,15 @@
   - Fix: `docs/exchanges/bitmex/README.md`, `docs/exchanges/bitmex/sources.md`
 
 ## 8) Smoke Test（実施した/できない理由、ログへのリンクパス）
-- EXD-C で実施予定（Public REST/WS 優先）。
+- REST: 未達（ネットワーク制約）: <urlopen error [Errno -5] No address associated with hostname>
+  - Log: `docs/exchanges/_verification/evidence/bitmex/smoke_rest.txt`
+- WS: 未実施（sandboxで外部WS疎通不可）
+  - Log: `docs/exchanges/_verification/evidence/bitmex/smoke_ws.txt`
+- Private(read-only): 未実施（鍵未設定・秘匿方針）
 
 ## 9) Fix Plan（修正方針）
-- EXD-C で P0（Auth/WS/Trading/Account）から順に docs 本体を修正し、証拠ログを保存。
+- C例外解除条件: 外部ネットワーク疎通可能な環境で Public REST/WS の再スモークを実行。
+- docs本体のP0修正は issues_summary の修正先ファイルに沿って継続。
 
 ## 10) Status（A完了/B完了/C完了、確定/例外）
-- A完了 / B完了 / C未着手
+- A完了 / B完了 / C例外（ネットワーク制約によりスモーク未達）

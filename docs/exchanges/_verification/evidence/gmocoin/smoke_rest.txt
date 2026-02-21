@@ -1,0 +1,11 @@
+# smoke_rest (gmocoin)
+
+- checked_at: 2026-02-21T04:05:07.784186+00:00
+- endpoint: https://api.coin.z.com/public/v1/ticker?symbol=BTC
+
+- result: failed
+
+## error
+```
+<urlopen error [Errno -5] No address associated with hostname>
+```

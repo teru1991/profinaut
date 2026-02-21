@@ -1,0 +1,5 @@
+# smoke_ws (bitmex)
+
+- checked_at: 2026-02-21T04:05:07.784186+00:00
+- result: not_executed
+- reason: Sandbox 環境で WS クライアント常設を行わず、EXD-C では REST スモークを優先。次回は専用WSクライアントで subscribe/ping-pong/reconnect を検証。

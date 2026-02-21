@@ -1,0 +1,11 @@
+# smoke_rest (okx)
+
+- checked_at: 2026-02-21T04:05:07.784186+00:00
+- endpoint: https://www.okx.com/api/v5/market/ticker?instId=BTC-USDT
+
+- result: failed
+
+## error
+```
+<urlopen error [Errno -5] No address associated with hostname>
+```
