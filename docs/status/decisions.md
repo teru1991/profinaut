@@ -1,12 +1,6 @@
-# Decisions Log (SSOT)
+# Deprecated / Redirect
 
-Record decision entries here in append-only format.
+This file is **not** SSOT and is kept only to avoid broken links.
 
-## Entry template
-
-- ID:
-- Date:
-- Context:
-- Decision:
-- Consequences:
-- Supersedes:
+- Canonical decisions log (SSOT): `docs/decisions/decisions.md`
+- Do not add or edit decision entries in this file.

@@ -1,12 +1,6 @@
-# Trace Index (SSOT)
+# Deprecated / Redirect
 
-Canonical index for traceability links (PRs, commits, issues, verification artifacts).
+This markdown file is **not** SSOT and is kept only as a redirect.
 
-## Entry template
-
-- Date:
-- Task ID:
-- PR:
-- Commit(s):
-- Evidence links:
-- Notes:
+- Canonical trace index (SSOT): `docs/status/trace-index.json`
+- Do not add trace entries in this file.
