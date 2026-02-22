@@ -81,6 +81,14 @@ impl SymbolStore {
     }
 
     pub fn apply_snapshot(&self, snapshot: Snapshot) -> Vec<SymbolEvent> {
+        self.apply_snapshot_with_meta_whitelist(snapshot, &[])
+    }
+
+    pub fn apply_snapshot_with_meta_whitelist(
+        &self,
+        snapshot: Snapshot,
+        meta_whitelist: &[&str],
+    ) -> Vec<SymbolEvent> {
         let mut events = Vec::new();
         let mut incoming = BTreeMap::new();
         for instrument in snapshot.instruments {
@@ -129,7 +137,7 @@ impl SymbolStore {
                     continue;
                 }
 
-                let changed_fields = changed_param_fields(&before, &instrument);
+                let changed_fields = changed_param_fields(&before, &instrument, meta_whitelist);
                 if !changed_fields.is_empty() {
                     self.instruments.insert(id.clone(), instrument.clone());
                     let version = self.bump_version();
@@ -166,6 +174,7 @@ impl SymbolStore {
 fn changed_param_fields(
     before: &StandardizedInstrument,
     after: &StandardizedInstrument,
+    meta_whitelist: &[&str],
 ) -> Vec<String> {
     let mut fields = BTreeSet::new();
     if cmp_decimal(before.tick_size, after.tick_size).is_ne() {
@@ -211,6 +220,11 @@ fn changed_param_fields(
     }
     if before.qty_precision != after.qty_precision {
         fields.insert("qty_precision".to_string());
+    }
+    for key in meta_whitelist {
+        if before.meta.get(*key) != after.meta.get(*key) {
+            fields.insert(format!("meta.{key}"));
+        }
     }
     fields.into_iter().collect()
 }
@@ -306,5 +320,24 @@ mod tests {
         );
         let events = store.apply_snapshot(snapshot(vec![spot, perp]));
         assert_eq!(events.len(), 2);
+    }
+
+    #[test]
+    fn meta_is_ignored_unless_whitelisted() {
+        let store = SymbolStore::new();
+        let first = instrument("BTCUSDT", SymbolStatus::Trading, MarketType::Spot);
+        store.apply_snapshot(snapshot(vec![first.clone()]));
+
+        let mut changed = first.clone();
+        changed
+            .meta
+            .insert("important".into(), serde_json::json!("changed"));
+
+        let events = store.apply_snapshot(snapshot(vec![changed.clone()]));
+        assert!(events.is_empty());
+
+        let events =
+            store.apply_snapshot_with_meta_whitelist(snapshot(vec![changed]), &["important"]);
+        assert!(matches!(events[0], SymbolEvent::ParamChanged { .. }));
     }
 }

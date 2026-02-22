@@ -10,3 +10,4 @@ ucel-symbol-core = { path = "../ucel-symbol-core" }
 
 [dev-dependencies]
 rust_decimal = "1"
+serde_json.workspace = true
