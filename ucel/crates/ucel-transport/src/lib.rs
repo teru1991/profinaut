@@ -1,3 +1,4 @@
+pub mod ws;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

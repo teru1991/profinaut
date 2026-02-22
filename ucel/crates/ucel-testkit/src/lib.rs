@@ -1,3 +1,4 @@
+pub mod ws_coverage_gate;
 pub mod okx;
 
 use serde::{Deserialize, Serialize};

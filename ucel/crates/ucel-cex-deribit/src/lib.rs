@@ -556,3 +556,7 @@ mod tests {
         assert_eq!(err.retry_after_ms, Some(250));
     }
 }
+
+pub mod symbols;
+pub mod ws_manager;
+pub mod channels;
