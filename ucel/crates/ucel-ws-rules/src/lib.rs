@@ -100,13 +100,22 @@ pub fn load_rules_dir(dir: &Path) -> Result<Vec<ExchangeWsRules>, String> {
 }
 
 pub fn load_for_exchange(dir: &Path, exchange_id: &str) -> ExchangeWsRules {
-    let path: PathBuf = dir.join(format!("{exchange_id}.toml"));
-    load_rule_file(&path).unwrap_or_else(|_| ExchangeWsRules::unknown(exchange_id))
+    let candidates: [PathBuf; 2] = [
+        dir.join(format!("{exchange_id}.toml")),
+        dir.join("rules").join(format!("{exchange_id}.toml")),
+    ];
+    for path in candidates {
+        if let Ok(rule) = load_rule_file(&path) {
+            return rule;
+        }
+    }
+    ExchangeWsRules::unknown(exchange_id)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
     #[test]
     fn parse_toml_to_model() {
@@ -141,5 +150,33 @@ entitlement = "public_only"
         assert_eq!(unknown.support_level, SupportLevel::Unknown);
         assert_eq!(unknown.safety_profile.max_streams_per_conn, 25);
         assert_eq!(unknown.safety_profile.max_symbols_per_conn, 50);
+    }
+
+    #[test]
+    fn load_for_exchange_falls_back_to_rules_subdir() {
+        let base = std::env::temp_dir().join(format!(
+            "ucel-ws-rules-test-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let rules_dir = base.join("rules");
+        fs::create_dir_all(&rules_dir).unwrap();
+        fs::write(
+            rules_dir.join("binance.toml"),
+            r#"
+exchange_id = "binance"
+support_level = "full"
+[safety_profile]
+max_streams_per_conn = 20
+max_symbols_per_conn = 40
+"#,
+        )
+        .unwrap();
+        let loaded = load_for_exchange(&base, "binance");
+        assert_eq!(loaded.exchange_id, "binance");
+        assert_eq!(loaded.support_level, SupportLevel::Full);
+        fs::remove_dir_all(base).ok();
     }
 }

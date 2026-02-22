@@ -136,3 +136,30 @@ For at least one exchange in E2E:
 - Reconnect occurs on stall/failure.
 - Resume dripping occurs from store states.
 - Backpressure/failure triggers safe stop or throttle (no silent drops).
+
+## 実装状況サマリ（2026-02時点）
+
+本設計に対する現状の実装棚卸し（主要項目のみ）:
+
+- 実装済み（骨格）
+  - `ucel-ws-rules`, `ucel-subscription-planner`, `ucel-subscription-store`, `ucel-journal`, `ucel-ws-ingest` のcrate自体
+  - coverage読込・購読seed生成・SQLite永続キュー・WAL append/rotateの基本ユニット
+  - `ucel-transport/src/ws/*` に limiter/reconnect/heartbeat/backpressure の基礎モジュール
+- 部分実装
+  - supervisor起動フロー（coverage→rules→plan→store seed）
+  - 取引所個別実装の一部（例: `ucel-cex-okx` は比較的実装が進んでいる）
+- 未実装/要補完
+  - 多くの `ucel-cex-*` で `ws_manager.rs` / `symbols.rs` / `channels/*` がスタブ
+  - ingest本体での実WS接続・受信→journal-first永続化・ACK/受信ベースのActive遷移
+  - reconnect時の `active/inflight -> pending` 再滴下の実運用経路
+  - 取引所別 `rules/*.toml` の実データ整備（現状は保守的デフォルト依存）
+  - coverage定義と `channels/*` 実装のCIゲート（1channel=1file）強制
+  - stall検知/バックプレッシャー動作を ingestループへ実配線
+
+堅牢化のための優先改良（欠損最小観点）:
+
+1. `ws_manager` 実装を1取引所ずつ完成（接続・購読滴下・受信・再接続）
+2. receiveループで `journal.append(raw)` を最短経路化（decode前）
+3. `subscription-store` 状態遷移を接続イベントに厳密連動
+4. 取引所制限TOML整備 + 観測ベースの安全側チューニング
+5. coverage-vs-channel実装漏れをfail-fastで検知する契約テスト導入
