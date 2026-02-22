@@ -114,6 +114,16 @@ impl SubscriptionStore {
         Ok(key)
     }
 
+
+    pub fn mark_inflight(&self, key: &str, now: i64) -> Result<(), String> {
+        self.conn
+            .execute(
+                "UPDATE subscriptions SET state='inflight', attempts=attempts+1, updated_at=?2 WHERE key=?1",
+                params![key, now],
+            )
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    }
     pub fn mark_active(&self, key: &str, now: i64) -> Result<(), String> {
         self.conn.execute("UPDATE subscriptions SET state='active', first_active_at=COALESCE(first_active_at, ?2), updated_at=?2 WHERE key=?1", params![key, now]).map_err(|e| e.to_string())?;
         Ok(())

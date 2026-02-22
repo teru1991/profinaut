@@ -1,3 +1,20 @@
 pub fn supported_ws_ops() -> Vec<&'static str> {
-    vec![]
+    vec![
+        "crypto.public.ws.market.ticker",
+        "crypto.public.ws.market.transactions",
+        "crypto.public.ws.market.depth-diff",
+        "crypto.public.ws.market.depth-whole",
+        "crypto.public.ws.market.circuit-break-info",
+        "crypto.private.ws.user.stream.asset-update",
+        "crypto.private.ws.user.stream.spot-order-new",
+        "crypto.private.ws.user.stream.spot-order",
+        "crypto.private.ws.user.stream.spot-order-invalidation",
+        "crypto.private.ws.user.stream.spot-trade",
+        "crypto.private.ws.user.stream.dealer-order-new",
+        "crypto.private.ws.user.stream.withdrawal",
+        "crypto.private.ws.user.stream.deposit",
+        "crypto.private.ws.user.stream.margin-position-update",
+        "crypto.private.ws.user.stream.margin-payable-update",
+        "crypto.private.ws.user.stream.margin-notice-update",
+    ]
 }

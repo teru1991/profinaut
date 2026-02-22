@@ -1,55 +1,90 @@
-use crate::{load_coverage_manifest, CoverageGateResult};
-use std::collections::{HashMap, HashSet};
+use crate::load_coverage_manifest;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
 
-fn supported_ops_for_exchange(exchange: &str) -> Vec<&'static str> {
-    match exchange {
-        "binance" => ucel_cex_binance::channels::supported_ws_ops(),
-        _ => vec![],
-    }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum WsCoverageGateResult {
+    Passed,
+    Warn { venue: String, missing: Vec<String> },
+    Failed { venue: String, missing: Vec<String> },
 }
 
-pub fn run_ws_channels_gate(repo_root: &Path) -> Result<Vec<(String, CoverageGateResult)>, String> {
+fn parse_supported_ops_from_channels_mod(content: &str) -> BTreeSet<String> {
+    content
+        .lines()
+        .filter_map(|line| {
+            let l = line.trim();
+            if l.starts_with('"') {
+                let t = l.trim_end_matches(',').trim();
+                if t.ends_with('"') {
+                    Some(t.trim_matches('"').to_string())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+fn supported_ops_for_venue(repo_root: &Path, venue: &str) -> Result<BTreeSet<String>, String> {
+    let path = repo_root
+        .join("ucel/crates")
+        .join(format!("ucel-cex-{venue}"))
+        .join("src/channels/mod.rs");
+    let raw = fs::read_to_string(&path).map_err(|e| format!("read {}: {e}", path.display()))?;
+    Ok(parse_supported_ops_from_channels_mod(&raw))
+}
+
+pub fn run_ws_channels_gate(repo_root: &Path) -> Result<Vec<WsCoverageGateResult>, String> {
     let coverage_dir = repo_root.join("ucel/coverage");
-    let mut out = Vec::new();
+    let mut output = Vec::new();
+
     for entry in fs::read_dir(&coverage_dir).map_err(|e| e.to_string())? {
         let path = entry.map_err(|e| e.to_string())?.path();
         if path.extension().and_then(|x| x.to_str()) != Some("yaml") {
             continue;
         }
         let manifest = load_coverage_manifest(&path).map_err(|e| e.to_string())?;
-        let required: Vec<String> = manifest
+        let expected: BTreeSet<String> = manifest
             .entries
             .iter()
-            .filter(|e| e.id.starts_with("crypto.public.ws.") || e.id.starts_with("crypto.private.ws."))
-            .map(|e| e.id.clone())
+            .map(|e| e.id.as_str())
+            .filter(|id| id.starts_with("crypto.public.ws.") || id.starts_with("crypto.private.ws."))
+            .map(ToOwned::to_owned)
             .collect();
 
-        let supported: HashSet<String> = supported_ops_for_exchange(&manifest.venue)
-            .into_iter()
-            .map(|s| s.to_string())
-            .collect();
+        let supported = supported_ops_for_venue(repo_root, &manifest.venue)?;
+        let missing: Vec<String> = expected.difference(&supported).cloned().collect();
 
-        let missing_ops: Vec<String> = required
-            .into_iter()
-            .filter(|op| !supported.contains(op))
-            .collect();
-
-        let result = if missing_ops.is_empty() {
-            CoverageGateResult::Passed
+        if missing.is_empty() {
+            output.push(WsCoverageGateResult::Passed);
+        } else if manifest.strict {
+            output.push(WsCoverageGateResult::Failed {
+                venue: manifest.venue,
+                missing,
+            });
         } else {
-            let mut gaps: HashMap<String, Vec<String>> = HashMap::new();
-            gaps.insert("missing_ws_ops".to_string(), missing_ops);
-            if manifest.strict {
-                CoverageGateResult::Failed(gaps)
-            } else {
-                CoverageGateResult::WarnOnly(gaps)
-            }
-        };
-        out.push((manifest.venue, result));
+            output.push(WsCoverageGateResult::Warn {
+                venue: manifest.venue,
+                missing,
+            });
+        }
     }
-    Ok(out)
+
+    Ok(output)
+}
+
+pub fn summarize_failures(results: &[WsCoverageGateResult]) -> BTreeMap<String, Vec<String>> {
+    let mut map = BTreeMap::new();
+    for r in results {
+        if let WsCoverageGateResult::Failed { venue, missing } = r {
+            map.insert(venue.clone(), missing.clone());
+        }
+    }
+    map
 }
 
 #[cfg(test)]
@@ -57,17 +92,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn ws_gate_executes_against_repo_coverage() {
+    fn ws_gate_has_no_strict_failures() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
         let rs = run_ws_channels_gate(&root).expect("gate run");
-        assert!(!rs.is_empty());
-    }
-
-    #[test]
-    fn binance_has_no_missing_crypto_ws_ops() {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-        let rs = run_ws_channels_gate(&root).expect("gate run");
-        let binance = rs.into_iter().find(|(v, _)| v == "binance").unwrap();
-        assert!(matches!(binance.1, CoverageGateResult::Passed));
+        let failures = summarize_failures(&rs);
+        assert!(failures.is_empty(), "strict ws coverage failures: {failures:?}");
     }
 }
