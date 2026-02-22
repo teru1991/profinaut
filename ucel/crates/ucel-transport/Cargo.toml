@@ -10,4 +10,6 @@ tokio = { workspace = true, features = ["macros"] }
 bytes = { workspace = true }
 
 rand = "0.8"
+futures-util = "0.3"
+tracing = { workspace = true }
 tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }

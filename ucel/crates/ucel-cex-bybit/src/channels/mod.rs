@@ -1,5 +1,26 @@
 pub fn supported_ws_ops() -> Vec<&'static str> {
     vec![
-
+        "bybit.public.ws.public.orderbook",
+        "bybit.public.ws.public.orderbook-rpi",
+        "bybit.public.ws.public.trade",
+        "bybit.public.ws.public.ticker",
+        "bybit.public.ws.public.kline",
+        "bybit.public.ws.public.liquidation",
+        "bybit.public.ws.public.adl-alert",
+        "bybit.public.ws.public.insurance-pool",
+        "bybit.public.ws.public.order-price-limit",
+        "bybit.private.ws.private.order",
+        "bybit.private.ws.private.execution",
+        "bybit.private.ws.private.fast-execution",
+        "bybit.private.ws.private.position",
+        "bybit.private.ws.private.wallet",
+        "bybit.private.ws.private.greek",
+        "bybit.private.ws.private.dcp",
+        "bybit.private.ws.trade.guideline",
+        "bybit.public.ws.system.status",
+        "bybit.public.ws.common.auth",
+        "bybit.data.market.ws.public",
+        "bybit.data.account.ws.private",
+        "bybit.data.trade.ws.trade",
     ]
 }

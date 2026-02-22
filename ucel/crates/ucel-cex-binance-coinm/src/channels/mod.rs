@@ -1,5 +1,22 @@
 pub fn supported_ws_ops() -> Vec<&'static str> {
     vec![
-
+        "coinm.public.ws.market.root",
+        "coinm.public.ws.market.aggtrade",
+        "coinm.public.ws.market.markprice",
+        "coinm.public.ws.market.kline",
+        "coinm.public.ws.market.continuous-kline",
+        "coinm.public.ws.market.index-kline",
+        "coinm.public.ws.market.miniticker",
+        "coinm.public.ws.market.miniticker.all",
+        "coinm.public.ws.market.ticker",
+        "coinm.public.ws.market.ticker.all",
+        "coinm.public.ws.market.bookticker",
+        "coinm.public.ws.market.liquidation",
+        "coinm.public.ws.market.depth.partial",
+        "coinm.public.ws.market.depth.diff",
+        "coinm.public.ws.market.composite-index",
+        "coinm.public.ws.market.contract-info",
+        "coinm.public.ws.wsapi.general",
+        "coinm.private.ws.userdata.events",
     ]
 }

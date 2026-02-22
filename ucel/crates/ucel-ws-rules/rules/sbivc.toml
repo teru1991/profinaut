@@ -1,0 +1,6 @@
+exchange_id = "sbivc"
+support_level = "not_supported"
+
+[safety_profile]
+max_streams_per_conn = 0
+max_symbols_per_conn = 0

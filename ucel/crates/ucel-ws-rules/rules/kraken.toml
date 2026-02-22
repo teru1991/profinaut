@@ -1,0 +1,14 @@
+exchange_id = "kraken"
+support_level = "full"
+max_streams_per_conn = 50
+
+[safety_profile]
+max_streams_per_conn = 25
+max_symbols_per_conn = 50
+
+[rate]
+messages_per_second = 1
+
+[heartbeat]
+ping_interval_secs = 10
+idle_timeout_secs = 60

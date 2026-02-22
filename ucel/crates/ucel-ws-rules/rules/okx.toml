@@ -1,0 +1,14 @@
+exchange_id = "okx"
+support_level = "full"
+max_streams_per_conn = 300
+
+[safety_profile]
+max_streams_per_conn = 100
+max_symbols_per_conn = 200
+
+[rate]
+messages_per_second = 3
+
+[heartbeat]
+ping_interval_secs = 25
+idle_timeout_secs = 60

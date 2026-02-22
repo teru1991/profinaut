@@ -1,4 +1,5 @@
 pub mod config;
+pub mod metrics;
 pub mod supervisor;
 
 #[cfg(test)]

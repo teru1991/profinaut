@@ -52,7 +52,11 @@ pub fn run_ws_channels_gate(repo_root: &Path) -> Result<Vec<WsCoverageGateResult
             .entries
             .iter()
             .map(|e| e.id.as_str())
-            .filter(|id| id.starts_with("crypto.public.ws.") || id.starts_with("crypto.private.ws."))
+            .filter(|id| {
+                let has_ws_segment = id.split('.').any(|s| s == "ws");
+                let is_rest = id.contains(".rest.");
+                has_ws_segment && !is_rest
+            })
             .map(ToOwned::to_owned)
             .collect();
 

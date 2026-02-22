@@ -2616,10 +2616,12 @@ name = "ucel-transport"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "futures-util",
  "rand 0.8.5",
  "serde",
  "tokio",
  "tokio-tungstenite",
+ "tracing",
  "ucel-core",
 ]
 
@@ -2627,9 +2629,12 @@ dependencies = [
 name = "ucel-ws-ingest"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "serde",
+ "serde_json",
  "thiserror 1.0.69",
  "tokio",
+ "tracing",
  "ucel-core",
  "ucel-journal",
  "ucel-registry",

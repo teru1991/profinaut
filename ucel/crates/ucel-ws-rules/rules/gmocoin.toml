@@ -1,0 +1,10 @@
+exchange_id = "gmocoin"
+support_level = "full"
+
+[safety_profile]
+max_streams_per_conn = 25
+max_symbols_per_conn = 50
+
+[heartbeat]
+ping_interval_secs = 30
+idle_timeout_secs = 60
