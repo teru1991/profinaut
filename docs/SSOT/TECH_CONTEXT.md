@@ -10,9 +10,9 @@ It is **not** a full technical SSOT and must not duplicate long specs.
 - AI entrypoint: `docs/SSOT/README_AI.md`
 - Parallel safety rules: `docs/specs/parallel-task-safety.md` and `docs/rules/parallel-development-safety.md`
 - Runtime status SSOT: `docs/status/status.json`
-- Trace index: `docs/status/trace-index.md` and `docs/status/trace-index.json`
-- Decisions baseline: `docs/status/decisions.md` (and `docs/decisions/decisions.md` if referenced by task)
-- Handoff state: `docs/status/HANDOFF.json` (legacy/alt path may exist at `docs/handoff/HANDOFF.json`)
+- Trace index: `docs/status/trace-index.json`
+- Decisions baseline (SSOT): `docs/decisions/decisions.md`
+- Handoff SSOT: `docs/handoff/HANDOFF.json`
 
 ## Architecture pointers (code locations)
 
@@ -39,4 +39,4 @@ It is **not** a full technical SSOT and must not duplicate long specs.
 
 - `TECH_CONTEXT.md` is a map, not a replacement for source specs.
 - Do **not** paste full schemas, contract definitions, or long procedures here.
-- When in doubt, follow linked SSOT/authoritative docs and record decisions in `docs/status/decisions.md`.
+- When in doubt, follow linked SSOT/authoritative docs and record decisions in `docs/decisions/decisions.md`.

@@ -58,7 +58,7 @@ In these cases, generate a **docs-only remediation task** first.
 Each generated task must be resumable by another operator.
 Therefore include explicit stop protocol requirements:
 
-- on pause/stop, update `docs/handoff/HANDOFF.json` (and `docs/status/HANDOFF.json` if workflow uses it),
+- on pause/stop, update `docs/handoff/HANDOFF.json`,
 - include `what_done`, `what_next`, `errors`, `commands_next`,
 - preserve command-level reproducibility.
 
@@ -87,7 +87,7 @@ Generated tasks must be merge-ready in design:
 - Enforcement rules: `docs/rules/task-generation-rules-using-docs-os.md`
 - Parallel lock policy: `docs/rules/parallel-development-safety.md`
 - Entry and runtime: `docs/SSOT/README_AI.md`, `docs/status/status.json`
-- Handoff: `docs/handoff/HANDOFF.json`, `docs/status/HANDOFF.json`
-- Decisions: `docs/status/decisions.md`
+- Handoff: `docs/handoff/HANDOFF.json`
+- Decisions: `docs/decisions/decisions.md`
 - Trace: `docs/status/trace-index.json`
 - PR safety: `docs/runbooks/pr-preflight.md`
