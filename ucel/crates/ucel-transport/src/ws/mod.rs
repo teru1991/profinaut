@@ -1,3 +1,4 @@
+pub mod adapter;
 pub mod backpressure;
 pub mod connection;
 pub mod heartbeat;

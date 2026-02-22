@@ -6,8 +6,17 @@ edition = "2021"
 [dependencies]
 ucel-core = { path = "../ucel-core" }
 serde = { workspace = true }
-tokio = { workspace = true, features = ["macros"] }
+tokio = { workspace = true, features = ["macros", "sync", "time"] }
 bytes = { workspace = true }
 
 rand = "0.8"
 tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
+
+async-trait = "0.1"
+futures-util = "0.3"
+tracing = "0.1"
+serde_json = { workspace = true }
+base64 = "0.22"
+ucel-journal = { path = "../ucel-journal" }
+ucel-subscription-store = { path = "../ucel-subscription-store" }
+ucel-ws-rules = { path = "../ucel-ws-rules" }
