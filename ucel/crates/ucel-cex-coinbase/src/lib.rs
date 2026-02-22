@@ -473,3 +473,7 @@ mod tests {
         assert!(!logs.contains("secret"));
     }
 }
+
+pub mod symbols;
+pub mod ws_manager;
+pub mod channels;

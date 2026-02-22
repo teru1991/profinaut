@@ -1,3 +1,4 @@
+pub mod ingest;
 pub mod deribit;
 pub mod hub;
 pub mod invoker;

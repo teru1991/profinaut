@@ -277,3 +277,7 @@ mod tests {
         assert!(gaps.is_empty(), "strict coverage gate found gaps: {gaps:?}");
     }
 }
+
+pub mod symbols;
+pub mod ws_manager;
+pub mod channels;

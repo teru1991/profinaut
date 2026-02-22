@@ -457,3 +457,7 @@ mod tests {
         assert!(evaluate_coverage_gate(&m).is_empty());
     }
 }
+
+pub mod symbols;
+pub mod ws_manager;
+pub mod channels;

@@ -1,0 +1,21 @@
+[package]
+name = "ucel-ws-ingest"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ucel-ws-rules = { path = "../ucel-ws-rules" }
+ucel-subscription-planner = { path = "../ucel-subscription-planner" }
+ucel-subscription-store = { path = "../ucel-subscription-store" }
+ucel-journal = { path = "../ucel-journal" }
+ucel-registry = { path = "../ucel-registry" }
+ucel-transport = { path = "../ucel-transport" }
+ucel-core = { path = "../ucel-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt"] }
+
+[[bin]]
+name = "ucel-ws-ingest"
+path = "src/main.rs"
