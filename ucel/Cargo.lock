@@ -2667,6 +2667,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucel-cex-bittrade"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "ucel-core",
+ "ucel-registry",
+ "ucel-testkit",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
 name = "ucel-cex-bybit"
 version = "0.1.0"
 dependencies = [
@@ -2716,6 +2733,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucel-cex-deribit"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "ucel-core",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
 name = "ucel-cex-gmocoin"
 version = "0.1.0"
 dependencies = [
@@ -2726,6 +2757,23 @@ dependencies = [
  "tokio",
  "ucel-core",
  "ucel-testkit",
+ "ucel-transport",
+ "uuid",
+]
+
+[[package]]
+name = "ucel-cex-htx"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "ucel-core",
  "ucel-transport",
  "uuid",
 ]
@@ -2743,6 +2791,20 @@ dependencies = [
  "ucel-testkit",
  "ucel-transport",
  "uuid",
+]
+
+[[package]]
+name = "ucel-cex-sbivc"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "ucel-core",
 ]
 
 [[package]]
@@ -2848,6 +2910,7 @@ dependencies = [
  "serde",
  "thiserror 1.0.69",
  "ucel-symbol-core",
+ "ucel-symbol-store",
 ]
 
 [[package]]
@@ -2867,6 +2930,7 @@ dependencies = [
  "dashmap",
  "rust_decimal",
  "serde",
+ "serde_json",
  "ucel-symbol-core",
 ]
 

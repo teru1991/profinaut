@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::pin::Pin;
 use thiserror::Error;
 use ucel_symbol_core::{MarketType, Snapshot};
+pub use ucel_symbol_store::SymbolEvent;
 
 pub type SymbolEventStream = Pin<Box<dyn Stream<Item = SymbolEvent> + Send>>;
 
@@ -34,12 +35,6 @@ pub struct RateLimitPolicy {
 #[derive(Debug, Clone, Default)]
 pub struct SymbolContext {
     pub request_id: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum SymbolEvent {
-    Snapshot(Snapshot),
-    Heartbeat,
 }
 
 #[derive(Debug, Error)]
