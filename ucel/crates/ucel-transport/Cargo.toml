@@ -8,3 +8,6 @@ ucel-core = { path = "../ucel-core" }
 serde = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 bytes = { workspace = true }
+
+rand = "0.8"
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
