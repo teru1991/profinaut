@@ -1,91 +1,138 @@
-use crate::config::IngestConfig;
-use std::collections::HashMap;
-use ucel_subscription_planner::{generate_plan, load_all_ws_ops};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
+
+use tokio::sync::Mutex;
+use tracing::{error, info, warn};
+
+use ucel_cex_gmocoin::ws::GmoCoinWsAdapter;
+use ucel_journal::{FsyncMode, WalWriter};
+use ucel_subscription_planner as planner;
 use ucel_subscription_store::{SubscriptionRow, SubscriptionStore};
-use ucel_ws_rules::{load_for_exchange, SupportLevel};
+use ucel_transport::ws::adapter::WsVenueAdapter;
+use ucel_transport::ws::connection::{run_ws_connection, ShutdownToken, WsRunConfig};
+use ucel_ws_rules::load_for_exchange;
 
-fn should_include_op(op: &str, enable_private_ws: bool) -> bool {
-    op.starts_with("crypto.public.ws.") || (enable_private_ws && op.starts_with("crypto.private.ws."))
+#[derive(Clone)]
+pub struct SupervisorShutdown {
+    flag: Arc<AtomicBool>,
 }
 
-fn subscription_key(exchange_id: &str, op_id: &str, symbol: Option<&str>) -> String {
-    format!("{exchange_id}:{op_id}:{}", symbol.unwrap_or_default())
+impl SupervisorShutdown {
+    pub fn new() -> Self {
+        Self {
+            flag: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    pub fn trigger(&self) {
+        self.flag.store(true, Ordering::SeqCst);
+    }
+
+    pub fn token(&self) -> ShutdownToken {
+        ShutdownToken::new(self.flag.clone())
+    }
+
+    pub fn is_triggered(&self) -> bool {
+        self.flag.load(Ordering::SeqCst)
+    }
 }
 
-pub async fn run_supervisor(cfg: &IngestConfig) -> Result<Vec<String>, String> {
-    let coverage_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage");
-    let coverage = load_all_ws_ops(&coverage_dir)?;
-    let mut started = Vec::new();
+fn now_unix_i64() -> i64 {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("clock")
+        .as_secs() as i64
+}
 
-    for (exchange, ws_ops) in coverage {
-        if let Some(allow) = &cfg.exchange_allowlist {
-            if !allow.contains(&exchange) {
-                continue;
-            }
-        }
-        if exchange == "sbivc" {
-            // unsupported in v1 baseline
-            continue;
-        }
+pub async fn run(
+    coverage_dir: &std::path::Path,
+    rules_dir: &std::path::Path,
+    store_path: &std::path::Path,
+    journal_dir: &std::path::Path,
+    shutdown: SupervisorShutdown,
+) -> Result<(), String> {
+    let exchange_id = "gmocoin".to_string();
+    let now = now_unix_i64();
 
-        let rules = load_for_exchange(std::path::Path::new(&cfg.rules_dir), &exchange);
-        if matches!(rules.support_level, SupportLevel::NotSupported) {
-            continue;
-        }
-        let ws_ops: Vec<String> = ws_ops
-            .into_iter()
-            .filter(|op| should_include_op(op, cfg.enable_private_ws))
-            .collect();
-        if ws_ops.is_empty() {
-            continue;
-        }
+    let rules = load_for_exchange(rules_dir, &exchange_id);
+    let manifest = planner::load_manifest(&coverage_dir.join(format!("{exchange_id}.yaml")))?;
 
-        let symbols = vec!["BTC/USDT".to_string()];
-        let plan = generate_plan(&exchange, &ws_ops, &symbols, &rules);
-        let conn_by_key: HashMap<String, String> = plan
-            .conn_plans
-            .iter()
-            .flat_map(|cp| cp.keys.iter().map(|k| (k.clone(), cp.conn_id.clone())))
-            .collect();
+    let mut ops = planner::extract_ws_ops(&manifest);
+    ops.retain(|id| id.starts_with("crypto.public.ws."));
 
-        let mut store = SubscriptionStore::open(&cfg.store_path)?;
-        let rows: Vec<SubscriptionRow> = plan
-            .seed
-            .iter()
-            .map(|k| SubscriptionRow {
-                key: subscription_key(&k.exchange_id, &k.op_id, k.symbol.as_deref()),
-                exchange_id: k.exchange_id.clone(),
+    let adapter: Arc<dyn WsVenueAdapter> = Arc::new(GmoCoinWsAdapter::new());
+    let symbols = adapter.fetch_symbols().await?;
+    info!(exchange_id=%exchange_id, symbols=%symbols.len(), ops=%ops.len(), "symbols + ops");
+
+    let plan = planner::generate_plan(&exchange_id, &ops, &symbols, &rules);
+
+    let mut store = SubscriptionStore::open(store_path)?;
+    let mut seed_map = std::collections::HashMap::new();
+    for k in &plan.seed {
+        seed_map.insert(planner::stable_key(k), k.clone());
+    }
+
+    let mut rows = Vec::new();
+    for cp in &plan.conn_plans {
+        for key in &cp.keys {
+            let k = seed_map
+                .get(key)
+                .ok_or_else(|| format!("seed missing for key={key}"))?;
+            rows.push(SubscriptionRow {
+                key: key.clone(),
+                exchange_id: exchange_id.clone(),
                 op_id: k.op_id.clone(),
                 symbol: k.symbol.clone(),
-                params_json: k.params.to_string(),
-                assigned_conn: conn_by_key
-                    .get(&subscription_key(&k.exchange_id, &k.op_id, k.symbol.as_deref()))
-                    .cloned()
-                    .unwrap_or_else(|| format!("{}-conn-1", exchange))
-                    .into(),
-            })
-            .collect();
-        store.seed(&rows, 0)?;
-        started.push(exchange);
+                params_canon: planner::canon_params(&k.params),
+                assigned_conn: cp.conn_id.clone(),
+            });
+        }
+    }
+    store.seed(&rows, now)?;
+
+    let wal = WalWriter::open(journal_dir, 256 * 1024 * 1024, FsyncMode::Balanced)?;
+    let wal = Arc::new(Mutex::new(wal));
+
+    for cp in plan.conn_plans.clone() {
+        let adapter = adapter.clone();
+        let rules = rules.clone();
+        let wal = wal.clone();
+        let store_path = store_path.to_path_buf();
+        let token = shutdown.token();
+
+        let run_cfg = WsRunConfig {
+            exchange_id: exchange_id.clone(),
+            conn_id: cp.conn_id.clone(),
+            recv_queue_cap: 4096,
+            max_frame_bytes: 4 * 1024 * 1024,
+            max_inflight_per_conn: 64,
+            connect_timeout: std::time::Duration::from_secs(10),
+            idle_timeout: std::time::Duration::from_secs(30),
+            send_queue_hard_limit: 4096,
+        };
+
+        tokio::spawn(async move {
+            let mut store = match SubscriptionStore::open(&store_path) {
+                Ok(s) => s,
+                Err(e) => {
+                    error!(conn=%run_cfg.conn_id, err=%e, "store open failed");
+                    return;
+                }
+            };
+
+            if let Err(e) =
+                run_ws_connection(adapter, rules, &mut store, wal, run_cfg.clone(), token).await
+            {
+                warn!(conn=%run_cfg.conn_id, err=%e, "connection ended");
+            }
+        });
     }
 
-    Ok(started)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn include_private_ops_only_when_enabled() {
-        assert!(should_include_op("crypto.public.ws.trades.trade", false));
-        assert!(!should_include_op(
-            "crypto.private.ws.userdata.executionreport",
-            false
-        ));
-        assert!(should_include_op(
-            "crypto.private.ws.userdata.executionreport",
-            true
-        ));
+    while !shutdown.is_triggered() {
+        tokio::time::sleep(std::time::Duration::from_millis(250)).await;
     }
+    Ok(())
 }
