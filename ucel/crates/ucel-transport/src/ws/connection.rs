@@ -29,7 +29,7 @@ pub async fn open(
     // Writer task: forward outbound messages to the WS sink.
     tokio::spawn(async move {
         while let Some(msg) = send_rx.recv().await {
-            if let Err(e) = ws_write.send(Message::Text(msg.into())).await {
+            if let Err(e) = ws_write.send(Message::Text(msg)).await {
                 tracing::warn!(url = %url_owned, "WS send error: {e}");
                 break;
             }

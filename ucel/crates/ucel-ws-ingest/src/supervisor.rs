@@ -104,6 +104,9 @@ fn now_secs() -> i64 {
 }
 
 /// Build a generic JSON subscribe message for an exchange + op.
+/// NOTE: This is a placeholder format used by the supervisor skeleton.
+/// Each exchange crate's ws_manager.rs provides the authoritative exchange-specific
+/// subscribe payload (e.g. Binance uses `{"method":"SUBSCRIBE","params":["<stream>"],"id":1}`).
 fn build_subscribe_msg(exchange_id: &str, op_id: &str, symbol: Option<&str>) -> String {
     serde_json::json!({
         "method": "SUBSCRIBE",
@@ -173,6 +176,10 @@ pub fn spawn_exchange_ingest(
 ) {
     tokio::spawn(async move {
         let conn_id = format!("{exchange_id}-conn-1");
+        // NOTE: conn-1 is used for the v1 single-connection skeleton.
+        // Multi-connection support (as produced by the planner's ConnPlan) would require
+        // one spawned task per ConnPlan entry; that wiring is left for the per-exchange
+        // ws_manager.rs implementations.
         let key = subscription_key(&exchange_id, &ws_op_id, symbol.as_deref());
         let rules = load_for_exchange(std::path::Path::new(&cfg.rules_dir), &exchange_id);
         let stall_timeout = rules
@@ -191,6 +198,10 @@ pub fn spawn_exchange_ingest(
         };
 
         let mut attempt: u32 = 0;
+        // NOTE: The WS URL below is a placeholder used in the connection supervisor skeleton.
+        // Each exchange crate's ws_manager.rs is the authoritative source for its real WS URL
+        // (loaded from the exchange's catalog.json).  Until per-exchange ws_manager
+        // implementations are wired in, connection attempts will fail and trigger back-off.
         let ws_url = format!("wss://stream.{exchange_id}.com/ws");
 
         loop {
@@ -231,6 +242,11 @@ pub fn spawn_exchange_ingest(
                     if let Some(msg) = subscribe_msg {
                         if handle.send_tx.send(msg).await.is_err() {
                             metrics.record_subscribe_fail();
+                            tracing::warn!(
+                                exchange = %exchange_id,
+                                op = %ws_op_id,
+                                "subscribe send failed; channel closed"
+                            );
                         }
                     }
 
@@ -255,8 +271,15 @@ pub fn spawn_exchange_ingest(
 
                     // Requeue active subscriptions synchronously (store dropped immediately).
                     if let Ok(store) = SubscriptionStore::open(&cfg.store_path) {
-                        let _ =
-                            store.requeue_active_to_pending(&exchange_id, &conn_id, now_secs());
+                        if let Err(e) =
+                            store.requeue_active_to_pending(&exchange_id, &conn_id, now_secs())
+                        {
+                            tracing::warn!(
+                                exchange = %exchange_id,
+                                conn = %conn_id,
+                                "requeue_active_to_pending failed: {e}"
+                            );
+                        }
                     }
                     metrics.record_reconnect();
                 }
