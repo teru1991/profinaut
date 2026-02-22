@@ -61,7 +61,8 @@ pub async fn run_supervisor(cfg: &IngestConfig) -> Result<Vec<String>, String> {
                 assigned_conn: conn_by_key
                     .get(&subscription_key(&k.exchange_id, &k.op_id, k.symbol.as_deref()))
                     .cloned()
-                    .or_else(|| Some(format!("{}-conn-1", exchange))),
+                    .unwrap_or_else(|| format!("{}-conn-1", exchange))
+                    .into(),
             })
             .collect();
         store.seed(&rows, 0)?;
