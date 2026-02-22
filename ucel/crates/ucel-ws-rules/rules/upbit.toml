@@ -1,0 +1,14 @@
+exchange_id = "upbit"
+support_level = "full"
+max_streams_per_conn = 5
+
+[safety_profile]
+max_streams_per_conn = 4
+max_symbols_per_conn = 8
+
+[rate]
+messages_per_second = 1
+
+[heartbeat]
+ping_interval_secs = 120
+idle_timeout_secs = 120

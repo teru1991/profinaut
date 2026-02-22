@@ -1,0 +1,14 @@
+exchange_id = "binance-coinm"
+support_level = "full"
+max_streams_per_conn = 1024
+
+[safety_profile]
+max_streams_per_conn = 200
+max_symbols_per_conn = 400
+
+[rate]
+messages_per_second = 5
+
+[heartbeat]
+ping_interval_secs = 20
+idle_timeout_secs = 60

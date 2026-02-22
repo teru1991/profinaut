@@ -1,0 +1,14 @@
+exchange_id = "htx"
+support_level = "full"
+max_streams_per_conn = 300
+
+[safety_profile]
+max_streams_per_conn = 100
+max_symbols_per_conn = 200
+
+[rate]
+messages_per_second = 5
+
+[heartbeat]
+ping_interval_secs = 5
+idle_timeout_secs = 60

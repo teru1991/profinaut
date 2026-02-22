@@ -12,8 +12,11 @@ ucel-registry = { path = "../ucel-registry" }
 ucel-transport = { path = "../ucel-transport" }
 ucel-core = { path = "../ucel-core" }
 serde = { workspace = true }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true, features = ["macros", "rt"] }
+tracing = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "sync", "time"] }
+base64 = "0.22"
 
 [[bin]]
 name = "ucel-ws-ingest"

@@ -4,5 +4,6 @@ pub fn supported_ws_ops() -> Vec<&'static str> {
         "crypto.private.ws.userdata.executionreport",
         "crypto.public.ws.wsapi.time",
         "crypto.private.ws.wsapi.order.place",
+        "other.public.ws.sbe.marketdata",
     ]
 }
