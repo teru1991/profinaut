@@ -326,3 +326,7 @@ mod tests {
         assert!(manifest.entries.iter().all(|e| e.implemented && e.tested));
     }
 }
+
+pub mod symbols;
+pub mod ws_manager;
+pub mod channels;
