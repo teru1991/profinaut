@@ -1,8 +1,8 @@
 # ws-ingest minimal run
 
 ```bash
-cd ucel
-cargo run -p ucel-ws-ingest
+cd services/marketdata-rs
+cargo run -p ucel-ws-subscriber
 ```
 
 Single exchange allowlist is currently configured in code via `IngestConfig.exchange_allowlist`.

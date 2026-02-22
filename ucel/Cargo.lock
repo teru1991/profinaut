@@ -2624,22 +2624,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ucel-ws-ingest"
-version = "0.1.0"
-dependencies = [
- "serde",
- "thiserror 1.0.69",
- "tokio",
- "ucel-core",
- "ucel-journal",
- "ucel-registry",
- "ucel-subscription-planner",
- "ucel-subscription-store",
- "ucel-transport",
- "ucel-ws-rules",
-]
-
-[[package]]
 name = "ucel-ws-rules"
 version = "0.1.0"
 dependencies = [

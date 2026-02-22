@@ -84,7 +84,7 @@ Required transition rules:
 - Heartbeat and idle/stall detection.
 - Backpressure policy (v1 minimum: stop for safety).
 
-### `ucel-ws-ingest`
+### `ucel-ws-subscriber` (directory: `services/marketdata-rs/ucel-ws-subscriber`)
 - Supervisor wiring across exchanges.
 - Startup path: coverage -> symbols -> rules -> plan -> store -> manager.
 - Support exchange allowlist and single-exchange runs.
@@ -142,7 +142,7 @@ For at least one exchange in E2E:
 本設計に対する現状の実装棚卸し（主要項目のみ）:
 
 - 実装済み（骨格）
-  - `ucel-ws-rules`, `ucel-subscription-planner`, `ucel-subscription-store`, `ucel-journal`, `ucel-ws-ingest` のcrate自体
+  - `ucel-ws-rules`, `ucel-subscription-planner`, `ucel-subscription-store`, `ucel-journal`, `ucel-ws-subscriber` のcrate実装（実行入口は `services/marketdata-rs/ucel-ws-subscriber`）
   - coverage読込・購読seed生成・SQLite永続キュー・WAL append/rotateの基本ユニット
   - `ucel-transport/src/ws/*` に limiter/reconnect/heartbeat/backpressure の基礎モジュール
 - 部分実装

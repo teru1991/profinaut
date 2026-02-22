@@ -23,7 +23,6 @@ members = [
   "crates/ucel-subscription-planner",
   "crates/ucel-subscription-store",
   "crates/ucel-journal",
-  "crates/ucel-ws-ingest",
 ]
 resolver = "2"
 default-members = ["crates/ucel-registry"]
