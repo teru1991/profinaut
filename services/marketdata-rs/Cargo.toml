@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "crypto-collector", "ucel-ws-subscriber"]
+members = [".", "crypto-collector", "ucel-ws-subscriber", "symbol-master"]
 
 [package]
 name = "marketdata-rs"
