@@ -1,27 +1,21 @@
 exchange_id = "gmocoin"
 support_level = "full"
 
-# GMO Coin (crypto) Public WebSocket:
-# - subscribe/unsubscribe: max 1 request per second per IP
-# - endpoint: wss://api.coin.z.com/ws/public/v1
+# subscribe/unsubscribe: max 1 req/sec (official docs)
 [rate]
 messages_per_second = 1
 messages_per_hour = 3600
 
-# Public WSの明示pingは必須ではないケースが多いが、
-# idle検知のための保守値を置く（運用で調整可）
 [heartbeat]
 ping_interval_secs = 20
 idle_timeout_secs = 30
 
 entitlement = "public_only"
 
-# 不明点は safety_profile を保守値に固定し、観測で引き上げる
 [safety_profile]
 max_streams_per_conn = 25
 max_symbols_per_conn = 50
 
-# gmocoin は channel×symbol の購読が基本なので、
-# 初期は safety_profile に寄せて運用（必要なら後で上書き）
-# max_streams_per_conn = 50
-# max_symbols_per_conn = 100
+# optional direct overrides
+max_streams_per_conn = 25
+max_symbols_per_conn = 50
