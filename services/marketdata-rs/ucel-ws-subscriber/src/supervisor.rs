@@ -8,12 +8,10 @@ use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 use tracing::{error, info, warn};
 
-use ucel_cex_gmocoin::ws::GmoCoinWsAdapter;
 use ucel_subscription_planner::{
     canon_params, extract_ws_ops, generate_plan, load_manifest, stable_key,
 };
 use ucel_subscription_store::{SubscriptionRow, SubscriptionStore};
-use ucel_transport::ws::adapter::WsVenueAdapter;
 use ucel_transport::ws::connection::{run_ws_connection, ShutdownToken, WsRunConfig};
 use ucel_ws_rules::{load_for_exchange, SupportLevel};
 
@@ -52,13 +50,6 @@ fn should_include_public_crypto(op: &str) -> bool {
     op.starts_with("crypto.public.ws.")
 }
 
-fn adapter_factory(exchange: &str) -> Option<Arc<dyn WsVenueAdapter>> {
-    match exchange {
-        "gmocoin" => Some(Arc::new(GmoCoinWsAdapter::new())),
-        _ => None,
-    }
-}
-
 pub async fn run_supervisor(
     cfg: &IngestConfig,
     shutdown: SupervisorShutdown,
@@ -77,7 +68,7 @@ pub async fn run_supervisor(
             break;
         }
 
-        let adapter = match adapter_factory(exchange.as_str()) {
+        let adapter = match crate::adapters::create(exchange.as_str()) {
             Some(a) => a,
             None => {
                 warn!(exchange=%exchange, "no adapter registered; skip");
@@ -195,8 +186,19 @@ pub async fn run_supervisor(
     }
 
     // shutdown join/abort
+    let mut last_maintenance = std::time::Instant::now();
+
     while !shutdown.is_triggered() {
         tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+
+        if last_maintenance.elapsed() >= std::time::Duration::from_secs(300) {
+            last_maintenance = std::time::Instant::now();
+
+            // best-effort maintenance
+            if let Ok(mut store) = SubscriptionStore::open(cfg.store_path.to_str().unwrap_or("/tmp/ucel.sqlite")) {
+                let _ = store.purge_deadletter_keep_last(5000);
+            }
+        }
     }
 
     info!(handles=%handles.len(), "shutdown: joining tasks");

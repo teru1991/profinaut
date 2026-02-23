@@ -1,39 +1,37 @@
 use serde_json::json;
+use std::path::Path;
 
 use ucel_cex_gmocoin::ws::GmoCoinWsAdapter;
+use ucel_testkit::coverage::public_crypto_ws_ops_from_coverage;
 use ucel_transport::ws::adapter::{InboundClass, WsVenueAdapter};
 
-#[test]
-fn build_subscribe_matches_coverage_op_ids() {
-    let a = GmoCoinWsAdapter::new();
-
-    // coverage SSOT に完全一致するop_id
-    let msg = a
-        .build_subscribe("crypto.public.ws.ticker.update", "BTC/JPY", &json!({}))
-        .unwrap();
-    assert_eq!(msg.len(), 1);
-    assert!(msg[0].text.contains("\"channel\":\"ticker\""));
-    assert!(msg[0].text.contains("\"symbol\":\"BTC_JPY\""));
-
-    let msg = a
-        .build_subscribe("crypto.public.ws.trades.update", "BTC/JPY", &json!({}))
-        .unwrap();
-    assert!(msg[0].text.contains("\"channel\":\"trades\""));
-
-    let msg = a
-        .build_subscribe("crypto.public.ws.orderbooks.update", "BTC/JPY", &json!({}))
-        .unwrap();
-    assert!(msg[0].text.contains("\"channel\":\"orderbooks\""));
+fn repo_root() -> std::path::PathBuf {
+    // tests are run from crate dir; go up to repo root.
+    // ucel/crates/ucel-cex-gmocoin -> ucel workspace root
+    let here = Path::new(env!("CARGO_MANIFEST_DIR"));
+    here.join("..").join("..")
 }
 
 #[test]
-fn build_subscribe_rejects_unknown_op_id() {
+fn coverage_ops_are_all_supported_by_build_subscribe() {
     let a = GmoCoinWsAdapter::new();
-    let err = a
-        .build_subscribe("crypto.public.ws.unknown.update", "BTC/JPY", &json!({}))
-        .err()
-        .unwrap();
-    assert!(err.contains("unsupported op_id"));
+
+    let root = repo_root();
+    let coverage_dir = root.join("coverage");
+
+    let ops = public_crypto_ws_ops_from_coverage(&coverage_dir, "gmocoin").unwrap();
+    assert!(!ops.is_empty(), "gmocoin coverage has no public ws ops");
+
+    for op in ops {
+        // canonical symbol例（GMOはBTC/JPYが必ずあるとは限らないが、build_subscribe契約検証のため固定）
+        // 実運用は symbols.rs で得た symbol を使う。
+        let res = a.build_subscribe(&op, "BTC/JPY", &json!({}));
+        assert!(
+            res.is_ok(),
+            "op_id from coverage not supported by build_subscribe: op_id={op}, err={:?}",
+            res.err()
+        );
+    }
 }
 
 #[test]

@@ -1,5 +1,6 @@
-pub mod ws_coverage_gate;
+pub mod coverage;
 pub mod okx;
+pub mod ws_coverage_gate;
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
