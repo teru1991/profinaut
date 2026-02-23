@@ -1,18 +1,6 @@
 venue: bybit-linear
 strict: true
 families:
-  - id: bybit.public.ws.tickers
-    requires_symbol: true
-    topic_template: "tickers.{symbol}"
-    params: {}
-    weight: 10
-
-  - id: bybit.public.ws.publicTrade
-    requires_symbol: true
-    topic_template: "publicTrade.{symbol}"
-    params: {}
-    weight: 20
-
   - id: bybit.public.ws.orderbook
     requires_symbol: true
     topic_template: "orderbook.{depth}.{symbol}"
@@ -25,6 +13,18 @@ families:
     topic_template: "orderbook.rpi.{symbol}"
     params: {}
     weight: 45
+
+  - id: bybit.public.ws.publicTrade
+    requires_symbol: true
+    topic_template: "publicTrade.{symbol}"
+    params: {}
+    weight: 20
+
+  - id: bybit.public.ws.tickers
+    requires_symbol: true
+    topic_template: "tickers.{symbol}"
+    params: {}
+    weight: 10
 
   - id: bybit.public.ws.kline
     requires_symbol: true
@@ -39,11 +39,17 @@ families:
     params: {}
     weight: 70
 
-  - id: bybit.public.ws.insurance
+  # --- symbol-less (public) ---
+  - id: bybit.public.ws.insurance_USDT
     requires_symbol: false
-    topic_template: "insurance.{group}"
-    params:
-      group: ["USDT", "USDC"]
+    topic_template: "insurance.USDT"
+    params: {}
+    weight: 90
+
+  - id: bybit.public.ws.insurance_USDC
+    requires_symbol: false
+    topic_template: "insurance.USDC"
+    params: {}
     weight: 90
 
   - id: bybit.public.ws.insurance_inverse
@@ -58,9 +64,20 @@ families:
     params: {}
     weight: 80
 
-  - id: bybit.public.ws.adlAlert
+  - id: bybit.public.ws.adlAlert_USDT
     requires_symbol: false
-    topic_template: "adlAlert.{coin}"
-    params:
-      coin: ["USDT", "USDC", "inverse"]
+    topic_template: "adlAlert.USDT"
+    params: {}
+    weight: 95
+
+  - id: bybit.public.ws.adlAlert_USDC
+    requires_symbol: false
+    topic_template: "adlAlert.USDC"
+    params: {}
+    weight: 95
+
+  - id: bybit.public.ws.adlAlert_inverse
+    requires_symbol: false
+    topic_template: "adlAlert.inverse"
+    params: {}
     weight: 95
