@@ -1,7 +1,7 @@
 exchange_id = "gmocoin"
 support_level = "full"
 
-# GMO Coin Public WS subscribe/unsubscribe: max 1 request per second (per IP)
+# subscribe/unsubscribe: max 1 req/sec (official docs)
 [rate]
 messages_per_second = 1
 messages_per_hour = 3600
@@ -16,6 +16,6 @@ entitlement = "public_only"
 max_streams_per_conn = 25
 max_symbols_per_conn = 50
 
-# override (optional)
+# optional direct overrides
 max_streams_per_conn = 25
 max_symbols_per_conn = 50
