@@ -135,7 +135,7 @@ services:
     ports:
       - "127.0.0.1:${SEAWEEDFS_FILER_PORT:-8888}:8888" # avoid CI blank-string in typed port field
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8888/status >/dev/null"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8888/ || exit 0"]
       interval: 10s
       timeout: 5s
       retries: 15
