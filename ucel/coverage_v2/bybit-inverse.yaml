@@ -39,7 +39,7 @@ families:
     params: {}
     weight: 70
 
-  # --- symbol-less ---
+  # --- symbol-less public ---
   - id: bybit.public.ws.insurance_inverse
     requires_symbol: false
     topic_template: "insurance.inverse"
