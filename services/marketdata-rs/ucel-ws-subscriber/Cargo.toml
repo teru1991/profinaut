@@ -14,8 +14,8 @@ ucel-core = { path = "../../../ucel/crates/ucel-core" }
 ucel-cex-gmocoin = { path = "../../../ucel/crates/ucel-cex-gmocoin" }
 serde = { version = "1", features = ["derive"] }
 thiserror = "1"
-tracing = "0.1"
-tokio = { version = "1", features = ["macros", "rt", "signal", "sync", "time"] }
+tracing = { version = "0.1" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "time"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [[bin]]

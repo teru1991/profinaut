@@ -15,12 +15,13 @@ use ucel_transport::ws::connection::{run_ws_connection, ShutdownToken, WsRunConf
 use ucel_ws_rules::{load_for_exchange, SupportLevel};
 
 fn should_include_op(op: &str, enable_private_ws: bool) -> bool {
-    op.starts_with("crypto.public.ws.") || (enable_private_ws && op.starts_with("crypto.private.ws."))
+    op.starts_with("crypto.public.ws.")
+        || (enable_private_ws && op.starts_with("crypto.private.ws."))
 }
 
 #[derive(Clone)]
 pub struct SupervisorShutdown {
-    flag: Arc<AtomicBool>,
+    pub(crate) flag: Arc<AtomicBool>,
 }
 impl SupervisorShutdown {
     pub fn new() -> Self {
@@ -42,8 +43,7 @@ pub async fn run_supervisor(
     cfg: &IngestConfig,
     shutdown: SupervisorShutdown,
 ) -> Result<Vec<String>, String> {
-    let coverage_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../ucel/coverage");
-    let coverage = load_all_ws_ops(&coverage_dir)?;
+    let coverage = load_all_ws_ops(&cfg.coverage_dir)?;
     let mut started = Vec::new();
 
     let wal = ucel_journal::WalWriter::open(&cfg.journal_dir, cfg.wal_max_bytes, cfg.fsync_mode)
@@ -144,7 +144,9 @@ pub async fn run_supervisor(
                         return;
                     }
                 };
-                if let Err(e) = run_ws_connection(adapter, rules, &mut store, wal, run_cfg, token).await {
+                if let Err(e) =
+                    run_ws_connection(adapter, rules, &mut store, wal, run_cfg, token).await
+                {
                     warn!(conn=%cp.conn_id, err=%e, "connection ended");
                 }
             });
