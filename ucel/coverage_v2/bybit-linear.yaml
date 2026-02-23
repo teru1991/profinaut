@@ -39,7 +39,7 @@ families:
     params: {}
     weight: 70
 
-  # --- symbol-less (public) ---
+  # --- symbol-less public ---
   - id: bybit.public.ws.insurance_USDT
     requires_symbol: false
     topic_template: "insurance.USDT"
@@ -58,12 +58,6 @@ families:
     params: {}
     weight: 90
 
-  - id: bybit.public.ws.priceLimit
-    requires_symbol: true
-    topic_template: "priceLimit.{symbol}"
-    params: {}
-    weight: 80
-
   - id: bybit.public.ws.adlAlert_USDT
     requires_symbol: false
     topic_template: "adlAlert.USDT"
@@ -81,3 +75,9 @@ families:
     topic_template: "adlAlert.inverse"
     params: {}
     weight: 95
+
+  - id: bybit.public.ws.priceLimit
+    requires_symbol: true
+    topic_template: "priceLimit.{symbol}"
+    params: {}
+    weight: 80
