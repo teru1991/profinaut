@@ -1,0 +1,19 @@
+exchange_id = "gmocoin-private"
+support_level = "full"
+
+# 同一IPからの subscribe/unsubscribe は 1秒間1回が上限
+# (private WS)  [oai_citation:5‡Coin API](https://api.coin.z.com/docs/)
+[rate]
+messages_per_second = 1
+
+# token は有効期限がある（一般に60分運用が多い）ので、
+# 55分でコネクションを回す（token refresh を確実化）
+# ※Private WS token は ws-auth で取得。  [oai_citation:6‡Coin API](https://api.coin.z.com/docs/)
+[heartbeat]
+ping_interval_secs = 0
+idle_timeout_secs = 75
+max_connection_age_secs = 3300
+
+[safety_profile]
+max_streams_per_conn = 10
+max_symbols_per_conn = 10
