@@ -313,16 +313,11 @@ fn render_template(mut tpl: String, vars: &HashMap<String, String>) -> String {
     tpl
 }
 
-/// Expand a family into concrete topics (and concrete params).
-/// - params: cartesian expanded (existing expand_params)
-/// - template vars: pulled from var_pool for template vars used by topic_template
-///
-/// Returns list of (topic, merged_params_object)
-/// where merged params includes:
-/// - family params
-/// - any bound template vars that are NOT "symbol" (optional)
-/// - "_topic" : rendered topic string (for adapter consumption)
-/// - "_w" : weight
+/// Expand a family into concrete (symbol_opt, params) where:
+/// params includes:
+/// - expanded family params
+/// - "_w": u32 weight
+/// - "_topic": rendered topic string (the final subscription topic/stream)
 fn expand_family_topics(
     exchange_id: &str,
     family: &FamilyV2,
@@ -339,15 +334,11 @@ fn expand_family_topics(
         ));
     }
 
-    // expanded family params variants
     let variants = expand_params(&family.params);
     let weight = if family.weight == 0 { default_weight(&family.id) } else { family.weight };
 
-    // Determine which template vars we must bind (excluding "symbol" which comes from SubscriptionKey.symbol)
+    // Which template vars (excluding symbol) must be bound from pool?
     let mut need_vars: Vec<String> = tpl_vars.iter().cloned().collect();
-
-    // Prepare pools for required vars other than symbol
-    // If template references symbol, we bind it via each symbol, not via pool.
     need_vars.retain(|v| v != "symbol");
 
     let mut pools: Vec<(String, Vec<String>)> = Vec::new();
@@ -361,7 +352,7 @@ fn expand_family_topics(
         pools.push((v.clone(), list.clone()));
     }
 
-    // Build cartesian product assignments for those vars
+    // Cartesian product for pool vars
     let mut var_assignments: Vec<HashMap<String, String>> = vec![HashMap::new()];
     for (name, vals) in pools {
         let mut next = Vec::new();
@@ -375,10 +366,13 @@ fn expand_family_topics(
         var_assignments = next;
     }
 
+    if var_assignments.is_empty() {
+        var_assignments.push(HashMap::new());
+    }
+
     let mut out: Vec<(Option<String>, serde_json::Value)> = Vec::new();
 
-    // Helper to attach _w/_topic into params object
-    let mut attach_meta = |mut params: serde_json::Value, topic: String, weight: u32| -> serde_json::Value {
+    let attach_meta = |mut params: serde_json::Value, topic: String, weight: u32| -> serde_json::Value {
         if let Some(obj) = params.as_object_mut() {
             obj.insert("_w".into(), serde_json::Value::Number(weight.into()));
             obj.insert("_topic".into(), serde_json::Value::String(topic));
@@ -387,13 +381,12 @@ fn expand_family_topics(
     };
 
     if family.requires_symbol {
-        // requires_symbol => expand for each symbol
         for sym in symbols {
             for p in &variants {
                 for va in &var_assignments {
                     let mut all: HashMap<String, String> = va.clone();
 
-                    // bind symbol for rendering
+                    // bind symbol for rendering if template uses it
                     all.insert("symbol".into(), sym.clone());
 
                     // allow params values to be referenced in template as {k}
@@ -412,12 +405,10 @@ fn expand_family_topics(
             }
         }
     } else {
-        // symbol-less
         for p in &variants {
             for va in &var_assignments {
                 let mut all: HashMap<String, String> = va.clone();
 
-                // allow params values to be referenced in template as {k}
                 if let Some(obj) = p.as_object() {
                     for (k, v) in obj {
                         let val = if v.is_string() { v.as_str().unwrap().to_string() } else { v.to_string() };
@@ -433,7 +424,7 @@ fn expand_family_topics(
         }
     }
 
-    // Determinism: sort by stable representation of (symbol, canon_params)
+    // Determinism
     out.sort_by_key(|(sym, params)| {
         let sk = format!(
             "{}|{}|{}|{}",
@@ -449,7 +440,7 @@ fn expand_family_topics(
 }
 
 /// v2 planner: symbols × families × params × template-vars, then shard by rules.
-/// This version also fixes topic rendering into params["_topic"] for adapter usage.
+/// This version fixes topic rendering into params["_topic"] for adapter usage.
 pub fn generate_plan_v2(
     exchange_id: &str,
     cov: &CoverageV2,
@@ -472,7 +463,6 @@ pub fn generate_plan_v2(
         let expanded = match expand_family_topics(exchange_id, fam, symbols, &var_pool) {
             Ok(v) => v,
             Err(e) => {
-                // Strict coverage means we fail-fast; else degrade with skip (but here we just fail)
                 if cov.strict {
                     panic!("coverage_v2 expansion error: {e}");
                 } else {
