@@ -1,0 +1,63 @@
+venue: bitget-coin-futures
+strict: true
+families:
+  - id: bitget.coin_futures.public.ws.ticker
+    requires_symbol: true
+    topic_template: "COIN-FUTURES|ticker|{symbol}"
+    params: {}
+    weight: 10
+
+  - id: bitget.coin_futures.public.ws.trade
+    requires_symbol: true
+    topic_template: "COIN-FUTURES|trade|{symbol}"
+    params: {}
+    weight: 20
+
+  - id: bitget.coin_futures.public.ws.books
+    requires_symbol: true
+    topic_template: "COIN-FUTURES|books|{symbol}"
+    params: {}
+    weight: 40
+
+  - id: bitget.coin_futures.public.ws.books1
+    requires_symbol: true
+    topic_template: "COIN-FUTURES|books1|{symbol}"
+    params: {}
+    weight: 41
+
+  - id: bitget.coin_futures.public.ws.books5
+    requires_symbol: true
+    topic_template: "COIN-FUTURES|books5|{symbol}"
+    params: {}
+    weight: 42
+
+  - id: bitget.coin_futures.public.ws.books15
+    requires_symbol: true
+    topic_template: "COIN-FUTURES|books15|{symbol}"
+    params: {}
+    weight: 43
+
+  - id: bitget.coin_futures.public.ws.candles
+    requires_symbol: true
+    topic_template: "COIN-FUTURES|candle{interval}|{symbol}"
+    params:
+      interval:
+        - "1m"
+        - "5m"
+        - "15m"
+        - "30m"
+        - "1H"
+        - "4H"
+        - "12H"
+        - "1D"
+        - "3D"
+        - "1W"
+        - "1M"
+        - "6H"
+        - "6Hutc"
+        - "12Hutc"
+        - "1Dutc"
+        - "3Dutc"
+        - "1Wutc"
+        - "1Mutc"
+    weight: 60
