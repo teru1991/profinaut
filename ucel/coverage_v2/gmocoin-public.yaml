@@ -1,0 +1,38 @@
+venue: gmocoin-public
+strict: true
+families:
+  # ----------------------------
+  # Public WS: ticker
+  # command: subscribe/unsubscribe
+  # channel: ticker
+  # symbol: required (e.g. BTC)
+  # ----------------------------
+  - id: gmocoin.public.ws.ticker
+    requires_symbol: true
+    topic_template: "ticker|{symbol}"
+    params: {}
+    weight: 10
+
+  # ----------------------------
+  # Public WS: orderbooks (snapshot)
+  # channel: orderbooks
+  # symbol: required (e.g. BTC)
+  # ----------------------------
+  - id: gmocoin.public.ws.orderbooks
+    requires_symbol: true
+    topic_template: "orderbooks|{symbol}"
+    params: {}
+    weight: 40
+
+  # ----------------------------
+  # Public WS: trades
+  # channel: trades
+  # symbol: required (e.g. BTC)
+  # option: Optional TAKER_ONLY
+  # ----------------------------
+  - id: gmocoin.public.ws.trades
+    requires_symbol: true
+    topic_template: "trades|{symbol}"
+    params:
+      option: ["", "TAKER_ONLY"]
+    weight: 20
