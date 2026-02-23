@@ -2750,6 +2750,7 @@ dependencies = [
 name = "ucel-cex-gmocoin"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "bytes",
  "reqwest",
  "serde",
@@ -2950,12 +2951,20 @@ dependencies = [
 name = "ucel-transport"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "base64 0.22.1",
  "bytes",
+ "futures-util",
  "rand 0.8.5",
  "serde",
+ "serde_json",
  "tokio",
  "tokio-tungstenite",
+ "tracing",
  "ucel-core",
+ "ucel-journal",
+ "ucel-subscription-store",
+ "ucel-ws-rules",
 ]
 
 [[package]]

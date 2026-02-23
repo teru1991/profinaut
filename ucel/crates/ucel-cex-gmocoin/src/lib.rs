@@ -1,3 +1,6 @@
+pub mod symbols;
+pub mod ws;
+
 use bytes::Bytes;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -1155,7 +1158,5 @@ mod tests {
 }
 
 pub mod channels;
-pub mod symbols;
 pub mod ws_manager;
 
-pub mod ws;
