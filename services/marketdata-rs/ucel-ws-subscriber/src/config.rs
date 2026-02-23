@@ -3,59 +3,64 @@ use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub struct IngestConfig {
-    /// ucel/coverage のディレクトリ（SSOT）
+    /// SSOT: ucel/coverage
     pub coverage_dir: PathBuf,
 
-    /// ucel-ws-rules の rules ディレクトリ（例: ucel/crates/ucel-ws-rules/rules）
-    pub rules_dir: String,
+    /// rules dir: ucel/crates/ucel-ws-rules/rules
+    pub rules_dir: PathBuf,
 
-    /// SubscriptionStore の sqlite パス
-    pub store_path: String,
+    /// sqlite path
+    pub store_path: PathBuf,
 
-    /// WAL出力ディレクトリ（ucel-journal）
-    pub journal_dir: String,
+    /// WAL dir
+    pub journal_dir: PathBuf,
 
-    /// WAL最大サイズ（bytes）
+    /// WAL max bytes
     pub wal_max_bytes: u64,
 
-    /// fsync mode（ucel-journal）
+    /// fsync mode
     pub fsync_mode: ucel_journal::FsyncMode,
 
-    /// WS受信/送信キュー容量
+    /// WS queue caps
     pub recv_queue_cap: usize,
 
-    /// 最大フレームサイズ（DoS耐性）
+    /// DoS guard
     pub max_frame_bytes: usize,
 
-    /// drip購読（inflight）上限
+    /// drip limit
     pub max_inflight_per_conn: usize,
 
-    /// WS connect timeout
+    /// timeouts
     pub connect_timeout: Duration,
-
-    /// idle timeout（無受信→ping/reconnect）
     pub idle_timeout: Duration,
 
     /// reconnect storm guard
     pub reconnect_storm_window: Duration,
     pub reconnect_storm_max: usize,
 
-    /// 1取引所あたりの最大接続数（安全停止ガード）
+    /// safety: max conns per exchange
     pub max_connections_per_exchange: usize,
 
-    /// private ws を有効化（v1ではfalse推奨）
+    /// v1: private ws off
     pub enable_private_ws: bool,
 
-    /// 起動対象取引所のallowlist（未指定なら coverage 全部→v1は supervisor 側で gmocoin に絞る）
-    pub exchange_allowlist: Option<Vec<String>>,
+    /// allowlist: default gmocoin only
+    pub exchange_allowlist: Vec<String>,
+
+    /// rules gate: default require full
+    pub require_rules_full: bool,
+    pub allow_partial_rules: bool,
+
+    /// shutdown join grace
+    pub shutdown_grace: Duration,
 }
 
 impl IngestConfig {
     pub fn from_env() -> Result<Self, String> {
-        let coverage_dir = env_path("UCEL_COVERAGE_DIR", "../../coverage");
-        let rules_dir = env_string("UCEL_RULES_DIR", "ucel/crates/ucel-ws-rules/rules");
-        let store_path = env_string("UCEL_STORE_PATH", "ucel-ws-subscriber.sqlite");
-        let journal_dir = env_string("UCEL_JOURNAL_DIR", ".ucel-wal");
+        let coverage_dir = env_path("UCEL_COVERAGE_DIR", "ucel/coverage");
+        let rules_dir = env_path("UCEL_RULES_DIR", "ucel/crates/ucel-ws-rules/rules");
+        let store_path = env_path("UCEL_STORE_PATH", "/tmp/ucel-ws-subscriber.sqlite");
+        let journal_dir = env_path("UCEL_JOURNAL_DIR", "/tmp/ucel-wal");
 
         let wal_max_bytes = env_u64("UCEL_WAL_MAX_BYTES", 256 * 1024 * 1024)?;
         let fsync_mode = env_fsync_mode("UCEL_FSYNC_MODE", "balanced");
@@ -74,7 +79,15 @@ impl IngestConfig {
         let max_connections_per_exchange = env_usize("UCEL_MAX_CONNECTIONS_PER_EXCHANGE", 512)?;
         let enable_private_ws = env_bool("UCEL_ENABLE_PRIVATE_WS", false);
 
-        let exchange_allowlist = env_opt_csv("UCEL_EXCHANGE_ALLOWLIST");
+        // allowlist default = gmocoin（未指定で全起動を防ぐ）
+        let exchange_allowlist =
+            env_opt_csv("UCEL_EXCHANGE_ALLOWLIST").unwrap_or_else(|| vec!["gmocoin".to_string()]);
+
+        // rules gate（安全側）
+        let require_rules_full = env_bool("UCEL_REQUIRE_RULES_FULL", true);
+        let allow_partial_rules = env_bool("UCEL_ALLOW_PARTIAL_RULES", false);
+
+        let shutdown_grace = Duration::from_secs(env_u64("UCEL_SHUTDOWN_GRACE_SECS", 5)?);
 
         Ok(Self {
             coverage_dir,
@@ -93,12 +106,11 @@ impl IngestConfig {
             max_connections_per_exchange,
             enable_private_ws,
             exchange_allowlist,
+            require_rules_full,
+            allow_partial_rules,
+            shutdown_grace,
         })
     }
-}
-
-fn env_string(key: &str, default: &str) -> String {
-    std::env::var(key).unwrap_or_else(|_| default.to_string())
 }
 
 fn env_path(key: &str, default: &str) -> PathBuf {
