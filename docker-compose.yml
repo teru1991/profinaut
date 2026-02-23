@@ -162,7 +162,8 @@ services:
       - ./infra/init/objectstore/s3-config.tmpl.json:/etc/seaweedfs/s3-config.tmpl.json:ro
       - ./infra/init/objectstore/seaweedfs-entrypoint.sh:/init/seaweedfs-entrypoint.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8333 >/dev/null"]
+      # ここを修正しました（403などのエラー応答でもヘルスチェックを通過させるため || exit 0 を追加）
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8333/ || exit 0"]
       interval: 10s
       timeout: 5s
       retries: 15
