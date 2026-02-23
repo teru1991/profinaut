@@ -1,66 +1,108 @@
 venue: binance-spot
 strict: true
 families:
-  # per-symbol
-  - id: binance.spot.public.ws.trade
-    requires_symbol: true
-    topic_template: "{symbol}@trade"
-    params: {}
-    weight: 20
-
+  # --- Trades ---
   - id: binance.spot.public.ws.aggTrade
     requires_symbol: true
     topic_template: "{symbol}@aggTrade"
     params: {}
+    weight: 20
+
+  - id: binance.spot.public.ws.trade
+    requires_symbol: true
+    topic_template: "{symbol}@trade"
+    params: {}
     weight: 25
 
-  - id: binance.spot.public.ws.ticker24h
+  # --- Kline (UTC) ---
+  - id: binance.spot.public.ws.kline
+    requires_symbol: true
+    topic_template: "{symbol}@kline_{interval}"
+    params:
+      interval: ["1s","1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]
+    weight: 60
+
+  # --- Kline (timezone offset; official docs show +08:00 variant) ---
+  - id: binance.spot.public.ws.kline_tz
+    requires_symbol: true
+    topic_template: "{symbol}@kline_{interval}@{tz}"
+    params:
+      interval: ["1s","1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]
+      tz: ["+08:00"]
+    weight: 61
+
+  # --- MiniTicker (24h rolling) ---
+  - id: binance.spot.public.ws.miniTicker
+    requires_symbol: true
+    topic_template: "{symbol}@miniTicker"
+    params: {}
+    weight: 10
+
+  - id: binance.spot.public.ws.allMiniTicker_arr
+    requires_symbol: false
+    topic_template: "!miniTicker@arr"
+    params: {}
+    weight: 90
+
+  # --- Ticker (24h rolling) ---
+  - id: binance.spot.public.ws.ticker
     requires_symbol: true
     topic_template: "{symbol}@ticker"
     params: {}
     weight: 10
 
-  - id: binance.spot.public.ws.miniTicker
+  # --- Rolling Window Statistics (per-symbol + all-market) ---
+  - id: binance.spot.public.ws.ticker_window
     requires_symbol: true
-    topic_template: "{symbol}@miniTicker"
-    params: {}
+    topic_template: "{symbol}@ticker_{window}"
+    params:
+      window: ["1h","4h","1d"]
     weight: 12
 
+  - id: binance.spot.public.ws.allTicker_window_arr
+    requires_symbol: false
+    topic_template: "!ticker_{window}@arr"
+    params:
+      window: ["1h","4h","1d"]
+    weight: 92
+
+  # --- BookTicker (best bid/ask) ---
   - id: binance.spot.public.ws.bookTicker
     requires_symbol: true
     topic_template: "{symbol}@bookTicker"
     params: {}
     weight: 15
 
-  - id: binance.spot.public.ws.depth
-    requires_symbol: true
-    topic_template: "{symbol}@depth@{speed}"
-    params:
-      speed: ["100ms", "1000ms"]
-    weight: 40
-
-  - id: binance.spot.public.ws.kline
-    requires_symbol: true
-    topic_template: "{symbol}@kline_{interval}"
-    params:
-      interval: ["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]
-    weight: 60
-
-  # all-market (symbol-less)
+  # NOTE:
+  # Spot 公式 doc 本体には !bookTicker が掲載されていない時期がありますが、
+  # Binance 側の WebSocket Market Streams 表では !bookTicker が存在する旨が示されています。
+  # (環境によっては非推奨/廃止される可能性があるため、運用で gate してもOK)
   - id: binance.spot.public.ws.allBookTicker
     requires_symbol: false
     topic_template: "!bookTicker"
     params: {}
-    weight: 90
+    weight: 95
 
-  - id: binance.spot.public.ws.allTicker24h
-    requires_symbol: false
-    topic_template: "!ticker@arr"
+  # --- Average Price ---
+  - id: binance.spot.public.ws.avgPrice
+    requires_symbol: true
+    topic_template: "{symbol}@avgPrice"
     params: {}
-    weight: 90
+    weight: 30
 
-  - id: binance.spot.public.ws.allMiniTicker
-    requires_symbol: false
-    topic_template: "!miniTicker@arr"
-    params: {}
-    weight: 90
+  # --- Orderbook: Partial depth (top levels) ---
+  - id: binance.spot.public.ws.depth_partial
+    requires_symbol: true
+    topic_template: "{symbol}@depth{levels}@{speed}"
+    params:
+      levels: [5, 10, 20]
+      speed: ["100ms","500ms","1000ms"]
+    weight: 40
+
+  # --- Orderbook: Diff depth (updates) ---
+  - id: binance.spot.public.ws.depth_diff
+    requires_symbol: true
+    topic_template: "{symbol}@depth@{speed}"
+    params:
+      speed: ["100ms","500ms","1000ms"]
+    weight: 45
