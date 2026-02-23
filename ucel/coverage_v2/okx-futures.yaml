@@ -1,0 +1,33 @@
+venue: okx-futures
+strict: true
+families:
+  - id: okx.public.ws.tickers
+    requires_symbol: true
+    topic_template: "tickers"
+    params: {}
+    weight: 10
+  - id: okx.public.ws.trades
+    requires_symbol: true
+    topic_template: "trades"
+    params: {}
+    weight: 20
+  - id: okx.public.ws.books
+    requires_symbol: true
+    topic_template: "books"
+    params: {}
+    weight: 40
+  - id: okx.public.ws.candle1m
+    requires_symbol: true
+    topic_template: "candle1m"
+    params: {}
+    weight: 60
+  - id: okx.public.ws.open-interest
+    requires_symbol: true
+    topic_template: "open-interest"
+    params: {}
+    weight: 80
+  - id: okx.public.ws.mark-price
+    requires_symbol: true
+    topic_template: "mark-price"
+    params: {}
+    weight: 80

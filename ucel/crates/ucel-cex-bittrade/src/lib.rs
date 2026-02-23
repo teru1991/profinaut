@@ -173,7 +173,11 @@ impl BittradeWsAdapter {
     ) -> Result<BittradeRestResponse, UcelError> {
         let mut attempt = 0;
         loop {
-            let send = tokio::time::timeout(self.timeout, self.transport.send_http(req.clone(), ctx.clone())).await;
+            let send = tokio::time::timeout(
+                self.timeout,
+                self.transport.send_http(req.clone(), ctx.clone()),
+            )
+            .await;
             let resp = match send {
                 Ok(v) => v,
                 Err(_) => Err(UcelError::new(ErrorCode::Timeout, "request timeout")),
@@ -188,13 +192,17 @@ impl BittradeWsAdapter {
                         if attempt >= self.max_retries {
                             return Err(err);
                         }
-                        let wait = next_retry_delay_ms(&self.retry_policy, attempt, err.retry_after_ms);
+                        let wait =
+                            next_retry_delay_ms(&self.retry_policy, attempt, err.retry_after_ms);
                         tokio::time::sleep(Duration::from_millis(wait)).await;
                         attempt += 1;
                         continue;
                     }
                     if ok.status >= 500 {
-                        let err = UcelError::new(ErrorCode::Upstream5xx, format!("upstream status {}", ok.status));
+                        let err = UcelError::new(
+                            ErrorCode::Upstream5xx,
+                            format!("upstream status {}", ok.status),
+                        );
                         if attempt >= self.max_retries {
                             return Err(err);
                         }
@@ -222,13 +230,19 @@ impl BittradeWsAdapter {
     }
 }
 
-fn render_path(path_template: &str, path_params: &BTreeMap<String, String>) -> Result<String, UcelError> {
+fn render_path(
+    path_template: &str,
+    path_params: &BTreeMap<String, String>,
+) -> Result<String, UcelError> {
     let mut rendered = path_template.to_string();
     for (k, v) in path_params {
         rendered = rendered.replace(&format!("{{{k}}}"), v);
     }
     if rendered.contains('{') {
-        return Err(UcelError::new(ErrorCode::CatalogInvalid, "missing path param"));
+        return Err(UcelError::new(
+            ErrorCode::CatalogInvalid,
+            "missing path param",
+        ));
     }
     Ok(rendered)
 }
@@ -299,7 +313,12 @@ fn parse_error(body: &Bytes, fallback: ErrorCode) -> UcelError {
     if let Ok(e) = serde_json::from_slice::<BittradeErrorBody>(body) {
         let code_key = e.err_code.or(e.code).unwrap_or_default();
         let mapped = map_error_code(code_key.as_str(), fallback);
-        let mut out = UcelError::new(mapped, e.err_msg.or(e.message).unwrap_or_else(|| "bittrade error".into()));
+        let mut out = UcelError::new(
+            mapped,
+            e.err_msg
+                .or(e.message)
+                .unwrap_or_else(|| "bittrade error".into()),
+        );
         out.retry_after_ms = e.retry_after_ms.or(e.retry_after);
         return out;
     }
@@ -308,7 +327,9 @@ fn parse_error(body: &Bytes, fallback: ErrorCode) -> UcelError {
 
 fn map_error_code(code: &str, fallback: ErrorCode) -> ErrorCode {
     match code {
-        "api-signature-not-valid" | "login-required" | "authentication-failed" => ErrorCode::AuthFailed,
+        "api-signature-not-valid" | "login-required" | "authentication-failed" => {
+            ErrorCode::AuthFailed
+        }
         "403" | "forbidden" | "permission-denied" => ErrorCode::PermissionDenied,
         "order-invalid" | "order-not-found" | "base-record-invalid" => ErrorCode::InvalidOrder,
         "429" | "too-many-requests" | "rate-limit" => ErrorCode::RateLimited,
@@ -336,6 +357,7 @@ fn map_op(id: &str) -> OpName {
     }
 }
 
-pub mod symbols;
-pub mod ws_manager;
 pub mod channels;
+pub mod symbols;
+pub mod ws;
+pub mod ws_manager;

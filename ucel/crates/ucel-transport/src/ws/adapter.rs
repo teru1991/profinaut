@@ -24,6 +24,10 @@ pub enum InboundClass {
         symbol: Option<String>,
         params_canon_hint: Option<String>,
     },
+    /// HTX/BitTrade app ping -> immediate pong send
+    Respond {
+        msg: OutboundMsg,
+    },
     System,
     Unknown,
 }
@@ -41,6 +45,7 @@ pub trait WsVenueAdapter: Send + Sync + 'static {
     ) -> Result<Vec<OutboundMsg>, String>;
     fn classify_inbound(&self, raw: &[u8]) -> InboundClass;
 
+    /// periodic app ping (Bybit/Bitget/Kraken/OKX)
     fn ping_msg(&self) -> Option<OutboundMsg> {
         None
     }

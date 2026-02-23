@@ -1,20 +1,20 @@
 [package]
 name = "ucel-cex-okx"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
 
 [dependencies]
-bytes = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-tokio = { workspace = true, features = ["sync"] }
+serde_yaml = { workspace = true }
+tokio = { workspace = true, features = ["sync", "rt", "macros"] }
 tracing = { workspace = true }
+
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+async-trait = "0.1"
+
 ucel-core = { path = "../ucel-core" }
 ucel-transport = { path = "../ucel-transport" }
-uuid = { version = "1", features = ["v4"] }
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 
 [dev-dependencies]
-serde_yaml = { workspace = true }
-tokio = { workspace = true, features = ["macros", "rt"] }
-tracing-subscriber = "0.3"
+tracing-subscriber = { version = "0.3", features = ["fmt"] }

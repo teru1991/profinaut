@@ -73,7 +73,6 @@ fn parse_stable_key(key: &str) -> Option<(&str, &str, Option<&str>, &str)> {
     Some((exchange, op, symbol, params))
 }
 
-/// 固定窓 msgs/sec リミッタ（待つ）
 #[derive(Clone)]
 struct FixedWindowLimiter {
     max_per_sec: u32,
@@ -103,7 +102,6 @@ impl FixedWindowLimiter {
     }
 }
 
-/// Phase2: WAL writer task parameters
 #[derive(Clone, Debug)]
 struct WalQueuePolicy {
     cap: usize,
@@ -118,7 +116,6 @@ impl Default for WalQueuePolicy {
     }
 }
 
-/// Phase2: send backpressure policy (send enqueue wait time)
 #[derive(Clone, Debug)]
 struct SendBackpressurePolicy {
     throttle_after_ms: u64,
@@ -139,7 +136,11 @@ impl Default for SendBackpressurePolicy {
     }
 }
 
-/// WS connection runner (public)
+enum OutboundFrame {
+    Text(String),
+    Pong(Vec<u8>),
+}
+
 pub async fn run_ws_connection(
     adapter: Arc<dyn WsVenueAdapter>,
     rules: ExchangeWsRules,
@@ -150,16 +151,13 @@ pub async fn run_ws_connection(
 ) -> Result<(), String> {
     let url = adapter.ws_url();
 
-    // subscribe rate (rules). if missing -> safe 1 msg/sec
     let subscribe_mps = rules
         .rate
         .as_ref()
         .and_then(|r| r.messages_per_second)
         .unwrap_or(1)
         .max(1);
-
-    // client msg rate (ping含む). conservative
-    let client_mps = 2u32;
+    let client_mps = 2u32; // conservative
 
     let mut sub_limiter = FixedWindowLimiter::new(subscribe_mps);
     let mut client_limiter = FixedWindowLimiter::new(client_mps);
@@ -170,6 +168,27 @@ pub async fn run_ws_connection(
         .and_then(|h| h.idle_timeout_secs)
         .map(Duration::from_secs)
         .unwrap_or(cfg.idle_timeout);
+    let ping_interval = rules
+        .heartbeat
+        .as_ref()
+        .and_then(|h| h.ping_interval_secs)
+        .unwrap_or(0);
+    let ping_interval = if ping_interval == 0 {
+        None
+    } else {
+        Some(Duration::from_secs(ping_interval))
+    };
+
+    let max_age = rules
+        .heartbeat
+        .as_ref()
+        .and_then(|h| h.max_connection_age_secs)
+        .unwrap_or(0);
+    let max_age = if max_age == 0 {
+        None
+    } else {
+        Some(Duration::from_secs(max_age))
+    };
 
     let wal_policy = WalQueuePolicy::default();
     let send_bp = SendBackpressurePolicy::default();
@@ -183,10 +202,9 @@ pub async fn run_ws_connection(
             return Ok(());
         }
 
-        // requeue (続きから)
         let _ = store.requeue_active_to_pending(&cfg.exchange_id, &cfg.conn_id, now_unix_i64());
 
-        // storm guard window management
+        // storm guard
         let nowi = Instant::now();
         reconnect_times.push_back(nowi);
         while let Some(front) = reconnect_times.front() {
@@ -226,16 +244,13 @@ pub async fn run_ws_connection(
         };
 
         reconnect_attempt = 0;
+        let conn_started = Instant::now();
 
         let (mut write, mut read) = ws_stream.split();
 
-        // outbound queue
-        let (tx, mut rx) = mpsc::channel::<OutboundMsg>(cfg.recv_queue_cap);
-
-        // WAL queue: read loop -> wal_tx (bounded)
+        let (tx, mut rx) = mpsc::channel::<OutboundFrame>(cfg.recv_queue_cap);
         let (wal_tx, mut wal_rx) = mpsc::channel::<RawRecord>(wal_policy.cap);
 
-        // WAL writer task (append-first guarantee, but separated from read loop)
         let wal_writer = {
             let wal = wal.clone();
             let exchange_id = cfg.exchange_id.clone();
@@ -244,35 +259,27 @@ pub async fn run_ws_connection(
             tokio::spawn(async move {
                 while let Some(rec) = wal_rx.recv().await {
                     if shutdown.is_triggered() {
-                        // best-effort drain could be added; v1: stop quickly
                         break;
                     }
-                    let t0 = Instant::now();
                     let r = {
                         let mut w = wal.lock().await;
                         w.append(&rec)
                     };
                     if let Err(e) = r {
-                        // WAL failed => safety stop at upper layer by closing channel (no retries here)
                         warn!(exchange_id=%exchange_id, conn=%conn_id, err=%e, "WAL append failed");
                         break;
-                    }
-                    let dt = t0.elapsed();
-                    if dt > Duration::from_millis(500) {
-                        warn!(exchange_id=%exchange_id, conn=%conn_id, ms=?dt.as_millis(), "WAL append slow");
                     }
                 }
             })
         };
 
-        // writer task (ALL outbound must respect client limiter)
         let writer = {
             let exchange_id = cfg.exchange_id.clone();
             let conn_id = cfg.conn_id.clone();
             let shutdown = shutdown.clone();
             let mut client_limiter = client_limiter.clone();
             tokio::spawn(async move {
-                while let Some(m) = rx.recv().await {
+                while let Some(f) = rx.recv().await {
                     if shutdown.is_triggered() {
                         break;
                     }
@@ -280,7 +287,11 @@ pub async fn run_ws_connection(
                     if w > Duration::from_secs(0) {
                         tokio::time::sleep(w).await;
                     }
-                    if write.send(Message::Text(m.text)).await.is_err() {
+                    let res = match f {
+                        OutboundFrame::Text(t) => write.send(Message::Text(t)).await,
+                        OutboundFrame::Pong(p) => write.send(Message::Pong(p)).await,
+                    };
+                    if res.is_err() {
                         warn!(exchange_id=%exchange_id, conn=%conn_id, "write failed");
                         break;
                     }
@@ -290,8 +301,8 @@ pub async fn run_ws_connection(
 
         let mut last_inbound = Instant::now();
         let mut last_drip = Instant::now();
+        let mut last_periodic_ping = Instant::now();
 
-        // backpressure state
         let mut drip_paused_until: Option<Instant> = None;
         let mut slow_send_consecutive: u32 = 0;
         let mut very_slow_send_consecutive: u32 = 0;
@@ -305,25 +316,36 @@ pub async fn run_ws_connection(
                 return Ok(());
             }
 
-            // idle -> ping/reconnect
+            if let Some(ma) = max_age {
+                if conn_started.elapsed() >= ma {
+                    warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, "max_connection_age reached -> rotate reconnect");
+                    break;
+                }
+            }
+
+            if let Some(intv) = ping_interval {
+                if last_periodic_ping.elapsed() >= intv {
+                    last_periodic_ping = Instant::now();
+                    if let Some(p) = adapter.ping_msg() {
+                        let _ = tx.send(OutboundFrame::Text(p.text)).await;
+                    }
+                }
+            }
+
             if last_inbound.elapsed() >= hb_idle {
                 if let Some(p) = adapter.ping_msg() {
-                    let _ = tx.send(p).await;
+                    let _ = tx.send(OutboundFrame::Text(p.text)).await;
                 }
                 warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, "idle timeout -> reconnect");
                 break;
             }
 
-            // drip pause due to backpressure
             if let Some(until) = drip_paused_until {
-                if Instant::now() < until {
-                    // still paused: no drip, just read
-                } else {
+                if Instant::now() >= until {
                     drip_paused_until = None;
                 }
             }
 
-            // drip subscribe (unless paused)
             if drip_paused_until.is_none() && last_drip.elapsed() >= Duration::from_millis(200) {
                 last_drip = Instant::now();
                 let now = now_unix_i64();
@@ -334,12 +356,7 @@ pub async fn run_ws_connection(
                     cfg.max_inflight_per_conn,
                     now,
                 )?;
-
                 for key in keys {
-                    if shutdown.is_triggered() {
-                        break;
-                    }
-
                     let (_ex, op_id, sym_opt, params_canon) = match parse_stable_key(&key) {
                         Some(v) => v,
                         None => {
@@ -355,7 +372,6 @@ pub async fn run_ws_connection(
                         }
                     };
 
-                    // subscribe rate
                     let w = sub_limiter.allow_or_wait();
                     if w > Duration::from_secs(0) {
                         tokio::time::sleep(w).await;
@@ -372,9 +388,8 @@ pub async fn run_ws_connection(
                     };
 
                     for m in msgs {
-                        // Phase2: send enqueue latency as backpressure signal
                         let t0 = Instant::now();
-                        if tx.send(m).await.is_err() {
+                        if tx.send(OutboundFrame::Text(m.text)).await.is_err() {
                             warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, "outbound queue closed");
                             break;
                         }
@@ -399,7 +414,6 @@ pub async fn run_ws_connection(
                         }
 
                         if very_slow_send_consecutive >= send_bp.stop_consecutive {
-                            // Safety stop (cannot keep up)
                             writer.abort();
                             wal_writer.abort();
                             return Err("send backpressure stop".into());
@@ -408,7 +422,7 @@ pub async fn run_ws_connection(
                 }
             }
 
-            // inbound read (short timeout)
+            // inbound
             let next = tokio::time::timeout(Duration::from_millis(250), read.next()).await;
             let maybe_item = match next {
                 Ok(v) => v,
@@ -423,167 +437,29 @@ pub async fn run_ws_connection(
                 Err(_) => break,
             };
 
-            let raw: Vec<u8> = match msg {
-                Message::Text(t) => t.into_bytes(),
-                Message::Binary(b) => b,
-                Message::Ping(_) | Message::Pong(_) => continue,
+            match msg {
+                Message::Ping(p) => {
+                    let _ = tx.send(OutboundFrame::Pong(p)).await;
+                    last_inbound = Instant::now();
+                    continue;
+                }
+                Message::Pong(_) => {
+                    last_inbound = Instant::now();
+                    continue;
+                }
                 Message::Close(_) => break,
-                _ => continue,
-            };
-
-            if raw.len() > cfg.max_frame_bytes {
-                writer.abort();
-                wal_writer.abort();
-                return Err("frame too large (DoS) -> stop".into());
-            }
-
-            last_inbound = Instant::now();
-
-            // classify (light)
-            let classified = adapter.classify_inbound(&raw);
-
-            // Phase2: enqueue WAL record (append-first intent) via bounded queue.
-            // If queue is full -> Stop (safe)
-            let mut meta = serde_json::Map::new();
-            match &classified {
-                InboundClass::Ack { op_id, symbol, .. } => {
-                    meta.insert("op_id".into(), serde_json::Value::String(op_id.clone()));
-                    if let Some(s) = symbol.as_ref() {
-                        meta.insert("symbol".into(), serde_json::Value::String(s.clone()));
-                    }
-                    meta.insert("kind".into(), serde_json::Value::String("ack".into()));
+                Message::Text(t) => {
+                    handle_inbound(&adapter, &cfg, store, &wal_tx, &tx, t.into_bytes()).await?;
+                    last_inbound = Instant::now();
                 }
-                InboundClass::Data { op_id, symbol, .. } => {
-                    if let Some(op) = op_id.as_ref() {
-                        meta.insert("op_id".into(), serde_json::Value::String(op.clone()));
-                    }
-                    if let Some(s) = symbol.as_ref() {
-                        meta.insert("symbol".into(), serde_json::Value::String(s.clone()));
-                    }
-                    meta.insert("kind".into(), serde_json::Value::String("data".into()));
-                }
-                InboundClass::Nack {
-                    reason,
-                    op_id,
-                    symbol,
-                    ..
-                } => {
-                    meta.insert("reason".into(), serde_json::Value::String(reason.clone()));
-                    if let Some(op) = op_id.as_ref() {
-                        meta.insert("op_id".into(), serde_json::Value::String(op.clone()));
-                    }
-                    if let Some(s) = symbol.as_ref() {
-                        meta.insert("symbol".into(), serde_json::Value::String(s.clone()));
-                    }
-                    meta.insert("kind".into(), serde_json::Value::String("nack".into()));
-                }
-                _ => {}
-            }
-
-            let rec = RawRecord {
-                ts: now_unix_u64(),
-                exchange_id: cfg.exchange_id.clone(),
-                conn_id: cfg.conn_id.clone(),
-                op_id: meta
-                    .get("op_id")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("unknown")
-                    .to_string(),
-                symbol: meta
-                    .get("symbol")
-                    .and_then(|v| v.as_str())
-                    .map(|s| s.to_string()),
-                raw_bytes_b64: base64::encode(&raw),
-                meta: serde_json::Value::Object(meta),
-            };
-
-            // bounded WAL queue: full => stop
-            if wal_policy.stop_on_full {
-                match wal_tx.try_send(rec) {
-                    Ok(_) => {}
-                    Err(mpsc::error::TrySendError::Full(_)) => {
-                        writer.abort();
-                        wal_writer.abort();
-                        return Err("WAL queue full -> stop".into());
-                    }
-                    Err(mpsc::error::TrySendError::Closed(_)) => {
-                        writer.abort();
-                        wal_writer.abort();
-                        return Err("WAL writer stopped -> stop".into());
-                    }
-                }
-            } else if wal_tx.send(rec).await.is_err() {
-                writer.abort();
-                wal_writer.abort();
-                return Err("WAL writer stopped -> stop".into());
-            }
-
-            // Active marking (store)
-            let now = now_unix_i64();
-            match classified {
-                InboundClass::Ack {
-                    op_id,
-                    symbol,
-                    params_canon_hint,
-                } => {
-                    let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
-                    let key = store.find_key_by_fields(
-                        &cfg.exchange_id,
-                        &cfg.conn_id,
-                        &op_id,
-                        symbol.as_deref(),
-                        params_canon,
-                    )?;
-                    if let Some(k) = key {
-                        store.mark_active(&k, now)?;
-                        store.bump_last_message(&k, now)?;
-                    }
-                }
-                InboundClass::Data {
-                    op_id,
-                    symbol,
-                    params_canon_hint,
-                } => {
-                    if let (Some(op), Some(sym)) = (op_id, symbol) {
-                        let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
-                        let key = store.find_key_by_fields(
-                            &cfg.exchange_id,
-                            &cfg.conn_id,
-                            &op,
-                            Some(&sym),
-                            params_canon,
-                        )?;
-                        if let Some(k) = key {
-                            store.mark_active(&k, now)?;
-                            store.bump_last_message(&k, now)?;
-                        }
-                    }
-                }
-                InboundClass::Nack {
-                    reason,
-                    op_id,
-                    symbol,
-                    params_canon_hint,
-                } => {
-                    let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
-                    if let Some(op) = op_id {
-                        let key = store.find_key_by_fields(
-                            &cfg.exchange_id,
-                            &cfg.conn_id,
-                            &op,
-                            symbol.as_deref(),
-                            params_canon,
-                        )?;
-                        if let Some(k) = key {
-                            store.mark_deadletter(&k, &format!("nack:{reason}"), now)?;
-                        }
-                    }
+                Message::Binary(b) => {
+                    handle_inbound(&adapter, &cfg, store, &wal_tx, &tx, b).await?;
+                    last_inbound = Instant::now();
                 }
                 _ => {}
             }
         }
 
-        // disconnect -> reconnect
         writer.abort();
         wal_writer.abort();
 
@@ -591,4 +467,150 @@ pub async fn run_ws_connection(
         reconnect_attempt = reconnect_attempt.saturating_add(1);
         tokio::time::sleep(Duration::from_millis(backoff)).await;
     }
+}
+
+async fn handle_inbound(
+    adapter: &Arc<dyn WsVenueAdapter>,
+    cfg: &WsRunConfig,
+    store: &mut SubscriptionStore,
+    wal_tx: &mpsc::Sender<RawRecord>,
+    out_tx: &mpsc::Sender<OutboundFrame>,
+    raw: Vec<u8>,
+) -> Result<(), String> {
+    if raw.len() > cfg.max_frame_bytes {
+        return Err("frame too large (DoS) -> stop".into());
+    }
+
+    let classified = adapter.classify_inbound(&raw);
+
+    if let InboundClass::Respond { msg } = &classified {
+        let _ = out_tx.send(OutboundFrame::Text(msg.text.clone())).await;
+    }
+
+    let mut meta = serde_json::Map::new();
+    match &classified {
+        InboundClass::Ack { op_id, symbol, .. } => {
+            meta.insert("op_id".into(), serde_json::Value::String(op_id.clone()));
+            if let Some(s) = symbol.as_ref() {
+                meta.insert("symbol".into(), serde_json::Value::String(s.clone()));
+            }
+            meta.insert("kind".into(), serde_json::Value::String("ack".into()));
+        }
+        InboundClass::Data { op_id, symbol, .. } => {
+            if let Some(op) = op_id.as_ref() {
+                meta.insert("op_id".into(), serde_json::Value::String(op.clone()));
+            }
+            if let Some(s) = symbol.as_ref() {
+                meta.insert("symbol".into(), serde_json::Value::String(s.clone()));
+            }
+            meta.insert("kind".into(), serde_json::Value::String("data".into()));
+        }
+        InboundClass::Nack {
+            reason,
+            op_id,
+            symbol,
+            ..
+        } => {
+            meta.insert("reason".into(), serde_json::Value::String(reason.clone()));
+            if let Some(op) = op_id.as_ref() {
+                meta.insert("op_id".into(), serde_json::Value::String(op.clone()));
+            }
+            if let Some(s) = symbol.as_ref() {
+                meta.insert("symbol".into(), serde_json::Value::String(s.clone()));
+            }
+            meta.insert("kind".into(), serde_json::Value::String("nack".into()));
+        }
+        InboundClass::Respond { .. } => {
+            meta.insert("kind".into(), serde_json::Value::String("respond".into()));
+        }
+        _ => {}
+    }
+
+    let rec = RawRecord {
+        ts: now_unix_u64(),
+        exchange_id: cfg.exchange_id.clone(),
+        conn_id: cfg.conn_id.clone(),
+        op_id: meta
+            .get("op_id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("unknown")
+            .to_string(),
+        symbol: meta
+            .get("symbol")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
+        raw_bytes_b64: base64::encode(&raw),
+        meta: serde_json::Value::Object(meta),
+    };
+
+    // WAL queue bounded: await send (safe)
+    wal_tx
+        .send(rec)
+        .await
+        .map_err(|_| "WAL writer stopped -> stop".to_string())?;
+
+    let now = now_unix_i64();
+    match classified {
+        InboundClass::Ack {
+            op_id,
+            symbol,
+            params_canon_hint,
+        } => {
+            let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
+            let key = store.find_key_by_fields(
+                &cfg.exchange_id,
+                &cfg.conn_id,
+                &op_id,
+                symbol.as_deref(),
+                params_canon,
+            )?;
+            if let Some(k) = key {
+                store.mark_active(&k, now)?;
+                store.bump_last_message(&k, now)?;
+            }
+        }
+        InboundClass::Data {
+            op_id,
+            symbol,
+            params_canon_hint,
+        } => {
+            if let (Some(op), Some(sym)) = (op_id, symbol) {
+                let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
+                let key = store.find_key_by_fields(
+                    &cfg.exchange_id,
+                    &cfg.conn_id,
+                    &op,
+                    Some(&sym),
+                    params_canon,
+                )?;
+                if let Some(k) = key {
+                    store.mark_active(&k, now)?;
+                    store.bump_last_message(&k, now)?;
+                }
+            }
+        }
+        InboundClass::Nack {
+            reason,
+            op_id,
+            symbol,
+            params_canon_hint,
+        } => {
+            let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
+            if let Some(op) = op_id {
+                let key = store.find_key_by_fields(
+                    &cfg.exchange_id,
+                    &cfg.conn_id,
+                    &op,
+                    symbol.as_deref(),
+                    params_canon,
+                )?;
+                if let Some(k) = key {
+                    store.mark_deadletter(&k, &format!("nack:{reason}"), now)?;
+                }
+            }
+        }
+        _ => {}
+    }
+
+    Ok(())
 }

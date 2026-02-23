@@ -11,7 +11,16 @@ ucel-journal = { path = "../../../ucel/crates/ucel-journal" }
 ucel-registry = { path = "../../../ucel/crates/ucel-registry" }
 ucel-transport = { path = "../../../ucel/crates/ucel-transport" }
 ucel-core = { path = "../../../ucel/crates/ucel-core" }
+
+# adapters
 ucel-cex-gmocoin = { path = "../../../ucel/crates/ucel-cex-gmocoin" }
+ucel-cex-bybit = { path = "../../../ucel/crates/ucel-cex-bybit" }
+ucel-cex-bitget = { path = "../../../ucel/crates/ucel-cex-bitget" }
+ucel-cex-okx = { path = "../../../ucel/crates/ucel-cex-okx" }
+ucel-cex-htx = { path = "../../../ucel/crates/ucel-cex-htx" }
+ucel-cex-kraken = { path = "../../../ucel/crates/ucel-cex-kraken" }
+ucel-cex-bittrade = { path = "../../../ucel/crates/ucel-cex-bittrade" }
+
 serde = { version = "1", features = ["derive"] }
 thiserror = "1"
 tracing = { version = "0.1" }

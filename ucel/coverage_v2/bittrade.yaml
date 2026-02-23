@@ -1,0 +1,30 @@
+venue: bittrade
+strict: true
+families:
+  - id: bittrade.public.ws.detail
+    requires_symbol: true
+    topic_template: "market.{symbol}.detail"
+    params: {}
+    weight: 10
+  - id: bittrade.public.ws.trades
+    requires_symbol: true
+    topic_template: "market.{symbol}.trade.detail"
+    params: {}
+    weight: 20
+  - id: bittrade.public.ws.depth
+    requires_symbol: true
+    topic_template: "market.{symbol}.depth.{type}"
+    params:
+      type: ["step0","step1","step2","step3","step4","step5"]
+    weight: 40
+  - id: bittrade.public.ws.kline
+    requires_symbol: true
+    topic_template: "market.{symbol}.kline.{period}"
+    params:
+      period: ["1min","5min","15min","30min","60min","4hour","1day","1week","1mon"]
+    weight: 60
+  - id: bittrade.public.ws.bbo
+    requires_symbol: true
+    topic_template: "market.{symbol}.bbo"
+    params: {}
+    weight: 50

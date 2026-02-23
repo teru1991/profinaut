@@ -1,0 +1,33 @@
+venue: bitget-spot
+strict: true
+families:
+  - id: bitget.public.ws.ticker
+    requires_symbol: true
+    topic_template: "ticker"
+    params: {}
+    weight: 10
+  - id: bitget.public.ws.trade
+    requires_symbol: true
+    topic_template: "trade"
+    params: {}
+    weight: 20
+  - id: bitget.public.ws.books
+    requires_symbol: true
+    topic_template: "books"
+    params: {}
+    weight: 40
+  - id: bitget.public.ws.candle1m
+    requires_symbol: true
+    topic_template: "candle1m"
+    params: {}
+    weight: 60
+  - id: bitget.public.ws.markPrice
+    requires_symbol: true
+    topic_template: "markPrice"
+    params: {}
+    weight: 80
+  - id: bitget.public.ws.fundingRate
+    requires_symbol: true
+    topic_template: "fundingRate"
+    params: {}
+    weight: 80
