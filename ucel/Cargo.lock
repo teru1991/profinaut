@@ -2958,11 +2958,13 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
  "tokio-tungstenite",
  "tracing",
  "ucel-core",
  "ucel-journal",
+ "ucel-subscription-planner",
  "ucel-subscription-store",
  "ucel-ws-rules",
 ]
