@@ -333,7 +333,7 @@ async fn e2e_symbol_less_subscription_is_dripped() {
     let mut store = SubscriptionStore::open(":memory:").unwrap();
     let k = SubscriptionKey {
         exchange_id: "gmocoin".to_string(),
-        op_id: "bybit.public.ws.insurance".to_string(),
+        op_id: "test.public.ws.symbol_less".to_string(),
         symbol: None,
         params: json!({}),
     };

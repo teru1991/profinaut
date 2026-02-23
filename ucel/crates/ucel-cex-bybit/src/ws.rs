@@ -64,7 +64,7 @@ fn render(mut tpl: String, symbol: &str, params: &Value) -> String {
             let ph = format!("{{{k}}}");
             if tpl.contains(&ph) {
                 let rep = if v.is_string() {
-                    v.as_str().unwrap().to_string()
+                    v.as_str().unwrap_or_default().to_string()
                 } else {
                     v.to_string()
                 };
@@ -155,6 +155,9 @@ impl WsVenueAdapter for BybitWsAdapter {
         if topic.is_empty() {
             return InboundClass::System;
         }
+        if v.get("data").is_none() {
+            return InboundClass::System;
+        }
 
         let fam = if topic.starts_with("tickers.") {
             Some("bybit.public.ws.tickers")
@@ -168,10 +171,10 @@ impl WsVenueAdapter for BybitWsAdapter {
             Some("bybit.public.ws.kline")
         } else if topic.starts_with("allLiquidation.") {
             Some("bybit.public.ws.allLiquidation")
-        } else if topic.starts_with("insurance.USDT") || topic.starts_with("insurance.USDC") {
-            Some("bybit.public.ws.insurance")
         } else if topic == "insurance.inverse" {
             Some("bybit.public.ws.insurance_inverse")
+        } else if topic.starts_with("insurance.") {
+            Some("bybit.public.ws.insurance")
         } else if topic.starts_with("priceLimit.") {
             Some("bybit.public.ws.priceLimit")
         } else if topic.starts_with("adlAlert.") {
