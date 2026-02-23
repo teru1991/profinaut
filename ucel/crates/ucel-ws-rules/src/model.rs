@@ -20,6 +20,7 @@ pub struct RatePolicy {
 pub struct HeartbeatPolicy {
     pub ping_interval_secs: Option<u64>,
     pub idle_timeout_secs: Option<u64>,
+    pub max_connection_age_secs: Option<u64>, // NEW: preemptive rotate (24h cut etc)
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -39,6 +40,7 @@ pub struct ExchangeWsRules {
 
     pub safety_profile: Option<SafetyProfile>,
 
+    // legacy overrides
     pub max_streams_per_conn: Option<usize>,
     pub max_symbols_per_conn: Option<usize>,
 }

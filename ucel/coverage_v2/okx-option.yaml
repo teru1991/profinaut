@@ -1,0 +1,18 @@
+venue: okx-option
+strict: true
+families:
+  - id: okx.public.ws.tickers
+    requires_symbol: true
+    topic_template: "tickers"
+    params: {}
+    weight: 10
+  - id: okx.public.ws.trades
+    requires_symbol: true
+    topic_template: "trades"
+    params: {}
+    weight: 20
+  - id: okx.public.ws.candle1m
+    requires_symbol: true
+    topic_template: "candle1m"
+    params: {}
+    weight: 60

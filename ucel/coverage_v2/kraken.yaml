@@ -1,0 +1,30 @@
+venue: kraken
+strict: true
+families:
+  - id: kraken.public.ws.ticker
+    requires_symbol: true
+    topic_template: "ticker"
+    params: {}
+    weight: 10
+  - id: kraken.public.ws.trade
+    requires_symbol: true
+    topic_template: "trade"
+    params: {}
+    weight: 20
+  - id: kraken.public.ws.book
+    requires_symbol: true
+    topic_template: "book"
+    params:
+      depth: [10, 25, 100, 500, 1000]
+    weight: 40
+  - id: kraken.public.ws.ohlc
+    requires_symbol: true
+    topic_template: "ohlc"
+    params:
+      interval: [1, 5, 15, 30, 60, 240, 1440, 10080, 21600]
+    weight: 60
+  - id: kraken.public.ws.spread
+    requires_symbol: true
+    topic_template: "spread"
+    params: {}
+    weight: 70
