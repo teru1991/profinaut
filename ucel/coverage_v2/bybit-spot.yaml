@@ -1,18 +1,6 @@
 venue: bybit-spot
 strict: true
 families:
-  - id: bybit.public.ws.tickers
-    requires_symbol: true
-    topic_template: "tickers.{symbol}"
-    params: {}
-    weight: 10
-
-  - id: bybit.public.ws.publicTrade
-    requires_symbol: true
-    topic_template: "publicTrade.{symbol}"
-    params: {}
-    weight: 20
-
   - id: bybit.public.ws.orderbook
     requires_symbol: true
     topic_template: "orderbook.{depth}.{symbol}"
@@ -25,6 +13,18 @@ families:
     topic_template: "orderbook.rpi.{symbol}"
     params: {}
     weight: 45
+
+  - id: bybit.public.ws.publicTrade
+    requires_symbol: true
+    topic_template: "publicTrade.{symbol}"
+    params: {}
+    weight: 20
+
+  - id: bybit.public.ws.tickers
+    requires_symbol: true
+    topic_template: "tickers.{symbol}"
+    params: {}
+    weight: 10
 
   - id: bybit.public.ws.kline
     requires_symbol: true
