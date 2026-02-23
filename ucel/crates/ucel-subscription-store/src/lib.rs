@@ -199,6 +199,35 @@ impl SubscriptionStore {
             .map_err(|e| e.to_string())
     }
 
+    /// deadletterを古い順に削除（上限保持）
+    pub fn purge_deadletter_keep_last(&mut self, keep_last: usize) -> Result<usize, String> {
+        // keep_last件を残して削除
+        // sqlite: rowid を使って簡易に古いものを削除
+        let sql = r#"
+DELETE FROM subscriptions
+WHERE state='deadletter'
+  AND key NOT IN (
+    SELECT key FROM subscriptions
+    WHERE state='deadletter'
+    ORDER BY updated_at DESC
+    LIMIT ?1
+  )
+"#;
+        self.conn
+            .execute(sql, rusqlite::params![keep_last as i64])
+            .map_err(|e| e.to_string())
+    }
+
+    /// deadletterをTTLで削除（updated_at が古いもの）
+    pub fn purge_deadletter_older_than(&mut self, older_than_unix: i64) -> Result<usize, String> {
+        self.conn
+            .execute(
+                "DELETE FROM subscriptions WHERE state='deadletter' AND updated_at < ?1",
+                rusqlite::params![older_than_unix],
+            )
+            .map_err(|e| e.to_string())
+    }
+
     pub fn state_of(&self, key: &str) -> Result<Option<String>, String> {
         self.conn
             .query_row(

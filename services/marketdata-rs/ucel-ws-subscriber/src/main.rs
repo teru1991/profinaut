@@ -2,6 +2,8 @@ use tracing::{error, info, warn};
 use tracing_subscriber::EnvFilter;
 
 mod config;
+mod lock;
+mod adapters;
 mod supervisor;
 
 use config::IngestConfig;
@@ -25,6 +27,16 @@ async fn main() {
     };
 
     info!(?cfg, "ucel-ws-subscriber starting");
+
+    // prevent double-start with same store/journal
+    let lock_path = cfg.store_path.with_extension("lock");
+    let _pid_lock = match lock::PidLock::acquire(&lock_path) {
+        Ok(l) => l,
+        Err(e) => {
+            error!(err=%e, "pid lock acquire failed");
+            std::process::exit(3);
+        }
+    };
     let shutdown = SupervisorShutdown::new();
 
     // SIGINT/SIGTERM

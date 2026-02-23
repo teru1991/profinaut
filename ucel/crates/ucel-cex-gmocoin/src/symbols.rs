@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use ucel_core::symbol;
 
 #[derive(Debug, Deserialize)]
 struct TickerResp {
@@ -12,19 +13,11 @@ struct TickerItem {
 }
 
 fn to_canonical_symbol(s: &str) -> String {
-    if s.contains('_') {
-        s.replace('_', "/")
-    } else {
-        s.to_string()
-    }
+    symbol::normalize_pair(s)
 }
 
 pub fn to_exchange_symbol(canonical: &str) -> String {
-    if canonical.contains('/') {
-        canonical.replace('/', "_")
-    } else {
-        canonical.to_string()
-    }
+    symbol::to_delim(canonical, '_')
 }
 
 pub async fn fetch_all_symbols() -> Result<Vec<String>, String> {
