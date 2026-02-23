@@ -1,29 +1,39 @@
 venue: binance-options
 strict: true
 families:
-  # --- Index Price Streams (symbol-less) ---
+  # --- Index Price (ALL) ---
   - id: binance.options.public.ws.index_arr
     requires_symbol: false
     topic_template: "!index@arr"
     params: {}
     weight: 90
 
-  # --- Trade Streams (symbol or underlying asset) ---
-  - id: binance.options.public.ws.trade_symbol
-    requires_symbol: true
-    topic_template: "{symbol}@trade"
-    params: {}
-    weight: 20
-
-  - id: binance.options.public.ws.trade_underlying
-    requires_symbol: false
-    topic_template: "{underlyingAsset}@trade"
-    params: {}
-    weight: 20
-
-  # --- Index Stream (symbol) ---
+  # --- Index Stream (per symbol) ---
   - id: binance.options.public.ws.index
     requires_symbol: true
     topic_template: "{symbol}@index"
     params: {}
     weight: 30
+
+  # --- Mark Price (per underlyingAsset) ---
+  # NOTE: official docs describe "<underlyingAsset>@markPrice"
+  - id: binance.options.public.ws.markPrice
+    requires_symbol: false
+    topic_template: "{underlyingAsset}@markPrice"
+    params: {}
+    weight: 35
+
+  # --- Kline ---
+  - id: binance.options.public.ws.kline
+    requires_symbol: true
+    topic_template: "{symbol}@kline_{interval}"
+    params:
+      interval: ["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]
+    weight: 60
+
+  # --- 24h Ticker ---
+  - id: binance.options.public.ws.ticker
+    requires_symbol: true
+    topic_template: "{symbol}@ticker"
+    params: {}
+    weight: 10
