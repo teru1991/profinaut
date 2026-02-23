@@ -1,0 +1,59 @@
+venue: bybit-inverse
+strict: true
+families:
+  - id: bybit.public.ws.orderbook
+    requires_symbol: true
+    topic_template: "orderbook.{depth}.{symbol}"
+    params:
+      depth: [1, 50, 200, 1000]
+    weight: 40
+
+  - id: bybit.public.ws.orderbook_rpi
+    requires_symbol: true
+    topic_template: "orderbook.rpi.{symbol}"
+    params: {}
+    weight: 45
+
+  - id: bybit.public.ws.publicTrade
+    requires_symbol: true
+    topic_template: "publicTrade.{symbol}"
+    params: {}
+    weight: 20
+
+  - id: bybit.public.ws.tickers
+    requires_symbol: true
+    topic_template: "tickers.{symbol}"
+    params: {}
+    weight: 10
+
+  - id: bybit.public.ws.kline
+    requires_symbol: true
+    topic_template: "kline.{interval}.{symbol}"
+    params:
+      interval: [1, 3, 5, 15, 30, 60, 120, 240, 360, 720, "D", "W", "M"]
+    weight: 60
+
+  - id: bybit.public.ws.allLiquidation
+    requires_symbol: true
+    topic_template: "allLiquidation.{symbol}"
+    params: {}
+    weight: 70
+
+  # --- symbol-less public ---
+  - id: bybit.public.ws.insurance_inverse
+    requires_symbol: false
+    topic_template: "insurance.inverse"
+    params: {}
+    weight: 90
+
+  - id: bybit.public.ws.adlAlert_inverse
+    requires_symbol: false
+    topic_template: "adlAlert.inverse"
+    params: {}
+    weight: 95
+
+  - id: bybit.public.ws.priceLimit
+    requires_symbol: true
+    topic_template: "priceLimit.{symbol}"
+    params: {}
+    weight: 80

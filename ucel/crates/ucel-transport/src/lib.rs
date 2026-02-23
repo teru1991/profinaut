@@ -1,3 +1,4 @@
+pub mod ws;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -39,6 +40,7 @@ pub struct RequestContext {
     pub requires_auth: bool,
 }
 
+#[allow(async_fn_in_trait)]
 pub trait Transport {
     async fn send_http(
         &self,
@@ -90,6 +92,10 @@ impl SubscriptionBook {
     pub fn len(&self) -> usize {
         self.subscriptions.len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.subscriptions.is_empty()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -129,13 +135,11 @@ pub fn next_retry_delay_ms(policy: &RetryPolicy, attempt: u32, retry_after_ms: O
 }
 
 pub fn enforce_auth_boundary(ctx: &RequestContext) -> Result<(), UcelError> {
-    if ctx.requires_auth {
-        if ctx.key_id.is_none() {
-            return Err(UcelError::new(
-                ErrorCode::MissingAuth,
-                "private operation requires key_id",
-            ));
-        }
+    if ctx.requires_auth && ctx.key_id.is_none() {
+        return Err(UcelError::new(
+            ErrorCode::MissingAuth,
+            "private operation requires key_id",
+        ));
     }
     Ok(())
 }

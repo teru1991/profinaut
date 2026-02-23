@@ -1,0 +1,21 @@
+exchange_id = "gmocoin"
+support_level = "full"
+
+# subscribe/unsubscribe: max 1 req/sec (official docs)
+[rate]
+messages_per_second = 1
+messages_per_hour = 3600
+
+[heartbeat]
+ping_interval_secs = 20
+idle_timeout_secs = 30
+
+entitlement = "public_only"
+
+[safety_profile]
+max_streams_per_conn = 25
+max_symbols_per_conn = 50
+
+# optional direct overrides
+max_streams_per_conn = 25
+max_symbols_per_conn = 50

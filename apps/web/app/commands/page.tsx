@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
-import { DangerousActionDialog } from "../../components/DangerousActionDialog";
+import { DangerActionGuard } from "../../components/commands/DangerActionGuard";
 import { formatTimestamp, copyToClipboard } from "../../lib/format";
 
 type Ack = {
@@ -109,13 +109,12 @@ export default function CommandsPage() {
   const [activeBotId, setActiveBotId] = useState("simple-mm");
   const [commands, setCommands] = useState<Command[]>([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [safetyPolicy, setSafetyPolicy] = useState<CommandSafetyPolicy>({
     dangerousActionsEnabled: true,
     environmentLabel: "unknown"
   });
-  const [dialogType, setDialogType] = useState<"PAUSE" | "RESUME" | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const lastAck = useMemo(() => {
@@ -170,33 +169,6 @@ export default function CommandsPage() {
     void loadCapabilities();
   }, []);
 
-  async function issueCommand(type: "PAUSE" | "RESUME", reason: string, confirmToken?: string) {
-    const commandPayload: Record<string, string> = { reason };
-    const requestBody: Record<string, unknown> = {
-      type,
-      target_bot_id: activeBotId,
-      payload: commandPayload
-    };
-    if (confirmToken) requestBody.confirm_token = confirmToken;
-
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/commands", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(requestBody)
-      });
-      let payload: unknown = null;
-      try { payload = await res.json(); } catch { payload = null; }
-      return { ok: res.ok, status: res.status, payload };
-    } catch (e) {
-      const message = e instanceof Error ? e.message : `Failed to issue ${type}`;
-      return { ok: false, status: 0, payload: { message } };
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   function onApplyBotId(e: FormEvent) {
     e.preventDefault();
     const next = botId.trim() || "simple-mm";
@@ -243,24 +215,28 @@ export default function CommandsPage() {
         </form>
 
         <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", flexWrap: "wrap" }}>
-          <button
-            className="btn btn-danger"
-            type="button"
-            onClick={() => setDialogType("PAUSE")}
+          <DangerActionGuard
+            actionLabel="PAUSE"
+            scope={`bot:${activeBotId}`}
+            payload={{ type: "PAUSE", target_bot_id: activeBotId, payload: {} }}
             disabled={submitting || !safetyPolicy.dangerousActionsEnabled}
-            title={safetyPolicy.dangerousActionsEnabled ? "Pause the target bot" : "Disabled by policy"}
-          >
-            PAUSE
-          </button>
-          <button
-            className="btn btn-success"
-            type="button"
-            onClick={() => setDialogType("RESUME")}
+            buttonClassName="btn btn-danger"
+            onComplete={async () => {
+              setError(null);
+              await loadCommands(activeBotId);
+            }}
+          />
+          <DangerActionGuard
+            actionLabel="RESUME"
+            scope={`bot:${activeBotId}`}
+            payload={{ type: "RESUME", target_bot_id: activeBotId, payload: {} }}
             disabled={submitting || !safetyPolicy.dangerousActionsEnabled}
-            title={safetyPolicy.dangerousActionsEnabled ? "Resume the target bot" : "Disabled by policy"}
-          >
-            RESUME
-          </button>
+            buttonClassName="btn btn-success"
+            onComplete={async () => {
+              setError(null);
+              await loadCommands(activeBotId);
+            }}
+          />
 
           {!safetyPolicy.dangerousActionsEnabled && (
             <span className="text-xs text-error">
@@ -269,22 +245,6 @@ export default function CommandsPage() {
           )}
         </div>
       </div>
-
-      {dialogType && (
-        <DangerousActionDialog
-          actionLabel={dialogType}
-          targetLabel={`bot:${activeBotId}`}
-          environmentLabel={safetyPolicy.environmentLabel}
-          open={dialogType !== null}
-          submitting={submitting}
-          onClose={() => setDialogType(null)}
-          onExecute={(params) => issueCommand(dialogType, params.reason, params.confirmToken)}
-          onSuccess={async () => {
-            setError(null);
-            await loadCommands(activeBotId);
-          }}
-        />
-      )}
 
       {error && (
         <div className="error-state" style={{ marginBottom: "var(--space-4)" }}>

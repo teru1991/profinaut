@@ -1,0 +1,13 @@
+[package]
+name = "ucel-symbol-store"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+dashmap = "6"
+serde.workspace = true
+ucel-symbol-core = { path = "../ucel-symbol-core" }
+
+[dev-dependencies]
+rust_decimal = "1"
+serde_json.workspace = true

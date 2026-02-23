@@ -1,0 +1,152 @@
+venue: binance-usdm
+strict: true
+families:
+  # --- Agg Trade ---
+  - id: binance.usdm.public.ws.aggTrade
+    requires_symbol: true
+    topic_template: "{symbol}@aggTrade"
+    params: {}
+    weight: 20
+
+  # --- Mark Price (symbol + all-market) ---
+  - id: binance.usdm.public.ws.markPrice
+    requires_symbol: true
+    topic_template: "{symbol}@markPrice@{speed}"
+    params:
+      speed: ["1s","3s"]
+    weight: 25
+
+  - id: binance.usdm.public.ws.allMarkPrice_arr
+    requires_symbol: false
+    topic_template: "!markPrice@arr@{speed}"
+    params:
+      speed: ["1s","3s"]
+    weight: 90
+
+  # --- Kline ---
+  - id: binance.usdm.public.ws.kline
+    requires_symbol: true
+    topic_template: "{symbol}@kline_{interval}"
+    params:
+      interval: ["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]
+    weight: 60
+
+  # --- Continuous Kline (pair-based; symbol-less) ---
+  - id: binance.usdm.public.ws.continuousKline
+    requires_symbol: false
+    topic_template: "{pair}_{contractType}@continuousKline_{interval}"
+    params:
+      contractType: ["perpetual","current_quarter","next_quarter","tradifi_perpetual"]
+      interval: ["1s","1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]
+    weight: 61
+
+  # --- Mini Ticker (symbol + all-market) ---
+  - id: binance.usdm.public.ws.miniTicker
+    requires_symbol: true
+    topic_template: "{symbol}@miniTicker"
+    params: {}
+    weight: 10
+
+  - id: binance.usdm.public.ws.allMiniTicker_arr
+    requires_symbol: false
+    topic_template: "!miniTicker@arr"
+    params: {}
+    weight: 90
+
+  # --- Ticker (symbol + all-market) ---
+  - id: binance.usdm.public.ws.ticker
+    requires_symbol: true
+    topic_template: "{symbol}@ticker"
+    params: {}
+    weight: 10
+
+  - id: binance.usdm.public.ws.allTicker_arr
+    requires_symbol: false
+    topic_template: "!ticker@arr"
+    params: {}
+    weight: 90
+
+  # --- BookTicker (symbol + all-market) ---
+  - id: binance.usdm.public.ws.bookTicker
+    requires_symbol: true
+    topic_template: "{symbol}@bookTicker"
+    params: {}
+    weight: 15
+
+  - id: binance.usdm.public.ws.allBookTicker
+    requires_symbol: false
+    topic_template: "!bookTicker"
+    params: {}
+    weight: 95
+
+  # --- Liquidation (symbol + all-market) ---
+  - id: binance.usdm.public.ws.forceOrder
+    requires_symbol: true
+    topic_template: "{symbol}@forceOrder"
+    params: {}
+    weight: 80
+
+  - id: binance.usdm.public.ws.allForceOrder_arr
+    requires_symbol: false
+    topic_template: "!forceOrder@arr"
+    params: {}
+    weight: 95
+
+  # --- Orderbook: Partial depth ---
+  - id: binance.usdm.public.ws.depth_partial
+    requires_symbol: true
+    topic_template: "{symbol}@depth{levels}@{speed}"
+    params:
+      levels: [5, 10, 20]
+      speed: ["100ms","250ms","500ms"]
+    weight: 40
+
+  # --- Orderbook: Diff depth ---
+  - id: binance.usdm.public.ws.depth_diff
+    requires_symbol: true
+    topic_template: "{symbol}@depth@{speed}"
+    params:
+      speed: ["100ms","250ms","500ms"]
+    weight: 45
+
+  # --- Orderbook: Diff depth RPI ---
+  - id: binance.usdm.public.ws.depth_diff_rpi
+    requires_symbol: true
+    topic_template: "{symbol}@depth@{speed}@rpi"
+    params:
+      speed: ["100ms","250ms","500ms"]
+    weight: 46
+
+  # --- Composite Index ---
+  - id: binance.usdm.public.ws.compositeIndex
+    requires_symbol: true
+    topic_template: "{symbol}@compositeIndex"
+    params: {}
+    weight: 70
+
+  # --- Contract Info (symbol-less) ---
+  - id: binance.usdm.public.ws.contractInfo
+    requires_symbol: false
+    topic_template: "!contractInfo"
+    params: {}
+    weight: 99
+
+  # --- Multi-assets asset index (symbol-less + per-asset) ---
+  - id: binance.usdm.public.ws.assetIndex_arr
+    requires_symbol: false
+    topic_template: "!assetIndex@arr"
+    params: {}
+    weight: 99
+
+  - id: binance.usdm.public.ws.assetIndex
+    requires_symbol: false
+    topic_template: "{assetSymbol}@assetIndex"
+    params: {}
+    weight: 99
+
+  # --- Trading Session (symbol-less) ---
+  - id: binance.usdm.public.ws.tradingSession
+    requires_symbol: false
+    topic_template: "tradingSession"
+    params: {}
+    weight: 99

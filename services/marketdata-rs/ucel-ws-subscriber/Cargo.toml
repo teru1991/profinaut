@@ -1,0 +1,36 @@
+[package]
+name = "ucel-ws-subscriber"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ucel-ws-rules = { path = "../../../ucel/crates/ucel-ws-rules" }
+ucel-subscription-planner = { path = "../../../ucel/crates/ucel-subscription-planner" }
+ucel-subscription-store = { path = "../../../ucel/crates/ucel-subscription-store" }
+ucel-journal = { path = "../../../ucel/crates/ucel-journal" }
+ucel-transport = { path = "../../../ucel/crates/ucel-transport" }
+ucel-core = { path = "../../../ucel/crates/ucel-core" }
+
+# adapters already in your repo
+ucel-cex-gmocoin = { path = "../../../ucel/crates/ucel-cex-gmocoin" }
+ucel-cex-bybit = { path = "../../../ucel/crates/ucel-cex-bybit" }
+ucel-cex-bitget = { path = "../../../ucel/crates/ucel-cex-bitget" }
+ucel-cex-okx = { path = "../../../ucel/crates/ucel-cex-okx" }
+ucel-cex-htx = { path = "../../../ucel/crates/ucel-cex-htx" }
+ucel-cex-kraken = { path = "../../../ucel/crates/ucel-cex-kraken" }
+ucel-cex-bittrade = { path = "../../../ucel/crates/ucel-cex-bittrade" }
+
+# NEW: binance split crates
+ucel-cex-binance = { path = "../../../ucel/crates/ucel-cex-binance" }
+ucel-cex-binance-usdm = { path = "../../../ucel/crates/ucel-cex-binance-usdm" }
+ucel-cex-binance-coinm = { path = "../../../ucel/crates/ucel-cex-binance-coinm" }
+ucel-cex-binance-options = { path = "../../../ucel/crates/ucel-cex-binance-options" }
+
+serde = { version = "1", features = ["derive"] }
+tracing = "0.1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "time"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[[bin]]
+name = "ucel-ws-subscriber"
+path = "src/main.rs"

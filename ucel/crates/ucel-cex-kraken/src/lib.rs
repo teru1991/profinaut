@@ -956,3 +956,8 @@ mod tests {
         assert!(gaps.is_empty(), "strict gate requires zero gaps: {gaps:?}");
     }
 }
+
+pub mod channels;
+pub mod symbols;
+pub mod ws;
+pub mod ws_manager;

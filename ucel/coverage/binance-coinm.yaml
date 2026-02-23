@@ -1,0 +1,90 @@
+venue: binance-coinm
+strict: true
+entries:
+  - id: coinm.public.rest.general.ref
+    implemented: true
+    tested: true
+  - id: coinm.public.rest.errors.ref
+    implemented: true
+    tested: true
+  - id: coinm.public.rest.common.ref
+    implemented: true
+    tested: true
+  - id: coinm.public.rest.market.ref
+    implemented: true
+    tested: true
+  - id: coinm.private.rest.trade.ref
+    implemented: true
+    tested: true
+  - id: coinm.private.rest.account.ref
+    implemented: true
+    tested: true
+  - id: coinm.private.rest.listenkey.ref
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.market.root
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.market.aggtrade
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.market.markprice
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.market.kline
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.market.continuous-kline
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.market.index-kline
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.market.miniticker
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.market.miniticker.all
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.market.ticker
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.market.ticker.all
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.market.bookticker
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.market.liquidation
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.market.depth.partial
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.market.depth.diff
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.market.composite-index
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.market.contract-info
+    implemented: true
+    tested: true
+  - id: coinm.public.ws.wsapi.general
+    implemented: true
+    tested: true
+  - id: coinm.private.ws.userdata.events
+    implemented: true
+    tested: true
+  - id: coinm.data.market.realtime.streams
+    implemented: true
+    tested: true
+  - id: coinm.data.market.snapshot.rest.depth
+    implemented: true
+    tested: true
+  - id: coinm.data.account.realtime.userdata
+    implemented: true
+    tested: true
+  - id: coinm.data.rpc.realtime.wsapi
+    implemented: true
+    tested: true

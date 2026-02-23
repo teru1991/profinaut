@@ -1,27 +1,21 @@
 {
-  "active_task": "AUDIT-REPO-STATE-001",
+  "active_task": "UCEL-INVOKER-FULL-COVERAGE-UNIFIED-003",
   "what_done": [
-    "Executed repo-state audit preflight and SSOT checks (README_AI/status/handoff/decisions/trace-index).",
-    "Collected git history, recent PR timeline, and Actions status via GitHub REST API fallback (gh unavailable).",
-    "Created append-only audit report: docs/status/progress-updates/AUDIT-REPO-STATE-20260220-1525JST.md.",
-    "Synchronized status.json to current observed state: open_prs=[], locks_held=[] (released stale LOCK:shared-docs), active_task moved to audit task."
+    "Implemented ucel_registry::invoker (registry, ids, symbol codec, binder, REST/WS executors).",
+    "Added strict coverage auto-discovery from ucel/coverage and strict fixture gate.",
+    "Added docs/examples/fixtures and task progress evidence updates."
   ],
   "what_next": [
-    "From a maintainer-authenticated environment, inspect failed run logs for IDs 22209816671 / 22209474150 / 22208983745 and append root-cause evidence.",
-    "Run ucel quality gates after formatting fix: cargo fmt --check && cargo clippy --all-targets --all-features -- -D warnings && cargo test."
+    "Create/merge PR for UCEL-INVOKER-FULL-COVERAGE-UNIFIED-003."
   ],
   "open_pr": "",
   "locks_held": [],
   "errors": [
-    "gh CLI not installed in this environment.",
-    "GitHub Actions job logs endpoint returned 403 (admin rights required), so detailed failed-step stderr was not retrievable."
+    "Workspace-wide fmt/clippy/test currently fail due pre-existing unrelated crate issues."
   ],
   "commands_next": [
-    "gh auth status",
-    "gh run view 22209816671 --log-failed",
-    "gh run view 22209474150 --log-failed",
-    "gh run view 22208983745 --log-failed",
-    "cd ucel && cargo fmt --check && cargo clippy --all-targets --all-features -- -D warnings && cargo test"
+    "cd ucel && cargo test -p ucel-registry --all-features",
+    "cd ucel && cargo run --example invoker_list"
   ],
-  "updated_at": "2026-02-20T06:26:05Z"
+  "updated_at": "2026-02-21T11:05:00Z"
 }

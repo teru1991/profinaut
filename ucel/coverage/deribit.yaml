@@ -1,0 +1,6 @@
+venue: deribit
+strict: true
+entries:
+  - id: data.other.unknown.other
+    implemented: true
+    tested: true

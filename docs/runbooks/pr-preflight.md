@@ -5,8 +5,8 @@ Purpose: prevent PR/merge accidents (stale PR merge, LOCK collision, SSOT drift,
 Related canonical docs:
 - AI entrypoint: `docs/SSOT/README_AI.md`
 - Runtime status SSOT: `docs/status/status.json`
-- Handoff: `docs/handoff/HANDOFF.json` and `docs/status/HANDOFF.json`
-- Decisions: `docs/status/decisions.md`
+- Handoff: `docs/handoff/HANDOFF.json`
+- Decisions: `docs/decisions/decisions.md`
 - Trace index SSOT: `docs/status/trace-index.json`
 - Safety policy: `docs/rules/parallel-development-safety.md`, `docs/specs/parallel-task-safety.md`
 
@@ -70,7 +70,7 @@ Related canonical docs:
 - [ ] All dependency PRs (`Depends-on`) are already merged.
 - [ ] No rollback regression risk from stale PR ordering (older PR would not overwrite newer intent).
 - [ ] PR link/evidence is registered in `docs/status/trace-index.json` if required by team flow.
-- [ ] `docs/status/decisions.md` updated if assumptions/spec baseline changed.
+- [ ] `docs/decisions/decisions.md` updated if assumptions/spec baseline changed.
 
 ---
 
@@ -78,7 +78,7 @@ Related canonical docs:
 
 - If an old PR would rollback newer behavior, **do not merge**; rebase/recreate on latest base.
 - If conflicts are large, split by scope/LOCK and merge in dependency order.
-- If spec/assumptions changed mid-flight, record explicit entry in `docs/status/decisions.md` before merge.
+- If spec/assumptions changed mid-flight, record explicit entry in `docs/decisions/decisions.md` before merge.
 
 ---
 

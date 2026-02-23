@@ -5,8 +5,8 @@ Any generated task MUST comply with Docs Development OS artifacts:
 
 - `docs/SSOT/README_AI.md`
 - `docs/status/status.json`
-- `docs/handoff/HANDOFF.json` (and `docs/status/HANDOFF.json` when workflow requires)
-- `docs/status/decisions.md`
+- `docs/handoff/HANDOFF.json`
+- `docs/decisions/decisions.md`
 - `docs/status/trace-index.json`
 - LOCK discipline from `docs/rules/parallel-development-safety.md`
 
@@ -16,8 +16,8 @@ Task generation must load context in this order before proposing any implementat
 
 1. `docs/SSOT/README_AI.md`
 2. `docs/status/status.json`
-3. `docs/handoff/HANDOFF.json` (or `docs/status/HANDOFF.json`)
-4. `docs/status/decisions.md`
+3. `docs/handoff/HANDOFF.json`
+4. `docs/decisions/decisions.md`
 5. `docs/status/trace-index.json`
 6. `docs/runbooks/pr-preflight.md`
 
@@ -95,7 +95,7 @@ Narrative-only progress without evidence is non-compliant.
 
 If requirements are ambiguous or changed, generator MUST:
 
-- require decision/assumption update in `docs/status/decisions.md` (and/or `docs/assumptions.md` where applicable),
+- require decision/assumption update in `docs/decisions/decisions.md` (and/or `docs/assumptions.md` where applicable),
 - block irreversible implementation tasks until decision baseline is explicit.
 
 ## 9) SSOT boundary rule

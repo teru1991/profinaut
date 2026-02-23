@@ -1,0 +1,30 @@
+venue: okx
+strict: true
+entries:
+  - id: okx.rest.overview
+    implemented: true
+    tested: true
+  - id: okx.rest.auth
+    implemented: true
+    tested: true
+  - id: okx.rest.public
+    implemented: true
+    tested: true
+  - id: okx.rest.private
+    implemented: true
+    tested: true
+  - id: okx.ws.overview
+    implemented: true
+    tested: true
+  - id: okx.ws.public
+    implemented: true
+    tested: true
+  - id: okx.ws.private
+    implemented: true
+    tested: true
+  - id: okx.data.public-rest
+    implemented: true
+    tested: true
+  - id: okx.data.public-ws
+    implemented: true
+    tested: true

@@ -4,11 +4,35 @@ members = [
   "crates/ucel-transport",
   "crates/ucel-registry",
   "crates/ucel-testkit",
+  "crates/ucel-symbol-core",
+  "crates/ucel-symbol-adapter",
+  "crates/ucel-symbol-store",
+  "crates/ucel-cex-bitbank",
   "crates/ucel-cex-gmocoin",
   "crates/ucel-cex-kraken",
+  "crates/ucel-cex-binance-usdm",
+  "crates/ucel-cex-bybit",
+  "crates/ucel-cex-upbit",
+  "crates/ucel-cex-coinbase",
+  "crates/ucel-cex-coincheck",
+  "crates/ucel-cex-binance-coinm",
+  "crates/ucel-cex-binance-options",
+  "crates/ucel-cex-bitmex",
+  "crates/ucel-cex-bitflyer",
+  "crates/ucel-cex-binance",
+  "crates/ucel-cex-bittrade",
+  "crates/ucel-cex-deribit",
+  "crates/ucel-cex-htx",
+  "crates/ucel-cex-sbivc",
   "crates/ucel-chain-ethereum",
+  "crates/ucel-ir",
+  "crates/ucel-ws-rules",
+  "crates/ucel-subscription-planner",
+  "crates/ucel-subscription-store",
+  "crates/ucel-journal",
 ]
 resolver = "2"
+default-members = ["crates/ucel-registry"]
 
 [workspace.package]
 edition = "2021"

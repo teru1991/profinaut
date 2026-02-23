@@ -7,7 +7,7 @@ import { WidgetCatalog } from "./catalog/WidgetCatalog";
 import { WorkspaceHistory } from "./core/history";
 import { type GlobalFilters } from "./core/filters";
 import { type Panel, type Workspace, DASHBOARD_SCHEMA_VERSION } from "./core/model";
-import { parseDashboardUrl } from "./core/router";
+import { buildDashboardUrl, parseDashboardUrl } from "./core/router";
 import { validateWorkspace } from "./core/schema";
 import { clearDraft, commit, loadCommitted, loadDraft, loadFilters, saveDraft, saveFilters } from "./core/storage";
 import { GridLayout } from "./layout/GridLayout";
@@ -18,13 +18,15 @@ import marketDataTemplate from "./templates/marketdata.json";
 import { normalizeStatus } from "./ui/badges";
 import { WIDGETS } from "./widgets/registry";
 import { fetchJson, useWidgetCapabilities, type WidgetQuality } from "./widgets/runtime";
+import { SaveSnapshotButton } from "../snapshots/SaveSnapshotButton";
 
 const FilterContext = createContext<GlobalFilters>({});
 export const useDashboardFilters = () => useContext(FilterContext);
 
 const templates = [marketDataTemplate, executionTemplate, incidentTemplate] as Workspace[];
+const templateById = Object.fromEntries(templates.map((template) => [template.id, template])) as Record<string, Workspace>;
 
-type StatusSummary = { overall_status?: string; components?: { name?: string; status?: string }[] };
+type StatusSummary = { overall_status?: string; components?: { name?: string; status?: string; reason?: string; ts?: string }[] };
 
 function isoNow() {
   return new Date().toISOString();
@@ -95,8 +97,21 @@ export default function DashboardWorkspace() {
     setFilters(nextFilters);
     saveFilters(nextFilters);
 
-    const pageFromRoute = routeState.pageId ?? baseWorkspace?.defaultPageId ?? null;
-    setActivePageId(pageFromRoute);
+    const workspaceId = searchParams.get("workspace");
+    const selectedTemplate = workspaceId ? templateById[workspaceId] : null;
+
+    if (selectedTemplate) {
+      const normalized = { ...selectedTemplate, createdAt: isoNow(), updatedAt: isoNow(), schema_version: DASHBOARD_SCHEMA_VERSION };
+      setCommitted(normalized);
+      setDraft(cloneWorkspace(normalized));
+      setActivePageId(normalized.defaultPageId);
+      commit(normalized);
+    } else {
+      const pageFromRoute = routeState.pageId ?? baseWorkspace?.defaultPageId ?? null;
+      setActivePageId(pageFromRoute);
+    }
+
+    setMode(searchParams.get("mode") === "edit" ? "edit" : "view");
     setFocusMode(Boolean(routeState.focus));
   }, [searchParams]);
 
@@ -121,15 +136,15 @@ export default function DashboardWorkspace() {
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
-    if (activePageId) params.set("pageId", activePageId);
-    else params.delete("pageId");
-    params.set("focus", focusMode ? "1" : "0");
-    filters.venue ? params.set("venue", filters.venue) : params.delete("venue");
-    filters.bot ? params.set("bot", filters.bot) : params.delete("bot");
-    filters.symbol ? params.set("symbol", filters.symbol) : params.delete("symbol");
-    filters.timeRange ? params.set("range", filters.timeRange) : params.delete("range");
+    const baseUrl = buildDashboardUrl({ pageId: activePageId ?? undefined, focus: focusMode, filters });
+    const nextParams = new URLSearchParams(baseUrl.split("?")[1] ?? "");
 
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    for (const key of ["mode", "catalog", "workspace"]) {
+      const value = params.get(key);
+      if (value) nextParams.set(key, value);
+    }
+
+    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
     saveFilters(filters);
   }, [activePageId, filters, focusMode, pathname, router, searchParams]);
 
@@ -339,6 +354,13 @@ export default function DashboardWorkspace() {
             <button className={`btn ${mode === "edit" ? "btn-primary" : ""}`} onClick={() => setMode("edit")}>Edit</button>
             <button className="btn" onClick={() => setFocusMode((v) => !v)}>{focusMode ? "Exit Focus" : "Focus/Kiosk"}</button>
             <button className="btn" onClick={handleExport}>Export</button>
+            <SaveSnapshotButton
+              workspaceId={workspace.id}
+              pageId={activePage?.id ?? "unknown"}
+              globalFilters={{ venue: filters.venue, bot: filters.bot, symbol: filters.symbol, range: filters.timeRange }}
+              overallStatus={statusSummary?.overall_status ?? "unknown"}
+              components={statusSummary?.components ?? []}
+            />
             <label className="btn" style={{ cursor: "pointer" }}>Import
               <input type="file" accept="application/json" style={{ display: "none" }} onChange={(e) => handleImport(e.target.files?.[0] ?? null)} />
             </label>

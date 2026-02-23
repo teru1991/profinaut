@@ -1,0 +1,109 @@
+venue: binance-coinm
+strict: true
+families:
+  # --- Agg Trade ---
+  - id: binance.coinm.public.ws.aggTrade
+    requires_symbol: true
+    topic_template: "{symbol}@aggTrade"
+    params: {}
+    weight: 20
+
+  # --- Index Price (pair-based) ---
+  - id: binance.coinm.public.ws.indexPrice
+    requires_symbol: false
+    topic_template: "{pair}@indexPrice@{speed}"
+    params:
+      speed: ["1s","3s"]
+    weight: 25
+
+  # --- Mark Price ---
+  - id: binance.coinm.public.ws.markPrice
+    requires_symbol: true
+    topic_template: "{symbol}@markPrice@{speed}"
+    params:
+      speed: ["1s","3s"]
+    weight: 25
+
+  # --- Kline ---
+  - id: binance.coinm.public.ws.kline
+    requires_symbol: true
+    topic_template: "{symbol}@kline_{interval}"
+    params:
+      interval: ["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]
+    weight: 60
+
+  # --- Continuous Kline (pair-based; symbol-less) ---
+  - id: binance.coinm.public.ws.continuousKline
+    requires_symbol: false
+    topic_template: "{pair}_{contractType}@continuousKline_{interval}"
+    params:
+      contractType: ["perpetual","current_quarter","next_quarter"]
+      interval: ["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]
+    weight: 61
+
+  # --- Index Price Kline (pair-based) ---
+  - id: binance.coinm.public.ws.indexPriceKline
+    requires_symbol: false
+    topic_template: "{pair}@indexPriceKline_{interval}"
+    params:
+      interval: ["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]
+    weight: 62
+
+  # --- MiniTicker (symbol + all-market) ---
+  - id: binance.coinm.public.ws.miniTicker
+    requires_symbol: true
+    topic_template: "{symbol}@miniTicker"
+    params: {}
+    weight: 10
+
+  - id: binance.coinm.public.ws.allMiniTicker_arr
+    requires_symbol: false
+    topic_template: "!miniTicker@arr"
+    params: {}
+    weight: 90
+
+  # --- Ticker (symbol + all-market) ---
+  - id: binance.coinm.public.ws.ticker
+    requires_symbol: true
+    topic_template: "{symbol}@ticker"
+    params: {}
+    weight: 10
+
+  - id: binance.coinm.public.ws.allTicker_arr
+    requires_symbol: false
+    topic_template: "!ticker@arr"
+    params: {}
+    weight: 90
+
+  # --- BookTicker (symbol + all-market) ---
+  - id: binance.coinm.public.ws.bookTicker
+    requires_symbol: true
+    topic_template: "{symbol}@bookTicker"
+    params: {}
+    weight: 15
+
+  - id: binance.coinm.public.ws.allBookTicker
+    requires_symbol: false
+    topic_template: "!bookTicker"
+    params: {}
+    weight: 95
+
+  # --- Liquidation (symbol + all-market) ---
+  - id: binance.coinm.public.ws.forceOrder
+    requires_symbol: true
+    topic_template: "{symbol}@forceOrder"
+    params: {}
+    weight: 80
+
+  - id: binance.coinm.public.ws.allForceOrder_arr
+    requires_symbol: false
+    topic_template: "!forceOrder@arr"
+    params: {}
+    weight: 95
+
+  # --- Contract Info (symbol-less) ---
+  - id: binance.coinm.public.ws.contractInfo
+    requires_symbol: false
+    topic_template: "!contractInfo"
+    params: {}
+    weight: 99

@@ -1,0 +1,12 @@
+[package]
+name = "ucel-symbol-adapter"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+async-trait = "0.1"
+futures-core = "0.3"
+serde.workspace = true
+thiserror.workspace = true
+ucel-symbol-core = { path = "../ucel-symbol-core" }
+ucel-symbol-store = { path = "../ucel-symbol-store" }
