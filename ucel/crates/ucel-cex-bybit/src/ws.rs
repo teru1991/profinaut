@@ -54,51 +54,43 @@ impl BybitWsAdapter {
     }
 }
 
-fn render_template(mut s: String, symbol: &str, params: &Value) -> String {
-    s = s.replace("{symbol}", symbol);
+fn render(mut tpl: String, symbol: &str, params: &Value) -> String {
+    tpl = tpl.replace("{symbol}", symbol);
     if let Some(obj) = params.as_object() {
         for (k, v) in obj {
             if k == "_w" {
                 continue;
             }
             let ph = format!("{{{k}}}");
-            if s.contains(&ph) {
+            if tpl.contains(&ph) {
                 let rep = if v.is_string() {
                     v.as_str().unwrap_or_default().to_string()
                 } else {
                     v.to_string()
                 };
-                s = s.replace(&ph, &rep);
+                tpl = tpl.replace(&ph, &rep);
             }
         }
     }
-    s
+    tpl
 }
 
 fn topic_template_for_family(family: &str) -> Option<&'static str> {
     match family {
+        // public core
         "bybit.public.ws.tickers" => Some("tickers.{symbol}"),
         "bybit.public.ws.publicTrade" => Some("publicTrade.{symbol}"),
         "bybit.public.ws.orderbook" => Some("orderbook.{depth}.{symbol}"),
+        "bybit.public.ws.orderbook_rpi" => Some("orderbook.rpi.{symbol}"),
         "bybit.public.ws.kline" => Some("kline.{interval}.{symbol}"),
         "bybit.public.ws.allLiquidation" => Some("allLiquidation.{symbol}"),
-        "bybit.public.ws.openInterest" => Some("openInterest.{symbol}"),
-        "bybit.public.ws.funding" => Some("funding.{symbol}"),
-        "bybit.public.ws.adl-alert" => Some("adl.alert"),
-        "bybit.public.ws.insurance" => Some("insurance"),
+        "bybit.public.ws.priceLimit" => Some("priceLimit.{symbol}"),
+        // symbol-less
+        "bybit.public.ws.insurance" => Some("insurance.{group}"),
+        "bybit.public.ws.insurance_inverse" => Some("insurance.inverse"),
+        "bybit.public.ws.adlAlert" => Some("adlAlert.{coin}"),
         _ => None,
     }
-}
-
-fn params_hint_from_topic(topic: &str) -> String {
-    let parts: Vec<&str> = topic.split('.').collect();
-    if topic.starts_with("orderbook.") && parts.len() >= 3 {
-        return json!({"depth": parts[1]}).to_string();
-    }
-    if topic.starts_with("kline.") && parts.len() >= 3 {
-        return json!({"interval": parts[1]}).to_string();
-    }
-    "{}".into()
 }
 
 #[async_trait]
@@ -133,12 +125,15 @@ impl WsVenueAdapter for BybitWsAdapter {
     ) -> Result<Vec<OutboundMsg>, String> {
         let tpl = topic_template_for_family(op_id)
             .ok_or_else(|| format!("unknown family_id: {op_id}"))?;
-        let sym = to_exchange_symbol(symbol);
+
+        // symbol-less topics: ignore `symbol` argument
         let topic = if tpl.contains("{symbol}") {
-            render_template(tpl.to_string(), &sym, params)
+            let sym = to_exchange_symbol(symbol);
+            render(tpl.to_string(), &sym, params)
         } else {
-            tpl.to_string()
+            render(tpl.to_string(), "", params)
         };
+
         Ok(vec![OutboundMsg {
             text: json!({"op":"subscribe","args":[topic]}).to_string(),
         }])
@@ -157,6 +152,9 @@ impl WsVenueAdapter for BybitWsAdapter {
         }
 
         let topic = v.get("topic").and_then(|x| x.as_str()).unwrap_or("");
+        if topic.is_empty() {
+            return InboundClass::System;
+        }
         if v.get("data").is_none() {
             return InboundClass::System;
         }
@@ -165,20 +163,22 @@ impl WsVenueAdapter for BybitWsAdapter {
             Some("bybit.public.ws.tickers")
         } else if topic.starts_with("publicTrade.") {
             Some("bybit.public.ws.publicTrade")
+        } else if topic.starts_with("orderbook.rpi.") {
+            Some("bybit.public.ws.orderbook_rpi")
         } else if topic.starts_with("orderbook.") {
             Some("bybit.public.ws.orderbook")
         } else if topic.starts_with("kline.") {
             Some("bybit.public.ws.kline")
         } else if topic.starts_with("allLiquidation.") {
             Some("bybit.public.ws.allLiquidation")
-        } else if topic.starts_with("openInterest.") {
-            Some("bybit.public.ws.openInterest")
-        } else if topic.starts_with("funding.") {
-            Some("bybit.public.ws.funding")
-        } else if topic.contains("adl") {
-            Some("bybit.public.ws.adl-alert")
-        } else if topic.contains("insurance") {
+        } else if topic == "insurance.inverse" {
+            Some("bybit.public.ws.insurance_inverse")
+        } else if topic.starts_with("insurance.") {
             Some("bybit.public.ws.insurance")
+        } else if topic.starts_with("priceLimit.") {
+            Some("bybit.public.ws.priceLimit")
+        } else if topic.starts_with("adlAlert.") {
+            Some("bybit.public.ws.adlAlert")
         } else {
             None
         };
@@ -187,9 +187,44 @@ impl WsVenueAdapter for BybitWsAdapter {
             return InboundClass::Data {
                 op_id: Some(op.into()),
                 symbol: None,
-                params_canon_hint: Some(params_hint_from_topic(topic)),
+                params_canon_hint: Some("{}".into()),
             };
         }
         InboundClass::System
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_subscribe_supports_symbol_less_family() {
+        let a = BybitWsAdapter::linear();
+        let msgs = a
+            .build_subscribe("bybit.public.ws.insurance", "", &json!({"group":"USDT"}))
+            .unwrap();
+        let v: Value = serde_json::from_str(&msgs[0].text).unwrap();
+        assert_eq!(v["args"][0], "insurance.USDT");
+    }
+
+    #[test]
+    fn classify_inbound_supports_new_topics() {
+        let a = BybitWsAdapter::linear();
+        let insurance = json!({"topic":"insurance.USDC","data":{}}).to_string();
+        let adl = json!({"topic":"adlAlert.USDT","data":{}}).to_string();
+
+        match a.classify_inbound(insurance.as_bytes()) {
+            InboundClass::Data { op_id, .. } => {
+                assert_eq!(op_id.as_deref(), Some("bybit.public.ws.insurance"))
+            }
+            _ => panic!("expected data classification for insurance topic"),
+        }
+        match a.classify_inbound(adl.as_bytes()) {
+            InboundClass::Data { op_id, .. } => {
+                assert_eq!(op_id.as_deref(), Some("bybit.public.ws.adlAlert"))
+            }
+            _ => panic!("expected data classification for adlAlert topic"),
+        }
     }
 }
