@@ -24,8 +24,9 @@ fn render_template(mut tpl: String, ws_symbol: &str, params: &Value) -> String {
 
 fn stream_template_for_family(op: &str) -> Option<&'static str> {
     match op {
-        "binance.options.public.ws.trades" => Some("{symbol}@trade"),
+        "binance.options.public.ws.trade" => Some("{symbol}@trade"),
         "binance.options.public.ws.ticker24h" => Some("{symbol}@ticker"),
+        "binance.options.public.ws.bookTicker" => Some("{symbol}@bookTicker"),
         "binance.options.public.ws.depth" => Some("{symbol}@depth@{speed}"),
         "binance.options.public.ws.kline" => Some("{symbol}@kline_{interval}"),
         _ => None,
@@ -55,13 +56,22 @@ impl WsVenueAdapter for BinanceOptionsWsAdapter {
 
     fn classify_inbound(&self, raw: &[u8]) -> InboundClass {
         let v: Value = match serde_json::from_slice(raw) { Ok(x) => x, Err(_) => return InboundClass::Unknown };
-        let data = if v.get("stream").is_some() && v.get("data").is_some() { v.get("data").cloned().unwrap_or(Value::Null) } else { v.clone() };
-        if data.get("result").is_some() && data.get("id").is_some() { return InboundClass::System; }
+        if let Some(stream) = v.get("stream").and_then(|x| x.as_str()) {
+            let op = if stream.ends_with("@trade") { "binance.options.public.ws.trade" }
+                else if stream.ends_with("@ticker") { "binance.options.public.ws.ticker24h" }
+                else if stream.ends_with("@bookTicker") { "binance.options.public.ws.bookTicker" }
+                else if stream.contains("@depth@") { "binance.options.public.ws.depth" }
+                else if stream.contains("@kline_") { "binance.options.public.ws.kline" }
+                else { "binance.options.public.ws.unknown" };
+            return InboundClass::Data { op_id: Some(op.into()), symbol: None, params_canon_hint: Some("{}".into()) };
+        }
+        if v.get("result").is_some() && v.get("id").is_some() { return InboundClass::System; }
 
-        let e = data.get("e").and_then(|x| x.as_str()).unwrap_or("");
+        let e = v.get("e").and_then(|x| x.as_str()).unwrap_or("");
         let op = match e {
-            "trade" => Some("binance.options.public.ws.trades"),
+            "trade" => Some("binance.options.public.ws.trade"),
             "24hrTicker" => Some("binance.options.public.ws.ticker24h"),
+            "bookTicker" => Some("binance.options.public.ws.bookTicker"),
             "depthUpdate" => Some("binance.options.public.ws.depth"),
             "kline" => Some("binance.options.public.ws.kline"),
             _ => None,

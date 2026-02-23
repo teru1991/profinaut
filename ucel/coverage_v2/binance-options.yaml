@@ -1,7 +1,7 @@
 venue: binance-options
 strict: true
 families:
-  - id: binance.options.public.ws.trades
+  - id: binance.options.public.ws.trade
     requires_symbol: true
     topic_template: "{symbol}@trade"
     params: {}
@@ -12,6 +12,12 @@ families:
     topic_template: "{symbol}@ticker"
     params: {}
     weight: 10
+
+  - id: binance.options.public.ws.bookTicker
+    requires_symbol: true
+    topic_template: "{symbol}@bookTicker"
+    params: {}
+    weight: 15
 
   - id: binance.options.public.ws.depth
     requires_symbol: true

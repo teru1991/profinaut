@@ -29,6 +29,10 @@ fn stream_template_for_family(op: &str) -> Option<&'static str> {
         "binance.usdm.public.ws.bookTicker" => Some("{symbol}@bookTicker"),
         "binance.usdm.public.ws.depth" => Some("{symbol}@depth@{speed}"),
         "binance.usdm.public.ws.kline" => Some("{symbol}@kline_{interval}"),
+        "binance.usdm.public.ws.forceOrder" => Some("{symbol}@forceOrder"),
+
+        "binance.usdm.public.ws.allBookTicker" => Some("!bookTicker"),
+        "binance.usdm.public.ws.allForceOrder" => Some("!forceOrder@arr"),
         _ => None,
     }
 }
@@ -48,8 +52,12 @@ impl WsVenueAdapter for BinanceUsdmWsAdapter {
 
     fn build_subscribe(&self, op_id: &str, symbol: &str, params: &Value) -> Result<Vec<OutboundMsg>, String> {
         let tpl = stream_template_for_family(op_id).ok_or_else(|| format!("unknown family_id: {op_id}"))?;
-        let raw = to_ws_symbol(&to_exchange_symbol(symbol));
-        let stream = render_template(tpl.to_string(), &raw, params);
+        let stream = if tpl.contains("{symbol}") {
+            let raw = to_ws_symbol(&to_exchange_symbol(symbol));
+            render_template(tpl.to_string(), &raw, params)
+        } else {
+            tpl.to_string()
+        };
         Ok(vec![OutboundMsg {
             text: json!({"method":"SUBSCRIBE","params":[stream],"id":1}).to_string()
         }])
@@ -57,17 +65,20 @@ impl WsVenueAdapter for BinanceUsdmWsAdapter {
 
     fn classify_inbound(&self, raw: &[u8]) -> InboundClass {
         let v: Value = match serde_json::from_slice(raw) { Ok(x) => x, Err(_) => return InboundClass::Unknown };
-        let data = if v.get("stream").is_some() && v.get("data").is_some() { v.get("data").cloned().unwrap_or(Value::Null) } else { v.clone() };
-        if data.get("result").is_some() && data.get("id").is_some() { return InboundClass::System; }
+        if let Some(stream) = v.get("stream").and_then(|x| x.as_str()) {
+            return InboundClass::Data { op_id: Some(classify_stream_name_usdm(stream)), symbol: None, params_canon_hint: Some("{}".into()) };
+        }
+        if v.get("result").is_some() && v.get("id").is_some() { return InboundClass::System; }
 
         // futures uses e for many events; depthUpdate/aggTrade/kline etc still works
-        let e = data.get("e").and_then(|x| x.as_str()).unwrap_or("");
+        let e = v.get("e").and_then(|x| x.as_str()).unwrap_or("");
         let op = match e {
             "aggTrade" => Some("binance.usdm.public.ws.aggTrade"),
             "markPriceUpdate" => Some("binance.usdm.public.ws.markPrice"),
             "bookTicker" => Some("binance.usdm.public.ws.bookTicker"),
             "depthUpdate" => Some("binance.usdm.public.ws.depth"),
             "kline" => Some("binance.usdm.public.ws.kline"),
+            "forceOrder" => Some("binance.usdm.public.ws.forceOrder"),
             _ => None,
         };
 
@@ -76,4 +87,18 @@ impl WsVenueAdapter for BinanceUsdmWsAdapter {
         }
         InboundClass::System
     }
+}
+
+fn classify_stream_name_usdm(stream: &str) -> String {
+    if stream == "!bookTicker" { return "binance.usdm.public.ws.allBookTicker".into(); }
+    if stream == "!forceOrder@arr" { return "binance.usdm.public.ws.allForceOrder".into(); }
+
+    if stream.ends_with("@aggTrade") { return "binance.usdm.public.ws.aggTrade".into(); }
+    if stream.contains("@markPrice") { return "binance.usdm.public.ws.markPrice".into(); }
+    if stream.ends_with("@bookTicker") { return "binance.usdm.public.ws.bookTicker".into(); }
+    if stream.contains("@depth@") { return "binance.usdm.public.ws.depth".into(); }
+    if stream.contains("@kline_") { return "binance.usdm.public.ws.kline".into(); }
+    if stream.ends_with("@forceOrder") { return "binance.usdm.public.ws.forceOrder".into(); }
+
+    "binance.usdm.public.ws.unknown".into()
 }

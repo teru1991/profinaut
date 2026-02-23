@@ -32,3 +32,16 @@ families:
     params:
       interval: ["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]
     weight: 60
+
+  - id: binance.coinm.public.ws.forceOrder
+    requires_symbol: true
+    topic_template: "{symbol}@forceOrder"
+    params: {}
+    weight: 80
+
+  # all-market
+  - id: binance.coinm.public.ws.allForceOrder
+    requires_symbol: false
+    topic_template: "!forceOrder@arr"
+    params: {}
+    weight: 90
