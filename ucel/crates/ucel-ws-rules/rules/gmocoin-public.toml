@@ -1,0 +1,19 @@
+exchange_id = "gmocoin-public"
+support_level = "full"
+
+# 同一IPからの subscribe/unsubscribe は 1秒間1回が上限
+# (public WS)  [oai_citation:3‡Coin API](https://api.coin.z.com/docs/)
+[rate]
+messages_per_second = 1
+
+# Public WS: サーバが1分に1回ping。Pongが無いと切断。
+# transport は WS Ping フレームに Pong を返す実装なので、
+# idle_timeout は少し余裕を見て 75s とする。  [oai_citation:4‡Coin API](https://api.coin.z.com/docs/)
+[heartbeat]
+ping_interval_secs = 0
+idle_timeout_secs = 75
+
+# 安全側の上限（GMOは1秒1回なので streams を増やし過ぎない）
+[safety_profile]
+max_streams_per_conn = 25
+max_symbols_per_conn = 25
