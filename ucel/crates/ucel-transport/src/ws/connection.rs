@@ -364,13 +364,7 @@ pub async fn run_ws_connection(
                             continue;
                         }
                     };
-                    let symbol = match sym_opt {
-                        Some(s) => s,
-                        None => {
-                            store.mark_deadletter(&key, "symbol_missing", now)?;
-                            continue;
-                        }
-                    };
+                    let symbol: &str = sym_opt.unwrap_or("");
 
                     let w = sub_limiter.allow_or_wait();
                     if w > Duration::from_secs(0) {

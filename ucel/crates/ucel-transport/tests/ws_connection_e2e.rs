@@ -1,8 +1,5 @@
 use std::net::SocketAddr;
-use std::sync::{
-    atomic::AtomicBool,
-    Arc,
-};
+use std::sync::{atomic::AtomicBool, Arc};
 use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};
@@ -312,4 +309,81 @@ async fn e2e_stop_on_oversized_frame() {
     assert!(res.is_err(), "oversized frame should stop");
 
     let _ = stop_tx.send(());
+}
+
+#[tokio::test]
+async fn e2e_symbol_less_subscription_is_dripped() {
+    let (addr, stop_tx, received) = spawn_fake_ws_server(false, false, 0).await;
+
+    let tmp = tempfile::tempdir().unwrap();
+    let rules_dir = tmp.path().join("rules");
+    write_rules_toml(&rules_dir, "gmocoin", 10);
+    let rules = load_for_exchange(&rules_dir, "gmocoin");
+
+    let wal_dir = tmp.path().join("wal");
+    let wal = ucel_journal::WalWriter::open(
+        &wal_dir,
+        64 * 1024 * 1024,
+        ucel_journal::FsyncMode::Balanced,
+    )
+    .map_err(|e| format!("{e}"))
+    .unwrap();
+    let wal = Arc::new(Mutex::new(wal));
+
+    let mut store = SubscriptionStore::open(":memory:").unwrap();
+    let k = SubscriptionKey {
+        exchange_id: "gmocoin".to_string(),
+        op_id: "bybit.public.ws.insurance".to_string(),
+        symbol: None,
+        params: json!({}),
+    };
+    let key = stable_key(&k);
+    store
+        .seed(
+            &[SubscriptionRow {
+                key,
+                exchange_id: "gmocoin".to_string(),
+                op_id: k.op_id.clone(),
+                symbol: None,
+                params_json: canon_params(&k.params),
+                assigned_conn: Some("gmocoin-conn-1".to_string()),
+            }],
+            1,
+        )
+        .unwrap();
+
+    let adapter: Arc<dyn WsVenueAdapter> = Arc::new(TestAdapter {
+        exchange_id: "gmocoin".to_string(),
+        url: format!("ws://{}", addr),
+    });
+
+    let shutdown = ShutdownToken {
+        flag: Arc::new(AtomicBool::new(false)),
+    };
+    let cfg = WsRunConfig {
+        exchange_id: "gmocoin".to_string(),
+        conn_id: "gmocoin-conn-1".to_string(),
+        recv_queue_cap: 256,
+        max_frame_bytes: 1024 * 1024,
+        max_inflight_per_conn: 10,
+        connect_timeout: Duration::from_secs(2),
+        idle_timeout: Duration::from_secs(2),
+        reconnect_storm_window: Duration::from_secs(30),
+        reconnect_storm_max: 10,
+    };
+
+    let run = tokio::spawn(async move {
+        run_ws_connection(adapter, rules, &mut store, wal, cfg, shutdown).await
+    });
+
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    let _ = stop_tx.send(());
+
+    let r = received.lock().await.clone();
+    assert!(
+        r.iter().any(|m| m.contains("\"symbol\":\"\"")),
+        "server should receive subscribe with empty symbol for symbol-less key"
+    );
+
+    run.abort();
 }
