@@ -1,0 +1,44 @@
+venue: gmocoin-private
+strict: true
+families:
+  # ----------------------------
+  # Private WS: executionEvents
+  # channel: executionEvents
+  # ----------------------------
+  - id: gmocoin.private.ws.executionEvents
+    requires_symbol: false
+    topic_template: "executionEvents"
+    params: {}
+    weight: 10
+
+  # ----------------------------
+  # Private WS: orderEvents
+  # channel: orderEvents
+  # ----------------------------
+  - id: gmocoin.private.ws.orderEvents
+    requires_symbol: false
+    topic_template: "orderEvents"
+    params: {}
+    weight: 20
+
+  # ----------------------------
+  # Private WS: positionEvents
+  # channel: positionEvents
+  # ----------------------------
+  - id: gmocoin.private.ws.positionEvents
+    requires_symbol: false
+    topic_template: "positionEvents"
+    params: {}
+    weight: 30
+
+  # ----------------------------
+  # Private WS: positionSummaryEvents
+  # channel: positionSummaryEvents
+  # option: Optional PERIODIC (5秒ごと)
+  # ----------------------------
+  - id: gmocoin.private.ws.positionSummaryEvents
+    requires_symbol: false
+    topic_template: "positionSummaryEvents"
+    params:
+      option: ["", "PERIODIC"]
+    weight: 40
