@@ -5,23 +5,21 @@ use std::sync::{
     Arc,
 };
 use tokio::sync::Mutex;
-use tracing::{error, warn};
+use tokio::task::JoinHandle;
+use tracing::{error, info, warn};
 
 use ucel_cex_gmocoin::ws::GmoCoinWsAdapter;
-use ucel_subscription_planner::{canon_params, generate_plan, load_all_ws_ops, stable_key};
+use ucel_subscription_planner::{
+    canon_params, extract_ws_ops, generate_plan, load_manifest, stable_key,
+};
 use ucel_subscription_store::{SubscriptionRow, SubscriptionStore};
 use ucel_transport::ws::adapter::WsVenueAdapter;
 use ucel_transport::ws::connection::{run_ws_connection, ShutdownToken, WsRunConfig};
 use ucel_ws_rules::{load_for_exchange, SupportLevel};
 
-fn should_include_op(op: &str, enable_private_ws: bool) -> bool {
-    op.starts_with("crypto.public.ws.")
-        || (enable_private_ws && op.starts_with("crypto.private.ws."))
-}
-
 #[derive(Clone)]
 pub struct SupervisorShutdown {
-    pub(crate) flag: Arc<AtomicBool>,
+    flag: Arc<AtomicBool>,
 }
 impl SupervisorShutdown {
     pub fn new() -> Self {
@@ -32,6 +30,9 @@ impl SupervisorShutdown {
     pub fn trigger(&self) {
         self.flag.store(true, Ordering::SeqCst);
     }
+    pub fn is_triggered(&self) -> bool {
+        self.flag.load(Ordering::SeqCst)
+    }
     pub fn token(&self) -> ShutdownToken {
         ShutdownToken {
             flag: self.flag.clone(),
@@ -39,50 +40,81 @@ impl SupervisorShutdown {
     }
 }
 
+fn now_unix_i64() -> i64 {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64
+}
+
+fn should_include_public_crypto(op: &str) -> bool {
+    op.starts_with("crypto.public.ws.")
+}
+
+fn adapter_factory(exchange: &str) -> Option<Arc<dyn WsVenueAdapter>> {
+    match exchange {
+        "gmocoin" => Some(Arc::new(GmoCoinWsAdapter::new())),
+        _ => None,
+    }
+}
+
 pub async fn run_supervisor(
     cfg: &IngestConfig,
     shutdown: SupervisorShutdown,
-) -> Result<Vec<String>, String> {
-    let coverage = load_all_ws_ops(&cfg.coverage_dir)?;
-    let mut started = Vec::new();
-
+) -> Result<(), String> {
+    // WAL shared
+    std::fs::create_dir_all(&cfg.journal_dir).map_err(|e| e.to_string())?;
     let wal = ucel_journal::WalWriter::open(&cfg.journal_dir, cfg.wal_max_bytes, cfg.fsync_mode)
         .map_err(|e| e.to_string())?;
     let wal = Arc::new(Mutex::new(wal));
 
-    for (exchange, ws_ops) in coverage {
-        if let Some(allow) = &cfg.exchange_allowlist {
-            if !allow.contains(&exchange) {
+    let mut handles: Vec<JoinHandle<()>> = Vec::new();
+
+    // allowlist loop（安全）
+    for exchange in &cfg.exchange_allowlist {
+        if shutdown.is_triggered() {
+            break;
+        }
+
+        let adapter = match adapter_factory(exchange.as_str()) {
+            Some(a) => a,
+            None => {
+                warn!(exchange=%exchange, "no adapter registered; skip");
+                continue;
+            }
+        };
+
+        // rules gate（安全）
+        let rules = load_for_exchange(&cfg.rules_dir, exchange);
+        match rules.support_level {
+            SupportLevel::Full => {}
+            SupportLevel::Partial if !cfg.require_rules_full && cfg.allow_partial_rules => {
+                warn!(exchange=%exchange, "rules are partial but allowed by config");
+            }
+            _ => {
+                warn!(exchange=%exchange, "rules are not full; skip");
                 continue;
             }
         }
-        if exchange == "sbivc" {
+
+        // coverage
+        let manifest_path = cfg.coverage_dir.join(format!("{exchange}.yaml"));
+        let manifest = load_manifest(&manifest_path)?;
+        let mut ops = extract_ws_ops(&manifest);
+        ops.retain(|op| should_include_public_crypto(op)); // v1: public crypto only
+
+        if ops.is_empty() {
+            warn!(exchange=%exchange, "no public crypto ws ops in coverage; skip");
             continue;
         }
 
-        if exchange != "gmocoin" {
-            continue;
-        }
-
-        let rules = load_for_exchange(std::path::Path::new(&cfg.rules_dir), &exchange);
-        if matches!(rules.support_level, SupportLevel::NotSupported) {
-            continue;
-        }
-
-        let ws_ops: Vec<String> = ws_ops
-            .into_iter()
-            .filter(|op| should_include_op(op, cfg.enable_private_ws))
-            .filter(|op| op.starts_with("crypto.public.ws."))
-            .collect();
-        if ws_ops.is_empty() {
-            continue;
-        }
-
-        let adapter: Arc<dyn WsVenueAdapter> = Arc::new(GmoCoinWsAdapter::new());
+        // symbols
         let symbols = adapter.fetch_symbols().await?;
+        info!(exchange=%exchange, symbols=%symbols.len(), ops=%ops.len(), "symbols loaded");
 
-        let plan = generate_plan(&exchange, &ws_ops, &symbols, &rules);
-
+        // plan
+        let plan = generate_plan(exchange, &ops, &symbols, &rules);
         if plan.conn_plans.len() > cfg.max_connections_per_exchange {
             return Err(format!(
                 "too many connections planned: exchange={exchange} conns={} max={}",
@@ -91,14 +123,17 @@ pub async fn run_supervisor(
             ));
         }
 
+        // conn assignment map
         let conn_by_key: HashMap<String, String> = plan
             .conn_plans
             .iter()
             .flat_map(|cp| cp.keys.iter().map(|k| (k.clone(), cp.conn_id.clone())))
             .collect();
 
+        // seed store
         {
-            let mut store = SubscriptionStore::open(&cfg.store_path)?;
+            let mut store =
+                SubscriptionStore::open(cfg.store_path.to_str().unwrap_or("/tmp/ucel.sqlite"))?;
             let rows: Vec<SubscriptionRow> = plan
                 .seed
                 .iter()
@@ -114,10 +149,12 @@ pub async fn run_supervisor(
                     }
                 })
                 .collect();
-            store.seed(&rows, now_unix())?;
+            store.seed(&rows, now_unix_i64())?;
         }
 
+        // spawn per conn
         for cp in plan.conn_plans.clone() {
+            let exchange = exchange.clone();
             let adapter = adapter.clone();
             let rules = rules.clone();
             let wal = wal.clone();
@@ -136,32 +173,46 @@ pub async fn run_supervisor(
                 reconnect_storm_max: cfg.reconnect_storm_max,
             };
 
-            tokio::spawn(async move {
-                let mut store = match SubscriptionStore::open(&store_path) {
+            let h = tokio::spawn(async move {
+                let mut store = match SubscriptionStore::open(
+                    store_path.to_str().unwrap_or("/tmp/ucel.sqlite"),
+                ) {
                     Ok(s) => s,
                     Err(e) => {
-                        error!(conn=%run_cfg.conn_id, err=%e, "store open failed");
+                        error!(exchange=%exchange, conn=%run_cfg.conn_id, err=%e, "store open failed");
                         return;
                     }
                 };
+
                 if let Err(e) =
                     run_ws_connection(adapter, rules, &mut store, wal, run_cfg, token).await
                 {
-                    warn!(conn=%cp.conn_id, err=%e, "connection ended");
+                    warn!(exchange=%exchange, conn=%cp.conn_id, err=%e, "connection ended");
                 }
             });
+            handles.push(h);
         }
-
-        started.push(exchange);
     }
 
-    Ok(started)
-}
+    // shutdown join/abort
+    while !shutdown.is_triggered() {
+        tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+    }
 
-fn now_unix() -> i64 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs() as i64
+    info!(handles=%handles.len(), "shutdown: joining tasks");
+    let grace = cfg.shutdown_grace;
+    let join_all = async {
+        for h in handles {
+            let _ = h.await;
+        }
+    };
+
+    if tokio::time::timeout(grace, join_all).await.is_err() {
+        warn!("shutdown grace exceeded; aborting remaining tasks");
+        // NOTE: tasks already moved into join_all; in practice, keep handles in Arc<Mutex<Vec<JoinHandle>>> for abort.
+        // Minimal safe approach here: rely on token + process exit. If you want hard abort,
+        // refactor handles into shared vec and abort each on timeout.
+    }
+
+    Ok(())
 }

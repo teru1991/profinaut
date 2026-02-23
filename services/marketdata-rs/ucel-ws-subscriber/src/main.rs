@@ -19,15 +19,15 @@ async fn main() {
     let cfg = match IngestConfig::from_env() {
         Ok(c) => c,
         Err(e) => {
-            error!(err = %e, "config load failed");
+            error!(err=%e, "config load failed");
             std::process::exit(2);
         }
     };
 
     info!(?cfg, "ucel-ws-subscriber starting");
-
     let shutdown = SupervisorShutdown::new();
 
+    // SIGINT/SIGTERM
     {
         let shutdown = shutdown.clone();
         tokio::spawn(async move {
@@ -49,17 +49,13 @@ async fn main() {
         });
     }
 
-    match run_supervisor(&cfg, shutdown.clone()).await {
-        Ok(started) => {
-            info!(started = ?started, "supervisor started exchanges");
-        }
-        Err(e) => {
-            error!(err = %e, "supervisor failed to start");
-            std::process::exit(1);
-        }
+    if let Err(e) = run_supervisor(&cfg, shutdown.clone()).await {
+        error!(err=%e, "supervisor failed");
+        std::process::exit(1);
     }
 
-    while !shutdown.flag.load(std::sync::atomic::Ordering::SeqCst) {
+    // wait until shutdown
+    while !shutdown.is_triggered() {
         tokio::time::sleep(std::time::Duration::from_millis(250)).await;
     }
 
