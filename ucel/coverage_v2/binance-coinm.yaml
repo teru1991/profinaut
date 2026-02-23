@@ -8,7 +8,7 @@ families:
     params: {}
     weight: 20
 
-  # --- Index Price (pair) ---
+  # --- Index Price (pair-based) ---
   - id: binance.coinm.public.ws.indexPrice
     requires_symbol: false
     topic_template: "{pair}@indexPrice@{speed}"
@@ -32,7 +32,7 @@ families:
       interval: ["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]
     weight: 60
 
-  # --- Continuous Kline (pair + contractType) ---
+  # --- Continuous Kline (pair-based; symbol-less) ---
   - id: binance.coinm.public.ws.continuousKline
     requires_symbol: false
     topic_template: "{pair}_{contractType}@continuousKline_{interval}"
@@ -41,7 +41,7 @@ families:
       interval: ["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]
     weight: 61
 
-  # --- Index Price Kline (pair) ---
+  # --- Index Price Kline (pair-based) ---
   - id: binance.coinm.public.ws.indexPriceKline
     requires_symbol: false
     topic_template: "{pair}@indexPriceKline_{interval}"
