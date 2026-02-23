@@ -1,0 +1,17 @@
+exchange_id = "binance-options"
+support_level = "full"
+
+[rate]
+messages_per_second = 5
+messages_per_hour = 18000
+
+[heartbeat]
+ping_interval_secs = 0
+idle_timeout_secs = 90
+max_connection_age_secs = 82800
+
+entitlement = "public_only"
+
+[safety_profile]
+max_streams_per_conn = 1024
+max_symbols_per_conn = 1024

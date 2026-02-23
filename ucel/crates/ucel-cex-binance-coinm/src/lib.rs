@@ -1087,5 +1087,6 @@ mod tests {
 }
 
 pub mod symbols;
+pub mod ws;
 pub mod ws_manager;
 pub mod channels;

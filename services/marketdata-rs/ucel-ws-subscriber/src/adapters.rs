@@ -10,6 +10,12 @@ use ucel_cex_kraken::ws::KrakenSpotWsAdapter;
 use ucel_cex_htx::ws::HtxSpotWsAdapter;
 use ucel_cex_bittrade::ws::BitTradeWsAdapter;
 
+// NEW: Binance split adapters
+use ucel_cex_binance::ws::BinanceSpotWsAdapter;
+use ucel_cex_binance_usdm::ws::BinanceUsdmWsAdapter;
+use ucel_cex_binance_coinm::ws::BinanceCoinmWsAdapter;
+use ucel_cex_binance_options::ws::BinanceOptionsWsAdapter;
+
 pub fn create(exchange_id: &str) -> Option<Arc<dyn WsVenueAdapter>> {
     match exchange_id {
         "gmocoin" => Some(Arc::new(GmoCoinWsAdapter::new())),
@@ -27,10 +33,14 @@ pub fn create(exchange_id: &str) -> Option<Arc<dyn WsVenueAdapter>> {
         "okx-option" => Some(Arc::new(OkxWsAdapter::option())),
 
         "kraken" => Some(Arc::new(KrakenSpotWsAdapter::new())),
-
         "htx-spot" => Some(Arc::new(HtxSpotWsAdapter::new())),
-
         "bittrade" => Some(Arc::new(BitTradeWsAdapter::new())),
+
+        // NEW: Binance split exchange ids
+        "binance-spot" => Some(Arc::new(BinanceSpotWsAdapter::new())),
+        "binance-usdm" => Some(Arc::new(BinanceUsdmWsAdapter::new())),
+        "binance-coinm" => Some(Arc::new(BinanceCoinmWsAdapter::new())),
+        "binance-options" => Some(Arc::new(BinanceOptionsWsAdapter::new())),
 
         _ => None,
     }
