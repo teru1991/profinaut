@@ -16,6 +16,7 @@ serde = { version = "1", features = ["derive"] }
 thiserror = "1"
 tracing = "0.1"
 tokio = { version = "1", features = ["macros", "rt", "signal", "sync", "time"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [[bin]]
 name = "ucel-ws-subscriber"

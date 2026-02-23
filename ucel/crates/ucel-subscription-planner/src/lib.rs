@@ -30,7 +30,7 @@ pub struct SubscriptionKey {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConnPlan {
     pub conn_id: String,
-    pub keys: Vec<String>,
+    pub keys: Vec<String>, // stable key
     pub limit: usize,
 }
 
@@ -38,11 +38,6 @@ pub struct ConnPlan {
 pub struct Plan {
     pub conn_plans: Vec<ConnPlan>,
     pub seed: Vec<SubscriptionKey>,
-}
-
-pub fn load_manifest(path: &Path) -> Result<CoverageManifest, String> {
-    let raw = fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
-    serde_yaml::from_str(&raw).map_err(|e| format!("parse {}: {e}", path.display()))
 }
 
 pub fn extract_ws_ops(manifest: &CoverageManifest) -> Vec<String> {
@@ -54,37 +49,27 @@ pub fn extract_ws_ops(manifest: &CoverageManifest) -> Vec<String> {
         .collect()
 }
 
+pub fn load_manifest(path: &Path) -> Result<CoverageManifest, String> {
+    let raw = fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
+    serde_yaml::from_str(&raw).map_err(|e| format!("parse {}: {e}", path.display()))
+}
+
 pub fn load_all_ws_ops(coverage_dir: &Path) -> Result<Vec<(String, Vec<String>)>, String> {
     let mut out = Vec::new();
-    for entry in fs::read_dir(coverage_dir)
-        .map_err(|e| format!("read_dir {}: {e}", coverage_dir.display()))?
-    {
+    for entry in fs::read_dir(coverage_dir).map_err(|e| format!("read_dir {}: {e}", coverage_dir.display()))? {
         let entry = entry.map_err(|e| format!("read_dir entry: {e}"))?;
         let path = entry.path();
         if path.extension().and_then(|x| x.to_str()) != Some("yaml") {
             continue;
         }
         let m = load_manifest(&path)?;
-        let fname = path
-            .file_stem()
-            .and_then(|x| x.to_str())
-            .unwrap_or_default();
+        let fname = path.file_stem().and_then(|x| x.to_str()).unwrap_or_default();
         if m.venue != fname {
             return Err(format!("venue mismatch {} != {}", m.venue, fname));
         }
         out.push((m.venue.clone(), extract_ws_ops(&m)));
     }
     Ok(out)
-}
-
-pub fn stable_key(k: &SubscriptionKey) -> String {
-    format!(
-        "{}|{}|{}|{}",
-        k.exchange_id,
-        k.op_id,
-        k.symbol.clone().unwrap_or_default(),
-        canon_params(&k.params)
-    )
 }
 
 pub fn canon_params(v: &serde_json::Value) -> String {
@@ -104,6 +89,16 @@ pub fn canon_params(v: &serde_json::Value) -> String {
     }
 }
 
+pub fn stable_key(k: &SubscriptionKey) -> String {
+    format!(
+        "{}|{}|{}|{}",
+        k.exchange_id,
+        k.op_id,
+        k.symbol.clone().unwrap_or_default(),
+        canon_params(&k.params),
+    )
+}
+
 pub fn generate_plan(
     exchange_id: &str,
     ws_ops: &[String],
@@ -111,8 +106,9 @@ pub fn generate_plan(
     rules: &ExchangeWsRules,
 ) -> Plan {
     let mut seed = Vec::new();
-    let mut ops = ws_ops.to_vec();
-    ops.sort_by_key(|op| {
+
+    let mut prioritized_ops = ws_ops.to_vec();
+    prioritized_ops.sort_by_key(|op| {
         if op.contains("orderbook") {
             0
         } else if op.contains("trade") {
@@ -124,12 +120,23 @@ pub fn generate_plan(
         }
     });
 
-    for op in ops {
-        for sym in symbols {
+    let mut prioritized_symbols = symbols.to_vec();
+    prioritized_symbols.sort_by_key(|s| {
+        if s.contains("BTC") {
+            0
+        } else if s.contains("ETH") {
+            1
+        } else {
+            2
+        }
+    });
+
+    for op in prioritized_ops {
+        for symbol in &prioritized_symbols {
             seed.push(SubscriptionKey {
                 exchange_id: exchange_id.to_string(),
                 op_id: op.clone(),
-                symbol: Some(sym.clone()),
+                symbol: Some(symbol.clone()),
                 params: json!({}),
             });
         }

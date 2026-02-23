@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -12,6 +13,7 @@ use ucel_subscription_store::SubscriptionStore;
 use ucel_ws_rules::ExchangeWsRules;
 
 use super::adapter::{InboundClass, OutboundMsg, WsVenueAdapter};
+use super::reconnect::{backoff_with_jitter_ms, storm_guard};
 
 #[derive(Clone, Debug)]
 pub struct WsRunConfig {
@@ -22,78 +24,18 @@ pub struct WsRunConfig {
     pub max_inflight_per_conn: usize,
     pub connect_timeout: Duration,
     pub idle_timeout: Duration,
-    pub send_queue_hard_limit: usize,
+    pub reconnect_storm_window: Duration,
+    pub reconnect_storm_max: usize,
 }
 
 #[derive(Clone)]
 pub struct ShutdownToken {
-    flag: Arc<std::sync::atomic::AtomicBool>,
+    pub flag: Arc<std::sync::atomic::AtomicBool>,
 }
-
 impl ShutdownToken {
-    pub fn new(flag: Arc<std::sync::atomic::AtomicBool>) -> Self {
-        Self { flag }
-    }
-
     pub fn is_triggered(&self) -> bool {
         use std::sync::atomic::Ordering;
         self.flag.load(Ordering::SeqCst)
-    }
-}
-
-#[derive(Clone, Debug)]
-struct FixedWindowLimiter {
-    window: Duration,
-    max: u64,
-    started_at: Instant,
-    used: u64,
-}
-
-impl FixedWindowLimiter {
-    fn per_second(max: u64) -> Self {
-        Self {
-            window: Duration::from_secs(1),
-            max: max.max(1),
-            started_at: Instant::now(),
-            used: 0,
-        }
-    }
-
-    fn refresh(&mut self, now: Instant) {
-        if now.duration_since(self.started_at) >= self.window {
-            self.started_at = now;
-            self.used = 0;
-        }
-    }
-
-    fn allow_or_wait(&mut self) -> Duration {
-        let now = Instant::now();
-        self.refresh(now);
-        if self.used < self.max {
-            self.used += 1;
-            Duration::ZERO
-        } else {
-            let elapsed = now.duration_since(self.started_at);
-            if elapsed >= self.window {
-                Duration::ZERO
-            } else {
-                self.window - elapsed
-            }
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-struct TwoLevelLimiter {
-    global: FixedWindowLimiter,
-    conn: FixedWindowLimiter,
-}
-
-impl TwoLevelLimiter {
-    fn allow_or_wait(&mut self) -> Duration {
-        let w1 = self.global.allow_or_wait();
-        let w2 = self.conn.allow_or_wait();
-        w1.max(w2)
     }
 }
 
@@ -101,15 +43,14 @@ fn now_unix_i64() -> i64 {
     use std::time::{SystemTime, UNIX_EPOCH};
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .expect("clock")
+        .unwrap()
         .as_secs() as i64
 }
-
 fn now_unix_u64() -> u64 {
     use std::time::{SystemTime, UNIX_EPOCH};
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .expect("clock")
+        .unwrap()
         .as_secs()
 }
 
@@ -120,23 +61,38 @@ fn parse_stable_key(key: &str) -> Option<(&str, &str, Option<&str>, &str)> {
     }
     let exchange = parts[0];
     let op = parts[1];
-    let symbol = if parts[2].is_empty() {
-        None
-    } else {
-        Some(parts[2])
-    };
+    let symbol = if parts[2].is_empty() { None } else { Some(parts[2]) };
     let params = parts[3];
     Some((exchange, op, symbol, params))
 }
 
-fn backoff_with_jitter_ms(attempt: u32, base_ms: u64, max_ms: u64, jitter_ms: u64) -> u64 {
-    let exp = 2u64.saturating_pow(attempt.min(16));
-    let mut ms = base_ms.saturating_mul(exp);
-    if ms > max_ms {
-        ms = max_ms;
+#[derive(Clone)]
+struct FixedWindowLimiter {
+    max_per_sec: u32,
+    window_start: Instant,
+    used: u32,
+}
+impl FixedWindowLimiter {
+    fn new(max_per_sec: u32) -> Self {
+        Self {
+            max_per_sec: max_per_sec.max(1),
+            window_start: Instant::now(),
+            used: 0,
+        }
     }
-    let j = now_unix_u64() % (jitter_ms + 1);
-    ms.saturating_add(j)
+    fn allow_or_wait(&mut self) -> Duration {
+        let now = Instant::now();
+        if now.duration_since(self.window_start) >= Duration::from_secs(1) {
+            self.window_start = now;
+            self.used = 0;
+        }
+        if self.used < self.max_per_sec {
+            self.used += 1;
+            Duration::from_secs(0)
+        } else {
+            Duration::from_secs(1).saturating_sub(now.duration_since(self.window_start))
+        }
+    }
 }
 
 pub async fn run_ws_connection(
@@ -149,27 +105,17 @@ pub async fn run_ws_connection(
 ) -> Result<(), String> {
     let url = adapter.ws_url();
 
-    let sub_mps = rules
+    let subscribe_mps = rules
         .rate
         .as_ref()
         .and_then(|r| r.messages_per_second)
         .unwrap_or(1)
-        .max(1) as u64;
-    let client_mps = rules
-        .rate
-        .as_ref()
-        .and_then(|r| r.messages_per_second)
-        .unwrap_or(2)
-        .max(1) as u64;
+        .max(1);
 
-    let mut subscribe_limiter = TwoLevelLimiter {
-        global: FixedWindowLimiter::per_second(sub_mps),
-        conn: FixedWindowLimiter::per_second(sub_mps),
-    };
-    let client_limiter = TwoLevelLimiter {
-        global: FixedWindowLimiter::per_second(client_mps),
-        conn: FixedWindowLimiter::per_second(client_mps),
-    };
+    let client_mps = 2u32;
+
+    let mut sub_limiter = FixedWindowLimiter::new(subscribe_mps);
+    let client_limiter = FixedWindowLimiter::new(client_mps);
 
     let hb_idle = rules
         .heartbeat
@@ -178,38 +124,52 @@ pub async fn run_ws_connection(
         .map(Duration::from_secs)
         .unwrap_or(cfg.idle_timeout);
 
-    let mut attempt: u32 = 0;
+    let mut reconnect_attempt: u32 = 0;
+    let mut reconnect_times: VecDeque<Instant> = VecDeque::new();
 
     loop {
         if shutdown.is_triggered() {
-            let _ = store.requeue_connection(&cfg.exchange_id, &cfg.conn_id, now_unix_i64());
+            let _ = store.requeue_active_to_pending(&cfg.exchange_id, &cfg.conn_id, now_unix_i64());
             return Ok(());
         }
 
-        let _ = store.requeue_connection(&cfg.exchange_id, &cfg.conn_id, now_unix_i64());
+        let _ = store.requeue_active_to_pending(&cfg.exchange_id, &cfg.conn_id, now_unix_i64());
+
+        let nowi = Instant::now();
+        reconnect_times.push_back(nowi);
+        while let Some(front) = reconnect_times.front() {
+            if nowi.duration_since(*front) > cfg.reconnect_storm_window {
+                reconnect_times.pop_front();
+            } else {
+                break;
+            }
+        }
+        if !storm_guard(reconnect_times.len(), cfg.reconnect_storm_max) {
+            return Err(format!("reconnect storm detected: {}", reconnect_times.len()));
+        }
+
         info!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, url=%url, "ws connecting");
 
-        let (ws_stream, _) = match tokio::time::timeout(cfg.connect_timeout, connect_async(&url))
-            .await
-        {
+        let (ws_stream, _) = match tokio::time::timeout(cfg.connect_timeout, connect_async(&url)).await {
             Ok(Ok(v)) => v,
             Ok(Err(e)) => {
-                let backoff = backoff_with_jitter_ms(attempt, 200, 30_000, 250);
-                attempt = attempt.saturating_add(1);
+                let backoff = backoff_with_jitter_ms(reconnect_attempt, 200, 30_000, 250);
+                reconnect_attempt = reconnect_attempt.saturating_add(1);
                 warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, err=%e, backoff_ms=backoff, "connect error");
                 tokio::time::sleep(Duration::from_millis(backoff)).await;
                 continue;
             }
             Err(_) => {
-                let backoff = backoff_with_jitter_ms(attempt, 200, 30_000, 250);
-                attempt = attempt.saturating_add(1);
+                let backoff = backoff_with_jitter_ms(reconnect_attempt, 200, 30_000, 250);
+                reconnect_attempt = reconnect_attempt.saturating_add(1);
                 warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, backoff_ms=backoff, "connect timeout");
                 tokio::time::sleep(Duration::from_millis(backoff)).await;
                 continue;
             }
         };
 
-        attempt = 0;
+        reconnect_attempt = 0;
+
         let (mut write, mut read) = ws_stream.split();
         let (tx, mut rx) = mpsc::channel::<OutboundMsg>(cfg.recv_queue_cap);
 
@@ -218,14 +178,13 @@ pub async fn run_ws_connection(
             let conn_id = cfg.conn_id.clone();
             let shutdown = shutdown.clone();
             let mut client_limiter = client_limiter.clone();
-
             tokio::spawn(async move {
                 while let Some(m) = rx.recv().await {
                     if shutdown.is_triggered() {
                         break;
                     }
                     let w = client_limiter.allow_or_wait();
-                    if w > Duration::ZERO {
+                    if w > Duration::from_secs(0) {
                         tokio::time::sleep(w).await;
                     }
                     if write.send(Message::Text(m.text.into())).await.is_err() {
@@ -241,13 +200,9 @@ pub async fn run_ws_connection(
 
         loop {
             if shutdown.is_triggered() {
-                let _ = store.requeue_connection(&cfg.exchange_id, &cfg.conn_id, now_unix_i64());
+                let _ = store.requeue_active_to_pending(&cfg.exchange_id, &cfg.conn_id, now_unix_i64());
                 writer.abort();
                 return Ok(());
-            }
-
-            if cfg.recv_queue_cap >= cfg.send_queue_hard_limit && cfg.send_queue_hard_limit > 0 {
-                // queue hard-stop extension point
             }
 
             if last_drip.elapsed() >= Duration::from_millis(200) {
@@ -265,15 +220,14 @@ pub async fn run_ws_connection(
                         break;
                     }
 
-                    let (_ex, op_id, symbol_opt, params_canon) = match parse_stable_key(&key) {
+                    let (_ex, op_id, sym_opt, params_canon) = match parse_stable_key(&key) {
                         Some(v) => v,
                         None => {
                             store.mark_deadletter(&key, "bad_key_format", now)?;
                             continue;
                         }
                     };
-
-                    let symbol = match symbol_opt {
+                    let symbol = match sym_opt {
                         Some(s) => s,
                         None => {
                             store.mark_deadletter(&key, "symbol_missing", now)?;
@@ -281,20 +235,17 @@ pub async fn run_ws_connection(
                         }
                     };
 
-                    let params: Value = serde_json::from_str(params_canon)
-                        .unwrap_or_else(|_| serde_json::json!({}));
-
-                    let w = subscribe_limiter.allow_or_wait();
-                    if w > Duration::ZERO {
+                    let w = sub_limiter.allow_or_wait();
+                    if w > Duration::from_secs(0) {
                         tokio::time::sleep(w).await;
                     }
 
+                    let params: Value =
+                        serde_json::from_str(params_canon).unwrap_or_else(|_| serde_json::json!({}));
                     match adapter.build_subscribe(op_id, symbol, &params) {
                         Ok(msgs) => {
                             for m in msgs {
-                                if tx.send(m).await.is_err() {
-                                    return Err("send queue closed".to_string());
-                                }
+                                let _ = tx.send(m).await;
                             }
                         }
                         Err(e) => {
@@ -304,21 +255,19 @@ pub async fn run_ws_connection(
                 }
             }
 
-            let maybe_item =
-                match tokio::time::timeout(Duration::from_millis(250), read.next()).await {
-                    Ok(v) => v,
-                    Err(_) => None,
-                };
-
             if last_inbound.elapsed() >= hb_idle {
-                if let Some(ping) = adapter.ping_msg() {
-                    let _ = tx.send(ping).await;
+                if let Some(p) = adapter.ping_msg() {
+                    let _ = tx.send(p).await;
                 }
                 warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, "idle timeout -> reconnect");
                 break;
             }
 
-            let Some(item) = maybe_item else {
+            let next = tokio::time::timeout(Duration::from_millis(250), read.next()).await;
+            let Some(item) = (match next {
+                Ok(v) => v,
+                Err(_) => None,
+            }) else {
                 continue;
             };
             let msg = match item {
@@ -366,13 +315,14 @@ pub async fn run_ws_connection(
                     params_canon_hint,
                 } => {
                     let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
-                    if let Some(k) = store.find_key_by_fields(
+                    let key = store.find_key_by_fields(
                         &cfg.exchange_id,
                         &cfg.conn_id,
                         &op_id,
                         symbol.as_deref(),
                         params_canon,
-                    )? {
+                    )?;
+                    if let Some(k) = key {
                         store.mark_active(&k, now)?;
                         store.bump_last_message(&k, now)?;
                     }
@@ -384,13 +334,14 @@ pub async fn run_ws_connection(
                 } => {
                     if let (Some(op), Some(sym)) = (op_id, symbol) {
                         let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
-                        if let Some(k) = store.find_key_by_fields(
+                        let key = store.find_key_by_fields(
                             &cfg.exchange_id,
                             &cfg.conn_id,
                             &op,
                             Some(&sym),
                             params_canon,
-                        )? {
+                        )?;
+                        if let Some(k) = key {
                             store.mark_active(&k, now)?;
                             store.bump_last_message(&k, now)?;
                         }
@@ -404,24 +355,26 @@ pub async fn run_ws_connection(
                 } => {
                     let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
                     if let Some(op) = op_id {
-                        if let Some(k) = store.find_key_by_fields(
+                        let key = store.find_key_by_fields(
                             &cfg.exchange_id,
                             &cfg.conn_id,
                             &op,
                             symbol.as_deref(),
                             params_canon,
-                        )? {
+                        )?;
+                        if let Some(k) = key {
                             store.mark_deadletter(&k, &format!("nack:{reason}"), now)?;
                         }
                     }
                 }
-                InboundClass::System | InboundClass::Unknown => {}
+                _ => {}
             }
         }
 
         writer.abort();
-        let backoff = backoff_with_jitter_ms(attempt, 200, 30_000, 250);
-        attempt = attempt.saturating_add(1);
+
+        let backoff = backoff_with_jitter_ms(reconnect_attempt, 200, 30_000, 250);
+        reconnect_attempt = reconnect_attempt.saturating_add(1);
         tokio::time::sleep(Duration::from_millis(backoff)).await;
     }
 }
