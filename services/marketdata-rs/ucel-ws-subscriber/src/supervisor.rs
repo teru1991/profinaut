@@ -1,12 +1,15 @@
 use crate::config::IngestConfig;
 use std::collections::HashMap;
-use std::sync::{atomic::{AtomicBool, Ordering}, Arc};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 use tracing::{error, info, warn};
 
 use ucel_subscription_planner::{
-    canon_params, extract_ws_ops, generate_plan, generate_plan_v2, load_manifest, load_coverage_v2, stable_key,
+    canon_params, extract_ws_ops, generate_plan, generate_plan_v2, load_coverage_v2, load_manifest, stable_key,
 };
 use ucel_subscription_store::{SubscriptionRow, SubscriptionStore};
 use ucel_transport::ws::connection::{run_ws_connection, ShutdownToken, WsRunConfig};
@@ -17,10 +20,18 @@ pub struct SupervisorShutdown {
     flag: Arc<AtomicBool>,
 }
 impl SupervisorShutdown {
-    pub fn new() -> Self { Self { flag: Arc::new(AtomicBool::new(false)) } }
-    pub fn trigger(&self) { self.flag.store(true, Ordering::SeqCst); }
-    pub fn is_triggered(&self) -> bool { self.flag.load(Ordering::SeqCst) }
-    pub fn token(&self) -> ShutdownToken { ShutdownToken { flag: self.flag.clone() } }
+    pub fn new() -> Self {
+        Self { flag: Arc::new(AtomicBool::new(false)) }
+    }
+    pub fn trigger(&self) {
+        self.flag.store(true, Ordering::SeqCst);
+    }
+    pub fn is_triggered(&self) -> bool {
+        self.flag.load(Ordering::SeqCst)
+    }
+    pub fn token(&self) -> ShutdownToken {
+        ShutdownToken { flag: self.flag.clone() }
+    }
 }
 
 fn now_unix_i64() -> i64 {
@@ -41,27 +52,43 @@ pub async fn run_supervisor(cfg: &IngestConfig, shutdown: SupervisorShutdown) ->
     let mut handles: Vec<JoinHandle<()>> = Vec::new();
 
     for exchange in &cfg.exchange_allowlist {
-        if shutdown.is_triggered() { break; }
+        if shutdown.is_triggered() {
+            break;
+        }
 
+        // Adapter create (now with reason)
         let adapter = match crate::adapters::create(exchange.as_str()) {
-            Some(a) => a,
-            None => { warn!(exchange=%exchange, "no adapter registered; skip"); continue; }
+            Ok(a) => a,
+            Err(e) => {
+                warn!(exchange=%exchange, err=%e, "adapter create failed; skip");
+                continue;
+            }
         };
 
+        // Rules
         let rules = load_for_exchange(&cfg.rules_dir, exchange);
         match rules.support_level {
             SupportLevel::Full => {}
             SupportLevel::Partial if !cfg.require_rules_full && cfg.allow_partial_rules => {
                 warn!(exchange=%exchange, "rules are partial but allowed by config");
             }
-            _ => { warn!(exchange=%exchange, "rules are not full; skip"); continue; }
+            _ => {
+                warn!(exchange=%exchange, "rules are not full; skip");
+                continue;
+            }
         }
 
+        // Prefer coverage_v2 if present; else fallback to legacy coverage
         let v2_path = cfg.coverage_v2_dir.join(format!("{exchange}.yaml"));
-        let (plan, seed_len): (ucel_subscription_planner::Plan, usize) = if v2_path.exists() {
+        let (plan, symbols_len): (ucel_subscription_planner::Plan, usize) = if v2_path.exists() {
             let cov2 = load_coverage_v2(&v2_path)?;
             let symbols = adapter.fetch_symbols().await?;
-            info!(exchange=%exchange, symbols=%symbols.len(), families=%cov2.families.len(), "symbols loaded (coverage_v2)");
+            info!(
+                exchange=%exchange,
+                symbols=%symbols.len(),
+                families=%cov2.families.len(),
+                "symbols loaded (coverage_v2)"
+            );
             let plan = generate_plan_v2(exchange, &cov2, &symbols, &rules);
             (plan, symbols.len())
         } else {
@@ -70,11 +97,16 @@ pub async fn run_supervisor(cfg: &IngestConfig, shutdown: SupervisorShutdown) ->
             let mut ops = extract_ws_ops(&manifest);
             ops.retain(|op| should_include_public_crypto(op));
             if ops.is_empty() {
-                warn!(exchange=%exchange, "no public crypto ws ops in coverage; skip");
+                warn!(exchange=%exchange, "no public crypto ws ops in legacy coverage; skip");
                 continue;
             }
             let symbols = adapter.fetch_symbols().await?;
-            info!(exchange=%exchange, symbols=%symbols.len(), ops=%ops.len(), "symbols loaded (legacy coverage)");
+            info!(
+                exchange=%exchange,
+                symbols=%symbols.len(),
+                ops=%ops.len(),
+                "symbols loaded (legacy coverage)"
+            );
             let plan = generate_plan(exchange, &ops, &symbols, &rules);
             (plan, symbols.len())
         };
@@ -82,32 +114,50 @@ pub async fn run_supervisor(cfg: &IngestConfig, shutdown: SupervisorShutdown) ->
         if plan.conn_plans.len() > cfg.max_connections_per_exchange {
             return Err(format!(
                 "too many connections planned: exchange={exchange} conns={} max={}",
-                plan.conn_plans.len(), cfg.max_connections_per_exchange
+                plan.conn_plans.len(),
+                cfg.max_connections_per_exchange
             ));
         }
 
-        let conn_by_key: HashMap<String, String> = plan.conn_plans
+        // stable_key -> conn_id map
+        let conn_by_key: HashMap<String, String> = plan
+            .conn_plans
             .iter()
             .flat_map(|cp| cp.keys.iter().map(|k| (k.clone(), cp.conn_id.clone())))
             .collect();
 
+        // Seed store
         {
             let mut store = SubscriptionStore::open(cfg.store_path.to_str().unwrap_or("/tmp/ucel.sqlite"))?;
-            let rows: Vec<SubscriptionRow> = plan.seed.iter().map(|k| {
-                let k_stable = stable_key(k);
-                SubscriptionRow {
-                    key: k_stable.clone(),
-                    exchange_id: k.exchange_id.clone(),
-                    op_id: k.op_id.clone(),
-                    symbol: k.symbol.clone(),
-                    params_json: canon_params(&k.params),
-                    assigned_conn: conn_by_key.get(&k_stable).cloned(),
-                }
-            }).collect();
-            store.seed(&rows, now_unix_i64())?;
-            info!(exchange=%exchange, subs=%rows.len(), symbols=%seed_len, conns=%plan.conn_plans.len(), "seeded store");
+            let now = now_unix_i64();
+
+            let rows: Vec<SubscriptionRow> = plan
+                .seed
+                .iter()
+                .map(|k| {
+                    let sk = stable_key(k);
+                    SubscriptionRow {
+                        key: sk.clone(),
+                        exchange_id: k.exchange_id.clone(),
+                        op_id: k.op_id.clone(),
+                        symbol: k.symbol.clone(),
+                        params_json: canon_params(&k.params),
+                        assigned_conn: conn_by_key.get(&sk).cloned(),
+                    }
+                })
+                .collect();
+
+            store.seed(&rows, now)?;
+            info!(
+                exchange=%exchange,
+                subs=%rows.len(),
+                symbols=%symbols_len,
+                conns=%plan.conn_plans.len(),
+                "seeded store"
+            );
         }
 
+        // Spawn connection tasks
         for cp in plan.conn_plans.clone() {
             let exchange = exchange.clone();
             let adapter = adapter.clone();
@@ -136,6 +186,7 @@ pub async fn run_supervisor(cfg: &IngestConfig, shutdown: SupervisorShutdown) ->
                         return;
                     }
                 };
+
                 if let Err(e) = run_ws_connection(adapter, rules, &mut store, wal, run_cfg, token).await {
                     warn!(exchange=%exchange, conn=%cp.conn_id, err=%e, "connection ended");
                 }
@@ -144,6 +195,7 @@ pub async fn run_supervisor(cfg: &IngestConfig, shutdown: SupervisorShutdown) ->
         }
     }
 
+    // maintenance: periodic deadletter purge
     let mut last_maintenance = std::time::Instant::now();
     while !shutdown.is_triggered() {
         tokio::time::sleep(std::time::Duration::from_millis(250)).await;
