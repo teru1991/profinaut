@@ -1,8 +1,11 @@
 use std::sync::Arc;
 use ucel_transport::ws::adapter::WsVenueAdapter;
 
-use ucel_cex_gmocoin::ws::GmoCoinWsAdapter;
+// ---------- GMO (split public/private) ----------
+use ucel_cex_gmocoin::rest::GmoCredentials;
+use ucel_cex_gmocoin::ws::{GmoCoinPrivateWsAdapter, GmoCoinPublicWsAdapter};
 
+// ---------- Existing exchanges ----------
 use ucel_cex_bybit::ws::BybitWsAdapter;
 use ucel_cex_bitget::ws::BitgetSpotWsAdapter;
 use ucel_cex_okx::ws::OkxWsAdapter;
@@ -10,38 +13,87 @@ use ucel_cex_kraken::ws::KrakenSpotWsAdapter;
 use ucel_cex_htx::ws::HtxSpotWsAdapter;
 use ucel_cex_bittrade::ws::BitTradeWsAdapter;
 
-// NEW: Binance split adapters
+// Binance split adapters
 use ucel_cex_binance::ws::BinanceSpotWsAdapter;
 use ucel_cex_binance_usdm::ws::BinanceUsdmWsAdapter;
 use ucel_cex_binance_coinm::ws::BinanceCoinmWsAdapter;
 use ucel_cex_binance_options::ws::BinanceOptionsWsAdapter;
 
-pub fn create(exchange_id: &str) -> Option<Arc<dyn WsVenueAdapter>> {
+// ---------- Future JP exchanges (placeholders) ----------
+// When you add these crates later, enable via Cargo features and uncomment the uses.
+// use ucel_cex_coincheck::ws::{CoincheckPublicWsAdapter, CoincheckPrivateWsAdapter};
+// use ucel_cex_bitflyer::ws::{BitflyerPublicWsAdapter, BitflyerPrivateWsAdapter};
+// use ucel_cex_bitbank::ws::{BitbankPublicWsAdapter, BitbankPrivateWsAdapter};
+// use ucel_cex_sbivc::ws::{SbivcPublicWsAdapter, SbivcPrivateWsAdapter};
+
+pub fn create(exchange_id: &str) -> Result<Arc<dyn WsVenueAdapter>, String> {
     match exchange_id {
-        "gmocoin" => Some(Arc::new(GmoCoinWsAdapter::new())),
+        // ----------------------------
+        // GMO Coin
+        // ----------------------------
+        "gmocoin-public" => Ok(Arc::new(GmoCoinPublicWsAdapter::new())),
 
-        "bybit-spot" => Some(Arc::new(BybitWsAdapter::spot())),
-        "bybit-linear" => Some(Arc::new(BybitWsAdapter::linear())),
-        "bybit-inverse" => Some(Arc::new(BybitWsAdapter::inverse())),
-        "bybit-options" => Some(Arc::new(BybitWsAdapter::option())),
+        "gmocoin-private" => {
+            let api_key = std::env::var("GMO_API_KEY")
+                .map_err(|_| "missing env GMO_API_KEY (required for gmocoin-private)".to_string())?;
+            let api_secret = std::env::var("GMO_API_SECRET")
+                .map_err(|_| "missing env GMO_API_SECRET (required for gmocoin-private)".to_string())?;
+            let creds = GmoCredentials { api_key, api_secret };
+            let a = GmoCoinPrivateWsAdapter::new(creds)?;
+            Ok(Arc::new(a))
+        }
 
-        "bitget-spot" => Some(Arc::new(BitgetSpotWsAdapter::new())),
+        // Backward compatibility: "gmocoin" => gmocoin-public
+        "gmocoin" => Ok(Arc::new(GmoCoinPublicWsAdapter::new())),
 
-        "okx-spot" => Some(Arc::new(OkxWsAdapter::spot())),
-        "okx-swap" => Some(Arc::new(OkxWsAdapter::swap())),
-        "okx-futures" => Some(Arc::new(OkxWsAdapter::futures())),
-        "okx-option" => Some(Arc::new(OkxWsAdapter::option())),
+        // ----------------------------
+        // Bybit
+        // ----------------------------
+        "bybit-spot" => Ok(Arc::new(BybitWsAdapter::spot())),
+        "bybit-linear" => Ok(Arc::new(BybitWsAdapter::linear())),
+        "bybit-inverse" => Ok(Arc::new(BybitWsAdapter::inverse())),
+        "bybit-options" => Ok(Arc::new(BybitWsAdapter::option())),
 
-        "kraken" => Some(Arc::new(KrakenSpotWsAdapter::new())),
-        "htx-spot" => Some(Arc::new(HtxSpotWsAdapter::new())),
-        "bittrade" => Some(Arc::new(BitTradeWsAdapter::new())),
+        // ----------------------------
+        // Bitget
+        // ----------------------------
+        "bitget-spot" => Ok(Arc::new(BitgetSpotWsAdapter::new())),
 
-        // NEW: Binance split exchange ids
-        "binance-spot" => Some(Arc::new(BinanceSpotWsAdapter::new())),
-        "binance-usdm" => Some(Arc::new(BinanceUsdmWsAdapter::new())),
-        "binance-coinm" => Some(Arc::new(BinanceCoinmWsAdapter::new())),
-        "binance-options" => Some(Arc::new(BinanceOptionsWsAdapter::new())),
+        // ----------------------------
+        // OKX
+        // ----------------------------
+        "okx-spot" => Ok(Arc::new(OkxWsAdapter::spot())),
+        "okx-swap" => Ok(Arc::new(OkxWsAdapter::swap())),
+        "okx-futures" => Ok(Arc::new(OkxWsAdapter::futures())),
+        "okx-option" => Ok(Arc::new(OkxWsAdapter::option())),
 
-        _ => None,
+        // ----------------------------
+        // Others
+        // ----------------------------
+        "kraken" => Ok(Arc::new(KrakenSpotWsAdapter::new())),
+        "htx-spot" => Ok(Arc::new(HtxSpotWsAdapter::new())),
+        "bittrade" => Ok(Arc::new(BitTradeWsAdapter::new())),
+
+        // ----------------------------
+        // Binance split
+        // ----------------------------
+        "binance-spot" => Ok(Arc::new(BinanceSpotWsAdapter::new())),
+        "binance-usdm" => Ok(Arc::new(BinanceUsdmWsAdapter::new())),
+        "binance-coinm" => Ok(Arc::new(BinanceCoinmWsAdapter::new())),
+        "binance-options" => Ok(Arc::new(BinanceOptionsWsAdapter::new())),
+
+        // ----------------------------
+        // Future JP exchanges (pre-wired IDs)
+        // These are intentionally "known IDs" so coverage/rules can be prepared now.
+        // When you add the crates, switch these to real adapters.
+        // ----------------------------
+        "coincheck-public" | "coincheck-private" |
+        "bitflyer-public" | "bitflyer-private" |
+        "bitbank-public" | "bitbank-private" |
+        "sbivc-public" | "sbivc-private" => {
+            Err(format!("adapter not implemented yet for {exchange_id} (JP venue placeholder is pre-registered)"))
+        }
+
+        _ => Err(format!("no adapter registered for exchange_id={exchange_id}")),
     }
 }
