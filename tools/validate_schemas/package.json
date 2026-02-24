@@ -1,0 +1,13 @@
+{
+  "name": "validate_schemas",
+  "version": "1.0.0",
+  "description": "Compile-validates all JSON Schema files under docs/contracts using Ajv.",
+  "private": true,
+  "scripts": {
+    "validate": "node validate.js"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  }
+}

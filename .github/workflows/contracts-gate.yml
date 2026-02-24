@@ -1,0 +1,25 @@
+name: contracts-gate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  validate-schemas:
+    name: Validate JSON Schemas (Ajv compile)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run schema validation
+        run: bash tools/validate_schemas/validate.sh

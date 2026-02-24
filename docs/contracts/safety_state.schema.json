@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/contracts/safety_state.schema.json",
+  "title": "SafetyState",
+  "description": "Current safety operating mode of the system.",
+  "type": "object",
+  "required": ["state_id", "mode", "reason", "activated_at"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "state_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["NORMAL", "SAFE", "EMERGENCY_STOP"]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "activated_by": {
+      "type": "string"
+    },
+    "activated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resolved_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

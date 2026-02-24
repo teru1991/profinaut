@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/contracts/gate_results.schema.json",
+  "title": "GateResults",
+  "description": "Outcome of a quality/safety gate evaluation run.",
+  "type": "object",
+  "required": ["run_id", "gate", "passed", "evaluated_at"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "gate": {
+      "type": "string",
+      "minLength": 1
+    },
+    "passed": {
+      "type": "boolean"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rule_id", "passed"],
+        "properties": {
+          "rule_id": { "type": "string", "minLength": 1 },
+          "passed": { "type": "boolean" },
+          "message": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "evaluated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

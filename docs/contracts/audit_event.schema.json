@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/contracts/audit_event.schema.json",
+  "title": "AuditEvent",
+  "description": "Immutable record of a single auditable action performed by an actor.",
+  "type": "object",
+  "required": ["event_id", "actor", "action", "resource_type", "resource_id", "outcome", "occurred_at"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "actor": {
+      "type": "string",
+      "minLength": 1
+    },
+    "action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "resource_type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "resource_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["SUCCESS", "FAILURE", "REJECTED"]
+    },
+    "details": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}
