@@ -120,3 +120,10 @@ Scope: docs全体の「正本（SSOT）」「参照順序」「役割境界」�
 
 ## Docs OS Operations Policy
 - docs/specs/system/docs_os_operations_policy.md
+
+## Canonical document boundaries
+- system: `docs/specs/system/**`
+- crosscut safety: `docs/specs/crosscut/**`
+- taskgen: `docs/rules/**`
+- decisions: `docs/decisions/**`
+- audits: `docs/audits/**` (results only)

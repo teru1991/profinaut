@@ -1,3 +1,3 @@
-# bots-502 (NOT CANONICAL)
+# NOT CANONICAL
 ✅ Canonical:
 - `docs/runbooks/troubleshooting/bots-502.md`
