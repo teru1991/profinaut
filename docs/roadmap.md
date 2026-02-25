@@ -1,4 +1,7 @@
-# Roadmap — stub
+# Roadmap (NOT CANONICAL)
+このファイルは **正本ではありません**（二重化防止のため stub 化）。
 
-Moved to: `docs/legacy/roadmap.md`
-Canonical: `docs/plans/roadmap.md`
+✅ 正本はこちら：
+- `docs/plans/roadmap.md`
+
+旧版は参照用として `docs/legacy/roadmap.md` に退避しました。

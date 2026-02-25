@@ -8,7 +8,7 @@ It is **not** a full technical SSOT and must not duplicate long specs.
 ## Must-read (start here)
 
 - AI entrypoint: `docs/context/README_AI.md`
-- Parallel safety rules: `docs/specs/crosscut/parallel_task_safety_spec.md` and `docs/rules/parallel-development-safety.md`
+- Parallel safety rules: `docs/specs/crosscut/parallel_task_safety_spec.md` and `docs/specs/crosscut/safety_interlock_spec.md`
 - Runtime status SSOT: `docs/status/status.json`
 - Trace index: `docs/status/trace-index.json`
 - Decisions baseline (SSOT): `docs/decisions/decisions.md`

@@ -47,7 +47,7 @@ Recent merged PRs:
 
 ## 4. 進捗スナップショット（コミット/PR実績ベース）
 
-> 判定基準: `docs/roadmap.md` の Step 0〜21 完了、`docs/changelog.md` の実装履歴、直近マージPR（#58〜#68）
+> 判定基準: `docs/plans/roadmap.md` の Step 0〜21 完了、`docs/changelog.md` の実装履歴、直近マージPR（#58〜#68）
 
 | Epic ID | 領域 | Priority | 現在状態 | 進捗感 | 実装済み要素（抜粋） | 主な未実装/不足 |
 |---|---|---|---|---:|---|---|

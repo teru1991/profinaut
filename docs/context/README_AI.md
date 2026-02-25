@@ -17,7 +17,7 @@ This page is the must-read entrypoint for AI/human operators before starting wor
    - `docs/rules/task-generation-rules-using-docs-os.md`
 10. Rules / Safety references:
    - `docs/rules/task-generation-policy.md` (compatibility stub)
-   - `docs/rules/parallel-development-safety.md`
+   - `docs/specs/crosscut/safety_interlock_spec.md`
    - `docs/specs/crosscut/parallel_task_safety_spec.md`
 11. Before PR / Merge checklist: `docs/runbooks/pr-preflight.md`
 

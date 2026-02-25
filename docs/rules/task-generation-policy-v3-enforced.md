@@ -85,7 +85,7 @@ Generated tasks must be merge-ready in design:
 ## 7. Canonical references
 
 - Enforcement rules: `docs/rules/task-generation-rules-using-docs-os.md`
-- Parallel lock policy: `docs/rules/parallel-development-safety.md`
+- Parallel lock policy: `docs/specs/crosscut/safety_interlock_spec.md`
 - Entry and runtime: `docs/context/README_AI.md`, `docs/status/status.json`
 - Handoff: `docs/handoff/HANDOFF.json`
 - Decisions: `docs/decisions/decisions.md`

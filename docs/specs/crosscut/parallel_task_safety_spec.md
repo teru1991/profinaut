@@ -4,7 +4,7 @@
 
 The canonical rule documents have moved to:
 
-- `docs/rules/parallel-development-safety.md` (parallel safety / locks / allowed-forbidden paths)
+- `docs/specs/crosscut/safety_interlock_spec.md` (parallel safety / locks / allowed-forbidden paths)
 - `docs/rules/task-generation-policy.md` (task generation / Multi-AI / Credit-out / HANDOFF / status / decisions / trace)
 
 For AI operator onboarding and required read order, start from:

@@ -11,7 +11,7 @@ Scope: repository audit and MRU planning (no runtime behavior changes)
 - Source-of-truth/spec docs exist in:
   - `contracts/openapi/control-plane.v1.yaml` and `contracts/schemas/**/*.json`
   - `README.md` (platform scope and included endpoints)
-  - `docs/roadmap.md` (Step 0–21 progression)
+  - `docs/plans/roadmap.md` (Step 0–21 progression)
   - `docs/changelog.md` (step-by-step merged history)
   - `docs/specs/*.md` (domain specs: bots UI, execution, marketdata UI, simple bot)
 - Implemented service/app directories:
@@ -31,7 +31,7 @@ Scope: repository audit and MRU planning (no runtime behavior changes)
 
 ### B. What is merged vs in-flight vs missing
 - Merged (verified by roadmap/changelog/checklist and code presence):
-  - Step 0–21 are marked completed in `docs/roadmap.md`.
+  - Step 0–21 are marked completed in `docs/plans/roadmap.md`.
   - Changelog has concrete entries through Step 21.
   - Latest merged commits include market ticker page/proxy and GMO live execution support.
 - In-flight / partial:
@@ -72,8 +72,8 @@ Scope: repository audit and MRU planning (no runtime behavior changes)
 ### MRU catalog (extracted from roadmap + UI audit)
 | MRU ID | Description | Status | Evidence |
 |---|---|---|---|
-| Step 0–21 | Core platform phases through resource window analytics | DONE | `docs/roadmap.md` checked items + `docs/changelog.md` Step 21 entry + implemented endpoints/code |
-| Step 22+ | Additional module expansion/analytics | NOT STARTED (open umbrella) | `docs/roadmap.md` unchecked Step 22+ |
+| Step 0–21 | Core platform phases through resource window analytics | DONE | `docs/plans/roadmap.md` checked items + `docs/changelog.md` Step 21 entry + implemented endpoints/code |
+| Step 22+ | Additional module expansion/analytics | NOT STARTED (open umbrella) | `docs/plans/roadmap.md` unchecked Step 22+ |
 | T191 | UI bots fields align (`state/degraded/degraded_reason/last_seen`) | IN PROGRESS (planned, not merged as dedicated MRU) | `docs/audits/ui-current-vs-spec.md` recommended follow-up; no dedicated task artifact found |
 | T192 | UI kill-switch read-only panel | IN PROGRESS (planned, not merged as dedicated MRU) | `docs/audits/ui-current-vs-spec.md` recommended follow-up |
 | T193 | Unified degraded banner/chip | NOT STARTED (optional) | `docs/audits/ui-current-vs-spec.md` marks optional; no dedicated task artifact found |
