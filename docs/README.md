@@ -79,3 +79,6 @@ UCEL は「収集アプリ」ではなく、全領域で再利用される **統
 ## Legacy（過去文書）
 過去の仕様・設計・メモは `docs/legacy/` に隔離します。  
 SSOTと矛盾する場合は **必ずSSOT側が正** です。
+
+## UCEL Golden Docs (SSOT)
+- Entry: docs/specs/ucel_golden/README.md

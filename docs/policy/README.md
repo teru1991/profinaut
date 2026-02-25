@@ -115,3 +115,7 @@ Core Spec（固定仕様）を変更せず、環境や運用で調整したい�
   - 目的: データセット分類と輸出制約
   - 対応Spec: [data_catalog_lineage_spec](../specs/data_governance/data_catalog_lineage_spec.md), [reporting_dashboard_explainability_spec](../specs/reporting/reporting_dashboard_explainability_spec.md)
   - 主要キー: `classes`, `export`
+
+## UCEL Golden Policy
+- Canonical: docs/policy/ucel_golden_policy_pack.md
+- Normalized TOML index: docs/policy/ucel_golden/README.md
