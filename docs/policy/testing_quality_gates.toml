@@ -1,0 +1,19 @@
+[meta]
+id = "policy.testing_quality_gates"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[changelog]
+latest = "2026-02-25: initial CI quality gates."
+
+[gates]
+require_contract_tests = true
+require_integration_tests = true
+require_security_invariants = true
+allow_unknown = false
+
+[coverage]
+# Only policy values; enforcement mechanism is elsewhere.
+min_unit_coverage_pct = 60
+min_contract_coverage_pct = 90

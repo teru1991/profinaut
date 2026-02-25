@@ -1,0 +1,18 @@
+[meta]
+id = "policy.onchain_finality_rpc"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[changelog]
+latest = "2026-02-25: initial finality confirmations and RPC integrity policy."
+
+[finality]
+confirmations_confirmed = 6
+confirmations_final = 24
+
+[rpc]
+min_rpcs = 2
+disagreement_rate_pct_fail = 5
+timeout_backoff_base_ms = 500
+timeout_backoff_max_ms = 10000

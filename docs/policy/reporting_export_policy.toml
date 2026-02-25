@@ -1,0 +1,16 @@
+[meta]
+id = "policy.reporting_export"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[changelog]
+latest = "2026-02-25: initial export safety policy."
+
+[export]
+enable_csv = true
+enable_json = true
+enable_pdf = false
+require_redaction_scan = true
+restricted_requires_admin = true
+max_export_rows = 100000

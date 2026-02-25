@@ -1,0 +1,14 @@
+[meta]
+id = "policy.i18n_locale"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[changelog]
+latest = "2026-02-25: initial locale defaults."
+
+[defaults]
+language = "ja-JP"
+timezone = "Asia/Tokyo"
+currency = "JPY"
+number_format_locale = "ja-JP"

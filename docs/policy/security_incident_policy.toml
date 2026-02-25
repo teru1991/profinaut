@@ -1,0 +1,16 @@
+[meta]
+id = "policy.security_incident"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[changelog]
+latest = "2026-02-25: initial incident thresholds and containment defaults."
+
+[containment]
+default_on_suspected_compromise = "EMERGENCY_STOP" # SAFE/EMERGENCY_STOP
+auto_block_execution = true
+
+[thresholds]
+auth_failure_spike_per_min = 30
+forbidden_key_trigger_is_sev0 = true

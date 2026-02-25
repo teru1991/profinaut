@@ -1,0 +1,20 @@
+[meta]
+id = "policy.performance_budgets"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[changelog]
+latest = "2026-02-25: initial latency budgets and capacity hazard thresholds."
+
+[latency_budget]
+ingest_receive_to_raw_persist_p95_ms = 500
+raw_to_canonical_persist_p95_ms = 1500
+intent_to_gate_p95_ms = 50
+intent_to_result_p95_ms = 2000
+
+[capacity_hazards]
+disk_usage_pct_warn = 80
+disk_usage_pct_fail = 90
+io_stall_seconds_fail = 10
+fd_usage_pct_fail = 90
