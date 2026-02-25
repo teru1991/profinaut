@@ -101,7 +101,7 @@ Scope: docs全体の「正本（SSOT）」「参照順序」「役割境界」�
 - UCELの思想や運用値を参照する場合は、まず以下の入口にリンクする:
   - docs/specs/ucel_golden/README.md
 - profinautの実装境界仕様は:
-  - docs/specs/ucel/README.md（存在する場合）
+  - docs/specs/ucel/（各仕様）
 
 ## 4. “正本が割れそうな兆候” チェック
 次が見つかったらSSOT分裂のサイン：
@@ -127,3 +127,10 @@ Scope: docs全体の「正本（SSOT）」「参照順序」「役割境界」�
 - taskgen: `docs/rules/**`
 - decisions: `docs/decisions/**`
 - audits: `docs/audits/**` (results only)
+
+## System Canonical artifacts（共通テンプレ / 台帳）
+- docs/specs/system/domain_spec_template.md
+- docs/specs/system/cross_domain_dependency_matrix.md
+- docs/specs/system/error_catalog_ssot.md
+- docs/specs/system/schema_registry_contract_index.md
+- docs/specs/system/runbook_index.md
