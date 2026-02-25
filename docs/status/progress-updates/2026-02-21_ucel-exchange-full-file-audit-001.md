@@ -16,7 +16,7 @@
 ```bash
 # PRE-FLIGHT
 cd /home/runner/work/profinaut/profinaut
-sed -n '1,200p' docs/SSOT/README_AI.md > /tmp/preflight_readme_ai.txt
+sed -n '1,200p' docs/context/README_AI.md > /tmp/preflight_readme_ai.txt
 cat docs/status/status.json > /tmp/preflight_status_json.txt
 cat docs/handoff/HANDOFF.json > /tmp/preflight_handoff_json.txt
 sed -n '1,200p' docs/decisions/decisions.md > /tmp/preflight_decisions_md.txt

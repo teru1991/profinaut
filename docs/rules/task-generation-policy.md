@@ -11,4 +11,4 @@ Related references:
 
 - `docs/rules/parallel-development-safety.md`
 - `docs/runbooks/pr-preflight.md`
-- `docs/SSOT/README_AI.md`
+- `docs/context/README_AI.md`

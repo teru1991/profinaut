@@ -54,8 +54,8 @@ This framework does NOT alter non-crypto marketdata modules (Python FastAPI serv
 | Workspace root (existing, minimal mod) | `services/marketdata-rs/Cargo.toml` |
 | Sample configs/descriptors | `config/crypto-collector/` |
 | Progress tracking | `docs/progress/marketdata_collector_framework_v1_4.md` |
-| Definition of Done | `docs/dod/marketdata_collector_framework_v1_4.md` |
-| Reference docs | `docs/descriptor_reference_v1_4.md`, `docs/config_reference_collector_toml.md` |
+| Definition of Done | `docs/legacy/dod/marketdata_collector_framework_v1_4.md` |
+| Reference docs | `docs/legacy/descriptor_reference_v1_4.md`, `docs/config_reference_collector_toml.md` |
 
 ---
 
@@ -114,7 +114,7 @@ This framework does NOT alter non-crypto marketdata modules (Python FastAPI serv
 - [x] D4 — Dedup window (optional toggle, bounded window store, key priority rules, dedup_dropped_total metric)
 - [x] D5 — Integration with Task C pipeline (Sink trait impl, fallback logic: Mongo → Spool → on_full)
 - [x] D6 — Tests: unit (spool rotation/cap/on_full/partial-write/dedup) + fake integration (fail→succeed + spool grows/drains + metrics)
-- [x] D7 — Doc updates (docs/troubleshooting.md, docs/marketdata_collector_framework_v1_4.md)
+- [x] D7 — Doc updates (docs/troubleshooting.md, docs/legacy/marketdata_collector_framework_v1_4.md)
 
 ---
 
@@ -163,7 +163,7 @@ This framework does NOT alter non-crypto marketdata modules (Python FastAPI serv
 | D5: Pipeline sink (integration) | `services/marketdata-rs/crypto-collector/src/persistence/pipeline.rs` |
 | Persistence config additions | `services/marketdata-rs/crypto-collector/src/config.rs` (extended) |
 | Troubleshooting doc (new) | `docs/troubleshooting.md` |
-| Framework reference doc (new) | `docs/marketdata_collector_framework_v1_4.md` |
+| Framework reference doc (new) | `docs/legacy/marketdata_collector_framework_v1_4.md` |
 
 ### Notes / Decisions (Task D)
 
@@ -209,7 +209,7 @@ This framework does NOT alter non-crypto marketdata modules (Python FastAPI serv
 | `services/marketdata-rs/crypto-collector/src/persistence/dedup.rs` | D4: DedupWindow |
 | `services/marketdata-rs/crypto-collector/src/persistence/pipeline.rs` | D5: PipelineSink |
 | `docs/troubleshooting.md` | D7: Troubleshooting doc |
-| `docs/marketdata_collector_framework_v1_4.md` | D7: Framework reference doc |
+| `docs/legacy/marketdata_collector_framework_v1_4.md` | D7: Framework reference doc |
 
 ### Files Modified (Task D)
 
@@ -219,7 +219,7 @@ This framework does NOT alter non-crypto marketdata modules (Python FastAPI serv
 | `services/marketdata-rs/crypto-collector/src/config.rs` | +PersistenceConfig, SpoolConfigToml, DedupConfigToml |
 | `services/marketdata-rs/crypto-collector/src/main.rs` | +`mod persistence;` |
 | `docs/progress/marketdata_collector_framework_v1_4.md` | Task D sections |
-| `docs/dod/marketdata_collector_framework_v1_4.md` | Task D acceptance criteria |
+| `docs/legacy/dod/marketdata_collector_framework_v1_4.md` | Task D acceptance criteria |
 
 ### Notes for Task E/F
 
@@ -270,8 +270,8 @@ Refactor/implementation plan (crypto subsystem only):
 - `services/marketdata-rs/crypto-collector/src/main.rs`
 - `services/marketdata-rs/crypto-collector/Cargo.toml`
 - `docs/progress/marketdata_collector_framework_v1_4.md`
-- `docs/dod/marketdata_collector_framework_v1_4.md`
-- `docs/descriptor_reference_v1_4.md`
+- `docs/legacy/dod/marketdata_collector_framework_v1_4.md`
+- `docs/legacy/descriptor_reference_v1_4.md`
 - `docs/troubleshooting.md`
 
 ### Notes / Decisions
@@ -308,8 +308,8 @@ Refactor/implementation plan (crypto subsystem only):
 - `services/marketdata-rs/crypto-collector/src/rest_client.rs`
 - `services/marketdata-rs/crypto-collector/src/persistence/spool.rs` (compile fix surfaced by full-module test build)
 - `docs/progress/marketdata_collector_framework_v1_4.md`
-- `docs/dod/marketdata_collector_framework_v1_4.md`
-- `docs/descriptor_reference_v1_4.md`
+- `docs/legacy/dod/marketdata_collector_framework_v1_4.md`
+- `docs/legacy/descriptor_reference_v1_4.md`
 - `docs/troubleshooting.md`
 
 ---
@@ -360,8 +360,8 @@ _TBD (to be filled after audit)._
 | In-process mock WS/REST + scenario runtime | `services/marketdata/app/mock_exchange.py` |
 | E2E harness | `tests/e2e_mock.py` |
 | Sample config/descriptors/maps | `config/collector.toml`, `config/exchanges/mock_v4.toml`, `config/exchanges/maps/mock_symbol_map.toml` |
-| Task progress + DoD | `docs/progress/marketdata_collector_framework_v1_4.md`, `docs/dod/marketdata_collector_framework_v1_4.md` |
-| Final docs | `docs/marketdata_collector_framework_v1_4.md`, `docs/descriptor_reference_v1_4.md`, `docs/troubleshooting.md`, `docs/mongo_setup.md` |
+| Task progress + DoD | `docs/progress/marketdata_collector_framework_v1_4.md`, `docs/legacy/dod/marketdata_collector_framework_v1_4.md` |
+| Final docs | `docs/legacy/marketdata_collector_framework_v1_4.md`, `docs/legacy/descriptor_reference_v1_4.md`, `docs/troubleshooting.md`, `docs/mongo_setup.md` |
 
 ### Notes / Decisions (Task F)
 
@@ -404,11 +404,11 @@ _TBD (to be filled after audit)._
   - `config/collector.toml`
   - `config/exchanges/mock_v4.toml`
   - `config/exchanges/maps/mock_symbol_map.toml`
-  - `docs/marketdata_collector_framework_v1_4.md`
-  - `docs/descriptor_reference_v1_4.md`
+  - `docs/legacy/marketdata_collector_framework_v1_4.md`
+  - `docs/legacy/descriptor_reference_v1_4.md`
   - `docs/troubleshooting.md`
   - `docs/mongo_setup.md`
   - `docs/progress/marketdata_collector_framework_v1_4.md`
-  - `docs/dod/marketdata_collector_framework_v1_4.md`
+  - `docs/legacy/dod/marketdata_collector_framework_v1_4.md`
 - **Implemented:** extended health + prometheus metrics, in-process mock REST/WS (public/private auth/ack/ping-pong/binary), scenario controls, sample config/descriptor/map, polling-based E2E harness, and final docs.
 - **Known limitation / next step:** task-card required rust `e2e_mock` target does not exist in current repository path constraints (`services/marketdata/**`), so rust command-level verification remains not applicable in this run.

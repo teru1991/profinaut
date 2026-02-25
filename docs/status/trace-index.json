@@ -25,13 +25,13 @@
       ],
       "reference_slots": {
         "gmo_scope": [
-          "docs/specs/execution-gmo.md"
+          "docs/context/notes/execution-gmo.md"
         ],
         "ucel_v1_1_4": [
           "docs/specs/UCEL_v1.1.4.md"
         ],
         "marketdata_crypto_framework_v1_4": [
-          "docs/marketdata_collector_framework_v1_4.md"
+          "docs/legacy/marketdata_collector_framework_v1_4.md"
         ]
       }
     },

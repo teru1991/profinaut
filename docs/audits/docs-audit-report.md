@@ -35,15 +35,15 @@
 
 #### 2) north-star/spec
 - `docs/workplan/ultimate-gold-implementation-feature-list.md` → `north-star/spec + MRU catalog`
-- `docs/specs/parallel-task-safety.md` → `rules/spec (parallel safety SSOT)`
+- `docs/specs/crosscut/parallel_task_safety_spec.md` → `rules/spec (parallel safety SSOT)`
 - `docs/specs/controlplane-bots.md` → `API spec`
 - `docs/specs/ui-bots.md` → `UI spec`
 - `docs/specs/ui-marketdata.md` → `UI spec`
-- `docs/specs/execution.md` → `service spec (generic)`
-- `docs/specs/execution-gmo.md` → `provider profile spec`
+- `docs/context/notes/execution.md` → `service spec (generic)`
+- `docs/context/notes/execution-gmo.md` → `provider profile spec`
 - `docs/specs/simple-bot.md` → `bot behavior spec`
-- `docs/specs/dangerous-ops-taxonomy.md` → `safety policy taxonomy`
-- `docs/specs/dangerous-ops-confirmation.md` → `dangerous-op confirmation flow spec`
+- `docs/specs/crosscut/dangerous_ops_taxonomy.md` → `safety policy taxonomy`
+- `docs/specs/crosscut/dangerous_ops_confirmation.md` → `dangerous-op confirmation flow spec`
 
 #### 3) runbooks / troubleshooting / verification
 - `docs/runbooks/e2e-smoke-runbook.md` → `runbook/smoke`
@@ -152,13 +152,13 @@
 ### Group-03: 安全運用ルール（1PR=1scope/運用規律）の重複
 
 - 対象:
-  - `docs/specs/parallel-task-safety.md`
+  - `docs/specs/crosscut/parallel_task_safety_spec.md`
   - `docs/workplan/ultimate-gold-implementation-feature-list.md`（MRU運用ルール章）
   - `docs/README.md`（導線）
 - 症状:
   - 同一原則が複数箇所に存在し、更新漏れリスク。
 - Canonical提案:
-  - **運用原則SSOT:** `docs/specs/parallel-task-safety.md`
+  - **運用原則SSOT:** `docs/specs/crosscut/parallel_task_safety_spec.md`
   - `workplan` は MRU実装テンプレートに限定し、原則本文は参照化。
 - 統合/廃止候補:
   - `workplan` 内の規範文章を必要最小限にして詳細は safety specへリンク。
@@ -168,8 +168,8 @@
 ### Group-04: 実行仕様（generic vs provider-specific）の境界重複
 
 - 対象:
-  - `docs/specs/execution.md`
-  - `docs/specs/execution-gmo.md`
+  - `docs/context/notes/execution.md`
+  - `docs/context/notes/execution-gmo.md`
 - 症状:
   - provider固有仕様がgeneric仕様へ漏れる可能性。
 - Canonical提案:
