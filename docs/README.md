@@ -93,3 +93,10 @@ SSOTと矛盾する場合は **必ずSSOT側が正** です。
 
 ## Docs OS Operations
 - docs/specs/system/docs_os_operations_policy.md
+
+## System SSOT（共通テンプレ / 台帳）
+- docs/specs/system/domain_spec_template.md
+- docs/specs/system/cross_domain_dependency_matrix.md
+- docs/specs/system/error_catalog_ssot.md
+- docs/specs/system/schema_registry_contract_index.md
+- docs/specs/system/runbook_index.md

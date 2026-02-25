@@ -43,6 +43,7 @@ Rule: ここは手順（可変）。固定仕様（Core）は docs/specs/** に�
 - 生成条件 / 作り方 / 提出方法（secret-free）
 
 ## 3. 参照（正本）
+- Runbook index format（固定）: docs/specs/system/runbook_index.md
 - Safety固定仕様: docs/specs/crosscut/safety_interlock_spec.md
 - Audit/Replay固定仕様: docs/specs/crosscut/audit_replay_spec.md
 - Support Bundle固定仕様: docs/specs/crosscut/support_bundle_spec.md
