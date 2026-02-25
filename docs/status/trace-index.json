@@ -320,6 +320,15 @@
         "docs/troubleshooting/bots-502.md",
         "docs/workplan/ultimate-gold-implementation-feature-list.md"
       ]
+    },
+    "DOCS-FINALIZE-ONE-SHOT-001": {
+      "branch": "doc/docs-finalize-one-shot-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "verification_evidence": [
+        "docs/verification/docs-finalize-one-shot-001.md",
+        "docs/verification/docs-lint-result.txt"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

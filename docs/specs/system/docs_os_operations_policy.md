@@ -187,3 +187,10 @@ UCEL Golden（思想/固定仕様/運用値/計画）の正本をこのリポ内
 ⸻
 
 End of document
+
+## Canonical document boundaries
+- system: `docs/specs/system/**`
+- crosscut safety: `docs/specs/crosscut/**`
+- taskgen: `docs/rules/**`
+- decisions: `docs/decisions/**`
+- audits: `docs/audits/**` (results only)
