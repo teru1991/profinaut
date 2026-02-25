@@ -344,7 +344,11 @@
         "docs/specs/system/schema_registry_contract_index.md",
         "docs/specs/system/runbook_index.md",
         "docs/README.md",
-        "docs/runbooks/README.md"
+        "docs/runbooks/README.md",
+        "docs/specs/system/ssot_map.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/docs-system-common-templates-001.md"
       ]
     }
   },
