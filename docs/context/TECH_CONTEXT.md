@@ -24,7 +24,7 @@ It is **not** a full technical SSOT and must not duplicate long specs.
 
 ## Data / DB / protocol pointers
 
-- Workplan: `docs/workplan/ultimate-gold-implementation-feature-list.md`
+- Workplan: `docs/plans/ultimate-gold/feature-list.md`
 - Market/data behavior specs: `docs/specs/ui-marketdata.md`, `docs/context/notes/execution.md`, `docs/context/notes/execution-gmo.md`
 - Bot/control specs: `docs/specs/controlplane-bots.md`, `docs/specs/simple-bot.md`, `docs/specs/ui-bots.md`
 - Verification evidence: `docs/verification/marketdata-data-platform-smoke.md`, `docs/verification/marketdata-data-platform-smoke-results.md`
