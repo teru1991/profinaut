@@ -28,8 +28,8 @@ docs/audits/ui-current-vs-spec.md
 docs/changelog.md
 docs/decisions/decisions.md
 docs/handoff/HANDOFF.json
-docs/roadmap.md
-docs/rules/parallel-development-safety.md
+docs/plans/roadmap.md
+docs/specs/crosscut/safety_interlock_spec.md
 docs/rules/task-generation-policy.md
 docs/runbooks/e2e-smoke-runbook.md
 docs/runbooks/marketdata-local.md
@@ -92,9 +92,9 @@ docs/workplan/ultimate-gold-implementation-feature-list.md:124:- **UGF-0-017** �
 docs/workplan/ultimate-gold-implementation-feature-list.md:133:- **UGF-A-002** 危険領域ロック（contracts/migrations/lockfile/CI/infra）
 docs/workplan/ultimate-gold-implementation-feature-list.md:136:- **UGF-A-005** ブランチ保護（PR+CI+up-to-date+直push禁止）
 docs/assumptions.md:14:2. Contract validation in CI uses Redocly CLI (OpenAPI lint) and Python `jsonschema` (schema correctness).
-docs/roadmap.md:7:- [x] **Step 0**: Project initialization (layout, compose, scripts, docs, CI skeleton).
-docs/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
-docs/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
+docs/plans/roadmap.md:7:- [x] **Step 0**: Project initialization (layout, compose, scripts, docs, CI skeleton).
+docs/plans/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
+docs/plans/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
 docs/specs/ui-bots.md:212:- CI/CD workflows
 docs/specs/crosscut/parallel_task_safety_spec.md:8:- `docs/rules/task-generation-policy.md` (task generation / Multi-AI / Credit-out / HANDOFF / status / decisions / trace)
 docs/specs/simple-bot.md:10:- Logging: lines include `run_id`, `bot_id`, `state`, `decision`, `idempotency_key` (and `order_id` when available)
@@ -209,16 +209,16 @@ docs/context/TECH_CONTEXT.md:13:- Trace index: `docs/status/trace-index.md` and 
 docs/context/TECH_CONTEXT.md:14:- Decisions baseline: `docs/status/decisions.md` (and `docs/decisions/decisions.md` if referenced by task)
 docs/context/TECH_CONTEXT.md:15:- Handoff state: `docs/status/HANDOFF.json` (legacy/alt path may exist at `docs/handoff/HANDOFF.json`)
 docs/context/TECH_CONTEXT.md:42:- When in doubt, follow linked SSOT/authoritative docs and record decisions in `docs/status/decisions.md`.
-docs/rules/parallel-development-safety.md:7:Prevent fatal merge/process accidents during concurrent delivery by enforcing clear scope boundaries and lock declarations.
-docs/rules/parallel-development-safety.md:18:- If task B depends on task A, B stays Draft until A merges.
-docs/rules/parallel-development-safety.md:45:### 3.3 Required Locks declaration
-docs/rules/parallel-development-safety.md:47:Task cards must declare `Required Locks` explicitly. Examples:
-docs/rules/parallel-development-safety.md:49:- `Required Locks: docs/context/**`
-docs/rules/parallel-development-safety.md:50:- `Required Locks: none` (only when truly lock-free)
-docs/rules/parallel-development-safety.md:66:## 6. Quick checklist
-docs/rules/parallel-development-safety.md:69:- [ ] Allowed/Forbidden paths respected
-docs/rules/parallel-development-safety.md:71:- [ ] Required Locks declared
-docs/rules/parallel-development-safety.md:73:- [ ] Revert/rollback path is clear
+docs/specs/crosscut/safety_interlock_spec.md:7:Prevent fatal merge/process accidents during concurrent delivery by enforcing clear scope boundaries and lock declarations.
+docs/specs/crosscut/safety_interlock_spec.md:18:- If task B depends on task A, B stays Draft until A merges.
+docs/specs/crosscut/safety_interlock_spec.md:45:### 3.3 Required Locks declaration
+docs/specs/crosscut/safety_interlock_spec.md:47:Task cards must declare `Required Locks` explicitly. Examples:
+docs/specs/crosscut/safety_interlock_spec.md:49:- `Required Locks: docs/context/**`
+docs/specs/crosscut/safety_interlock_spec.md:50:- `Required Locks: none` (only when truly lock-free)
+docs/specs/crosscut/safety_interlock_spec.md:66:## 6. Quick checklist
+docs/specs/crosscut/safety_interlock_spec.md:69:- [ ] Allowed/Forbidden paths respected
+docs/specs/crosscut/safety_interlock_spec.md:71:- [ ] Required Locks declared
+docs/specs/crosscut/safety_interlock_spec.md:73:- [ ] Revert/rollback path is clear
 docs/runbooks/supply-chain-security.md:56:- Re-commit and push the PR branch.
 docs/runbooks/supply-chain-security.md:69:If approval is not present, the workflow failure is blocking and must be fixed before merge.
 docs/runbooks/e2e-smoke-runbook.md:60:## Live migration checklist (paper -> live)
@@ -274,8 +274,8 @@ docs/audits/docs-os-existing-file-scan.md:88:docs/status/progress-updates/UG-P0-
 docs/audits/docs-os-existing-file-scan.md:89:docs/status/progress-updates/UG-P0-101.md:17:  "policy_decision": {
 docs/audits/docs-os-existing-file-scan.md:90:docs/status/progress-updates/UG-P0-101.md:18:    "decision": "BLOCK",
 docs/audits/docs-os-existing-file-scan.md:91:docs/status/progress-updates/UG-P0-111.md:7:- Added safety decision criteria for `SAFE_MODE`, `CLOSE_ONLY`, and `FLATTEN`/`HALT` escalation.
-docs/audits/docs-os-existing-file-scan.md:94:docs/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
-docs/audits/docs-os-existing-file-scan.md:95:docs/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
+docs/audits/docs-os-existing-file-scan.md:94:docs/plans/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
+docs/audits/docs-os-existing-file-scan.md:95:docs/plans/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
 docs/audits/docs-os-existing-file-scan.md:97:docs/workplan/ultimate-gold-implementation-feature-list.md:33:| Notes/Links | `<docs/decision/pr>` |
 docs/audits/docs-os-existing-file-scan.md:99:docs/workplan/ultimate-gold-implementation-feature-list.md:55:| Scope | `decisionlog-assumptions-ssot-governance` |
 docs/audits/docs-os-existing-file-scan.md:100:docs/workplan/ultimate-gold-implementation-feature-list.md:60:| Allowed paths | `docs/status/**`, `docs/workplan/**`, `docs/decisions/**`, `docs/assumptions/**`, `.github/**` |
@@ -292,9 +292,9 @@ docs/audits/docs-content-overlap.md:111:Allowed paths:
 docs/audits/docs-content-overlap.md:114:Forbidden paths:
 docs/decisions/records/docs-rules-unify-decision.md:6:- Reason: existing rule content is concentrated in `docs/specs/crosscut/parallel_task_safety_spec.md`; new required operational topics (Multi-AI / Credit-out / HANDOFF / status / trace / decisions / LOCK policy) should be explicit and discoverable under a dedicated operations-rule path.
 docs/decisions/records/docs-rules-unify-decision.md:11:| Topic | Existing doc(s) | Proposed canonical doc | Action (keep/merge/stub) | Notes |
-docs/decisions/records/docs-rules-unify-decision.md:13:| Parallel safety / 1PR=1scope / Allowed/Forbidden | `docs/specs/crosscut/parallel_task_safety_spec.md` | `docs/rules/parallel-development-safety.md` | merge + stub old | Preserve prior safety intent and checklist; move to rules namespace. |
+docs/decisions/records/docs-rules-unify-decision.md:13:| Parallel safety / 1PR=1scope / Allowed/Forbidden | `docs/specs/crosscut/parallel_task_safety_spec.md` | `docs/specs/crosscut/safety_interlock_spec.md` | merge + stub old | Preserve prior safety intent and checklist; move to rules namespace. |
 docs/decisions/records/docs-rules-unify-decision.md:14:| Multi-AI / Credit-out / Handoff | `docs/specs/crosscut/parallel_task_safety_spec.md` (partial task-generation section only) | `docs/rules/task-generation-policy.md` | merge + extend | Add stop protocol + mandatory HANDOFF update semantics. |
-docs/decisions/records/docs-rules-unify-decision.md:15:| LOCK policy | `docs/specs/crosscut/parallel_task_safety_spec.md` (LOCK/semi-LOCK partial) | `docs/rules/parallel-development-safety.md` | merge + extend | Add explicit lock areas incl. shared-docs and Required Locks declaration. |
+docs/decisions/records/docs-rules-unify-decision.md:15:| LOCK policy | `docs/specs/crosscut/parallel_task_safety_spec.md` (LOCK/semi-LOCK partial) | `docs/specs/crosscut/safety_interlock_spec.md` | merge + extend | Add explicit lock areas incl. shared-docs and Required Locks declaration. |
 docs/decisions/records/docs-rules-unify-decision.md:16:| Decision log policy | no dedicated active SSOT in scan result | `docs/rules/task-generation-policy.md` | add new canonical | Standardize decision fixation via `docs/status/decisions.md`. |
 docs/decisions/records/docs-rules-unify-decision.md:17:| Traceability policy | no dedicated active SSOT in scan result | `docs/rules/task-generation-policy.md` | add new canonical | Set `docs/status/trace-index.md` as trace SSOT, avoid scattered links. |
 docs/decisions/records/docs-rules-unify-decision.md:18:| Task card required fields | `docs/specs/crosscut/parallel_task_safety_spec.md` section 4.1 | `docs/rules/task-generation-policy.md` | merge + extend | Keep minimum fields and add multi-AI runtime governance fields. |
@@ -321,8 +321,8 @@ docs/audits/docs-ai-pack-scan.md:66:docs/decisions/decisions.md:6:- 2026-02-17: 
 docs/audits/docs-ai-pack-scan.md:67:docs/decisions/decisions.md:7:- 2026-02-17: docs canonical入口 is `docs/context/README_AI.md` / Single entrypoint prevents SSOT ambiguity / AI and human operators start from one canonical path.
 docs/audits/docs-ai-pack-scan.md:68:docs/decisions/decisions.md:8:- 2026-02-17: stopping requires `docs/handoff/HANDOFF.json` update / Multi-agent and interrupted work need explicit continuity state / No stop/handoff without handoff state refresh.
 docs/audits/docs-ai-pack-scan.md:70:docs/workplan/ultimate-gold-implementation-feature-list.md:60:| Allowed paths | `docs/status/**`, `docs/workplan/**`, `docs/decisions/**`, `docs/assumptions/**`, `.github/**` |
-docs/audits/docs-ai-pack-scan.md:76:docs/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
-docs/audits/docs-ai-pack-scan.md:77:docs/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
+docs/audits/docs-ai-pack-scan.md:76:docs/plans/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
+docs/audits/docs-ai-pack-scan.md:77:docs/plans/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
 docs/audits/docs-ai-pack-scan.md:78:docs/specs/crosscut/parallel_task_safety_spec.md:8:- `docs/rules/task-generation-policy.md` (task generation / Multi-AI / Credit-out / HANDOFF / status / decisions / trace)
 docs/audits/docs-ai-pack-scan.md:80:docs/status/trace-index.md:1:# Trace Index (SSOT)
 docs/audits/docs-ai-pack-scan.md:81:docs/status/trace-index.json:16:        "docs/context/README_AI.md",
@@ -350,7 +350,7 @@ docs/audits/docs-ai-pack-scan.md:110:docs/rules/task-generation-policy.md:66:  -
 docs/audits/docs-ai-pack-scan.md:111:docs/rules/task-generation-policy.md:72:- Use `docs/status/decisions.md` to lock assumptions and decisions that affect ongoing work.
 docs/audits/docs-ai-pack-scan.md:112:docs/rules/task-generation-policy.md:78:- `docs/status/trace-index.md` is the SSOT for trace links (PRs, commits, issues, run artifacts).
 docs/audits/docs-ai-pack-scan.md:113:docs/rules/task-generation-policy.md:80:- Other docs may include convenience links, but must treat trace-index as canonical.
-docs/audits/docs-ai-pack-scan.md:116:docs/rules/parallel-development-safety.md:49:- `Required Locks: docs/context/**`
+docs/audits/docs-ai-pack-scan.md:116:docs/specs/crosscut/safety_interlock_spec.md:49:- `Required Locks: docs/context/**`
 docs/audits/docs-ai-pack-scan.md:117:docs/handoff/HANDOFF.json:8:    "On next docs task, update status.json and trace-index.json first.",
 docs/audits/docs-ai-pack-scan.md:118:docs/handoff/HANDOFF.json:9:    "If stopping mid-task, update this handoff file before exit."
 docs/audits/docs-ai-pack-scan.md:119:docs/handoff/HANDOFF.json:16:    "cat docs/status/status.json",
@@ -359,8 +359,8 @@ docs/audits/docs-ai-pack-scan.md:121:docs/changelog.md:205:## 2026-02-11 — Ste
 docs/audits/docs-ai-pack-scan.md:123:docs/audits/docs-os-existing-file-scan.md:51:## Command: rg -n "README_AI|SSOT|handoff|HANDOFF|decision|decisions|status\.json|trace-index|LOCKS|glossary|canonical|North Star" docs -S
 docs/audits/docs-ai-pack-scan.md:124:docs/audits/docs-os-existing-file-scan.md:53:docs/changelog.md:205:## 2026-02-11 — Step 1 (Contracts SSOT + CI enforcement)
 docs/audits/docs-ai-pack-scan.md:134:docs/audits/docs-os-existing-file-scan.md:81:docs/audits/repo-progress-audit-2026-02-14.md:65:  - Contracts are SSOT and validated in CI.
-docs/audits/docs-ai-pack-scan.md:138:docs/audits/docs-os-existing-file-scan.md:94:docs/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
-docs/audits/docs-ai-pack-scan.md:139:docs/audits/docs-os-existing-file-scan.md:95:docs/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
+docs/audits/docs-ai-pack-scan.md:138:docs/audits/docs-os-existing-file-scan.md:94:docs/plans/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
+docs/audits/docs-ai-pack-scan.md:139:docs/audits/docs-os-existing-file-scan.md:95:docs/plans/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
 docs/audits/docs-ai-pack-scan.md:142:docs/audits/docs-os-existing-file-scan.md:100:docs/workplan/ultimate-gold-implementation-feature-list.md:60:| Allowed paths | `docs/status/**`, `docs/workplan/**`, `docs/decisions/**`, `docs/assumptions/**`, `.github/**` |
 docs/audits/docs-ai-pack-scan.md:144:docs/audits/docs-os-existing-file-scan.md:105:## Command: find docs -maxdepth 4 -type f \( -iname "*readme*" -o -iname "*ssot*" -o -iname "*handoff*" -o -iname "*decision*" -o -iname "*status*.json" -o -iname "*trace*" -o -iname "*locks*" -o -iname "*glossary*" \) -print
 docs/audits/docs-ai-pack-scan.md:155:docs/audits/docs-audit-report.md:269:rg -i "status|progress|workplan|roadmap|spec|design|decision|handoff|mru" -n docs
@@ -382,16 +382,16 @@ docs/audits/docs-ai-pack-scan.md:177:docs/audits/docs-rules-unify-scan.md:52:## 
 docs/audits/docs-ai-pack-scan.md:178:docs/audits/docs-rules-unify-scan.md:55:docs/changelog.md:205:## 2026-02-11 — Step 1 (Contracts SSOT + CI enforcement)
 docs/audits/docs-ai-pack-scan.md:181:docs/audits/docs-rules-unify-scan.md:58:docs/workplan/ultimate-gold-implementation-feature-list.md:60:| Allowed paths | `docs/status/**`, `docs/workplan/**`, `docs/decisions/**`, `docs/assumptions/**`, `.github/**` |
 docs/audits/docs-ai-pack-scan.md:183:docs/audits/docs-rules-unify-scan.md:62:docs/audits/repo-progress-audit-2026-02-14.md:65:  - Contracts are SSOT and validated in CI.
-docs/audits/docs-ai-pack-scan.md:193:docs/audits/docs-rules-unify-scan.md:72:docs/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
-docs/audits/docs-ai-pack-scan.md:194:docs/audits/docs-rules-unify-scan.md:73:docs/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
+docs/audits/docs-ai-pack-scan.md:193:docs/audits/docs-rules-unify-scan.md:72:docs/plans/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
+docs/audits/docs-ai-pack-scan.md:194:docs/audits/docs-rules-unify-scan.md:73:docs/plans/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
 docs/audits/docs-ai-pack-scan.md:198:docs/audits/docs-rules-unify-scan.md:87:  -iname "*handoff*" -o -iname "*decision*" -o -iname "*status*.json" -o -iname "*trace*" \
 docs/audits/docs-ai-pack-scan.md:204:docs/status/status.json
 docs/audits/docs-rules-unify-scan.md:52:## 3) `rg -n "parallel-task-safety|タスク生成|task generation|Codexアジャイル|致命的事故|guardrail|LOCK:|handoff|HANDOFF|status\.json|trace-index|decisions|SSOT|README_AI" docs -S`
 docs/audits/docs-rules-unify-scan.md:55:docs/changelog.md:205:## 2026-02-11 — Step 1 (Contracts SSOT + CI enforcement)
 docs/audits/docs-rules-unify-scan.md:58:docs/workplan/ultimate-gold-implementation-feature-list.md:60:| Allowed paths | `docs/status/**`, `docs/workplan/**`, `docs/decisions/**`, `docs/assumptions/**`, `.github/**` |
 docs/audits/docs-rules-unify-scan.md:62:docs/audits/repo-progress-audit-2026-02-14.md:65:  - Contracts are SSOT and validated in CI.
-docs/audits/docs-rules-unify-scan.md:72:docs/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
-docs/audits/docs-rules-unify-scan.md:73:docs/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
+docs/audits/docs-rules-unify-scan.md:72:docs/plans/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
+docs/audits/docs-rules-unify-scan.md:73:docs/plans/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
 docs/audits/docs-rules-unify-scan.md:87:  -iname "*handoff*" -o -iname "*decision*" -o -iname "*status*.json" -o -iname "*trace*" \
 docs/audits/docs-ai-prompts-scan.md:15:docs/decisions/records/docs-ai-pack-decision.md
 docs/audits/docs-ai-prompts-scan.md:19:docs/decisions/records/docs-os-consolidation-decision.md
@@ -407,8 +407,8 @@ docs/audits/docs-ai-prompts-scan.md:68:## Command: rg -n "magic prompt|プロン
 docs/audits/docs-ai-prompts-scan.md:70:docs/decisions/decisions.md:6:- 2026-02-17: contracts additive-only (see contracts policy SSOT where applicable) / Prevents breaking downstream consumers / Contract evolution must preserve compatibility.
 docs/audits/docs-ai-prompts-scan.md:71:docs/decisions/decisions.md:7:- 2026-02-17: docs canonical入口 is `docs/context/README_AI.md` / Single entrypoint prevents SSOT ambiguity / AI and human operators start from one canonical path.
 docs/audits/docs-ai-prompts-scan.md:72:docs/decisions/decisions.md:8:- 2026-02-17: stopping requires `docs/handoff/HANDOFF.json` update / Multi-agent and interrupted work need explicit continuity state / No stop/handoff without handoff state refresh.
-docs/audits/docs-ai-prompts-scan.md:82:docs/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
-docs/audits/docs-ai-prompts-scan.md:83:docs/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
+docs/audits/docs-ai-prompts-scan.md:82:docs/plans/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
+docs/audits/docs-ai-prompts-scan.md:83:docs/plans/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
 docs/audits/docs-ai-prompts-scan.md:84:docs/specs/crosscut/parallel_task_safety_spec.md:8:- `docs/rules/task-generation-policy.md` (task generation / Multi-AI / Credit-out / HANDOFF / status / decisions / trace)
 docs/audits/docs-ai-prompts-scan.md:86:docs/status/trace-index.md:1:# Trace Index (SSOT)
 docs/audits/docs-ai-prompts-scan.md:87:docs/status/trace-index.json:16:        "docs/context/README_AI.md",
@@ -435,7 +435,7 @@ docs/audits/docs-ai-prompts-scan.md:119:docs/rules/task-generation-policy.md:54:
 docs/audits/docs-ai-prompts-scan.md:120:docs/rules/task-generation-policy.md:66:  - an update to `docs/status/status.json`, **or**
 docs/audits/docs-ai-prompts-scan.md:121:docs/rules/task-generation-policy.md:78:- `docs/status/trace-index.md` is the SSOT for trace links (PRs, commits, issues, run artifacts).
 docs/audits/docs-ai-prompts-scan.md:122:docs/rules/task-generation-policy.md:80:- Other docs may include convenience links, but must treat trace-index as canonical.
-docs/audits/docs-ai-prompts-scan.md:129:docs/rules/parallel-development-safety.md:49:- `Required Locks: docs/context/**`
+docs/audits/docs-ai-prompts-scan.md:129:docs/specs/crosscut/safety_interlock_spec.md:49:- `Required Locks: docs/context/**`
 docs/audits/docs-ai-prompts-scan.md:134:docs/context/README_AI.md:9:3. Runtime status SSOT: `docs/status/status.json`
 docs/audits/docs-ai-prompts-scan.md:136:docs/context/README_AI.md:11:5. Handoff state: `docs/status/HANDOFF.json`
 docs/audits/docs-ai-prompts-scan.md:137:docs/context/README_AI.md:13:7. Trace SSOT: `docs/status/trace-index.md`
@@ -459,14 +459,14 @@ docs/audits/docs-ai-prompts-scan.md:162:docs/audits/docs-os-existing-file-scan.m
 docs/audits/docs-ai-prompts-scan.md:172:docs/audits/docs-os-existing-file-scan.md:81:docs/audits/repo-progress-audit-2026-02-14.md:65:  - Contracts are SSOT and validated in CI.
 docs/audits/docs-ai-prompts-scan.md:174:docs/audits/docs-os-existing-file-scan.md:86:docs/status/progress-updates/UG-P0-110.md:20:- `decision`: `ALLOW | BLOCK | THROTTLE | REDUCE_ONLY | CLOSE_ONLY | FLATTEN | HALT`
 docs/audits/docs-ai-prompts-scan.md:175:docs/audits/docs-os-existing-file-scan.md:90:docs/status/progress-updates/UG-P0-101.md:18:    "decision": "BLOCK",
-docs/audits/docs-ai-prompts-scan.md:178:docs/audits/docs-os-existing-file-scan.md:94:docs/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
-docs/audits/docs-ai-prompts-scan.md:179:docs/audits/docs-os-existing-file-scan.md:95:docs/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
+docs/audits/docs-ai-prompts-scan.md:178:docs/audits/docs-os-existing-file-scan.md:94:docs/plans/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
+docs/audits/docs-ai-prompts-scan.md:179:docs/audits/docs-os-existing-file-scan.md:95:docs/plans/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
 docs/audits/docs-ai-prompts-scan.md:183:docs/audits/docs-os-existing-file-scan.md:105:## Command: find docs -maxdepth 4 -type f \( -iname "*readme*" -o -iname "*ssot*" -o -iname "*handoff*" -o -iname "*decision*" -o -iname "*status*.json" -o -iname "*trace*" -o -iname "*locks*" -o -iname "*glossary*" \) -print
 docs/audits/docs-ai-prompts-scan.md:194:docs/audits/docs-audit-report.md:269:rg -i "status|progress|workplan|roadmap|spec|design|decision|handoff|mru" -n docs
 docs/audits/docs-ai-prompts-scan.md:195:docs/decisions/records/docs-rules-unify-decision.md:5:- Chosen approach: **Option A** (`docs/rules/` as rules SSOT namespace).
 docs/audits/docs-ai-prompts-scan.md:196:docs/decisions/records/docs-rules-unify-decision.md:6:- Reason: existing rule content is concentrated in `docs/specs/crosscut/parallel_task_safety_spec.md`; new required operational topics (Multi-AI / Credit-out / HANDOFF / status / trace / decisions / LOCK policy) should be explicit and discoverable under a dedicated operations-rule path.
 docs/audits/docs-ai-prompts-scan.md:197:docs/decisions/records/docs-rules-unify-decision.md:14:| Multi-AI / Credit-out / Handoff | `docs/specs/crosscut/parallel_task_safety_spec.md` (partial task-generation section only) | `docs/rules/task-generation-policy.md` | merge + extend | Add stop protocol + mandatory HANDOFF update semantics. |
-docs/audits/docs-ai-prompts-scan.md:198:docs/decisions/records/docs-rules-unify-decision.md:15:| LOCK policy | `docs/specs/crosscut/parallel_task_safety_spec.md` (LOCK/semi-LOCK partial) | `docs/rules/parallel-development-safety.md` | merge + extend | Add explicit lock areas incl. shared-docs and Required Locks declaration. |
+docs/audits/docs-ai-prompts-scan.md:198:docs/decisions/records/docs-rules-unify-decision.md:15:| LOCK policy | `docs/specs/crosscut/parallel_task_safety_spec.md` (LOCK/semi-LOCK partial) | `docs/specs/crosscut/safety_interlock_spec.md` | merge + extend | Add explicit lock areas incl. shared-docs and Required Locks declaration. |
 docs/audits/docs-ai-prompts-scan.md:199:docs/decisions/records/docs-rules-unify-decision.md:16:| Decision log policy | no dedicated active SSOT in scan result | `docs/rules/task-generation-policy.md` | add new canonical | Standardize decision fixation via `docs/status/decisions.md`. |
 docs/audits/docs-ai-prompts-scan.md:200:docs/decisions/records/docs-rules-unify-decision.md:17:| Traceability policy | no dedicated active SSOT in scan result | `docs/rules/task-generation-policy.md` | add new canonical | Set `docs/status/trace-index.md` as trace SSOT, avoid scattered links. |
 docs/audits/docs-ai-prompts-scan.md:201:docs/decisions/records/docs-rules-unify-decision.md:22:- `docs/context/README_AI.md` is created/updated as must-read entrypoint for AI operators.
@@ -493,8 +493,8 @@ docs/audits/docs-ai-prompts-scan.md:230:docs/audits/docs-ai-pack-scan.md:64:## C
 docs/audits/docs-ai-prompts-scan.md:231:docs/audits/docs-ai-pack-scan.md:66:docs/decisions/decisions.md:6:- 2026-02-17: contracts additive-only (see contracts policy SSOT where applicable) / Prevents breaking downstream consumers / Contract evolution must preserve compatibility.
 docs/audits/docs-ai-prompts-scan.md:232:docs/audits/docs-ai-pack-scan.md:67:docs/decisions/decisions.md:7:- 2026-02-17: docs canonical入口 is `docs/context/README_AI.md` / Single entrypoint prevents SSOT ambiguity / AI and human operators start from one canonical path.
 docs/audits/docs-ai-prompts-scan.md:233:docs/audits/docs-ai-pack-scan.md:68:docs/decisions/decisions.md:8:- 2026-02-17: stopping requires `docs/handoff/HANDOFF.json` update / Multi-agent and interrupted work need explicit continuity state / No stop/handoff without handoff state refresh.
-docs/audits/docs-ai-prompts-scan.md:240:docs/audits/docs-ai-pack-scan.md:76:docs/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
-docs/audits/docs-ai-prompts-scan.md:241:docs/audits/docs-ai-pack-scan.md:77:docs/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
+docs/audits/docs-ai-prompts-scan.md:240:docs/audits/docs-ai-pack-scan.md:76:docs/plans/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
+docs/audits/docs-ai-prompts-scan.md:241:docs/audits/docs-ai-pack-scan.md:77:docs/plans/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
 docs/audits/docs-ai-prompts-scan.md:242:docs/audits/docs-ai-pack-scan.md:78:docs/specs/crosscut/parallel_task_safety_spec.md:8:- `docs/rules/task-generation-policy.md` (task generation / Multi-AI / Credit-out / HANDOFF / status / decisions / trace)
 docs/audits/docs-ai-prompts-scan.md:244:docs/audits/docs-ai-pack-scan.md:80:docs/status/trace-index.md:1:# Trace Index (SSOT)
 docs/audits/docs-ai-prompts-scan.md:245:docs/audits/docs-ai-pack-scan.md:81:docs/status/trace-index.json:16:        "docs/context/README_AI.md",
@@ -520,7 +520,7 @@ docs/audits/docs-ai-prompts-scan.md:272:docs/audits/docs-ai-pack-scan.md:109:doc
 docs/audits/docs-ai-prompts-scan.md:273:docs/audits/docs-ai-pack-scan.md:110:docs/rules/task-generation-policy.md:66:  - an update to `docs/status/status.json`, **or**
 docs/audits/docs-ai-prompts-scan.md:274:docs/audits/docs-ai-pack-scan.md:112:docs/rules/task-generation-policy.md:78:- `docs/status/trace-index.md` is the SSOT for trace links (PRs, commits, issues, run artifacts).
 docs/audits/docs-ai-prompts-scan.md:275:docs/audits/docs-ai-pack-scan.md:113:docs/rules/task-generation-policy.md:80:- Other docs may include convenience links, but must treat trace-index as canonical.
-docs/audits/docs-ai-prompts-scan.md:278:docs/audits/docs-ai-pack-scan.md:116:docs/rules/parallel-development-safety.md:49:- `Required Locks: docs/context/**`
+docs/audits/docs-ai-prompts-scan.md:278:docs/audits/docs-ai-pack-scan.md:116:docs/specs/crosscut/safety_interlock_spec.md:49:- `Required Locks: docs/context/**`
 docs/audits/docs-ai-prompts-scan.md:279:docs/audits/docs-ai-pack-scan.md:117:docs/handoff/HANDOFF.json:8:    "On next docs task, update status.json and trace-index.json first.",
 docs/audits/docs-ai-prompts-scan.md:280:docs/audits/docs-ai-pack-scan.md:118:docs/handoff/HANDOFF.json:9:    "If stopping mid-task, update this handoff file before exit."
 docs/audits/docs-ai-prompts-scan.md:281:docs/audits/docs-ai-pack-scan.md:119:docs/handoff/HANDOFF.json:16:    "cat docs/status/status.json",
@@ -529,8 +529,8 @@ docs/audits/docs-ai-prompts-scan.md:283:docs/audits/docs-ai-pack-scan.md:121:doc
 docs/audits/docs-ai-prompts-scan.md:285:docs/audits/docs-ai-pack-scan.md:123:docs/audits/docs-os-existing-file-scan.md:51:## Command: rg -n "README_AI|SSOT|handoff|HANDOFF|decision|decisions|status\.json|trace-index|LOCKS|glossary|canonical|North Star" docs -S
 docs/audits/docs-ai-prompts-scan.md:286:docs/audits/docs-ai-pack-scan.md:124:docs/audits/docs-os-existing-file-scan.md:53:docs/changelog.md:205:## 2026-02-11 — Step 1 (Contracts SSOT + CI enforcement)
 docs/audits/docs-ai-prompts-scan.md:296:docs/audits/docs-ai-pack-scan.md:134:docs/audits/docs-os-existing-file-scan.md:81:docs/audits/repo-progress-audit-2026-02-14.md:65:  - Contracts are SSOT and validated in CI.
-docs/audits/docs-ai-prompts-scan.md:300:docs/audits/docs-ai-pack-scan.md:138:docs/audits/docs-os-existing-file-scan.md:94:docs/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
-docs/audits/docs-ai-prompts-scan.md:301:docs/audits/docs-ai-pack-scan.md:139:docs/audits/docs-os-existing-file-scan.md:95:docs/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
+docs/audits/docs-ai-prompts-scan.md:300:docs/audits/docs-ai-pack-scan.md:138:docs/audits/docs-os-existing-file-scan.md:94:docs/plans/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
+docs/audits/docs-ai-prompts-scan.md:301:docs/audits/docs-ai-pack-scan.md:139:docs/audits/docs-os-existing-file-scan.md:95:docs/plans/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
 docs/audits/docs-ai-prompts-scan.md:305:docs/audits/docs-ai-pack-scan.md:144:docs/audits/docs-os-existing-file-scan.md:105:## Command: find docs -maxdepth 4 -type f \( -iname "*readme*" -o -iname "*ssot*" -o -iname "*handoff*" -o -iname "*decision*" -o -iname "*status*.json" -o -iname "*trace*" -o -iname "*locks*" -o -iname "*glossary*" \) -print
 docs/audits/docs-ai-prompts-scan.md:316:docs/audits/docs-ai-pack-scan.md:155:docs/audits/docs-audit-report.md:269:rg -i "status|progress|workplan|roadmap|spec|design|decision|handoff|mru" -n docs
 docs/audits/docs-ai-prompts-scan.md:317:docs/audits/docs-ai-pack-scan.md:156:docs/decisions/records/docs-rules-unify-decision.md:5:- Chosen approach: **Option A** (`docs/rules/` as rules SSOT namespace).
@@ -549,15 +549,15 @@ docs/audits/docs-ai-prompts-scan.md:329:docs/audits/docs-ai-pack-scan.md:169:doc
 docs/audits/docs-ai-prompts-scan.md:337:docs/audits/docs-ai-pack-scan.md:177:docs/audits/docs-rules-unify-scan.md:52:## 3) `rg -n "parallel-task-safety|タスク生成|task generation|Codexアジャイル|致命的事故|guardrail|LOCK:|handoff|HANDOFF|status\.json|trace-index|decisions|SSOT|README_AI" docs -S`
 docs/audits/docs-ai-prompts-scan.md:338:docs/audits/docs-ai-pack-scan.md:178:docs/audits/docs-rules-unify-scan.md:55:docs/changelog.md:205:## 2026-02-11 — Step 1 (Contracts SSOT + CI enforcement)
 docs/audits/docs-ai-prompts-scan.md:342:docs/audits/docs-ai-pack-scan.md:183:docs/audits/docs-rules-unify-scan.md:62:docs/audits/repo-progress-audit-2026-02-14.md:65:  - Contracts are SSOT and validated in CI.
-docs/audits/docs-ai-prompts-scan.md:352:docs/audits/docs-ai-pack-scan.md:193:docs/audits/docs-rules-unify-scan.md:72:docs/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
-docs/audits/docs-ai-prompts-scan.md:353:docs/audits/docs-ai-pack-scan.md:194:docs/audits/docs-rules-unify-scan.md:73:docs/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
+docs/audits/docs-ai-prompts-scan.md:352:docs/audits/docs-ai-pack-scan.md:193:docs/audits/docs-rules-unify-scan.md:72:docs/plans/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
+docs/audits/docs-ai-prompts-scan.md:353:docs/audits/docs-ai-pack-scan.md:194:docs/audits/docs-rules-unify-scan.md:73:docs/plans/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
 docs/audits/docs-ai-prompts-scan.md:357:docs/audits/docs-ai-pack-scan.md:198:docs/audits/docs-rules-unify-scan.md:87:  -iname "*handoff*" -o -iname "*decision*" -o -iname "*status*.json" -o -iname "*trace*" \
 docs/audits/docs-ai-prompts-scan.md:359:docs/audits/docs-ai-pack-scan.md:204:docs/status/status.json
 docs/audits/docs-ai-prompts-scan.md:360:docs/audits/docs-rules-unify-scan.md:52:## 3) `rg -n "parallel-task-safety|タスク生成|task generation|Codexアジャイル|致命的事故|guardrail|LOCK:|handoff|HANDOFF|status\.json|trace-index|decisions|SSOT|README_AI" docs -S`
 docs/audits/docs-ai-prompts-scan.md:361:docs/audits/docs-rules-unify-scan.md:55:docs/changelog.md:205:## 2026-02-11 — Step 1 (Contracts SSOT + CI enforcement)
 docs/audits/docs-ai-prompts-scan.md:365:docs/audits/docs-rules-unify-scan.md:62:docs/audits/repo-progress-audit-2026-02-14.md:65:  - Contracts are SSOT and validated in CI.
-docs/audits/docs-ai-prompts-scan.md:375:docs/audits/docs-rules-unify-scan.md:72:docs/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
-docs/audits/docs-ai-prompts-scan.md:376:docs/audits/docs-rules-unify-scan.md:73:docs/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
+docs/audits/docs-ai-prompts-scan.md:375:docs/audits/docs-rules-unify-scan.md:72:docs/plans/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
+docs/audits/docs-ai-prompts-scan.md:376:docs/audits/docs-rules-unify-scan.md:73:docs/plans/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
 docs/audits/docs-ai-prompts-scan.md:380:docs/audits/docs-rules-unify-scan.md:87:  -iname "*handoff*" -o -iname "*decision*" -o -iname "*status*.json" -o -iname "*trace*" \
 ```
 

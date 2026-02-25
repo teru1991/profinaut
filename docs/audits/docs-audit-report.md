@@ -14,7 +14,7 @@
 | パス | 主カテゴリ | 補助カテゴリ | 監査メモ |
 |---|---|---|---|
 | `docs/README.md` | reference / index | docs入口 | docsハブとして機能。主要文書への導線あり。 |
-| `docs/roadmap.md` | workplan | progress-snapshot | Step 0〜21完了を示す「計画＋進捗」の要約。 |
+| `docs/plans/roadmap.md` | workplan | progress-snapshot | Step 0〜21完了を示す「計画＋進捗」の要約。 |
 | `docs/changelog.md` | status/progress | release-history | 実装履歴の時系列ログ（Step単位）。 |
 | `docs/assumptions.md` | rules | baseline constraints | Stepごとの前提条件（運用・実装前提）。 |
 | `docs/workplan/**` | north-star/spec | MRU/work decomposition | Ultimate Gold機能カタログ＋MRU運用規則。 |
@@ -30,7 +30,7 @@
 #### 1) index / governance
 - `docs/README.md` → `reference/index`
 - `docs/assumptions.md` → `rules/baseline`
-- `docs/roadmap.md` → `workplan + progress`
+- `docs/plans/roadmap.md` → `workplan + progress`
 - `docs/changelog.md` → `status/release-log`
 
 #### 2) north-star/spec
@@ -74,7 +74,7 @@
 - 現在、North Star定義候補が複数存在:
   - `docs/workplan/ultimate-gold-implementation-feature-list.md`（理想機能カタログ）
   - `docs/status/ultimate-gold-progress-check.md`（理想との差分と進捗判定）
-  - `docs/roadmap.md`（Stepベースの完了計画）
+  - `docs/plans/roadmap.md`（Stepベースの完了計画）
 - `docs/README.md` は入口として有効だが、
   - 「最終到達点の canonical 定義はこれ」という明示は弱い。
 
@@ -115,7 +115,7 @@
 ### Group-01: 全体進捗/現状説明の重複
 
 - 対象:
-  - `docs/roadmap.md`
+  - `docs/plans/roadmap.md`
   - `docs/changelog.md`
   - `docs/status/ultimate-gold-progress-check.md`
   - `docs/audits/repo-progress-audit-2026-02-14.md`
@@ -124,7 +124,7 @@
 - Canonical提案:
   - **現時点の進捗状態:** `docs/status/ultimate-gold-progress-check.md`
   - **時系列履歴:** `docs/changelog.md`
-  - **計画ステップ:** `docs/roadmap.md`
+  - **計画ステップ:** `docs/plans/roadmap.md`
   - **監査レポート:** `docs/audits/*`（非SSOT）
 - 統合/廃止候補:
   - `repo-progress-audit-2026-02-14.md` の進捗説明部分は将来監査では参照リンク中心へ縮約。

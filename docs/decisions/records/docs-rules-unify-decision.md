@@ -10,9 +10,9 @@
 
 | Topic | Existing doc(s) | Proposed canonical doc | Action (keep/merge/stub) | Notes |
 |---|---|---|---|---|
-| Parallel safety / 1PR=1scope / Allowed/Forbidden | `docs/specs/crosscut/parallel_task_safety_spec.md` | `docs/rules/parallel-development-safety.md` | merge + stub old | Preserve prior safety intent and checklist; move to rules namespace. |
+| Parallel safety / 1PR=1scope / Allowed/Forbidden | `docs/specs/crosscut/parallel_task_safety_spec.md` | `docs/specs/crosscut/safety_interlock_spec.md` | merge + stub old | Preserve prior safety intent and checklist; move to rules namespace. |
 | Multi-AI / Credit-out / Handoff | `docs/specs/crosscut/parallel_task_safety_spec.md` (partial task-generation section only) | `docs/rules/task-generation-policy.md` | merge + extend | Add stop protocol + mandatory HANDOFF update semantics. |
-| LOCK policy | `docs/specs/crosscut/parallel_task_safety_spec.md` (LOCK/semi-LOCK partial) | `docs/rules/parallel-development-safety.md` | merge + extend | Add explicit lock areas incl. shared-docs and Required Locks declaration. |
+| LOCK policy | `docs/specs/crosscut/parallel_task_safety_spec.md` (LOCK/semi-LOCK partial) | `docs/specs/crosscut/safety_interlock_spec.md` | merge + extend | Add explicit lock areas incl. shared-docs and Required Locks declaration. |
 | Decision log policy | no dedicated active SSOT in scan result | `docs/rules/task-generation-policy.md` | add new canonical | Standardize decision fixation via `docs/status/decisions.md`. |
 | Traceability policy | no dedicated active SSOT in scan result | `docs/rules/task-generation-policy.md` | add new canonical | Set `docs/status/trace-index.md` as trace SSOT, avoid scattered links. |
 | Task card required fields | `docs/specs/crosscut/parallel_task_safety_spec.md` section 4.1 | `docs/rules/task-generation-policy.md` | merge + extend | Keep minimum fields and add multi-AI runtime governance fields. |

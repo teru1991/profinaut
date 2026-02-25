@@ -8,7 +8,7 @@ Any generated task MUST comply with Docs Development OS artifacts:
 - `docs/handoff/HANDOFF.json`
 - `docs/decisions/decisions.md`
 - `docs/status/trace-index.json`
-- LOCK discipline from `docs/rules/parallel-development-safety.md`
+- LOCK discipline from `docs/specs/crosscut/safety_interlock_spec.md`
 
 ## 1) Enforced pre-read order
 

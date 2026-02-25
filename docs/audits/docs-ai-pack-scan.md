@@ -22,8 +22,8 @@ docs/audits/ui-current-vs-spec.md
 docs/changelog.md
 docs/decisions/decisions.md
 docs/handoff/HANDOFF.json
-docs/roadmap.md
-docs/rules/parallel-development-safety.md
+docs/plans/roadmap.md
+docs/specs/crosscut/safety_interlock_spec.md
 docs/rules/task-generation-policy.md
 docs/runbooks/e2e-smoke-runbook.md
 docs/runbooks/marketdata-local.md
@@ -73,8 +73,8 @@ docs/assumptions.md:13:1. OpenAPI uses version `1.0.0` as the first SSOT baselin
 docs/README.md:6:- AI SSOT entry (canonical docs development OS): [`SSOT/README_AI.md`](SSOT/README_AI.md)
 docs/README.md:13:- Rules SSOT (task generation + parallel safety): [`rules/task-generation-policy.md`](rules/task-generation-policy.md), [`rules/parallel-development-safety.md`](rules/parallel-development-safety.md)
 docs/README.md:14:- AI operator onboarding SSOT: [`SSOT/README_AI.md`](SSOT/README_AI.md)
-docs/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
-docs/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
+docs/plans/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
+docs/plans/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
 docs/specs/crosscut/parallel_task_safety_spec.md:8:- `docs/rules/task-generation-policy.md` (task generation / Multi-AI / Credit-out / HANDOFF / status / decisions / trace)
 docs/specs/crosscut/parallel_task_safety_spec.md:12:- `docs/context/README_AI.md`
 docs/status/trace-index.md:1:# Trace Index (SSOT)
@@ -111,9 +111,9 @@ docs/rules/task-generation-policy.md:66:  - an update to `docs/status/status.jso
 docs/rules/task-generation-policy.md:72:- Use `docs/status/decisions.md` to lock assumptions and decisions that affect ongoing work.
 docs/rules/task-generation-policy.md:78:- `docs/status/trace-index.md` is the SSOT for trace links (PRs, commits, issues, run artifacts).
 docs/rules/task-generation-policy.md:80:- Other docs may include convenience links, but must treat trace-index as canonical.
-docs/rules/parallel-development-safety.md:1:# Parallel Development Safety (SSOT)
-docs/rules/parallel-development-safety.md:43:- shared-docs (`docs/context/**`, `docs/rules/**`, docs hubs/indexes)
-docs/rules/parallel-development-safety.md:49:- `Required Locks: docs/context/**`
+docs/specs/crosscut/safety_interlock_spec.md:1:# Parallel Development Safety (SSOT)
+docs/specs/crosscut/safety_interlock_spec.md:43:- shared-docs (`docs/context/**`, `docs/rules/**`, docs hubs/indexes)
+docs/specs/crosscut/safety_interlock_spec.md:49:- `Required Locks: docs/context/**`
 docs/handoff/HANDOFF.json:8:    "On next docs task, update status.json and trace-index.json first.",
 docs/handoff/HANDOFF.json:9:    "If stopping mid-task, update this handoff file before exit."
 docs/handoff/HANDOFF.json:16:    "cat docs/status/status.json",
@@ -130,13 +130,13 @@ docs/audits/docs-os-existing-file-scan.md:66:docs/audits/docs-content-overlap.md
 docs/audits/docs-os-existing-file-scan.md:67:docs/audits/docs-content-overlap.md:39:| OVL-04 | Execution specification layering | `docs/context/notes/execution.md`, `docs/context/notes/execution-gmo.md` | `docs/context/notes/execution.md` as provider-agnostic execution contract/behavior SSOT; `docs/context/notes/execution-gmo.md` as GMO adapter profile | Provider-specific constraints can leak into generic execution spec, causing multi-exchange evolution pain. | 1) Extract any GMO-only semantics out of generic spec into GMO profile. 2) Keep generic spec with neutral terms and extension hooks. |
 docs/audits/docs-os-existing-file-scan.md:68:docs/audits/docs-content-overlap.md:40:| OVL-05 | Bots API/UX status model duplication | `docs/specs/controlplane-bots.md`, `docs/specs/ui-bots.md` | `docs/specs/controlplane-bots.md` as API schema/status semantics SSOT; `docs/specs/ui-bots.md` as UI behavior/rendering SSOT | Bot status fields (e.g., degraded reasons, states) are often repeated in both docs. API semantics should live in controlplane spec, UI doc should reference them. | 1) In UI spec, replace duplicated field definitions with links/brief mapping tables. 2) Keep authoritative enums/field contracts in controlplane spec. |
 docs/audits/docs-os-existing-file-scan.md:69:docs/audits/docs-content-overlap.md:41:| OVL-06 | Paper E2E runbook duplication | `docs/runbooks/e2e-smoke-runbook.md`, `docs/runbooks/paper_e2e.md` | `docs/runbooks/e2e-smoke-runbook.md` as "one-command" operational runbook SSOT; `docs/runbooks/paper_e2e.md` as deep troubleshooting/reference | Both cover paper path checks; one should be quick path and the other should be expanded diagnostics. Distinguish by depth and audience. | 1) Ensure smoke runbook contains only happy-path + short triage. 2) Keep paper_e2e as detailed manual procedures and edge-case diagnostics. |
-docs/audits/docs-os-existing-file-scan.md:70:docs/audits/docs-content-overlap.md:42:| OVL-07 | Governance baseline duplication | `docs/assumptions.md`, `docs/roadmap.md`, `README.md` | `docs/assumptions.md` as baseline assumptions/constraints SSOT | Guardrails and defaults appear in multiple places; assumptions should be centralized and referenced elsewhere. | 1) Keep roadmap guardrails short and link to assumptions. 2) Keep README to brief security/baseline pointers only. |
+docs/audits/docs-os-existing-file-scan.md:70:docs/audits/docs-content-overlap.md:42:| OVL-07 | Governance baseline duplication | `docs/assumptions.md`, `docs/plans/roadmap.md`, `README.md` | `docs/assumptions.md` as baseline assumptions/constraints SSOT | Guardrails and defaults appear in multiple places; assumptions should be centralized and referenced elsewhere. | 1) Keep roadmap guardrails short and link to assumptions. 2) Keep README to brief security/baseline pointers only. |
 docs/audits/docs-os-existing-file-scan.md:81:docs/audits/repo-progress-audit-2026-02-14.md:65:  - Contracts are SSOT and validated in CI.
 docs/audits/docs-os-existing-file-scan.md:84:docs/assumptions.md:13:1. OpenAPI uses version `1.0.0` as the first SSOT baseline for V2.5+ bootstrap.
 docs/audits/docs-os-existing-file-scan.md:92:docs/status/ultimate-gold-progress-check.md:54:| UG-00 | 全体NFR | P0 | In Progress | 55% | Contracts SSOT、idempotency、dead-man、監査ログ、health/capabilities基盤 | SAFE_MODE統一運用、SoT優先順位の明文化、replay決定性の全体保証 |
 docs/audits/docs-os-existing-file-scan.md:93:docs/status/ultimate-gold-progress-check.md:89:  - Contracts SSOT
-docs/audits/docs-os-existing-file-scan.md:94:docs/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
-docs/audits/docs-os-existing-file-scan.md:95:docs/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
+docs/audits/docs-os-existing-file-scan.md:94:docs/plans/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
+docs/audits/docs-os-existing-file-scan.md:95:docs/plans/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
 docs/audits/docs-os-existing-file-scan.md:96:docs/README.md:12:- Parallel task safety (SSOT for parallel development safety): [`specs/parallel-task-safety.md`](specs/parallel-task-safety.md)
 docs/audits/docs-os-existing-file-scan.md:98:docs/workplan/ultimate-gold-implementation-feature-list.md:51:### UGF-0-023 変更管理SSOT（DecisionLog/Assumptions/ChangeLog運用）
 docs/audits/docs-os-existing-file-scan.md:100:docs/workplan/ultimate-gold-implementation-feature-list.md:60:| Allowed paths | `docs/status/**`, `docs/workplan/**`, `docs/decisions/**`, `docs/assumptions/**`, `.github/**` |
@@ -173,7 +173,7 @@ docs/audits/docs-content-overlap.md:38:| OVL-03 | Dangerous operation rule defin
 docs/audits/docs-content-overlap.md:39:| OVL-04 | Execution specification layering | `docs/context/notes/execution.md`, `docs/context/notes/execution-gmo.md` | `docs/context/notes/execution.md` as provider-agnostic execution contract/behavior SSOT; `docs/context/notes/execution-gmo.md` as GMO adapter profile | Provider-specific constraints can leak into generic execution spec, causing multi-exchange evolution pain. | 1) Extract any GMO-only semantics out of generic spec into GMO profile. 2) Keep generic spec with neutral terms and extension hooks. |
 docs/audits/docs-content-overlap.md:40:| OVL-05 | Bots API/UX status model duplication | `docs/specs/controlplane-bots.md`, `docs/specs/ui-bots.md` | `docs/specs/controlplane-bots.md` as API schema/status semantics SSOT; `docs/specs/ui-bots.md` as UI behavior/rendering SSOT | Bot status fields (e.g., degraded reasons, states) are often repeated in both docs. API semantics should live in controlplane spec, UI doc should reference them. | 1) In UI spec, replace duplicated field definitions with links/brief mapping tables. 2) Keep authoritative enums/field contracts in controlplane spec. |
 docs/audits/docs-content-overlap.md:41:| OVL-06 | Paper E2E runbook duplication | `docs/runbooks/e2e-smoke-runbook.md`, `docs/runbooks/paper_e2e.md` | `docs/runbooks/e2e-smoke-runbook.md` as "one-command" operational runbook SSOT; `docs/runbooks/paper_e2e.md` as deep troubleshooting/reference | Both cover paper path checks; one should be quick path and the other should be expanded diagnostics. Distinguish by depth and audience. | 1) Ensure smoke runbook contains only happy-path + short triage. 2) Keep paper_e2e as detailed manual procedures and edge-case diagnostics. |
-docs/audits/docs-content-overlap.md:42:| OVL-07 | Governance baseline duplication | `docs/assumptions.md`, `docs/roadmap.md`, `README.md` | `docs/assumptions.md` as baseline assumptions/constraints SSOT | Guardrails and defaults appear in multiple places; assumptions should be centralized and referenced elsewhere. | 1) Keep roadmap guardrails short and link to assumptions. 2) Keep README to brief security/baseline pointers only. |
+docs/audits/docs-content-overlap.md:42:| OVL-07 | Governance baseline duplication | `docs/assumptions.md`, `docs/plans/roadmap.md`, `README.md` | `docs/assumptions.md` as baseline assumptions/constraints SSOT | Guardrails and defaults appear in multiple places; assumptions should be centralized and referenced elsewhere. | 1) Keep roadmap guardrails short and link to assumptions. 2) Keep README to brief security/baseline pointers only. |
 docs/audits/docs-rules-unify-scan.md:52:## 3) `rg -n "parallel-task-safety|タスク生成|task generation|Codexアジャイル|致命的事故|guardrail|LOCK:|handoff|HANDOFF|status\.json|trace-index|decisions|SSOT|README_AI" docs -S`
 docs/audits/docs-rules-unify-scan.md:55:docs/changelog.md:205:## 2026-02-11 — Step 1 (Contracts SSOT + CI enforcement)
 docs/audits/docs-rules-unify-scan.md:56:docs/changelog.md:220:- Updated README with contract SSOT and validation commands.
@@ -187,11 +187,11 @@ docs/audits/docs-rules-unify-scan.md:65:docs/audits/docs-content-overlap.md:38:|
 docs/audits/docs-rules-unify-scan.md:66:docs/audits/docs-content-overlap.md:39:| OVL-04 | Execution specification layering | `docs/context/notes/execution.md`, `docs/context/notes/execution-gmo.md` | `docs/context/notes/execution.md` as provider-agnostic execution contract/behavior SSOT; `docs/context/notes/execution-gmo.md` as GMO adapter profile | Provider-specific constraints can leak into generic execution spec, causing multi-exchange evolution pain. | 1) Extract any GMO-only semantics out of generic spec into GMO profile. 2) Keep generic spec with neutral terms and extension hooks. |
 docs/audits/docs-rules-unify-scan.md:67:docs/audits/docs-content-overlap.md:40:| OVL-05 | Bots API/UX status model duplication | `docs/specs/controlplane-bots.md`, `docs/specs/ui-bots.md` | `docs/specs/controlplane-bots.md` as API schema/status semantics SSOT; `docs/specs/ui-bots.md` as UI behavior/rendering SSOT | Bot status fields (e.g., degraded reasons, states) are often repeated in both docs. API semantics should live in controlplane spec, UI doc should reference them. | 1) In UI spec, replace duplicated field definitions with links/brief mapping tables. 2) Keep authoritative enums/field contracts in controlplane spec. |
 docs/audits/docs-rules-unify-scan.md:68:docs/audits/docs-content-overlap.md:41:| OVL-06 | Paper E2E runbook duplication | `docs/runbooks/e2e-smoke-runbook.md`, `docs/runbooks/paper_e2e.md` | `docs/runbooks/e2e-smoke-runbook.md` as "one-command" operational runbook SSOT; `docs/runbooks/paper_e2e.md` as deep troubleshooting/reference | Both cover paper path checks; one should be quick path and the other should be expanded diagnostics. Distinguish by depth and audience. | 1) Ensure smoke runbook contains only happy-path + short triage. 2) Keep paper_e2e as detailed manual procedures and edge-case diagnostics. |
-docs/audits/docs-rules-unify-scan.md:69:docs/audits/docs-content-overlap.md:42:| OVL-07 | Governance baseline duplication | `docs/assumptions.md`, `docs/roadmap.md`, `README.md` | `docs/assumptions.md` as baseline assumptions/constraints SSOT | Guardrails and defaults appear in multiple places; assumptions should be centralized and referenced elsewhere. | 1) Keep roadmap guardrails short and link to assumptions. 2) Keep README to brief security/baseline pointers only. |
+docs/audits/docs-rules-unify-scan.md:69:docs/audits/docs-content-overlap.md:42:| OVL-07 | Governance baseline duplication | `docs/assumptions.md`, `docs/plans/roadmap.md`, `README.md` | `docs/assumptions.md` as baseline assumptions/constraints SSOT | Guardrails and defaults appear in multiple places; assumptions should be centralized and referenced elsewhere. | 1) Keep roadmap guardrails short and link to assumptions. 2) Keep README to brief security/baseline pointers only. |
 docs/audits/docs-rules-unify-scan.md:70:docs/status/ultimate-gold-progress-check.md:54:| UG-00 | 全体NFR | P0 | In Progress | 55% | Contracts SSOT、idempotency、dead-man、監査ログ、health/capabilities基盤 | SAFE_MODE統一運用、SoT優先順位の明文化、replay決定性の全体保証 |
 docs/audits/docs-rules-unify-scan.md:71:docs/status/ultimate-gold-progress-check.md:89:  - Contracts SSOT
-docs/audits/docs-rules-unify-scan.md:72:docs/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
-docs/audits/docs-rules-unify-scan.md:73:docs/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
+docs/audits/docs-rules-unify-scan.md:72:docs/plans/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI enforcement.
+docs/audits/docs-rules-unify-scan.md:73:docs/plans/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
 docs/audits/docs-rules-unify-scan.md:74:docs/assumptions.md:13:1. OpenAPI uses version `1.0.0` as the first SSOT baseline for V2.5+ bootstrap.
 docs/audits/docs-rules-unify-scan.md:75:docs/README.md:12:- Parallel task safety (SSOT for parallel development safety): [`specs/parallel-task-safety.md`](specs/parallel-task-safety.md)
 docs/audits/docs-rules-unify-scan.md:76:docs/specs/crosscut/parallel_task_safety_spec.md:1:# Parallel Task Safety Spec (SSOT)

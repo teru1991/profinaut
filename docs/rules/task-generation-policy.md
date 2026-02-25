@@ -9,6 +9,6 @@ Canonical task-generation documents are:
 
 Related references:
 
-- `docs/rules/parallel-development-safety.md`
+- `docs/specs/crosscut/safety_interlock_spec.md`
 - `docs/runbooks/pr-preflight.md`
 - `docs/context/README_AI.md`

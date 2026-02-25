@@ -8,7 +8,7 @@ Related canonical docs:
 - Handoff: `docs/handoff/HANDOFF.json`
 - Decisions: `docs/decisions/decisions.md`
 - Trace index SSOT: `docs/status/trace-index.json`
-- Safety policy: `docs/rules/parallel-development-safety.md`, `docs/specs/crosscut/parallel_task_safety_spec.md`
+- Safety policy: `docs/specs/crosscut/safety_interlock_spec.md`, `docs/specs/crosscut/parallel_task_safety_spec.md`
 
 ---
 

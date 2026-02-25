@@ -1,3 +1,7 @@
-# Parallel Task Safety — stub
+# Parallel Task Safety (NOT CANONICAL)
+このファイルは **正本ではありません**（crosscut safetyへ統一）。
 
-Moved to: `docs/specs/crosscut/parallel_task_safety_spec.md`
+✅ 正本はこちら：
+- `docs/specs/crosscut/safety_interlock_spec.md`
+
+旧版は参照用として `docs/legacy/specs/parallel-task-safety.md` に退避しました。
