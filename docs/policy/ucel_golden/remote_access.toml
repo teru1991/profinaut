@@ -1,0 +1,18 @@
+[meta]
+id = "policy.ucel_golden.remote_access"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[source]
+canonical_md = "docs/policy/ucel_golden_policy_pack.md"
+section = "4. remote_access.toml（例）"
+
+[cloudflared]
+enabled = true
+
+[grafana]
+public = false
+
+[access]
+allowlist_ips = []
