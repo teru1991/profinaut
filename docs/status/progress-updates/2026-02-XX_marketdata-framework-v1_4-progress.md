@@ -53,7 +53,7 @@ This framework does NOT alter non-crypto marketdata modules (Python FastAPI serv
 | Crypto collector crate (Rust) | `services/marketdata-rs/crypto-collector/` |
 | Workspace root (existing, minimal mod) | `services/marketdata-rs/Cargo.toml` |
 | Sample configs/descriptors | `config/crypto-collector/` |
-| Progress tracking | `docs/progress/marketdata_collector_framework_v1_4.md` |
+| Progress tracking | `docs/status/progress-updates/2026-02-XX_marketdata-framework-v1_4-progress.md` |
 | Definition of Done | `docs/legacy/dod/marketdata_collector_framework_v1_4.md` |
 | Reference docs | `docs/legacy/descriptor_reference_v1_4.md`, `docs/config_reference_collector_toml.md` |
 
@@ -218,7 +218,7 @@ This framework does NOT alter non-crypto marketdata modules (Python FastAPI serv
 | `services/marketdata-rs/crypto-collector/Cargo.toml` | +async-trait, +tokio features, +tempfile dev-dep |
 | `services/marketdata-rs/crypto-collector/src/config.rs` | +PersistenceConfig, SpoolConfigToml, DedupConfigToml |
 | `services/marketdata-rs/crypto-collector/src/main.rs` | +`mod persistence;` |
-| `docs/progress/marketdata_collector_framework_v1_4.md` | Task D sections |
+| `docs/status/progress-updates/2026-02-XX_marketdata-framework-v1_4-progress.md` | Task D sections |
 | `docs/legacy/dod/marketdata_collector_framework_v1_4.md` | Task D acceptance criteria |
 
 ### Notes for Task E/F
@@ -269,7 +269,7 @@ Refactor/implementation plan (crypto subsystem only):
 - `services/marketdata-rs/crypto-collector/src/descriptor.rs`
 - `services/marketdata-rs/crypto-collector/src/main.rs`
 - `services/marketdata-rs/crypto-collector/Cargo.toml`
-- `docs/progress/marketdata_collector_framework_v1_4.md`
+- `docs/status/progress-updates/2026-02-XX_marketdata-framework-v1_4-progress.md`
 - `docs/legacy/dod/marketdata_collector_framework_v1_4.md`
 - `docs/legacy/descriptor_reference_v1_4.md`
 - `docs/troubleshooting.md`
@@ -307,7 +307,7 @@ Refactor/implementation plan (crypto subsystem only):
 - `services/marketdata-rs/crypto-collector/src/runtime.rs`
 - `services/marketdata-rs/crypto-collector/src/rest_client.rs`
 - `services/marketdata-rs/crypto-collector/src/persistence/spool.rs` (compile fix surfaced by full-module test build)
-- `docs/progress/marketdata_collector_framework_v1_4.md`
+- `docs/status/progress-updates/2026-02-XX_marketdata-framework-v1_4-progress.md`
 - `docs/legacy/dod/marketdata_collector_framework_v1_4.md`
 - `docs/legacy/descriptor_reference_v1_4.md`
 - `docs/troubleshooting.md`
@@ -360,7 +360,7 @@ _TBD (to be filled after audit)._
 | In-process mock WS/REST + scenario runtime | `services/marketdata/app/mock_exchange.py` |
 | E2E harness | `tests/e2e_mock.py` |
 | Sample config/descriptors/maps | `config/collector.toml`, `config/exchanges/mock_v4.toml`, `config/exchanges/maps/mock_symbol_map.toml` |
-| Task progress + DoD | `docs/progress/marketdata_collector_framework_v1_4.md`, `docs/legacy/dod/marketdata_collector_framework_v1_4.md` |
+| Task progress + DoD | `docs/status/progress-updates/2026-02-XX_marketdata-framework-v1_4-progress.md`, `docs/legacy/dod/marketdata_collector_framework_v1_4.md` |
 | Final docs | `docs/legacy/marketdata_collector_framework_v1_4.md`, `docs/legacy/descriptor_reference_v1_4.md`, `docs/troubleshooting.md`, `docs/mongo_setup.md` |
 
 ### Notes / Decisions (Task F)
@@ -408,7 +408,7 @@ _TBD (to be filled after audit)._
   - `docs/legacy/descriptor_reference_v1_4.md`
   - `docs/troubleshooting.md`
   - `docs/mongo_setup.md`
-  - `docs/progress/marketdata_collector_framework_v1_4.md`
+  - `docs/status/progress-updates/2026-02-XX_marketdata-framework-v1_4-progress.md`
   - `docs/legacy/dod/marketdata_collector_framework_v1_4.md`
 - **Implemented:** extended health + prometheus metrics, in-process mock REST/WS (public/private auth/ack/ping-pong/binary), scenario controls, sample config/descriptor/map, polling-based E2E harness, and final docs.
 - **Known limitation / next step:** task-card required rust `e2e_mock` target does not exist in current repository path constraints (`services/marketdata/**`), so rust command-level verification remains not applicable in this run.

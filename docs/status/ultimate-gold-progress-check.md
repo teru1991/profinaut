@@ -136,7 +136,7 @@ Recent merged PRs:
 
 ### 10.1 総評
 - **網羅性評価: 高い（約90%）**
-  - `docs/workplan/ultimate-gold-implementation-feature-list.md` は、提示された清書版 v1.0 の章構成（0, A〜L）と機能群を概ね同一粒度で保持している。
+  - `docs/plans/ultimate-gold/feature-list.md` は、提示された清書版 v1.0 の章構成（0, A〜L）と機能群を概ね同一粒度で保持している。
 - **実装進捗評価: 中程度（約45〜55%）**
   - `docs/status/ultimate-gold-progress-check.md` の進捗表では、P0中核（UG-00/A/B/C/D/I）が `In Progress` 中心で、運用安全性の“制度化・自動化”が未完。
 - **運用投入準備度: 条件付き**
