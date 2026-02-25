@@ -1,0 +1,17 @@
+[meta]
+id = "policy.defi_dex_quote_mev"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[changelog]
+latest = "2026-02-25: initial DEX quote constraints and MEV risk thresholds."
+
+[quote]
+max_hops = 2
+require_confirmed_or_final = true
+max_slippage_bps = 30
+
+[mev]
+max_mev_risk = "MED" # LOW/MED/HIGH
+unknown_risk_reject = true

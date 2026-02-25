@@ -1,0 +1,24 @@
+[meta]
+id = "policy.automation_jobs"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[changelog]
+latest = "2026-02-25: initial automation schedule and safety bounds."
+
+[jobs.integrity_daily]
+enabled = true
+schedule = "daily"
+window_hours = 24
+
+[jobs.gate_daily]
+enabled = true
+schedule = "daily"
+window_hours = 24
+
+[jobs.retention_compaction]
+enabled = false
+# destructive-ish; require dangerous op flow to enable
+schedule = "weekly"
+require_dangerous_op_confirm = true

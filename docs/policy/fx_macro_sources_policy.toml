@@ -1,0 +1,18 @@
+[meta]
+id = "policy.fx_macro_sources"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[changelog]
+latest = "2026-02-25: initial source priority and staleness policy for FX/Macro."
+
+[sources]
+primary = "source_a"
+secondary = "source_b"
+allow_failover = true
+
+[staleness]
+fx_max_age_seconds = 10
+macro_max_age_hours = 48
+calendar_max_age_hours = 48

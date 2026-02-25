@@ -1,0 +1,36 @@
+[meta]
+id = "policy.execution_limits"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[changelog]
+latest = "2026-02-25: initial conservative limits for safe execution gating."
+
+[rate_limit]
+# Global caps (safety-first). Tighten/relax via change control.
+max_orders_per_sec = 2
+max_orders_per_min = 60
+max_cancels_per_sec = 3
+max_amends_per_sec = 2
+
+[order_size]
+# Absolute caps; strategy/risk may tighten further.
+max_notional_per_order = 1000000
+max_qty_per_order = 0.0 # 0.0 means "must be set per venue/symbol allowlist"
+require_symbol_allowlist = true
+
+[price_sanity]
+# Reject if price deviates too far from reference.
+max_price_deviation_bps = 50
+require_reference_price = true
+
+[timeouts]
+gate_decision_ms = 50
+connector_call_ms = 1500
+overall_intent_ttl_ms = 5000
+
+[retry]
+# Retries must remain idempotent; 429 backoff is separate.
+max_retries_transient = 2
+max_retries_rate_limited = 3

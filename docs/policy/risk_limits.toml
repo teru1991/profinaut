@@ -1,0 +1,27 @@
+[meta]
+id = "policy.risk_limits"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[changelog]
+latest = "2026-02-25: initial conservative portfolio limits."
+
+[limits]
+max_gross_notional = 2000000
+max_net_notional = 1000000
+max_per_symbol_notional = 500000
+max_per_venue_notional = 1000000
+max_leverage = 2.0
+max_open_orders = 50
+
+[loss_controls]
+# Hard stops; exact PnL definitions are in core spec.
+max_daily_loss = 100000
+max_drawdown = 200000
+
+[unknown_handling]
+# If position/price is UNKNOWN, default to CLOSE_ONLY to avoid exposure increases.
+unknown_positions_action = "CLOSE_ONLY" # CLOSE_ONLY or BLOCK
+unknown_prices_action = "CLOSE_ONLY"
+snapshot_max_age_seconds = 5

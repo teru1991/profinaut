@@ -1,0 +1,21 @@
+[meta]
+id = "policy.equities_ir_sources_scoring"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[changelog]
+latest = "2026-02-25: initial IR sources priority and scoring weights."
+
+[sources]
+primary = "source_a"
+secondary = "source_b"
+allow_failover = true
+
+[scoring]
+model_id = "baseline_v1"
+# Weights are tunable; semantics fixed in core spec.
+profitability_weight = 0.3
+growth_weight = 0.3
+health_weight = 0.3
+shareholder_return_weight = 0.1

@@ -1,0 +1,17 @@
+[meta]
+id = "policy.data_catalog_access"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[changelog]
+latest = "2026-02-25: initial dataset access classes."
+
+[classes]
+# classification labels; enforcement mechanism is elsewhere.
+public = ["docs", "public_metrics"]
+internal = ["market_data", "fx_macro", "equities_ir"]
+restricted = ["ledger", "tax", "pii_possible"]
+
+[export]
+restricted_requires_admin = true

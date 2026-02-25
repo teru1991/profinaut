@@ -1,0 +1,19 @@
+[meta]
+id = "policy.strategy_runtime_constraints"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[changelog]
+latest = "2026-02-25: initial constraints for strategy runtime sandbox."
+
+[limits]
+max_decisions_per_sec = 5
+decision_timeout_ms = 100
+max_memory_mb = 256
+max_cpu_percent = 50
+
+[quarantine]
+max_consecutive_exceptions = 3
+max_consecutive_timeouts = 3
+unknown_quality_noop = true

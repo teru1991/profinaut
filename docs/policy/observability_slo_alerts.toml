@@ -1,0 +1,24 @@
+[meta]
+id = "policy.observability_slo_alerts"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[changelog]
+latest = "2026-02-25: initial SLO targets and alert thresholds (conservative)."
+
+[slo]
+# Targets are policy; semantics are fixed in core spec.
+max_ingest_to_raw_persist_p95_ms = 500
+max_intent_to_result_p95_ms = 2000
+max_storage_backlog_seconds = 10
+
+[alerts]
+# Severity mapping policy; UNKNOWN is never "OK".
+targets_missing_grace_seconds = 60
+integrity_fail_is_p0 = true
+gate_unknown_is_p0 = true
+
+[notifications]
+# No secrets here; channels configured elsewhere.
+enable_notifications = true

@@ -1,0 +1,20 @@
+[meta]
+id = "policy.support_bundle_triggers"
+version = "1.0.0"
+owner = "profinaut"
+last_updated = "2026-02-25"
+
+[changelog]
+latest = "2026-02-25: initial support bundle triggers."
+
+[triggers]
+on_safety_safe = true
+on_safety_emergency_stop = true
+on_integrity_fail = true
+on_integrity_unknown = true
+on_gate_fail = true
+on_gate_unknown = true
+on_killswitch_block = true
+
+[limits]
+max_bundles_per_day = 5
