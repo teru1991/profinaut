@@ -13,3 +13,6 @@
 ## Notes
 - `docs/specs/ucel/` 配下の仕様群は、profinautにおけるUCEL利用境界（connector/spec）として維持します。
 - Golden Docs（このREADME配下）は「UCELの思想/固定仕様/運用値/計画の正本」です。
+
+## Compatibility
+- docs/specs/ucel_golden/compatibility_notes.md
