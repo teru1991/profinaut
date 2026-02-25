@@ -117,3 +117,6 @@ Scope: docs全体の「正本（SSOT）」「参照順序」「役割境界」�
 - Coreを動かすのは最後。まずPolicyで調整する
 - Plan/Runbookは積極的に更新してよい
 - SSOT分裂を起こさない（増やす前に統合）
+
+## Docs OS Operations Policy
+- docs/specs/system/docs_os_operations_policy.md
