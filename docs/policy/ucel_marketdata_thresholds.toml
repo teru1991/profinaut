@@ -1,0 +1,59 @@
+# UCEL Market Data Collector thresholds (Policy)
+# Used by: runtime gate, daily gate, alerting.
+# NOTE: values are examples. Adjust per environment.
+
+version = "1.0.0"
+
+[coverage]
+p0_min_ratio = 0.999
+p1_min_ratio = 0.990
+p2_min_ratio = 0.950
+grace_seconds = 120
+
+[freshness]
+# last_message_age thresholds (ms)
+p0_last_message_age_ms = 5000
+p1_last_message_age_ms = 15000
+p2_last_message_age_ms = 60000
+
+[thin]
+# Deviation ratio from expected rate (0.5 means 50% below expected)
+p0_rate_deviation_ratio = 0.50
+p1_rate_deviation_ratio = 0.70
+window_seconds = 120
+
+[gap]
+# If gap_detected increases above this within window, consider critical
+burst_window_seconds = 60
+burst_threshold = 1
+
+[wal]
+queue_len_warn = 10000
+queue_len_critical = 50000
+append_latency_ms_warn = 50
+append_latency_ms_critical = 200
+
+[disk]
+warn_percent = 20
+critical_percent = 10
+emergency_percent = 5
+
+[io]
+stall_latency_ms_warn = 50
+stall_latency_ms_critical = 200
+stall_window_seconds = 30
+
+[clock]
+warn_skew_ms = 500
+critical_skew_ms = 2000
+reverse_time_jump_ms = 100
+
+[observability]
+targets_down_grace_seconds = 120
+loki_ingest_missing_grace_seconds = 180
+
+[integrity_slo]
+daily_p0_freshness_slo = 0.999
+daily_p0_coverage_slo  = 0.999
+max_persist_gap_ratio = 0.001
+max_observability_downtime_seconds = 600

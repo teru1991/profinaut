@@ -1,0 +1,33 @@
+# Forbidden keys/patterns for redaction (fail-closed)
+# This file is policy (mutable) but MUST be applied consistently across:
+# - logs
+# - metrics labels
+# - audit events
+# - support bundle output
+# - crash/exception payloads (as much as possible)
+
+version = "1.0.0"
+
+[keys]
+# Case-insensitive exact key matches to redact/flag
+list = [
+  "token", "apikey", "api_key", "secret", "signature",
+  "authorization", "bearer", "listenkey",
+  "cookie", "session", "set-cookie",
+  "privatekey", "private_key", "passphrase", "password"
+]
+
+[regex]
+# Case-insensitive patterns to detect forbidden content inside strings
+list = [
+  "(?i)authorization\\s*:\\s*bearer\\s+",
+  "(?i)api[_-]?key\\s*[:=]",
+  "(?i)listenkey\\s*[:=]"
+]
+
+[behavior]
+# fail_closed: if forbidden content is detected, treat as incident
+fail_closed = true
+# recommended: emit audit event SECRET_LEAK_GUARD_TRIGGERED and optionally enter HALT
+emit_audit_event = true
+suggest_safety_halt = true

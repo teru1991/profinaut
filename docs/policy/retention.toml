@@ -1,0 +1,23 @@
+# Storage lifecycle policy (retention / compression / archive)
+version = "1.0.0"
+
+[raw]
+keep_days = 30
+compress_after_days = 7
+compress_format = "zstd"
+evict_policy = "oldest_first"
+
+[wal]
+keep_days = 14
+
+[archive]
+enabled = true
+path = "D:/profinaut-archive"
+# optional: additional remote archive target (left blank by default)
+remote_target = ""
+
+[support_bundle]
+# max bundles kept locally
+keep_count = 20
+# max size in MB (soft limit)
+max_size_mb = 500
