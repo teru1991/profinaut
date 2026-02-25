@@ -24,59 +24,52 @@ Runbook は可変だが、バラバラな書式は障害対応を遅らせる。
 
 ## 2. Runbook のファイル規約（推奨）
 ### 2.1 命名（推奨）
-- `docs/runbooks/<domain_or_area>_<topic>_playbook.md`
-  - 例：`collector_recovery_playbook.md`
-  - 例：`execution_failures_playbook.md`
+- docs/runbooks/<domain_or_area>_<topic>_playbook.md
 
-### 2.2 冒頭メタ（推奨だが強く推奨）
-- Title / Version（Runbookは可変なので v1.0 の更新は柔軟）
-- Scope（何の障害に効くか）
-- Related error codes（ERR-... のリスト）
-- Evidence（必要な証拠：audit/integrity/gate/replay/bundle）
+### 2.2 冒頭メタ（推奨）
+- Title / Version
+- Scope
+- Related error codes（ERR-...）
+- Evidence（audit/integrity/gate/replay/bundle）
 
 ---
 
 ## 3. Runbook の必須章立て（固定：MUST）
-Runbook 本文は必ずこの順序で書く（順序の入替は禁止）。
-
-1) **Symptoms**（何が起きたか）
-2) **Observations**（何を見て確認するか：metrics/logs/traces）
-3) **Auto-recovery**（自動で何が起きる/起きない）
-4) **Manual actions**（手動介入：安全な順序）
-5) **Evidence**（audit/integrity/gate/replay/support bundle で証拠化）
-6) **Rollback/Recovery**（戻す/復旧：影響範囲と確認）
-7) **Postmortem**（再発防止：decision/plan/policy/spec更新導線）
+1) Symptoms
+2) Observations
+3) Auto-recovery
+4) Manual actions
+5) Evidence
+6) Rollback/Recovery
+7) Postmortem
 
 ---
 
 ## 4. Error Catalog との連動（固定：MUST）
-- `docs/specs/system/error_catalog_ssot.md` に登録された `operator_action=RUNBOOK` の error_code は、
-  **必ず** runbook を持つ。
-- runbook は `docs/runbooks/README.md` から 1クリックで辿れること。
-- runbook 側は “Related error codes” を本文冒頭に記載する（推奨だが実質必須）。
+- operator_action=RUNBOOK の error_code は必ず runbook を持つ
+- runbook は docs/runbooks/README.md から 1クリックで辿れること
+- runbook 側は Related error codes を本文冒頭に記載する
 
 ---
 
 ## 5. 安全と秘密（固定：MUST）
-- runbook に secret を書かない（鍵/トークン/署名/URLクエリ等）
-- 手動介入手順は必ず “安全側の順序” を先に書く（例：STOP→ISOLATE→DRAIN→RESTORE）
-- live 操作が絡む場合は、必ず environment/mode と safety_state を確認する導線を置く
-  - `docs/specs/system/environment_mode_matrix.md`
-  - `docs/contracts/safety_state.schema.json`
+- runbook に secret を書かない
+- 手動介入手順は必ず安全側の順序を先に書く
+- live 操作が絡む場合は environment/mode と safety_state を確認する導線を置く
 
 ---
 
 ## 6. Runbook Index（docs/runbooks/README.md）の固定要件（MUST）
-index は可変だが、最低限この情報を持つ：
-- どのカテゴリに属するか（collector / execution / storage / onchain / security / release / bundle 等）
-- 参照すべき crosscut/spec を示す（Safety/Audit/Bundle/Observability）
-- 重大障害の入口が “迷わず” 分かる（Unknown/Degraded の扱い）
+index は最低限この情報を持つ：
+- 障害カテゴリ
+- 参照すべき crosscut/spec
+- 重大障害の入口が迷わず分かる
 
 ---
 
-## 7. DoD（runbookが運用で機能する条件）
+## 7. DoD
 1) error_code→runbook→evidence の導線がある
-2) 手動介入前に safety/environment/mode の確認が組み込まれている
+2) safety/environment/mode の確認が組み込まれている
 3) 証拠（bundle/監査/整合）を残す手順がある
 4) 事後に spec/policy/plan/decision へ反映する導線がある
 

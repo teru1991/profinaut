@@ -329,6 +329,23 @@
         "docs/verification/docs-finalize-one-shot-001.md",
         "docs/verification/docs-lint-result.txt"
       ]
+    },
+    "DOCS-SYSTEM-COMMON-TEMPLATES-001": {
+      "branch": "docs/system-common-templates-001",
+      "pr_urls": [
+        "TBD (created via make_pr)"
+      ],
+      "commit_shas": [],
+      "path": "docs/specs/system/domain_spec_template.md",
+      "artifacts": [
+        "docs/specs/system/domain_spec_template.md",
+        "docs/specs/system/cross_domain_dependency_matrix.md",
+        "docs/specs/system/error_catalog_ssot.md",
+        "docs/specs/system/schema_registry_contract_index.md",
+        "docs/specs/system/runbook_index.md",
+        "docs/README.md",
+        "docs/runbooks/README.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

@@ -19,8 +19,8 @@ Scope: docs/contracts（JSON Schema）を “一覧・責務・互換・検証�
 ---
 
 ## 2. 契約（Contract）の固定ルール（要約）
-- 契約は `docs/contracts/` にしか置かない（唯一の正）
-- 互換性は `versioning_policy` に従う
+- 契約は docs/contracts/ にしか置かない（唯一の正）
+- 互換性は versioning_policy に従う
 - schema_version（整数）で “破壊変更” を表現する（必要時）
 - Policy/Plan/Runbook は契約を “再定義” しない（参照のみ）
 
@@ -57,8 +57,6 @@ Scope: docs/contracts（JSON Schema）を “一覧・責務・互換・検証�
 ---
 
 ## 5. 契約テスト（Contract Tests）の固定要件
-本書は “何を満たすべきか” を固定する（実装言語は自由）。
-
 ### 5.1 最低限の検証（MUST）
 - JSON としてパースできる（CI）
 - schema が自己矛盾しない（CI）
@@ -72,9 +70,9 @@ Scope: docs/contracts（JSON Schema）を “一覧・責務・互換・検証�
 
 ## 6. “Schema Registry” の範囲（注意：ここは contracts ではない）
 contracts は “証拠/メタ” が中心だが、データ本体の canonical schema（H/I/K 等）は Core Spec に定義される。
-- Market data canonical: `docs/specs/market_data/**`（例：collector framework spec）
-- Execution canonical: `docs/specs/execution/**`
-- Ledger/PnL canonical: `docs/specs/accounting/**` など
+- Market data canonical: docs/specs/market_data/**
+- Execution canonical: docs/specs/execution/**
+- Ledger/PnL canonical: docs/specs/accounting/**
 
 本書は contracts の索引SSOTであり、canonical data schema の全文定義を置かない（SSOT分裂防止）。
 
