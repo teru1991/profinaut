@@ -1,0 +1,19 @@
+# Remote access policy for dashboard observability
+version = "1.0.0"
+
+[cloudflare_access]
+mfa_required = true
+session_minutes = 60
+allowed_emails = ["you@example.com"]  # replace
+device_posture_required = false
+
+[grafana]
+allow_anonymous = false
+viewer_can_edit = false
+# preferred: separate accounts for viewer/admin
+separate_admin_account = true
+
+[exposure]
+# Only Grafana is exposed via tunnel; Prom/Loki/Alertmanager must remain private
+public_services = ["grafana"]
+private_services = ["prometheus", "loki", "alertmanager"]
