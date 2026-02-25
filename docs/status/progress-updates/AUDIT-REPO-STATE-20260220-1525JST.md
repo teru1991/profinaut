@@ -78,7 +78,7 @@
   - https://github.com/teru1991/profinaut/actions/runs/22209474150
   - https://github.com/teru1991/profinaut/actions/runs/22208983745
 - SSOT docs:
-  - docs/SSOT/README_AI.md
+  - docs/context/README_AI.md
   - docs/status/status.json
   - docs/handoff/HANDOFF.json
   - docs/decisions/decisions.md

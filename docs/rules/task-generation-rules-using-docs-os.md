@@ -3,7 +3,7 @@
 This document defines **enforced** task-generation rules for this repository.
 Any generated task MUST comply with Docs Development OS artifacts:
 
-- `docs/SSOT/README_AI.md`
+- `docs/context/README_AI.md`
 - `docs/status/status.json`
 - `docs/handoff/HANDOFF.json`
 - `docs/decisions/decisions.md`
@@ -14,7 +14,7 @@ Any generated task MUST comply with Docs Development OS artifacts:
 
 Task generation must load context in this order before proposing any implementation task:
 
-1. `docs/SSOT/README_AI.md`
+1. `docs/context/README_AI.md`
 2. `docs/status/status.json`
 3. `docs/handoff/HANDOFF.json`
 4. `docs/decisions/decisions.md`

@@ -25,11 +25,11 @@ docs/runbooks/paper_e2e.md
 docs/runbooks/reconcile-mismatch-repair.md
 docs/runbooks/supply-chain-security.md
 docs/specs/controlplane-bots.md
-docs/specs/dangerous-ops-confirmation.md
-docs/specs/dangerous-ops-taxonomy.md
-docs/specs/execution-gmo.md
-docs/specs/execution.md
-docs/specs/parallel-task-safety.md
+docs/specs/crosscut/dangerous_ops_confirmation.md
+docs/specs/crosscut/dangerous_ops_taxonomy.md
+docs/context/notes/execution-gmo.md
+docs/context/notes/execution.md
+docs/specs/crosscut/parallel_task_safety_spec.md
 docs/specs/simple-bot.md
 docs/specs/ui-bots.md
 docs/specs/ui-marketdata.md
@@ -62,8 +62,8 @@ docs/runbooks/supply-chain-security.md:7:On every pull request (and manual dispa
 docs/audits/repo-progress-audit-2026-02-14.md:65:  - Contracts are SSOT and validated in CI.
 docs/audits/docs-content-overlap.md:34:| Area ID | Suspected overlap area | Current files involved | Proposed canonical (SSOT) | Rationale | Follow-up touch plan (next PRs) |
 docs/audits/docs-content-overlap.md:37:| OVL-02 | Ultimate Gold planning/progress duplication | `docs/workplan/ultimate-gold-implementation-feature-list.md`, `docs/status/ultimate-gold-progress-check.md`, `docs/status/progress-updates/UG-P0-*.md` | `docs/workplan/ultimate-gold-implementation-feature-list.md` = requirements/catalog SSOT; `docs/status/ultimate-gold-progress-check.md` = current status dashboard SSOT; `docs/status/progress-updates/*.md` = append-only evidence logs | The workplan and progress-check both contain requirement mapping + milestone status narrative; risk of drift is high. Split roles explicitly: "what should exist" vs "what currently exists" vs "event/evidence log". | 1) Remove requirement restatement from progress-check; keep live status only. 2) In progress updates, enforce short template + links to PR/commit only. 3) Add explicit cross-links among the 3 layers. |
-docs/audits/docs-content-overlap.md:38:| OVL-03 | Dangerous operation rule definition split | `docs/specs/dangerous-ops-taxonomy.md`, `docs/specs/dangerous-ops-confirmation.md` | `docs/specs/dangerous-ops-taxonomy.md` as policy/rule SSOT; `docs/specs/dangerous-ops-confirmation.md` as UX/API confirmation flow spec only | Taxonomy (what is dangerous and why) and confirmation (how operator confirms) should be separated but non-overlapping. Current boundary is easy to blur. | 1) Keep taxonomy doc free of UI workflow details. 2) Keep confirmation doc free of category/policy duplication; only reference taxonomy IDs. |
-docs/audits/docs-content-overlap.md:39:| OVL-04 | Execution specification layering | `docs/specs/execution.md`, `docs/specs/execution-gmo.md` | `docs/specs/execution.md` as provider-agnostic execution contract/behavior SSOT; `docs/specs/execution-gmo.md` as GMO adapter profile | Provider-specific constraints can leak into generic execution spec, causing multi-exchange evolution pain. | 1) Extract any GMO-only semantics out of generic spec into GMO profile. 2) Keep generic spec with neutral terms and extension hooks. |
+docs/audits/docs-content-overlap.md:38:| OVL-03 | Dangerous operation rule definition split | `docs/specs/crosscut/dangerous_ops_taxonomy.md`, `docs/specs/crosscut/dangerous_ops_confirmation.md` | `docs/specs/crosscut/dangerous_ops_taxonomy.md` as policy/rule SSOT; `docs/specs/crosscut/dangerous_ops_confirmation.md` as UX/API confirmation flow spec only | Taxonomy (what is dangerous and why) and confirmation (how operator confirms) should be separated but non-overlapping. Current boundary is easy to blur. | 1) Keep taxonomy doc free of UI workflow details. 2) Keep confirmation doc free of category/policy duplication; only reference taxonomy IDs. |
+docs/audits/docs-content-overlap.md:39:| OVL-04 | Execution specification layering | `docs/context/notes/execution.md`, `docs/context/notes/execution-gmo.md` | `docs/context/notes/execution.md` as provider-agnostic execution contract/behavior SSOT; `docs/context/notes/execution-gmo.md` as GMO adapter profile | Provider-specific constraints can leak into generic execution spec, causing multi-exchange evolution pain. | 1) Extract any GMO-only semantics out of generic spec into GMO profile. 2) Keep generic spec with neutral terms and extension hooks. |
 docs/audits/docs-content-overlap.md:40:| OVL-05 | Bots API/UX status model duplication | `docs/specs/controlplane-bots.md`, `docs/specs/ui-bots.md` | `docs/specs/controlplane-bots.md` as API schema/status semantics SSOT; `docs/specs/ui-bots.md` as UI behavior/rendering SSOT | Bot status fields (e.g., degraded reasons, states) are often repeated in both docs. API semantics should live in controlplane spec, UI doc should reference them. | 1) In UI spec, replace duplicated field definitions with links/brief mapping tables. 2) Keep authoritative enums/field contracts in controlplane spec. |
 docs/audits/docs-content-overlap.md:41:| OVL-06 | Paper E2E runbook duplication | `docs/runbooks/e2e-smoke-runbook.md`, `docs/runbooks/paper_e2e.md` | `docs/runbooks/e2e-smoke-runbook.md` as "one-command" operational runbook SSOT; `docs/runbooks/paper_e2e.md` as deep troubleshooting/reference | Both cover paper path checks; one should be quick path and the other should be expanded diagnostics. Distinguish by depth and audience. | 1) Ensure smoke runbook contains only happy-path + short triage. 2) Keep paper_e2e as detailed manual procedures and edge-case diagnostics. |
 docs/audits/docs-content-overlap.md:42:| OVL-07 | Governance baseline duplication | `docs/assumptions.md`, `docs/roadmap.md`, `README.md` | `docs/assumptions.md` as baseline assumptions/constraints SSOT | Guardrails and defaults appear in multiple places; assumptions should be centralized and referenced elsewhere. | 1) Keep roadmap guardrails short and link to assumptions. 2) Keep README to brief security/baseline pointers only. |
@@ -73,8 +73,8 @@ docs/roadmap.md:8:- [x] **Step 1**: Contracts SSOT (OpenAPI + JSON Schemas) + CI
 docs/roadmap.md:32:- `contracts/` is SSOT and enforced in CI.
 docs/assumptions.md:13:1. OpenAPI uses version `1.0.0` as the first SSOT baseline for V2.5+ bootstrap.
 docs/README.md:12:- Parallel task safety (SSOT for parallel development safety): [`specs/parallel-task-safety.md`](specs/parallel-task-safety.md)
-docs/specs/parallel-task-safety.md:1:# Parallel Task Safety Spec (SSOT)
-docs/specs/parallel-task-safety.md:45:## 4. Profinaut開発：Codexアジャイル「タスク生成」方針
+docs/specs/crosscut/parallel_task_safety_spec.md:1:# Parallel Task Safety Spec (SSOT)
+docs/specs/crosscut/parallel_task_safety_spec.md:45:## 4. Profinaut開発：Codexアジャイル「タスク生成」方針
 ```
 
 ## 4) Rule-like file discovery
@@ -91,5 +91,5 @@ find docs -maxdepth 4 -type f \( \
 Output:
 
 ```bash
-docs/specs/parallel-task-safety.md
+docs/specs/crosscut/parallel_task_safety_spec.md
 ```

@@ -3,12 +3,12 @@
 Purpose: prevent PR/merge accidents (stale PR merge, LOCK collision, SSOT drift, docs-state mismatch) with a single reusable procedure.
 
 Related canonical docs:
-- AI entrypoint: `docs/SSOT/README_AI.md`
+- AI entrypoint: `docs/context/README_AI.md`
 - Runtime status SSOT: `docs/status/status.json`
 - Handoff: `docs/handoff/HANDOFF.json`
 - Decisions: `docs/decisions/decisions.md`
 - Trace index SSOT: `docs/status/trace-index.json`
-- Safety policy: `docs/rules/parallel-development-safety.md`, `docs/specs/parallel-task-safety.md`
+- Safety policy: `docs/rules/parallel-development-safety.md`, `docs/specs/crosscut/parallel_task_safety_spec.md`
 
 ---
 

@@ -40,13 +40,13 @@ Unless a task says otherwise, treat the following as lock-sensitive:
 - `ci/**` and `.github/**`
 - `infra/**`
 - lockfiles
-- shared-docs (`docs/SSOT/**`, `docs/rules/**`, docs hubs/indexes)
+- shared-docs (`docs/context/**`, `docs/rules/**`, docs hubs/indexes)
 
 ### 3.3 Required Locks declaration
 
 Task cards must declare `Required Locks` explicitly. Examples:
 
-- `Required Locks: docs/SSOT/**`
+- `Required Locks: docs/context/**`
 - `Required Locks: none` (only when truly lock-free)
 
 ## 4. Shared-file policy

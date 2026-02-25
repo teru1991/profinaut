@@ -125,7 +125,7 @@ Scope: repository audit and MRU planning (no runtime behavior changes)
 - Allowed paths:
   - `services/execution/app/main.py`
   - `services/execution/tests/test_main.py`
-  - `docs/specs/execution-gmo.md` (observability notes)
+  - `docs/context/notes/execution-gmo.md` (observability notes)
 - Forbidden paths:
   - contracts/workflows/docker/root package/lockfiles
 - Deliverables:
@@ -232,7 +232,7 @@ Scope:
 Allowed paths (strict):
 - services/execution/app/main.py
 - services/execution/tests/test_main.py
-- docs/specs/execution-gmo.md (observability section updates)
+- docs/context/notes/execution-gmo.md (observability section updates)
 
 Forbidden paths:
 - .github/workflows/ci.yml, docker-compose.yml, lockfiles, root package.json

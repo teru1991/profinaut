@@ -1,24 +1,3 @@
-# DOC-RULES-UNIFY-001 Consolidation Decision
+# docs-rules-unify-decision — stub
 
-## Canonicalization summary
-
-- Chosen approach: **Option A** (`docs/rules/` as rules SSOT namespace).
-- Reason: existing rule content is concentrated in `docs/specs/parallel-task-safety.md`; new required operational topics (Multi-AI / Credit-out / HANDOFF / status / trace / decisions / LOCK policy) should be explicit and discoverable under a dedicated operations-rule path.
-- Anti-duplication action: `docs/specs/parallel-task-safety.md` is retained as a **stub** that redirects to canonical docs.
-
-## Topic table
-
-| Topic | Existing doc(s) | Proposed canonical doc | Action (keep/merge/stub) | Notes |
-|---|---|---|---|---|
-| Parallel safety / 1PR=1scope / Allowed/Forbidden | `docs/specs/parallel-task-safety.md` | `docs/rules/parallel-development-safety.md` | merge + stub old | Preserve prior safety intent and checklist; move to rules namespace. |
-| Multi-AI / Credit-out / Handoff | `docs/specs/parallel-task-safety.md` (partial task-generation section only) | `docs/rules/task-generation-policy.md` | merge + extend | Add stop protocol + mandatory HANDOFF update semantics. |
-| LOCK policy | `docs/specs/parallel-task-safety.md` (LOCK/semi-LOCK partial) | `docs/rules/parallel-development-safety.md` | merge + extend | Add explicit lock areas incl. shared-docs and Required Locks declaration. |
-| Decision log policy | no dedicated active SSOT in scan result | `docs/rules/task-generation-policy.md` | add new canonical | Standardize decision fixation via `docs/status/decisions.md`. |
-| Traceability policy | no dedicated active SSOT in scan result | `docs/rules/task-generation-policy.md` | add new canonical | Set `docs/status/trace-index.md` as trace SSOT, avoid scattered links. |
-| Task card required fields | `docs/specs/parallel-task-safety.md` section 4.1 | `docs/rules/task-generation-policy.md` | merge + extend | Keep minimum fields and add multi-AI runtime governance fields. |
-
-## Link routing policy
-
-- `docs/SSOT/README_AI.md` is created/updated as must-read entrypoint for AI operators.
-- `docs/README.md` points to the new canonical rules docs.
-- Non-canonical legacy document remains as short stub to prevent link rot.
+Moved to: `docs/decisions/records/docs-rules-unify-decision.md`

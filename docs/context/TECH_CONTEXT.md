@@ -7,8 +7,8 @@ It is **not** a full technical SSOT and must not duplicate long specs.
 
 ## Must-read (start here)
 
-- AI entrypoint: `docs/SSOT/README_AI.md`
-- Parallel safety rules: `docs/specs/parallel-task-safety.md` and `docs/rules/parallel-development-safety.md`
+- AI entrypoint: `docs/context/README_AI.md`
+- Parallel safety rules: `docs/specs/crosscut/parallel_task_safety_spec.md` and `docs/rules/parallel-development-safety.md`
 - Runtime status SSOT: `docs/status/status.json`
 - Trace index: `docs/status/trace-index.json`
 - Decisions baseline (SSOT): `docs/decisions/decisions.md`
@@ -25,7 +25,7 @@ It is **not** a full technical SSOT and must not duplicate long specs.
 ## Data / DB / protocol pointers
 
 - Workplan: `docs/workplan/ultimate-gold-implementation-feature-list.md`
-- Market/data behavior specs: `docs/specs/ui-marketdata.md`, `docs/specs/execution.md`, `docs/specs/execution-gmo.md`
+- Market/data behavior specs: `docs/specs/ui-marketdata.md`, `docs/context/notes/execution.md`, `docs/context/notes/execution-gmo.md`
 - Bot/control specs: `docs/specs/controlplane-bots.md`, `docs/specs/simple-bot.md`, `docs/specs/ui-bots.md`
 - Verification evidence: `docs/verification/marketdata-data-platform-smoke.md`, `docs/verification/marketdata-data-platform-smoke-results.md`
 

@@ -3,7 +3,7 @@
 This file provides operational prompt templates for ChatGPT/Claude/Gemini/Copilot.
 It is a usage library (non-SSOT) aligned to Docs Development OS.
 
-- Canonical entrypoint: `docs/SSOT/README_AI.md`
+- Canonical entrypoint: `docs/context/README_AI.md`
 - Status SSOT: `docs/status/status.json`
 - Trace SSOT: `docs/status/trace-index.json`
 
@@ -13,7 +13,7 @@ It is a usage library (non-SSOT) aligned to Docs Development OS.
 
 Use this full prompt when starting any task:
 
-- Read in strict order: `docs/SSOT/README_AI.md` → `docs/status/status.json` → `docs/handoff/HANDOFF.json` → `docs/decisions/decisions.md`.
+- Read in strict order: `docs/context/README_AI.md` → `docs/status/status.json` → `docs/handoff/HANDOFF.json` → `docs/decisions/decisions.md`.
 - Before planning or editing, inspect `docs/status/status.json` keys: `active_task`, `open_prs`, `locks_held`, `owner`, `state`, `last_updated`.
 - If `locks_held` conflicts with intended scope, STOP and return a lock-conflict response.
 - Build a task card that includes: Task ID, Scope, Allowed paths, Forbidden paths, Required LOCKS, Dependencies, Verification steps.
@@ -71,7 +71,7 @@ Use this full prompt when starting any task:
 
 ### ChatGPT short (1 paragraph)
 
-Read `docs/SSOT/README_AI.md`, then `docs/status/status.json`, `docs/handoff/HANDOFF.json`, then `docs/decisions/decisions.md`; treat `status.json` as SSOT and check `active_task/open_prs/locks_held` before action, declare Allowed/Forbidden paths and Required LOCKS in your task card, stop on LOCK conflict, record trace links in `docs/status/trace-index.json`, and if stopping early update HANDOFF with `what_done/what_next/errors/commands_next`.
+Read `docs/context/README_AI.md`, then `docs/status/status.json`, `docs/handoff/HANDOFF.json`, then `docs/decisions/decisions.md`; treat `status.json` as SSOT and check `active_task/open_prs/locks_held` before action, declare Allowed/Forbidden paths and Required LOCKS in your task card, stop on LOCK conflict, record trace links in `docs/status/trace-index.json`, and if stopping early update HANDOFF with `what_done/what_next/errors/commands_next`.
 
 ### Claude short (1 paragraph)
 
@@ -79,7 +79,7 @@ Follow OS read order `README_AI → status.json → HANDOFF → decisions`; use 
 
 ### Gemini short (1 paragraph)
 
-Start by reading `docs/SSOT/README_AI.md`, `docs/status/status.json`, `docs/handoff/HANDOFF.json`, and `docs/decisions/decisions.md`; then create a task card with scope + Allowed/Forbidden + LOCKS, execute only safe paths, halt on lock collisions, ensure progress claims are backed by status/progress updates, keep trace links in `docs/status/trace-index.json`, and always write HANDOFF before stopping mid-task.
+Start by reading `docs/context/README_AI.md`, `docs/status/status.json`, `docs/handoff/HANDOFF.json`, and `docs/decisions/decisions.md`; then create a task card with scope + Allowed/Forbidden + LOCKS, execute only safe paths, halt on lock collisions, ensure progress claims are backed by status/progress updates, keep trace links in `docs/status/trace-index.json`, and always write HANDOFF before stopping mid-task.
 
 ---
 

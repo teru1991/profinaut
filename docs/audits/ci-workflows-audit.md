@@ -3,7 +3,7 @@
 ## 0) Docs OS Preflight
 
 - Read in required order:
-  1. `docs/SSOT/README_AI.md`
+  1. `docs/context/README_AI.md`
   2. `docs/status/status.json`
   3. `docs/handoff/HANDOFF.json`
   4. `docs/decisions/decisions.md`
