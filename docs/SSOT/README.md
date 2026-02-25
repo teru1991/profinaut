@@ -1,3 +1,3 @@
-# docs/context/ — DEPRECATED
+# docs/SSOT/ — DEPRECATED
 
 Moved to: `docs/context/`
