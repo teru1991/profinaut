@@ -82,3 +82,11 @@ SSOTと矛盾する場合は **必ずSSOT側が正** です。
 
 ## UCEL Golden Docs (SSOT)
 - Entry: docs/specs/ucel_golden/README.md
+
+## Docs OS Index (new)
+- SSOT Map: docs/specs/system/ssot_map.md
+- Docs Gate: docs/specs/system/docs_gate_spec.md
+- Data Classification: docs/specs/security/data_classification_handling_spec.md
+- Env/Mode Matrix: docs/specs/system/environment_mode_matrix.md
+- Runbooks Index: docs/runbooks/README.md
+- UCEL Golden Compatibility: docs/specs/ucel_golden/compatibility_notes.md
