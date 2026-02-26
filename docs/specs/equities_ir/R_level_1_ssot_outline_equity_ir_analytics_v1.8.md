@@ -366,4 +366,4 @@ TODO: Appendix-R1〜R15 の「詳細スキーマ（フィールド定義・型�
 
 ### 10.3 Extensions（Annex-RX）
 - Annex-RX-0
-- RX-01 〜 RX-38
+- RX-01〜RX-38
