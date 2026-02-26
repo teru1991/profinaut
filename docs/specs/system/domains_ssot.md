@@ -47,6 +47,7 @@
 - 互換性ルール、バージョニング、契約テストとGate
 - 依存グラフ（どのbot/戦略がどのスキーマに依存するか）
 - ※契約SSOTは `docs/contracts/`
+- ※実装目標機能詳細設計（Level 1 SSOT Outline）は `docs/specs/system/level1_ssot_outline_g_schema_governance_v1_6.md`
 
 ## H. Market Data Platform（収集・品質・保存・配信）
 - CEX/DEX/オンチェーン/株/ニュース/IRの取り込み（冗長化・再接続）

@@ -14,6 +14,7 @@ Scope: docs/contracts（JSON Schema）を “一覧・責務・互換・検証�
 - Contracts README: `docs/contracts/README.md`
 - Versioning policy: `docs/specs/system/versioning_policy.md`
 - Domains SSOT: `docs/specs/system/domains_ssot.md`
+- G Level 1 Outline: `docs/specs/system/level1_ssot_outline_g_schema_governance_v1_6.md`
 - Gate spec: `docs/specs/system/docs_gate_spec.md`
 
 ---
