@@ -1,8 +1,8 @@
-# Level 2 Deep Spec（K：Portfolio / Treasury｜Deep Spec 1ファイル）
+# Level 2 Deep Spec — K. Portfolio / Treasury
 
-> Non-negotiable + Canonical Model/Contract + Behavior/Tests が入力に揃っているため、Level 2 も整理出力します（新規仕様は作らず、未記載は TODO）。
+> 整理のみ / 新規仕様追加なし。未記載は TODO。
 
-## 0. Deep Spec メタ
+## 1. Deep Spec メタ
 - 対象: K-01〜K-60
 - 前提原則: Idempotency / Append-only / Explainability / 三重時刻 / Finality / schema_version+calc_version / 改ざん検知 / 変更管理 / 秘密最小化
 - 基本データ:
@@ -10,8 +10,8 @@
 
 ---
 
-## 1. 契約（Contract）整理
-### 1.1 LedgerEvent Header Contract
+## 2. 契約（Contract）整理
+### 2.1 LedgerEvent Header Contract
 - フィールド一覧: 5.1.1参照（event_id, source, source_event_id, …, redaction_level）
 - 不変条件:
   - source_event_id を用いた冪等（重複排除）
@@ -19,20 +19,20 @@
   - 三重時刻の品質反映（K-49, QualityState）
 - TODO: 署名/ハッシュ方式、ハッシュ対象範囲、チェーン分割（partition）単位（K-20）を固定。
 
-### 1.2 Event Type Taxonomy Contract
+### 2.2 Event Type Taxonomy Contract
 - 種別一覧: 5.1.2参照
 - TODO: 各イベントの必須payload・通貨/銘柄/数量の単位体系・丸め規則・禁止値（NaN/負数等）を固定。
 
-### 1.3 Materialized State Contract
+### 2.3 Materialized State Contract
 - 状態一覧: 5.2参照
 - TODO: State更新ルール（イベント→状態への写像）、pending_deltaやreorg_risk等の計算規則、集計窓を固定。
 
 ---
 
-## 2. 機能（Capabilities）Deep Spec テンプレ
+## 3. 機能（Capabilities）Deep Spec テンプレ
 各K-xxについて、入力文書で明示されている範囲のみ確定し、詳細は TODO とする。
 
-### 2.1 台帳中核（K-01〜K-11）
+### 3.1 台帳中核（K-01〜K-11）
 #### K-01 Ingestion Adapters
 - 目的: 取引所/チェーン/各ソースからのイベント取り込み（LedgerEvent化の入口）。
 - 入力: I Execution, H Market Data,（必要に応じて）オンチェーン等
@@ -89,7 +89,7 @@
 - I/F: Explain, Compliance
 - TODO: 説明グラフ（K-51）との統合、因果候補生成（K-52）の出力契約。
 
-### 2.2 完全性・オンチェーン（K-12〜K-25）
+### 3.2 完全性・オンチェーン（K-12〜K-25）
 - K-12 Tax Lot / Cost Basis：PnLのロット原価（PnLState.tax_lots）。
   - TODO: ロット生成・消費・丸め境界。
 - K-13 Asset Events：Airdrop/TokenSwap/Delist/SplitMerge等を台帳化。
@@ -119,7 +119,7 @@
 - K-25 Bridge / Wrapped Asset 正規化：ブリッジ/ラップ資産の正規化。
   - TODO: 正規化ルール（資産同一性、換算、イベント表現）。
 
-### 2.3 長期運用（K-26〜K-36）
+### 3.3 長期運用（K-26〜K-36）
 - K-26 Portfolio Constraints Engine：制約違反の検知・状態化。
   - TODO: ルールID体系、重大度、影響推定の算定。
 - K-27 Liquidity & Capacity：流動性/キャパ算定。
@@ -143,7 +143,7 @@
 - K-36 DR / Backup / Restore Drill：DR/復旧訓練。
   - TODO: 訓練頻度、成功基準（RestoreDrillResult）。
 
-### 2.4 監査・安全・変更管理（K-37〜K-45）
+### 3.4 監査・安全・変更管理（K-37〜K-45）
 - K-37 Tamper-Evident Ledger：ハッシュ連鎖で欠落/改ざん検知。
   - TODO: 監査提出での検証手順。
 - K-38 Dual-Source Verification：二重系検算。
@@ -163,7 +163,7 @@
 - K-45 Legal/Compliance Hooks：準拠フック。
   - TODO: 具体的な外部要件（法令/規程）とのマッピング（新規要件は追加しない）。
 
-### 2.5 究極オプション統合（K-46〜K-60）
+### 3.5 究極オプション統合（K-46〜K-60）
 - K-46 Byzantine/Consistency Model：嘘/遅延/訂正/reorg前提で確定/暫定境界を固定。
   - TODO: 境界・収束条件・例外時扱い。
 - K-47 Multi-Region / Air-Gapped Audit Copy：監査用コピー複製。
@@ -197,7 +197,7 @@
 
 ---
 
-## 3. テスト（Behavior/Tests）をCapabilityへ割り当て（整理のみ）
+## 4. テスト（Behavior/Tests）をCapabilityへ割り当て（整理のみ）
 - 冪等性（重複計上なし）→ K-01/K-02/K-03
 - 再現性（同イベント列→同状態）→ K-03/K-21/K-56
 - 保存則（PnL分解合計一致）→ K-05/K-12/K-15/K-16

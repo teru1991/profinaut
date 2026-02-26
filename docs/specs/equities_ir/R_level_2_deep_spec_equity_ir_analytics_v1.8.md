@@ -1,13 +1,15 @@
-# Level 2 Deep Spec — R. Equity/IR Analytics v1.8（整理のみ / 新仕様追加なし）
+# Level 2 Deep Spec — R. Equity / IR Analytics
 
-## 0. 適用範囲
+> 整理のみ / 新規仕様追加なし。未記載は TODO。
+
+## 1. 適用範囲
 - 本ドキュメントは Level 1 を “実装/検証に使える形” に粒度整理したもの。
 - 新しい仕様は追加しない。不明点は TODO を残す。
 
 ---
 
-## 1. システム境界（Rの責務の分解）
-### 1.1 パイプライン（E2E）
+## 2. システム境界（Rの責務の分解）
+### 2.1 パイプライン（E2E）
 1) Ingest（収集）
 - 対象: 開示/IR/決算ドキュメント + メタ
 - 方式: 定期 / イベント駆動 / バックフィル
@@ -52,8 +54,8 @@ TODO: 各ステップの入出力スキーマ（event stream / canonical entitie
 
 ---
 
-## 2. UX Contract（Timeline / Explain / Screen）
-### 2.1 Timeline Payload（契約）
+## 3. UX Contract（Timeline / Explain / Screen）
+### 3.1 Timeline Payload（契約）
 - 統合対象（時系列）:
   - filings: 公開 / 訂正 / 取り下げ
   - events: 決算 / 修正 / CA / 差異 / 品質
@@ -65,7 +67,7 @@ TODO: 各ステップの入出力スキーマ（event stream / canonical entitie
 
 TODO: semantic_type の列挙、severity のスケール（例: int/enum）、root_refs の参照形（ID参照/URL/hash）を確定する必要あり（本文未記載）。
 
-### 2.2 Explain Payload（契約）
+### 3.2 Explain Payload（契約）
 - 必須:
   - factors 寄与
   - explain_refs（filing/kpi/provenance）
@@ -78,7 +80,7 @@ TODO: semantic_type の列挙、severity のスケール（例: int/enum）、ro
 
 TODO: explainability_grade のグレード体系、SLA閾値、降格ルールの固定式は本文未記載。
 
-### 2.3 Screen Payload（契約）
+### 3.3 Screen Payload（契約）
 - 必須:
   - screen_definition（条件正規化）
   - rule_hits（なぜヒット）
@@ -89,13 +91,13 @@ TODO: screen_definition の正規化ルール（単位/期間/比較演算/否�
 
 ---
 
-## 3. Fail-safe Semantics（固定挙動）
-### 3.1 解析品質崩壊時
+## 4. Fail-safe Semantics（固定挙動）
+### 4.1 解析品質崩壊時
 - スコア降格
 - 条件アラート抑制
 - quality_event 生成
 
-### 3.2 再構築中
+### 4.2 再構築中
 - 全文: 旧継続が原則
 - 数値: partial警告 または 停止
 - 通知: dry-run優先
@@ -104,31 +106,31 @@ TODO: 「崩壊判定（どのSLI/閾値で）」と「降格の段階（何段�
 
 ---
 
-## 4. SLO/SLI Contract（測定項目固定）
-### 4.1 収集
+## 5. SLO/SLI Contract（測定項目固定）
+### 5.1 収集
 - 成功率
 - 遅延 p95
 - 欠損率
 - 429率
 
-### 4.2 解析
+### 5.2 解析
 - 失敗率
 - confidence 分布
 - 異常値率
 - 差分異常率
 
-### 4.3 検索
+### 5.3 検索
 - 応答 p95
 - タイムアウト率
 - partial率
 
-### 4.4 通知
+### 5.4 通知
 - 配信成功率
 - 重複率
 - 誤通知率（フィードバック由来）
 - 抑制率
 
-### 4.5 品質
+### 5.5 品質
 - 突合差異イベント件数
 - staleness 比率
 
@@ -136,7 +138,7 @@ TODO: “SLO（目標値）”自体の数値は本文未記載（項目のみ�
 
 ---
 
-## 5. データライフサイクル（固定）
+## 6. データライフサイクル（固定）
 - Raw: hash重複排除、圧縮/アーカイブ（層別）
 - Derived/Index: rebuild前提（短期可）
 - 原則削除なし（監査）。規約必須時のみ例外削除手順（監査・影響評価・再現不能の明示）
@@ -145,7 +147,7 @@ TODO: Retention年限やアーカイブ階層の具体（ホット/ウォーム/
 
 ---
 
-## 6. 互換性ポリシー（SemVer scope）
+## 7. 互換性ポリシー（SemVer scope）
 - 最優先の後方互換:
   - event stream（schema_version）
   - SavedObject（schema_version）
@@ -158,7 +160,7 @@ TODO: Retention年限やアーカイブ階層の具体（ホット/ウォーム/
 
 ---
 
-## 7. 安全（非助言）ルール（固定）
+## 8. 安全（非助言）ルール（固定）
 - スコア/アラートは情報（推奨禁止）
 - 注意喚起条件（低confidence、低freshness、差異、partial等）を固定
 - 下流にも is_informational=true を原則
@@ -167,7 +169,7 @@ TODO: “注意喚起条件”の具体閾値/テンプレは本文未記載。
 
 ---
 
-## 8. Support Bundle（固定）
+## 9. Support Bundle（固定）
 - 含める:
   - raw_refs（hash含む）
   - 取得メタ
@@ -183,8 +185,8 @@ TODO: Support Bundle のフォーマット（json/zip構造、フィールド名
 
 ---
 
-## 9. Canonical / Derived / User Scope（概念整理）
-### 9.1 Canonical（事実）
+## 10. Canonical / Derived / User Scope（概念整理）
+### 10.1 Canonical（事実）
 - issuer
 - ticker
 - filing
@@ -194,7 +196,7 @@ TODO: Support Bundle のフォーマット（json/zip構造、フィールド名
 - terms
 - provenance
 
-### 9.2 Derived（計算・推定）
+### 10.2 Derived（計算・推定）
 - kpi
 - score
 - index
@@ -202,7 +204,7 @@ TODO: Support Bundle のフォーマット（json/zip構造、フィールド名
 - rankings
 - theme / impact 等
 
-### 9.3 User scope（tenant/workspace）
+### 10.3 User scope（tenant/workspace）
 - saved objects
 - alerts
 - dictionaries
@@ -218,64 +220,64 @@ TODO: 各エンティティの canonical schema は「Appendix-R1〜R15に従う
 
 ---
 
-## 10. Deterministic Rules（Appendix A：要点を運用単位に再配置）
-### 10.1 Identity/ID（Appendix-R1 / R12）
+## 11. Deterministic Rules（Appendix A：要点を運用単位に再配置）
+### 11.1 Identity/ID（Appendix-R1 / R12）
 - R1-1〜R1-6（issuer_id / ticker_id / filing_id / event_id / dedupe_key / merge-split）
 - Appendix-R12（ticker再利用・市場再編の衝突前提）
 
-### 10.2 数値・期間（Appendix-R2 / R3）
+### 11.2 数値・期間（Appendix-R2 / R3）
 - Appendix-R2（float禁止、unit_scale、桁ズレ検知）
 - Appendix-R3（FY/Q/TTM、fiscal_year_start_month、TTM欠損の扱い）
 
-### 10.3 訂正と時刻（Appendix-R4 / R10）
+### 11.3 訂正と時刻（Appendix-R4 / R10）
 - Appendix-R4（latest / as_of、再通知ポリシー、差分要約）
 - Appendix-R10（disclosed_at > published_at > fetched_at、as_of_visible_at必須）
 
-### 10.4 テキスト決定性と正規化（Appendix-R5 / R11）
+### 11.4 テキスト決定性と正規化（Appendix-R5 / R11）
 - Appendix-R5（raw_hash→同一テキスト、snippet位置必須）
 - Appendix-R11（NFKC等、絵文字は保存/索引は除去or置換）
 
-### 10.5 失敗/例外（Appendix-R6 / R13 / R15）
+### 11.5 失敗/例外（Appendix-R6 / R13 / R15）
 - Appendix-R6（reason_code後方互換、severityと対応）
 - Appendix-R13（拡張依存停止でもR本体稼働、degraded_dependencies[]）
 - Appendix-R15（例外イベント型固定、Timeline記録）
 
-### 10.6 正本境界とAI（Appendix-R8 / R9）
+### 11.6 正本境界とAI（Appendix-R8 / R9）
 - Appendix-R8（Canonical汚染禁止）
 - Appendix-R9（model_id/prompt_hash/params_hash/generated_at、根拠はfiling/provenance）
 
-### 10.7 移行（Appendix-R14）
+### 11.7 移行（Appendix-R14）
 - 旧新両対応期間、backfill+verify、影響評価、回帰コーパス、feature flag切替、監査記録
 
 ---
 
-## 11. Behavior/Tests（Appendix B：固定カタログ）
-### 11.1 Acceptance Tests（Appendix-R16）
+## 12. Behavior/Tests（Appendix B：固定カタログ）
+### 12.1 Acceptance Tests（Appendix-R16）
 - R16-T01〜R16-T09（E2E、訂正、CA、PIT、フォーマット変更、欠損/異常、429/規約、検索品質、下流契約）
 
-### 11.2 Golden Corpus（Appendix-R17）
+### 12.2 Golden Corpus（Appendix-R17）
 - raw_refs hashで固定
 - 期待抽出 / 期待イベント / 期待スコア / 例外（訂正、取り下げ、添付欠落、桁ズレ等）
 
-### 11.3 Performance/Capacity Budget（Appendix-R18）
+### 12.3 Performance/Capacity Budget（Appendix-R18）
 - 収集/解析/Index/検索/通知/保存の“項目”固定
 
-### 11.4 Release Playbook（Appendix-R19）
+### 12.4 Release Playbook（Appendix-R19）
 - shadow → partial → full
 - 互換性ゲート必須
 - ロールバック条件（SLI悪化、品質イベント急増、重大整合性破綻）
 
-### 11.5 Verification Evidence（Appendix-R20）
+### 12.5 Verification Evidence（Appendix-R20）
 - docs/verification/ への証拠出力要件（R16〜R20対応）
 
 ---
 
-## 12. Annex-RX（拡張ユニット：整理）
-### 12.1 位置づけ（Annex-RX-0）
+## 13. Annex-RX（拡張ユニット：整理）
+### 13.1 位置づけ（Annex-RX-0）
 - 追加機能は本体を壊さず追加
 - Derived中心、Explainability/PIT/tenant分離/fail-safe/versioning準拠
 
-### 12.2 機能群
+### 13.2 機能群
 - Annex-RX-1: RX-01〜RX-12
 - Annex-RX-2: RX-13〜RX-27
 - Annex-RX-3: RX-28〜RX-38
@@ -286,7 +288,7 @@ TODO: 各RXの入出力（report_bundle、research_pack等）のスキーマは�
 
 ---
 
-## 13. Capability Index（ID一覧）
+## 14. Capability Index（ID一覧）
 - R1-1, R1-2, R1-3, R1-4, R1-5, R1-6
 - Appendix-R2, Appendix-R3, Appendix-R4, Appendix-R5, Appendix-R6, Appendix-R7, Appendix-R8, Appendix-R9, Appendix-R10, Appendix-R11, Appendix-R12, Appendix-R13, Appendix-R14, Appendix-R15
 - Appendix-R16: R16-T01, R16-T02, R16-T03, R16-T04, R16-T05, R16-T06, R16-T07, R16-T08, R16-T09
