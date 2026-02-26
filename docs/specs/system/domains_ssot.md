@@ -42,6 +42,7 @@
 ## F. Time / Clock Discipline（時刻の規律）
 - NTP監視、ドリフト検知、取引所時刻補正
 - event_time / recv_time / persist_time の定義統一
+- 詳細仕様: `docs/specs/system/F_time_clock_discipline_v1_4.md`
 
 ## G. Data Contracts / Schema Governance（スキーマ統治）
 - 互換性ルール、バージョニング、契約テストとGate
