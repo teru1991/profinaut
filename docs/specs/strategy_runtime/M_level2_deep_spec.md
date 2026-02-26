@@ -1,6 +1,6 @@
-# M — Level 2 Deep Spec（整理のみ / 追加仕様なし）
+# Level 2 Deep Spec — M. Strategy Runtime Plugin
 
-> 本入力は **Non-negotiable（0）**、**Canonical Model/Contract（2, 15）**、**Behavior/Tests相当（16, 各“固定ルール”）** が揃っているため、Level 2 を併記します（新規仕様は作らず、構造化のみ）。
+> 整理のみ / 新規仕様追加なし。未記載は TODO。
 
 ## 1. Invariants（非交渉の不変条件）
 - 出口は Intent のみ（実注文確定は I）
