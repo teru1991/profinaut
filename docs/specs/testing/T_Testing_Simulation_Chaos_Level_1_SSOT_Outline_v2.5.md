@@ -3,7 +3,7 @@ Source: 「T. Testing / Simulation / Chaos — SSOT統合インデックス v2.5
 
 ## 0. SSOTメタ
 - ドメイン文字: **T**
-- 対象範囲: **T-01 〜 T-250**
+- 対象範囲: **T-01〜T-250**
 - 目的: テスト/シミュレーション/カオス/品質統治に関する要求・能力（Capabilities）をID付きでSSOT化する
 - TODO: 上位契約（Non-negotiable / Canonical Model/Contract / Behavior/Tests）の参照元（別ドキュメント）がある場合はリンクを追記
 
