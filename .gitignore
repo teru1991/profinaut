@@ -1,24 +1,33 @@
-# Python
-__pycache__/
-*.py[cod]
-.pytest_cache/
-*.egg-info/
-dist/
-build/
+# Secrets (DO NOT COMMIT)
+.secrets/
+**/.secrets/
+secrets.toml
+secrets*.toml
+*.secrets.toml
+secrets.json
+secrets*.json
+secrets.yaml
+secrets*.yaml
+secrets.yml
+secrets*.yml
 
-# Node
-node_modules/
-apps/web/node_modules/
-apps/web/.next/
-.next/
-*.tsbuildinfo
+# Allow examples (commit OK)
+!.secrets/
+!.secrets/secrets.example.toml
+!.secrets/secrets.example.json
+!.secrets/secrets.example.yaml
+!.secrets/secrets.example.yml
 
-# Rust
-target/
+# Keys / Certificates (if you ever generate locally)
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+*.jks
 
-# Env
-.env
-
-# OS
-.DS_Store
-Thumbs.db
+# Local env variants
+.env.*
+!.env.example
+!.env.sample

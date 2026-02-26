@@ -190,6 +190,271 @@ services:
     restart: "no"
     networks: [dataplat]
 
+  # ============================================================================
+  # Domain B: Secrets / Identity / Access
+  # ============================================================================
+  vault:
+    image: hashicorp/vault:1.17
+    container_name: profinaut-vault
+    restart: unless-stopped
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_ROOT_TOKEN:-change-me-vault-root}
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+      VAULT_ADDR: "http://127.0.0.1:8200"
+    ports:
+      - "127.0.0.1:${VAULT_PORT:-8200}:8200"
+    volumes:
+      - vault_data:/vault/file
+      - ./infra/init/vault:/vault/init:ro
+    cap_add:
+      - IPC_LOCK
+    healthcheck:
+      test: ["CMD-SHELL", "vault status -format=json || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    mem_limit: ${VAULT_MEM_LIMIT:-256m}
+    cpus: ${VAULT_CPUS:-0.5}
+    networks: [dataplat]
+    command: ["server", "-dev"]
+
+  # ============================================================================
+  # Domain C: Observability / SRE
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: profinaut-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-30d}"
+      - "--web.enable-lifecycle"
+      - "--web.enable-admin-api"
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - prometheus_data:/prometheus
+      - ./infra/compose/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/compose/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:9090/-/healthy || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    mem_limit: ${PROMETHEUS_MEM_LIMIT:-1g}
+    cpus: ${PROMETHEUS_CPUS:-1.0}
+    networks: [dataplat]
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: profinaut-grafana
+    restart: unless-stopped
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-me-grafana}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_DATABASE_TYPE: postgres
+      GF_DATABASE_HOST: postgres:5432
+      GF_DATABASE_NAME: ${POSTGRES_DB:-profinaut}
+      GF_DATABASE_USER: ${POSTGRES_USER:-profinaut_app}
+      GF_DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-change-me-postgres}
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3001}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/compose/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/compose/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    mem_limit: ${GRAFANA_MEM_LIMIT:-512m}
+    cpus: ${GRAFANA_CPUS:-0.75}
+    networks: [dataplat]
+
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: profinaut-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "127.0.0.1:${LOKI_PORT:-3100}:3100"
+    volumes:
+      - loki_data:/loki
+      - ./infra/compose/loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3100/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    mem_limit: ${LOKI_MEM_LIMIT:-512m}
+    cpus: ${LOKI_CPUS:-0.75}
+    networks: [dataplat]
+
+  # ============================================================================
+  # Domain N: Experiment / Backtest / Forward + Domain P: AI/ML Platform
+  # ============================================================================
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.15.1
+    container_name: profinaut-mlflow
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      seaweedfs-s3:
+        condition: service_healthy
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql://${POSTGRES_USER:-profinaut_app}:${POSTGRES_PASSWORD:-change-me-postgres}@postgres:5432/${POSTGRES_DB:-profinaut}
+      MLFLOW_S3_ENDPOINT_URL: http://seaweedfs-s3:8333
+      AWS_ACCESS_KEY_ID: ${OBJECTSTORE_ACCESS_KEY:-change-me-objectstore-access}
+      AWS_SECRET_ACCESS_KEY: ${OBJECTSTORE_SECRET_KEY:-change-me-objectstore-secret}
+      MLFLOW_ARTIFACT_ROOT: s3://profinaut-mlflow/artifacts
+    command:
+      - "mlflow"
+      - "server"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "5000"
+      - "--backend-store-uri"
+      - "postgresql://${POSTGRES_USER:-profinaut_app}:${POSTGRES_PASSWORD:-change-me-postgres}@postgres:5432/${POSTGRES_DB:-profinaut}"
+      - "--artifacts-destination"
+      - "s3://profinaut-mlflow/artifacts"
+      - "--serve-artifacts"
+    ports:
+      - "127.0.0.1:${MLFLOW_PORT:-5000}:5000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    mem_limit: ${MLFLOW_MEM_LIMIT:-768m}
+    cpus: ${MLFLOW_CPUS:-1.0}
+    networks: [dataplat]
+
+  # ============================================================================
+  # Domain O: Deterministic Replay / Audit Event Log
+  # ============================================================================
+  eventstore:
+    image: eventstore/eventstore:24.6.0-jammy
+    container_name: profinaut-eventstore
+    restart: unless-stopped
+    environment:
+      EVENTSTORE_CLUSTER_SIZE: 1
+      EVENTSTORE_RUN_PROJECTIONS: All
+      EVENTSTORE_START_STANDARD_PROJECTIONS: "true"
+      EVENTSTORE_EXT_TCP_PORT: 1113
+      EVENTSTORE_HTTP_PORT: 2113
+      EVENTSTORE_INSECURE: "true"
+      EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP: "true"
+      EVENTSTORE_MEM_DB: "false"
+    ports:
+      - "127.0.0.1:${EVENTSTORE_TCP_PORT:-1113}:1113"
+      - "127.0.0.1:${EVENTSTORE_HTTP_PORT:-2113}:2113"
+    volumes:
+      - eventstore_data:/var/lib/eventstore
+      - eventstore_logs:/var/log/eventstore
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:2113/health/live || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    mem_limit: ${EVENTSTORE_MEM_LIMIT:-1g}
+    cpus: ${EVENTSTORE_CPUS:-1.0}
+    networks: [dataplat]
+
+  # ============================================================================
+  # Domain T: Testing / Simulation / Chaos
+  # ============================================================================
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.9.0
+    container_name: profinaut-toxiproxy
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${TOXIPROXY_API_PORT:-8474}:8474"
+      # Dynamic proxy ports range (for exchange simulators)
+      - "127.0.0.1:20000-20099:20000-20099"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8474/version || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    mem_limit: ${TOXIPROXY_MEM_LIMIT:-256m}
+    cpus: ${TOXIPROXY_CPUS:-0.5}
+    networks: [dataplat]
+
+  # ============================================================================
+  # Domain Q: On-chain Trading / Arbitrage
+  # ============================================================================
+  # Local Ethereum node for development/testing
+  hardhat-node:
+    image: ethereumoptimism/hardhat-node:latest
+    container_name: profinaut-hardhat-node
+    restart: unless-stopped
+    environment:
+      HARDHAT_NETWORK: hardhat
+      HARDHAT_FORK_URL: ${HARDHAT_FORK_URL:-}
+      HARDHAT_FORK_BLOCK_NUMBER: ${HARDHAT_FORK_BLOCK_NUMBER:-}
+    ports:
+      - "127.0.0.1:${HARDHAT_RPC_PORT:-8545}:8545"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -X POST -H 'Content-Type: application/json' --data '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' http://127.0.0.1:8545 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    mem_limit: ${HARDHAT_MEM_LIMIT:-1g}
+    cpus: ${HARDHAT_CPUS:-1.0}
+    networks: [dataplat]
+    profiles: ["onchain"]  # Optional profile, only start when needed
+
+  # ============================================================================
+  # Domain J: Risk / Policy Gate - Policy Decision Cache
+  # ============================================================================
+  # Additional Valkey instance for hot policy decision cache
+  valkey-policy:
+    image: valkey/valkey:7.2-alpine
+    container_name: profinaut-valkey-policy
+    restart: unless-stopped
+    command:
+      - "valkey-server"
+      - "--appendonly"
+      - "no"
+      - "--save"
+      - ""
+      - "--requirepass"
+      - "${VALKEY_POLICY_PASSWORD:-change-me-valkey-policy}"
+      - "--maxmemory"
+      - "${VALKEY_POLICY_MAXMEMORY:-256mb}"
+      - "--maxmemory-policy"
+      - "allkeys-lru"
+    ports:
+      - "127.0.0.1:${VALKEY_POLICY_PORT:-6380}:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli -a \"${VALKEY_POLICY_PASSWORD:-change-me-valkey-policy}\" --no-auth-warning ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    mem_limit: ${VALKEY_POLICY_MEM_LIMIT:-384m}
+    cpus: ${VALKEY_POLICY_CPUS:-0.5}
+    networks: [dataplat]
+
 volumes:
   postgres_data:
     name: ${COMPOSE_PROJECT_NAME:-profinaut-dataplat}-postgres-data
@@ -201,3 +466,18 @@ volumes:
     name: ${COMPOSE_PROJECT_NAME:-profinaut-dataplat}-seaweedfs-master-data
   seaweedfs_volume_data:
     name: ${COMPOSE_PROJECT_NAME:-profinaut-dataplat}-seaweedfs-volume-data
+  # Domain B: Secrets / Identity / Access
+  vault_data:
+    name: ${COMPOSE_PROJECT_NAME:-profinaut-dataplat}-vault-data
+  # Domain C: Observability / SRE
+  prometheus_data:
+    name: ${COMPOSE_PROJECT_NAME:-profinaut-dataplat}-prometheus-data
+  grafana_data:
+    name: ${COMPOSE_PROJECT_NAME:-profinaut-dataplat}-grafana-data
+  loki_data:
+    name: ${COMPOSE_PROJECT_NAME:-profinaut-dataplat}-loki-data
+  # Domain O: Deterministic Replay / Audit Event Log
+  eventstore_data:
+    name: ${COMPOSE_PROJECT_NAME:-profinaut-dataplat}-eventstore-data
+  eventstore_logs:
+    name: ${COMPOSE_PROJECT_NAME:-profinaut-dataplat}-eventstore-logs
