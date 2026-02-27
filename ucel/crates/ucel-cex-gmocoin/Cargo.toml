@@ -13,6 +13,10 @@ tokio = { workspace = true, features = ["time"] }
 uuid = { version = "1", features = ["v4"] }
 ucel-core = { path = "../ucel-core" }
 ucel-transport = { path = "../ucel-transport" }
+hmac = "0.13.0-rc.5"
+sha2 = "0.11.0-rc.5"
+hex = "0.4.3"
+chrono = "0.4.44"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt"] }
