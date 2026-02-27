@@ -37,7 +37,10 @@ pub async fn fetch_all_symbols() -> Result<Vec<String>, String> {
 
     let resp = client.get(url).send().await.map_err(|e| e.to_string())?;
     if !resp.status().is_success() {
-        return Err(format!("binance spot exchangeInfo status={}", resp.status()));
+        return Err(format!(
+            "binance spot exchangeInfo status={}",
+            resp.status()
+        ));
     }
     let body: ExchangeInfo = resp.json().await.map_err(|e| e.to_string())?;
 
