@@ -5,5 +5,9 @@ pub enum BackpressureAction {
 }
 
 pub fn decide_backpressure_action(journal_ok: bool, queue_saturated: bool) -> BackpressureAction {
-    if !journal_ok || queue_saturated { BackpressureAction::Stop } else { BackpressureAction::Throttle }
+    if !journal_ok || queue_saturated {
+        BackpressureAction::Stop
+    } else {
+        BackpressureAction::Throttle
+    }
 }

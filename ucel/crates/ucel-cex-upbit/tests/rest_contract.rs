@@ -107,7 +107,10 @@ async fn rest_catalog_all_rows_are_tested_with_typed_parse() {
         if spec.requires_auth {
             assert_eq!(ctx.key_id.as_deref(), Some("k1"));
         } else {
-            assert!(ctx.key_id.is_none(), "public endpoint must not carry key path");
+            assert!(
+                ctx.key_id.is_none(),
+                "public endpoint must not carry key path"
+            );
         }
     }
 }
@@ -137,7 +140,8 @@ async fn maps_429_5xx_and_timeout() {
         .unwrap_err();
     assert_eq!(e500.code, ErrorCode::Upstream5xx);
 
-    let tto = MockTransport::with_responses(vec![Err(UcelError::new(ErrorCode::Timeout, "timeout"))]);
+    let tto =
+        MockTransport::with_responses(vec![Err(UcelError::new(ErrorCode::Timeout, "timeout"))]);
     let eto = adapter
         .execute_rest(&tto, "quotation.public.rest.markets.list", None, None)
         .await
@@ -151,7 +155,12 @@ async fn private_preflight_reject_does_not_reach_transport() {
     let transport = MockTransport::default();
 
     let err = adapter
-        .execute_rest(&transport, "exchange.private.rest.accounts.list", None, None)
+        .execute_rest(
+            &transport,
+            "exchange.private.rest.accounts.list",
+            None,
+            None,
+        )
         .await
         .unwrap_err();
 

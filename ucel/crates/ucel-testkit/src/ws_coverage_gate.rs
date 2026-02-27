@@ -52,7 +52,9 @@ pub fn run_ws_channels_gate(repo_root: &Path) -> Result<Vec<WsCoverageGateResult
             .entries
             .iter()
             .map(|e| e.id.as_str())
-            .filter(|id| id.starts_with("crypto.public.ws.") || id.starts_with("crypto.private.ws."))
+            .filter(|id| {
+                id.starts_with("crypto.public.ws.") || id.starts_with("crypto.private.ws.")
+            })
             .map(ToOwned::to_owned)
             .collect();
 
@@ -96,6 +98,9 @@ mod tests {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
         let rs = run_ws_channels_gate(&root).expect("gate run");
         let failures = summarize_failures(&rs);
-        assert!(failures.is_empty(), "strict ws coverage failures: {failures:?}");
+        assert!(
+            failures.is_empty(),
+            "strict ws coverage failures: {failures:?}"
+        );
     }
 }

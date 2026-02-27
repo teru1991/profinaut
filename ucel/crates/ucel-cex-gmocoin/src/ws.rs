@@ -12,7 +12,10 @@ const WS_PUBLIC_V1: &str = "wss://api.coin.z.com/ws/public/v1";
 const WS_PRIVATE_V1_BASE: &str = "wss://api.coin.z.com/ws/private/v1";
 
 fn now_unix_ms() -> u64 {
-    (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()) as u64
+    (std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis()) as u64
 }
 
 /// Internal topic encoding for GMO:
@@ -62,22 +65,35 @@ fn weight_for_channel(channel: &str) -> u32 {
 pub struct GmoCoinPublicWsAdapter;
 
 impl GmoCoinPublicWsAdapter {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 }
 
 #[async_trait]
 impl WsVenueAdapter for GmoCoinPublicWsAdapter {
-    fn exchange_id(&self) -> &str { "gmocoin-public" }
+    fn exchange_id(&self) -> &str {
+        "gmocoin-public"
+    }
 
-    fn ws_url(&self) -> String { WS_PUBLIC_V1.to_string() }
+    fn ws_url(&self) -> String {
+        WS_PUBLIC_V1.to_string()
+    }
 
     async fn fetch_symbols(&self) -> Result<Vec<String>, String> {
         fetch_symbols().await
     }
 
-    fn build_subscribe(&self, op_id: &str, symbol: &str, params: &Value) -> Result<Vec<OutboundMsg>, String> {
+    fn build_subscribe(
+        &self,
+        op_id: &str,
+        symbol: &str,
+        params: &Value,
+    ) -> Result<Vec<OutboundMsg>, String> {
         // planner_v2 provides params["_topic"] = "channel|symbol"
-        let topic = params.get("_topic").and_then(|v| v.as_str())
+        let topic = params
+            .get("_topic")
+            .and_then(|v| v.as_str())
             .ok_or_else(|| format!("missing _topic (planner_v2 required): op_id={op_id}"))?;
 
         let (channel, sym_in_topic) = parse_topic(topic)?;
@@ -93,10 +109,14 @@ impl WsVenueAdapter for GmoCoinPublicWsAdapter {
         });
 
         if !option.is_empty() {
-            msg.as_object_mut().unwrap().insert("option".into(), Value::String(option.to_string()));
+            msg.as_object_mut()
+                .unwrap()
+                .insert("option".into(), Value::String(option.to_string()));
         }
 
-        Ok(vec![OutboundMsg { text: msg.to_string() }])
+        Ok(vec![OutboundMsg {
+            text: msg.to_string(),
+        }])
     }
 
     fn classify_inbound(&self, raw: &[u8]) -> InboundClass {
@@ -110,7 +130,10 @@ impl WsVenueAdapter for GmoCoinPublicWsAdapter {
         if channel.is_empty() {
             return InboundClass::System;
         }
-        let symbol = v.get("symbol").and_then(|x| x.as_str()).map(|s| s.to_string());
+        let symbol = v
+            .get("symbol")
+            .and_then(|x| x.as_str())
+            .map(|s| s.to_string());
 
         let topic = match (&symbol, channel) {
             (Some(sym), _) => format!("{channel}|{sym}"),
@@ -180,7 +203,9 @@ impl GmoCoinPrivateWsAdapter {
 
 #[async_trait]
 impl WsVenueAdapter for GmoCoinPrivateWsAdapter {
-    fn exchange_id(&self) -> &str { "gmocoin-private" }
+    fn exchange_id(&self) -> &str {
+        "gmocoin-private"
+    }
 
     fn ws_url(&self) -> String {
         // If token is missing/expired, refresh synchronously (trait constraint)
@@ -206,8 +231,15 @@ impl WsVenueAdapter for GmoCoinPrivateWsAdapter {
         Ok(vec![])
     }
 
-    fn build_subscribe(&self, op_id: &str, _symbol: &str, params: &Value) -> Result<Vec<OutboundMsg>, String> {
-        let topic = params.get("_topic").and_then(|v| v.as_str())
+    fn build_subscribe(
+        &self,
+        op_id: &str,
+        _symbol: &str,
+        params: &Value,
+    ) -> Result<Vec<OutboundMsg>, String> {
+        let topic = params
+            .get("_topic")
+            .and_then(|v| v.as_str())
             .ok_or_else(|| format!("missing _topic (planner_v2 required): op_id={op_id}"))?;
 
         let channel = topic;
@@ -220,10 +252,14 @@ impl WsVenueAdapter for GmoCoinPrivateWsAdapter {
         });
 
         if !option.is_empty() {
-            msg.as_object_mut().unwrap().insert("option".into(), Value::String(option.to_string()));
+            msg.as_object_mut()
+                .unwrap()
+                .insert("option".into(), Value::String(option.to_string()));
         }
 
-        Ok(vec![OutboundMsg { text: msg.to_string() }])
+        Ok(vec![OutboundMsg {
+            text: msg.to_string(),
+        }])
     }
 
     fn classify_inbound(&self, raw: &[u8]) -> InboundClass {
@@ -243,7 +279,10 @@ impl WsVenueAdapter for GmoCoinPrivateWsAdapter {
 
         InboundClass::Data {
             op_id: Some(format!("gmocoin.private.ws.{channel}")),
-            symbol: v.get("symbol").and_then(|x| x.as_str()).map(|s| s.to_string()),
+            symbol: v
+                .get("symbol")
+                .and_then(|x| x.as_str())
+                .map(|s| s.to_string()),
             params_canon_hint: Some(hint),
         }
     }

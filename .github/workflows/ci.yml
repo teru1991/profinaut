@@ -185,7 +185,7 @@ jobs:
           tool: cargo-audit
 
       - name: "Run cargo audit (manifest: ucel/Cargo.toml)"
-        run: cargo audit --manifest-path ucel/Cargo.toml
+        run: cargo audit --file ucel/Cargo.lock
 
   ucel-semver:
     runs-on: ubuntu-latest

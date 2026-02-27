@@ -18,41 +18,106 @@ pub struct CatalogEntry {
 }
 
 pub const REST_ENTRIES: [CatalogEntry; 7] = [
-    CatalogEntry { id: "advanced.crypto.public.rest.reference.introduction", requires_auth: false },
-    CatalogEntry { id: "advanced.crypto.private.rest.reference.introduction", requires_auth: true },
-    CatalogEntry { id: "exchange.crypto.public.rest.reference.introduction", requires_auth: false },
-    CatalogEntry { id: "exchange.crypto.private.rest.reference.introduction", requires_auth: true },
-    CatalogEntry { id: "intx.crypto.public.rest.reference.welcome", requires_auth: false },
-    CatalogEntry { id: "intx.crypto.private.rest.reference.welcome", requires_auth: true },
-    CatalogEntry { id: "other.other.public.rest.docs.root", requires_auth: false },
+    CatalogEntry {
+        id: "advanced.crypto.public.rest.reference.introduction",
+        requires_auth: false,
+    },
+    CatalogEntry {
+        id: "advanced.crypto.private.rest.reference.introduction",
+        requires_auth: true,
+    },
+    CatalogEntry {
+        id: "exchange.crypto.public.rest.reference.introduction",
+        requires_auth: false,
+    },
+    CatalogEntry {
+        id: "exchange.crypto.private.rest.reference.introduction",
+        requires_auth: true,
+    },
+    CatalogEntry {
+        id: "intx.crypto.public.rest.reference.welcome",
+        requires_auth: false,
+    },
+    CatalogEntry {
+        id: "intx.crypto.private.rest.reference.welcome",
+        requires_auth: true,
+    },
+    CatalogEntry {
+        id: "other.other.public.rest.docs.root",
+        requires_auth: false,
+    },
 ];
 
 pub const WS_CHANNELS: [CatalogEntry; 8] = [
-    CatalogEntry { id: "advanced.crypto.public.ws.reference.channels", requires_auth: false },
-    CatalogEntry { id: "advanced.crypto.private.ws.reference.guide", requires_auth: true },
-    CatalogEntry { id: "exchange.crypto.public.ws.reference.overview", requires_auth: false },
-    CatalogEntry { id: "exchange.crypto.private.ws.not_applicable.current_scope", requires_auth: true },
-    CatalogEntry { id: "intx.crypto.public.ws.reference.overview", requires_auth: false },
-    CatalogEntry { id: "intx.crypto.private.ws.reference.welcome", requires_auth: true },
-    CatalogEntry { id: "other.crypto.public.ws.common.protocol", requires_auth: false },
-    CatalogEntry { id: "other.other.public.ws.docs.root", requires_auth: false },
+    CatalogEntry {
+        id: "advanced.crypto.public.ws.reference.channels",
+        requires_auth: false,
+    },
+    CatalogEntry {
+        id: "advanced.crypto.private.ws.reference.guide",
+        requires_auth: true,
+    },
+    CatalogEntry {
+        id: "exchange.crypto.public.ws.reference.overview",
+        requires_auth: false,
+    },
+    CatalogEntry {
+        id: "exchange.crypto.private.ws.not_applicable.current_scope",
+        requires_auth: true,
+    },
+    CatalogEntry {
+        id: "intx.crypto.public.ws.reference.overview",
+        requires_auth: false,
+    },
+    CatalogEntry {
+        id: "intx.crypto.private.ws.reference.welcome",
+        requires_auth: true,
+    },
+    CatalogEntry {
+        id: "other.crypto.public.ws.common.protocol",
+        requires_auth: false,
+    },
+    CatalogEntry {
+        id: "other.other.public.ws.docs.root",
+        requires_auth: false,
+    },
 ];
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum MarketEvent {
-    Ticker { channel_id: String, symbol: String, price: f64 },
-    Trades { channel_id: String, trades: Vec<TradeEvent> },
-    OrderbookSnapshot { channel_id: String, snapshot: OrderBookSnapshot },
-    Status { channel_id: String, status: String },
+    Ticker {
+        channel_id: String,
+        symbol: String,
+        price: f64,
+    },
+    Trades {
+        channel_id: String,
+        trades: Vec<TradeEvent>,
+    },
+    OrderbookSnapshot {
+        channel_id: String,
+        snapshot: OrderBookSnapshot,
+    },
+    Status {
+        channel_id: String,
+        status: String,
+    },
 }
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type")]
 enum CoinbaseWsMessage {
     #[serde(rename = "ticker")]
-    Ticker { channel_id: String, symbol: String, price: f64 },
+    Ticker {
+        channel_id: String,
+        symbol: String,
+        price: f64,
+    },
     #[serde(rename = "trades")]
-    Trades { channel_id: String, trades: Vec<TradeWire> },
+    Trades {
+        channel_id: String,
+        trades: Vec<TradeWire>,
+    },
     #[serde(rename = "orderbook_snapshot")]
     OrderbookSnapshot {
         channel_id: String,
@@ -192,7 +257,10 @@ impl OrderbookResync {
                 self.health = OrderbookHealth::Degraded;
                 self.next_sequence = None;
                 self.buffered_deltas.clear();
-                return Err(UcelError::new(ErrorCode::Desync, "gap detected; force resync"));
+                return Err(UcelError::new(
+                    ErrorCode::Desync,
+                    "gap detected; force resync",
+                ));
             }
             self.next_sequence = Some(delta.sequence_end + 1);
             return Ok(());
@@ -212,7 +280,10 @@ impl OrderbookResync {
             }
             if delta.sequence_start > snapshot.sequence + 1 {
                 self.health = OrderbookHealth::Degraded;
-                return Err(UcelError::new(ErrorCode::Desync, "delta mismatch; force resync"));
+                return Err(UcelError::new(
+                    ErrorCode::Desync,
+                    "delta mismatch; force resync",
+                ));
             }
             snapshot.sequence = delta.sequence_end;
         }
@@ -298,7 +369,10 @@ pub struct SubscribePayload {
     pub symbol: Option<String>,
 }
 
-pub fn build_subscribe_payload(channel_id: &'static str, symbol: Option<String>) -> Result<SubscribePayload, UcelError> {
+pub fn build_subscribe_payload(
+    channel_id: &'static str,
+    symbol: Option<String>,
+) -> Result<SubscribePayload, UcelError> {
     WS_CHANNELS
         .iter()
         .find(|c| c.id == channel_id)
@@ -318,8 +392,8 @@ mod tests {
 
     #[test]
     fn strict_coverage_gate_for_coinbase_is_zero_gap() {
-        let manifest_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../coverage/coinbase.yaml");
+        let manifest_path =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/coinbase.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
         assert!(manifest.strict, "coinbase strict gate must be enabled");
         let gaps = evaluate_coverage_gate(&manifest);
@@ -364,7 +438,10 @@ mod tests {
         let mut queue = CoinbaseBackpressure::new(1, counters.clone());
         queue.try_enqueue(Bytes::from_static(b"a"));
         queue.try_enqueue(Bytes::from_static(b"b"));
-        assert_eq!(counters.ws_backpressure_drops_total.load(Ordering::Relaxed), 1);
+        assert_eq!(
+            counters.ws_backpressure_drops_total.load(Ordering::Relaxed),
+            1
+        );
         assert_eq!(queue.recv().await.unwrap(), Bytes::from_static(b"a"));
     }
 
@@ -474,6 +551,6 @@ mod tests {
     }
 }
 
+pub mod channels;
 pub mod symbols;
 pub mod ws_manager;
-pub mod channels;
