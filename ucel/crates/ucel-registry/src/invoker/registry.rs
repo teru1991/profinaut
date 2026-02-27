@@ -2,9 +2,8 @@ use super::coverage;
 use super::{InvokerError, OperationId, VenueId};
 use crate::{deribit, CatalogAuth, CatalogEntry, ExchangeCatalog};
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
-use std::path::Path;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OperationKind {
@@ -104,11 +103,7 @@ impl SpecRegistry {
             .ok_or_else(|| InvokerError::UnknownVenue(venue.to_string()))
     }
 
-    pub fn resolve(
-        &self,
-        venue: &VenueId,
-        id: &OperationId,
-    ) -> Result<&ResolvedSpec, InvokerError> {
+    pub fn resolve(&self, venue: &VenueId, id: &OperationId) -> Result<&ResolvedSpec, InvokerError> {
         self.specs
             .get(&(venue.clone(), id.clone()))
             .ok_or_else(|| InvokerError::UnknownOperation {
