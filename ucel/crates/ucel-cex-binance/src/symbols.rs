@@ -8,10 +8,11 @@ struct ExchangeInfo {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SymbolInfo {
-    // これを使わないなら削除が一番きれい（serdeは未知フィールドを無視します）
-    symbol: String,
+    status: String,
     base_asset: String,
     quote_asset: String,
+    #[serde(default)]
+    permissions: Vec<String>,
 }
 
 pub fn to_canonical_symbol(base: &str, quote: &str) -> String {
@@ -27,7 +28,7 @@ pub fn to_ws_symbol(exchange_symbol: &str) -> String {
 }
 
 pub async fn fetch_all_symbols() -> Result<Vec<String>, String> {
-    // Spot exchangeInfo is official: GET /api/v3/exchangeInfo
+    // Spot exchangeInfo: GET /api/v3/exchangeInfo
     let url = "https://api.binance.com/api/v3/exchangeInfo";
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(20))
@@ -36,10 +37,7 @@ pub async fn fetch_all_symbols() -> Result<Vec<String>, String> {
 
     let resp = client.get(url).send().await.map_err(|e| e.to_string())?;
     if !resp.status().is_success() {
-        return Err(format!(
-            "binance spot exchangeInfo status={}",
-            resp.status()
-        ));
+        return Err(format!("binance spot exchangeInfo status={}", resp.status()));
     }
     let body: ExchangeInfo = resp.json().await.map_err(|e| e.to_string())?;
 
@@ -53,7 +51,7 @@ pub async fn fetch_all_symbols() -> Result<Vec<String>, String> {
         if !is_spot {
             continue;
         }
-        out.push(to_canonical_symbol(&s.baseAsset, &s.quoteAsset));
+        out.push(to_canonical_symbol(&s.base_asset, &s.quote_asset));
     }
 
     out.sort();
