@@ -3,20 +3,38 @@ use serde_json::{json, Value};
 use ucel_transport::ws::adapter::{InboundClass, OutboundMsg, WsVenueAdapter};
 
 use crate::symbols::{
-    fetch_inverse_symbols, fetch_linear_symbols, fetch_option_symbols, fetch_spot_symbols, to_exchange_symbol,
+    fetch_inverse_symbols, fetch_linear_symbols, fetch_option_symbols, fetch_spot_symbols,
+    to_exchange_symbol,
 };
 
 #[derive(Debug, Clone)]
-enum Kind { Spot, Linear, Inverse, Option }
+enum Kind {
+    Spot,
+    Linear,
+    Inverse,
+    Option,
+}
 
 #[derive(Debug, Clone)]
-pub struct BybitWsAdapter { kind: Kind }
+pub struct BybitWsAdapter {
+    kind: Kind,
+}
 
 impl BybitWsAdapter {
-    pub fn spot() -> Self { Self { kind: Kind::Spot } }
-    pub fn linear() -> Self { Self { kind: Kind::Linear } }
-    pub fn inverse() -> Self { Self { kind: Kind::Inverse } }
-    pub fn option() -> Self { Self { kind: Kind::Option } }
+    pub fn spot() -> Self {
+        Self { kind: Kind::Spot }
+    }
+    pub fn linear() -> Self {
+        Self { kind: Kind::Linear }
+    }
+    pub fn inverse() -> Self {
+        Self {
+            kind: Kind::Inverse,
+        }
+    }
+    pub fn option() -> Self {
+        Self { kind: Kind::Option }
+    }
 
     fn exchange_id_str(&self) -> &'static str {
         match self.kind {
@@ -66,8 +84,12 @@ fn topic_from_params(op_id: &str, symbol: &str, params: &Value) -> Result<String
 
 #[async_trait]
 impl WsVenueAdapter for BybitWsAdapter {
-    fn exchange_id(&self) -> &str { self.exchange_id_str() }
-    fn ws_url(&self) -> String { self.url().to_string() }
+    fn exchange_id(&self) -> &str {
+        self.exchange_id_str()
+    }
+    fn ws_url(&self) -> String {
+        self.url().to_string()
+    }
 
     async fn fetch_symbols(&self) -> Result<Vec<String>, String> {
         match self.kind {
@@ -79,12 +101,21 @@ impl WsVenueAdapter for BybitWsAdapter {
     }
 
     fn ping_msg(&self) -> Option<OutboundMsg> {
-        Some(OutboundMsg { text: json!({"op":"ping"}).to_string() })
+        Some(OutboundMsg {
+            text: json!({"op":"ping"}).to_string(),
+        })
     }
 
-    fn build_subscribe(&self, op_id: &str, symbol: &str, params: &Value) -> Result<Vec<OutboundMsg>, String> {
+    fn build_subscribe(
+        &self,
+        op_id: &str,
+        symbol: &str,
+        params: &Value,
+    ) -> Result<Vec<OutboundMsg>, String> {
         let topic = topic_from_params(op_id, symbol, params)?;
-        Ok(vec![OutboundMsg { text: json!({"op":"subscribe","args":[topic]}).to_string() }])
+        Ok(vec![OutboundMsg {
+            text: json!({"op":"subscribe","args":[topic]}).to_string(),
+        }])
     }
 
     fn classify_inbound(&self, raw: &[u8]) -> InboundClass {
@@ -92,13 +123,23 @@ impl WsVenueAdapter for BybitWsAdapter {
             Ok(x) => x,
             Err(_) => return InboundClass::Unknown,
         };
-        if v.get("op").and_then(|x| x.as_str()) == Some("pong") { return InboundClass::System; }
-        if v.get("success").is_some() && v.get("op").is_some() { return InboundClass::System; }
+        if v.get("op").and_then(|x| x.as_str()) == Some("pong") {
+            return InboundClass::System;
+        }
+        if v.get("success").is_some() && v.get("op").is_some() {
+            return InboundClass::System;
+        }
 
         // Bybit pushes topic field for data
         let topic = v.get("topic").and_then(|x| x.as_str()).unwrap_or("");
-        if topic.is_empty() { return InboundClass::System; }
+        if topic.is_empty() {
+            return InboundClass::System;
+        }
 
-        InboundClass::Data { op_id: None, symbol: None, params_canon_hint: Some("{}".into()) }
+        InboundClass::Data {
+            op_id: None,
+            symbol: None,
+            params_canon_hint: Some("{}".into()),
+        }
     }
 }

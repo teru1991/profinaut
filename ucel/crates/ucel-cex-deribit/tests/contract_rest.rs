@@ -3,7 +3,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 use ucel_cex_deribit::*;
 use ucel_core::{ErrorCode, UcelError};
-use ucel_transport::{HttpRequest, HttpResponse, RequestContext, Transport, WsConnectRequest, WsStream};
+use ucel_transport::{
+    HttpRequest, HttpResponse, RequestContext, Transport, WsConnectRequest, WsStream,
+};
 
 #[derive(Default)]
 struct SpyTransport {
@@ -21,12 +23,20 @@ impl SpyTransport {
 }
 
 impl Transport for SpyTransport {
-    async fn send_http(&self, _req: HttpRequest, _ctx: RequestContext) -> Result<HttpResponse, UcelError> {
+    async fn send_http(
+        &self,
+        _req: HttpRequest,
+        _ctx: RequestContext,
+    ) -> Result<HttpResponse, UcelError> {
         self.calls.fetch_add(1, Ordering::SeqCst);
         self.response.lock().unwrap().take().unwrap()
     }
 
-    async fn connect_ws(&self, _req: WsConnectRequest, _ctx: RequestContext) -> Result<WsStream, UcelError> {
+    async fn connect_ws(
+        &self,
+        _req: WsConnectRequest,
+        _ctx: RequestContext,
+    ) -> Result<WsStream, UcelError> {
         Ok(WsStream::default())
     }
 }
@@ -50,7 +60,10 @@ async fn rest_catalog_all_ids_have_success_parse_fixture() {
     ];
 
     for (req, body, key) in fixtures {
-        let transport = SpyTransport::with_response(Ok(HttpResponse { status: 200, body: Bytes::from(body) }));
+        let transport = SpyTransport::with_response(Ok(HttpResponse {
+            status: 200,
+            body: Bytes::from(body),
+        }));
         let out = adapter().execute_rest(&transport, req, key).await;
         assert!(out.is_ok());
         assert_eq!(transport.calls.load(Ordering::SeqCst), 1);
@@ -61,21 +74,66 @@ async fn rest_catalog_all_ids_have_success_parse_fixture() {
 async fn rest_handles_429_5xx_timeout_and_preflight_reject() {
     let a = adapter();
 
-    let t429 = SpyTransport::with_response(Ok(HttpResponse { status: 429, body: Bytes::from_static(b"retry_after_ms=123") }));
-    let e429 = a.execute_rest(&t429, DeribitRestRequest::PublicTicker(PublicTickerParams { instrument_name: "BTC-PERPETUAL".into() }), None).await.unwrap_err();
+    let t429 = SpyTransport::with_response(Ok(HttpResponse {
+        status: 429,
+        body: Bytes::from_static(b"retry_after_ms=123"),
+    }));
+    let e429 = a
+        .execute_rest(
+            &t429,
+            DeribitRestRequest::PublicTicker(PublicTickerParams {
+                instrument_name: "BTC-PERPETUAL".into(),
+            }),
+            None,
+        )
+        .await
+        .unwrap_err();
     assert_eq!(e429.code, ErrorCode::RateLimited);
     assert_eq!(e429.retry_after_ms, Some(123));
 
-    let t5 = SpyTransport::with_response(Ok(HttpResponse { status: 503, body: Bytes::new() }));
-    let e5 = a.execute_rest(&t5, DeribitRestRequest::PublicTicker(PublicTickerParams { instrument_name: "BTC-PERPETUAL".into() }), None).await.unwrap_err();
+    let t5 = SpyTransport::with_response(Ok(HttpResponse {
+        status: 503,
+        body: Bytes::new(),
+    }));
+    let e5 = a
+        .execute_rest(
+            &t5,
+            DeribitRestRequest::PublicTicker(PublicTickerParams {
+                instrument_name: "BTC-PERPETUAL".into(),
+            }),
+            None,
+        )
+        .await
+        .unwrap_err();
     assert_eq!(e5.code, ErrorCode::Upstream5xx);
 
     let tt = SpyTransport::with_response(Err(UcelError::new(ErrorCode::Timeout, "timeout")));
-    let et = a.execute_rest(&tt, DeribitRestRequest::PublicTicker(PublicTickerParams { instrument_name: "BTC-PERPETUAL".into() }), None).await.unwrap_err();
+    let et = a
+        .execute_rest(
+            &tt,
+            DeribitRestRequest::PublicTicker(PublicTickerParams {
+                instrument_name: "BTC-PERPETUAL".into(),
+            }),
+            None,
+        )
+        .await
+        .unwrap_err();
     assert_eq!(et.code, ErrorCode::Timeout);
 
-    let tp = SpyTransport::with_response(Ok(HttpResponse { status: 200, body: Bytes::new() }));
-    let ep = a.execute_rest(&tp, DeribitRestRequest::PrivateCancel(PrivateCancelParams { order_id: "x".into() }), None).await.unwrap_err();
+    let tp = SpyTransport::with_response(Ok(HttpResponse {
+        status: 200,
+        body: Bytes::new(),
+    }));
+    let ep = a
+        .execute_rest(
+            &tp,
+            DeribitRestRequest::PrivateCancel(PrivateCancelParams {
+                order_id: "x".into(),
+            }),
+            None,
+        )
+        .await
+        .unwrap_err();
     assert_eq!(ep.code, ErrorCode::MissingAuth);
     assert_eq!(tp.calls.load(Ordering::SeqCst), 0);
 }

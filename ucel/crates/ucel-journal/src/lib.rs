@@ -32,18 +32,37 @@ pub struct WalWriter {
 }
 
 impl WalWriter {
-    pub fn open(dir: impl AsRef<Path>, max_bytes: u64, fsync_mode: FsyncMode) -> Result<Self, String> {
+    pub fn open(
+        dir: impl AsRef<Path>,
+        max_bytes: u64,
+        fsync_mode: FsyncMode,
+    ) -> Result<Self, String> {
         let dir = dir.as_ref().to_path_buf();
         fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
         let current_path = next_wal_path(&dir)?;
-        let current_file = OpenOptions::new().create(true).append(true).open(&current_path).map_err(|e| e.to_string())?;
-        Ok(Self { dir, max_bytes, fsync_mode, current_path, current_file, writes_since_sync: 0 })
+        let current_file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&current_path)
+            .map_err(|e| e.to_string())?;
+        Ok(Self {
+            dir,
+            max_bytes,
+            fsync_mode,
+            current_path,
+            current_file,
+            writes_since_sync: 0,
+        })
     }
 
     pub fn append(&mut self, record: &RawRecord) -> Result<(), String> {
         let line = serde_json::to_vec(record).map_err(|e| e.to_string())?;
-        self.current_file.write_all(&line).map_err(|e| e.to_string())?;
-        self.current_file.write_all(b"\n").map_err(|e| e.to_string())?;
+        self.current_file
+            .write_all(&line)
+            .map_err(|e| e.to_string())?;
+        self.current_file
+            .write_all(b"\n")
+            .map_err(|e| e.to_string())?;
         self.writes_since_sync += 1;
         self.maybe_sync()?;
         self.rotate_if_needed()?;
@@ -52,7 +71,9 @@ impl WalWriter {
 
     fn maybe_sync(&mut self) -> Result<(), String> {
         match self.fsync_mode {
-            FsyncMode::SafeEveryRecord => self.current_file.sync_data().map_err(|e| e.to_string())?,
+            FsyncMode::SafeEveryRecord => {
+                self.current_file.sync_data().map_err(|e| e.to_string())?
+            }
             FsyncMode::SafeEveryN(n) if n > 0 && self.writes_since_sync >= n => {
                 self.current_file.sync_data().map_err(|e| e.to_string())?;
                 self.writes_since_sync = 0;
@@ -64,18 +85,29 @@ impl WalWriter {
     }
 
     fn rotate_if_needed(&mut self) -> Result<(), String> {
-        let sz = self.current_file.metadata().map_err(|e| e.to_string())?.len();
+        let sz = self
+            .current_file
+            .metadata()
+            .map_err(|e| e.to_string())?
+            .len();
         if sz >= self.max_bytes {
             self.current_file.sync_all().map_err(|e| e.to_string())?;
             self.current_path = next_wal_path(&self.dir)?;
-            self.current_file = OpenOptions::new().create(true).append(true).open(&self.current_path).map_err(|e| e.to_string())?;
+            self.current_file = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&self.current_path)
+                .map_err(|e| e.to_string())?;
         }
         Ok(())
     }
 }
 
 fn next_wal_path(dir: &Path) -> Result<PathBuf, String> {
-    let ts = SystemTime::now().duration_since(UNIX_EPOCH).map_err(|e| e.to_string())?.as_secs();
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_secs();
     Ok(dir.join(format!("raw-{ts}.ndjson")))
 }
 
@@ -85,7 +117,9 @@ pub fn read_records(path: &Path) -> Result<Vec<RawRecord>, String> {
     let mut out = Vec::new();
     for line in reader.lines() {
         let line = line.map_err(|e| e.to_string())?;
-        if line.trim().is_empty() { continue; }
+        if line.trim().is_empty() {
+            continue;
+        }
         if let Ok(v) = serde_json::from_str::<RawRecord>(&line) {
             out.push(v);
         }
@@ -110,9 +144,13 @@ mod tests {
                 symbol: Some("BTC/USDT".into()),
                 raw_bytes_b64: "e30=".into(),
                 meta: serde_json::json!({"i": i}),
-            }).unwrap();
+            })
+            .unwrap();
         }
-        let files: Vec<_> = fs::read_dir(dir.path()).unwrap().map(|x| x.unwrap().path()).collect();
+        let files: Vec<_> = fs::read_dir(dir.path())
+            .unwrap()
+            .map(|x| x.unwrap().path())
+            .collect();
         assert!(!files.is_empty());
         let one = &files[0];
         let recs = read_records(one).unwrap();

@@ -7,7 +7,9 @@ use crate::symbols::fetch_all_symbols;
 #[derive(Debug, Clone)]
 pub struct BinanceOptionsWsAdapter;
 impl BinanceOptionsWsAdapter {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 }
 
 fn topic_from_params(_op_id: &str, _symbol: &str, params: &Value) -> Result<String, String> {
@@ -19,7 +21,9 @@ fn topic_from_params(_op_id: &str, _symbol: &str, params: &Value) -> Result<Stri
 
 #[async_trait]
 impl WsVenueAdapter for BinanceOptionsWsAdapter {
-    fn exchange_id(&self) -> &str { "binance-options" }
+    fn exchange_id(&self) -> &str {
+        "binance-options"
+    }
 
     fn ws_url(&self) -> String {
         // keep your existing base
@@ -30,7 +34,12 @@ impl WsVenueAdapter for BinanceOptionsWsAdapter {
         fetch_all_symbols().await
     }
 
-    fn build_subscribe(&self, op_id: &str, symbol: &str, params: &Value) -> Result<Vec<OutboundMsg>, String> {
+    fn build_subscribe(
+        &self,
+        op_id: &str,
+        symbol: &str,
+        params: &Value,
+    ) -> Result<Vec<OutboundMsg>, String> {
         let topic = topic_from_params(op_id, symbol, params)?;
         Ok(vec![OutboundMsg {
             text: json!({"method":"SUBSCRIBE","params":[topic],"id":1}).to_string(),
@@ -43,7 +52,11 @@ impl WsVenueAdapter for BinanceOptionsWsAdapter {
             Err(_) => return InboundClass::Unknown,
         };
         if v.get("stream").is_some() && v.get("data").is_some() {
-            return InboundClass::Data { op_id: None, symbol: None, params_canon_hint: Some("{}".into()) };
+            return InboundClass::Data {
+                op_id: None,
+                symbol: None,
+                params_canon_hint: Some("{}".into()),
+            };
         }
         if v.get("result").is_some() && v.get("id").is_some() {
             return InboundClass::System;

@@ -563,7 +563,7 @@ mod tests {
     }
 }
 
+pub mod channels;
 pub mod symbols;
 pub mod ws;
 pub mod ws_manager;
-pub mod channels;

@@ -116,7 +116,9 @@ pub enum DeribitRestRequest {
 impl DeribitRestRequest {
     pub fn endpoint_id(&self) -> &'static str {
         match self {
-            Self::PublicGetInstruments(_) => "jsonrpc.http.public.market_data.public_get_instruments",
+            Self::PublicGetInstruments(_) => {
+                "jsonrpc.http.public.market_data.public_get_instruments"
+            }
             Self::PublicTicker(_) => "jsonrpc.http.public.market_data.public_ticker",
             Self::PublicGetOrderBook(_) => "jsonrpc.http.public.market_data.public_get_order_book",
             Self::PublicGetTradingViewChartData(_) => {
@@ -343,20 +345,30 @@ fn parse_jsonrpc_response(
         DeribitRestRequest::PublicGetInstruments(_) => {
             decode_result(body).map(DeribitRestResponse::PublicGetInstruments)
         }
-        DeribitRestRequest::PublicTicker(_) => decode_result(body).map(DeribitRestResponse::PublicTicker),
+        DeribitRestRequest::PublicTicker(_) => {
+            decode_result(body).map(DeribitRestResponse::PublicTicker)
+        }
         DeribitRestRequest::PublicGetOrderBook(_) => {
             decode_result(body).map(DeribitRestResponse::PublicGetOrderBook)
         }
         DeribitRestRequest::PublicGetTradingViewChartData(_) => {
             decode_result(body).map(DeribitRestResponse::PublicGetTradingViewChartData)
         }
-        DeribitRestRequest::PublicAuth(_) => decode_result(body).map(DeribitRestResponse::PublicAuth),
+        DeribitRestRequest::PublicAuth(_) => {
+            decode_result(body).map(DeribitRestResponse::PublicAuth)
+        }
         DeribitRestRequest::PrivateGetAccountSummary(_) => {
             decode_result(body).map(DeribitRestResponse::PrivateGetAccountSummary)
         }
-        DeribitRestRequest::PrivateBuy(_) => decode_result(body).map(DeribitRestResponse::PrivateBuy),
-        DeribitRestRequest::PrivateSell(_) => decode_result(body).map(DeribitRestResponse::PrivateSell),
-        DeribitRestRequest::PrivateCancel(_) => decode_result(body).map(DeribitRestResponse::PrivateCancel),
+        DeribitRestRequest::PrivateBuy(_) => {
+            decode_result(body).map(DeribitRestResponse::PrivateBuy)
+        }
+        DeribitRestRequest::PrivateSell(_) => {
+            decode_result(body).map(DeribitRestResponse::PrivateSell)
+        }
+        DeribitRestRequest::PrivateCancel(_) => {
+            decode_result(body).map(DeribitRestResponse::PrivateCancel)
+        }
     }
 }
 
@@ -392,7 +404,10 @@ pub fn map_deribit_http_error(status: u16, body: &[u8]) -> UcelError {
         }
     }
 
-    UcelError::new(ErrorCode::Network, format!("deribit http error status={status}"))
+    UcelError::new(
+        ErrorCode::Network,
+        format!("deribit http error status={status}"),
+    )
 }
 
 fn map_deribit_rpc_error(error: DeribitErrorPayload) -> UcelError {
@@ -557,6 +572,6 @@ mod tests {
     }
 }
 
+pub mod channels;
 pub mod symbols;
 pub mod ws_manager;
-pub mod channels;

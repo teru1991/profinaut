@@ -8,6 +8,7 @@ on:
       - "services/**"
       - "apps/**"
       - "sdk/**"
+      - "ucel/**"
       - "scripts/**"
       - "requirements*.txt"
       - "package.json"
@@ -19,6 +20,7 @@ on:
       - "services/**"
       - "apps/**"
       - "sdk/**"
+      - "ucel/**"
       - "scripts/**"
       - "requirements*.txt"
       - "package.json"
@@ -139,3 +141,69 @@ jobs:
       - name: Validate package.json scripts presence
         run: |
           node -e "const p=require('./package.json'); ['dev','test','test:api','test:sdk-python','migrate','contracts:lint','web:dev','web:build'].forEach(k=>{if(!p.scripts?.[k]){throw new Error('missing script '+k)}}); console.log('scripts ok')"
+
+  ucel-rust:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain (stable with rustfmt/clippy)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust artifacts for ucel workspace
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            ucel -> target
+
+      - name: "Run cargo fmt (manifest: ucel/Cargo.toml)"
+        run: cargo fmt --manifest-path ucel/Cargo.toml --all -- --check
+
+      - name: "Run cargo clippy (manifest: ucel/Cargo.toml)"
+        run: cargo clippy --manifest-path ucel/Cargo.toml --workspace --all-targets -- -D warnings
+
+      - name: "Run cargo test (manifest: ucel/Cargo.toml)"
+        run: cargo test --manifest-path ucel/Cargo.toml --workspace --all-targets
+
+  ucel-security:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+
+      - name: "Run cargo audit (manifest: ucel/Cargo.toml)"
+        run: cargo audit --file ucel/Cargo.lock
+
+  ucel-semver:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-semver-checks
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-semver-checks
+
+      - name: Run semver checks for ucel-core
+        run: cargo semver-checks check-release --manifest-path ucel/crates/ucel-core/Cargo.toml
+
+      - name: Run semver checks for ucel-registry
+        run: cargo semver-checks check-release --manifest-path ucel/crates/ucel-registry/Cargo.toml

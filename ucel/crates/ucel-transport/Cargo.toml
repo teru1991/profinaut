@@ -16,8 +16,8 @@ async-trait = "0.1"
 futures-util = "0.3"
 base64 = "0.22"
 
-# IMPORTANT: permessage-deflate ON (OKX)
-tokio-tungstenite = { version = "0.24", features = ["deflate"] }
+# IMPORTANT: TLS support (OKX, etc.) — permessage-deflate removed in tokio-tungstenite 0.24
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
 
 ucel-journal = { path = "../ucel-journal" }
 ucel-subscription-store = { path = "../ucel-subscription-store" }
@@ -30,7 +30,7 @@ futures-util = "0.3"
 serde_json = { workspace = true }
 async-trait = "0.1"
 
-# IMPORTANT: permessage-deflate ON (tests too)
-tokio-tungstenite = { version = "0.24", features = ["deflate"] }
+# IMPORTANT: TLS support for tests — permessage-deflate removed in tokio-tungstenite 0.24
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
 
 ucel-subscription-planner = { path = "../ucel-subscription-planner" }

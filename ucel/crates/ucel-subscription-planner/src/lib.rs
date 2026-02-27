@@ -335,7 +335,11 @@ fn expand_family_topics(
     }
 
     let variants = expand_params(&family.params);
-    let weight = if family.weight == 0 { default_weight(&family.id) } else { family.weight };
+    let weight = if family.weight == 0 {
+        default_weight(&family.id)
+    } else {
+        family.weight
+    };
 
     // Which template vars (excluding symbol) must be bound from pool?
     let mut need_vars: Vec<String> = tpl_vars.iter().cloned().collect();
@@ -344,10 +348,16 @@ fn expand_family_topics(
     let mut pools: Vec<(String, Vec<String>)> = Vec::new();
     for v in &need_vars {
         let Some(list) = var_pool.get(v) else {
-            return Err(format!("family {}: missing var pool for {{{}}}", family.id, v));
+            return Err(format!(
+                "family {}: missing var pool for {{{}}}",
+                family.id, v
+            ));
         };
         if list.is_empty() {
-            return Err(format!("family {}: empty var pool for {{{}}}", family.id, v));
+            return Err(format!(
+                "family {}: empty var pool for {{{}}}",
+                family.id, v
+            ));
         }
         pools.push((v.clone(), list.clone()));
     }
@@ -372,13 +382,14 @@ fn expand_family_topics(
 
     let mut out: Vec<(Option<String>, serde_json::Value)> = Vec::new();
 
-    let attach_meta = |mut params: serde_json::Value, topic: String, weight: u32| -> serde_json::Value {
-        if let Some(obj) = params.as_object_mut() {
-            obj.insert("_w".into(), serde_json::Value::Number(weight.into()));
-            obj.insert("_topic".into(), serde_json::Value::String(topic));
-        }
-        params
-    };
+    let attach_meta =
+        |mut params: serde_json::Value, topic: String, weight: u32| -> serde_json::Value {
+            if let Some(obj) = params.as_object_mut() {
+                obj.insert("_w".into(), serde_json::Value::Number(weight.into()));
+                obj.insert("_topic".into(), serde_json::Value::String(topic));
+            }
+            params
+        };
 
     if family.requires_symbol {
         for sym in symbols {
@@ -392,7 +403,11 @@ fn expand_family_topics(
                     // allow params values to be referenced in template as {k}
                     if let Some(obj) = p.as_object() {
                         for (k, v) in obj {
-                            let val = if v.is_string() { v.as_str().unwrap().to_string() } else { v.to_string() };
+                            let val = if v.is_string() {
+                                v.as_str().unwrap().to_string()
+                            } else {
+                                v.to_string()
+                            };
                             all.insert(k.clone(), val);
                         }
                     }
@@ -411,7 +426,11 @@ fn expand_family_topics(
 
                 if let Some(obj) = p.as_object() {
                     for (k, v) in obj {
-                        let val = if v.is_string() { v.as_str().unwrap().to_string() } else { v.to_string() };
+                        let val = if v.is_string() {
+                            v.as_str().unwrap().to_string()
+                        } else {
+                            v.to_string()
+                        };
                         all.insert(k.clone(), val);
                     }
                 }

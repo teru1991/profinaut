@@ -11,7 +11,7 @@ struct ApiResp<T> {
 
 #[derive(Debug, Deserialize)]
 struct SymbolRow {
-    symbol: String,       // e.g. "BTC"
+    symbol: String, // e.g. "BTC"
     minOrderSize: String,
     maxOrderSize: String,
     sizeStep: String,
