@@ -322,7 +322,7 @@ pub fn is_op_allowed(policy: &RuntimePolicy, op: OpName) -> Result<(), UcelError
     } else {
         Err(UcelError::new(
             ErrorCode::NotAllowedOp,
-            format!("operation {} is not allowlisted", op),
+            format!("operation {op} is not allowlisted"),
         ))
     }
 }
@@ -333,7 +333,7 @@ pub fn check_execution_mode(policy: &RuntimePolicy, op: OpName) -> Result<(), Uc
     }
     Err(UcelError::new(
         ErrorCode::DryRunOnly,
-        format!("operation {} blocked in dry-run mode", op),
+        format!("operation {op} blocked in dry-run mode"),
     ))
 }
 

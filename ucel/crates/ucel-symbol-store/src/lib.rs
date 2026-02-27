@@ -39,7 +39,7 @@ pub enum SymbolEvent {
         id: InstrumentId,
         changed_fields: Vec<String>,
         before: StandardizedInstrument,
-        after: StandardizedInstrument,
+        after: Box<StandardizedInstrument>,
         ts_recv: SystemTime,
         store_version: u64,
     },
@@ -145,7 +145,7 @@ impl SymbolStore {
                         id,
                         changed_fields,
                         before,
-                        after: instrument,
+                        after: Box::new(instrument),
                         ts_recv: SystemTime::now(),
                         store_version: version,
                     });
