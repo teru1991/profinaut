@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use base64::Engine;
 use futures_util::{SinkExt, StreamExt};
 use serde_json::Value;
 use tokio::sync::{mpsc, Mutex};
@@ -12,7 +13,7 @@ use ucel_journal::RawRecord;
 use ucel_subscription_store::SubscriptionStore;
 use ucel_ws_rules::ExchangeWsRules;
 
-use super::adapter::{InboundClass, OutboundMsg, WsVenueAdapter};
+use super::adapter::{InboundClass, WsVenueAdapter};
 use super::reconnect::{backoff_with_jitter_ms, storm_guard};
 
 #[derive(Clone, Debug)]
@@ -105,14 +106,10 @@ impl FixedWindowLimiter {
 #[derive(Clone, Debug)]
 struct WalQueuePolicy {
     cap: usize,
-    stop_on_full: bool,
 }
 impl Default for WalQueuePolicy {
     fn default() -> Self {
-        Self {
-            cap: 8192,
-            stop_on_full: true,
-        }
+        Self { cap: 8192 }
     }
 }
 
@@ -160,7 +157,7 @@ pub async fn run_ws_connection(
     let client_mps = 2u32; // conservative
 
     let mut sub_limiter = FixedWindowLimiter::new(subscribe_mps);
-    let mut client_limiter = FixedWindowLimiter::new(client_mps);
+    let client_limiter = FixedWindowLimiter::new(client_mps);
 
     let hb_idle = rules
         .heartbeat
@@ -418,10 +415,7 @@ pub async fn run_ws_connection(
 
             // inbound
             let next = tokio::time::timeout(Duration::from_millis(250), read.next()).await;
-            let maybe_item = match next {
-                Ok(v) => v,
-                Err(_) => None,
-            };
+            let maybe_item = next.unwrap_or_default();
             let Some(item) = maybe_item else {
                 continue;
             };
@@ -533,7 +527,7 @@ async fn handle_inbound(
             .get("symbol")
             .and_then(|v| v.as_str())
             .map(|s| s.to_string()),
-        raw_bytes_b64: base64::encode(&raw),
+        raw_bytes_b64: base64::engine::general_purpose::STANDARD.encode(&raw),
         meta: serde_json::Value::Object(meta),
     };
 

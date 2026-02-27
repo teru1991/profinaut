@@ -107,7 +107,7 @@ async fn spawn_fake_ws_server(
                         if send_oversized {
                             // 受信ループ開始前に巨大フレーム
                             let big = "X".repeat(oversized_bytes);
-                            let _ = w.send(Message::Text(big.into())).await;
+                            let _ = w.send(Message::Text(big)).await;
                             let _ = w.send(Message::Close(None)).await;
                             return;
                         }
@@ -123,8 +123,7 @@ async fn spawn_fake_ws_server(
                                         "op_id": "crypto.public.ws.ticker.update",
                                         "symbol": "BTC/JPY"
                                     })
-                                    .to_string()
-                                    .into(),
+                                    .to_string(),
                                 ))
                                 .await;
 
@@ -141,8 +140,7 @@ async fn spawn_fake_ws_server(
                                         "op_id": "crypto.public.ws.ticker.update",
                                         "symbol": "BTC/JPY"
                                     })
-                                    .to_string()
-                                    .into(),
+                                    .to_string(),
                                 ))
                                 .await;
                             tokio::time::sleep(Duration::from_millis(200)).await;
@@ -197,7 +195,7 @@ async fn e2e_reconnect_drip_wal() {
         64 * 1024 * 1024,
         ucel_journal::FsyncMode::Balanced,
     )
-    .map_err(|e| format!("{e}"))
+    .map_err(|e| e.to_string())
     .unwrap();
     let wal = Arc::new(Mutex::new(wal));
 
@@ -279,7 +277,7 @@ async fn e2e_stop_on_oversized_frame() {
         64 * 1024 * 1024,
         ucel_journal::FsyncMode::Balanced,
     )
-    .map_err(|e| format!("{e}"))
+    .map_err(|e| e.to_string())
     .unwrap();
     let wal = Arc::new(Mutex::new(wal));
 
@@ -326,7 +324,7 @@ async fn e2e_symbol_less_subscription_is_dripped() {
         64 * 1024 * 1024,
         ucel_journal::FsyncMode::Balanced,
     )
-    .map_err(|e| format!("{e}"))
+    .map_err(|e| e.to_string())
     .unwrap();
     let wal = Arc::new(Mutex::new(wal));
 

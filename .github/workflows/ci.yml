@@ -202,13 +202,13 @@ jobs:
         with:
           tool: cargo-semver-checks
 
-      - name: Prepare baseline (origin/main)
+      - name: Prepare baseline (origin/master)
         run: |
           set -euxo pipefail
-          git fetch --no-tags --depth=1 origin main
+          git fetch --no-tags --depth=1 origin master
           rm -rf /tmp/ucel-baseline
           mkdir -p /tmp/ucel-baseline
-          git worktree add /tmp/ucel-baseline origin/main
+          git worktree add /tmp/ucel-baseline origin/master
 
       - name: Run semver checks for ucel-core
         run: |
