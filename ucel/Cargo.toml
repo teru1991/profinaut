@@ -30,6 +30,7 @@ members = [
   "crates/ucel-subscription-planner",
   "crates/ucel-subscription-store",
   "crates/ucel-journal",
+  "crates/ucel-sdk",
 ]
 resolver = "2"
 default-members = ["crates/ucel-registry"]
