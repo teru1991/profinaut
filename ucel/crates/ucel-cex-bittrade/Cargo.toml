@@ -7,15 +7,19 @@ edition.workspace = true
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
-tokio = { workspace = true, features = ["sync", "rt", "macros"] }
+tokio = { workspace = true, features = ["sync", "rt", "macros", "time"] }
 tracing = { workspace = true }
 
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
 async-trait = "0.1"
 flate2 = "1"
 
+bytes = { workspace = true }
+uuid = { version = "1", features = ["v4"] }
+
 ucel-core = { path = "../ucel-core" }
 ucel-transport = { path = "../ucel-transport" }
 
 [dev-dependencies]
+ucel-testkit = { path = "../ucel-testkit" }
 tracing-subscriber = { version = "0.3", features = ["fmt"] }
