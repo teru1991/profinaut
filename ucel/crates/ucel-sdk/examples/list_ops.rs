@@ -1,6 +1,6 @@
 use ucel_sdk::prelude::*;
 
-#[tokio::main(flavor = "current_thread")]
+#[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cfg = SdkConfig::load(None)?;
     let sdk = SdkBuilder::new(cfg).build()?;
