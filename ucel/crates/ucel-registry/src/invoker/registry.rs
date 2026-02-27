@@ -103,7 +103,11 @@ impl SpecRegistry {
             .ok_or_else(|| InvokerError::UnknownVenue(venue.to_string()))
     }
 
-    pub fn resolve(&self, venue: &VenueId, id: &OperationId) -> Result<&ResolvedSpec, InvokerError> {
+    pub fn resolve(
+        &self,
+        venue: &VenueId,
+        id: &OperationId,
+    ) -> Result<&ResolvedSpec, InvokerError> {
         self.specs
             .get(&(venue.clone(), id.clone()))
             .ok_or_else(|| InvokerError::UnknownOperation {
