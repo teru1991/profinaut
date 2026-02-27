@@ -4,6 +4,7 @@ use crate::{deribit, CatalogAuth, CatalogEntry, ExchangeCatalog};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 use std::sync::OnceLock;
+use std::path::Path;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OperationKind {
@@ -128,7 +129,7 @@ fn kind_gate(id: &str, kind: OperationKind, venue: &VenueId) -> Result<(), Invok
     }
 }
 
-fn load_catalog_loose(repo_root: &PathBuf, venue: &str) -> Result<ExchangeCatalog, InvokerError> {
+fn load_catalog_loose(repo_root: &Path, venue: &str) -> Result<ExchangeCatalog, InvokerError> {
     let path = repo_root
         .join("docs")
         .join("exchanges")

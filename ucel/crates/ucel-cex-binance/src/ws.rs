@@ -11,7 +11,11 @@ impl BinanceSpotWsAdapter {
         Self
     }
 }
-
+impl Default for BinanceSpotWsAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 fn topic_from_params(op_id: &str, symbol: &str, params: &Value) -> Result<String, String> {
     // SSOT path: planner_v2 writes the final topic into params["_topic"]
     if let Some(t) = params.get("_topic").and_then(|v| v.as_str()) {
