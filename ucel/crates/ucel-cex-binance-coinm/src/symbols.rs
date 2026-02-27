@@ -6,11 +6,12 @@ struct ExchangeInfo {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct SymbolInfo {
+    // これを使わないなら削除が一番きれい（serdeは未知フィールドを無視します）
     symbol: String,
-    status: String,
-    baseAsset: String,
-    quoteAsset: String,
+    base_asset: String,
+    quote_asset: String,
 }
 
 pub fn to_canonical_symbol(base: &str, quote: &str) -> String {
