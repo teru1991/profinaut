@@ -90,6 +90,7 @@ SSOTと矛盾する場合は **必ずSSOT側が正** です。
 - Env/Mode Matrix: docs/specs/system/environment_mode_matrix.md
 - Runbooks Index: docs/runbooks/README.md
 - UCEL Golden Compatibility: docs/specs/ucel_golden/compatibility_notes.md
+- UCEL Library Hardening File-level Plan: docs/plans/ucel/ucel_library_hardening_filelevel_plan.md
 
 ## Docs OS Operations
 - docs/specs/system/docs_os_operations_policy.md
