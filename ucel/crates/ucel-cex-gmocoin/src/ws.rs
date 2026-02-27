@@ -155,7 +155,7 @@ impl WsVenueAdapter for GmoCoinPublicWsAdapter {
 /// ----------------------------
 /// Private adapter (token-based)
 /// ----------------------------
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct TokenState {
     token: Option<String>,
     expires_at: Instant,
@@ -184,7 +184,7 @@ impl GmoCoinPrivateWsAdapter {
     }
 
     async fn refresh_token_async(&self) -> Result<String, String> {
-        let token = self.rest.ws_auth_create().await?;
+        let token: String = self.rest.ws_auth_create().await?;
         // Assume typical 60min; refresh at 55min to be safe (rules also rotates)
         let mut st = self.state.write().unwrap();
         st.token = Some(token.clone());

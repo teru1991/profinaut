@@ -19,3 +19,5 @@ ucel-transport = { path = "../ucel-transport" }
 
 [dev-dependencies]
 tracing-subscriber = { version = "0.3", features = ["fmt"] }
+bytes = { workspace = true }
+uuid = { version = "1", features = ["v4"] }
