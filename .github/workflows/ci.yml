@@ -202,8 +202,28 @@ jobs:
         with:
           tool: cargo-semver-checks
 
+      - name: Prepare baseline (origin/main)
+        run: |
+          set -euxo pipefail
+          git fetch --no-tags --depth=1 origin main
+          rm -rf /tmp/ucel-baseline
+          mkdir -p /tmp/ucel-baseline
+          git worktree add /tmp/ucel-baseline origin/main
+
       - name: Run semver checks for ucel-core
-        run: cargo semver-checks check-release --manifest-path ucel/crates/ucel-core/Cargo.toml
+        run: |
+          set -euxo pipefail
+          echo "manifest-path=ucel/crates/ucel-core/Cargo.toml"
+          echo "baseline-root=/tmp/ucel-baseline"
+          cargo semver-checks check \
+            --manifest-path ucel/crates/ucel-core/Cargo.toml \
+            --baseline-root /tmp/ucel-baseline
 
       - name: Run semver checks for ucel-registry
-        run: cargo semver-checks check-release --manifest-path ucel/crates/ucel-registry/Cargo.toml
+        run: |
+          set -euxo pipefail
+          echo "manifest-path=ucel/crates/ucel-registry/Cargo.toml"
+          echo "baseline-root=/tmp/ucel-baseline"
+          cargo semver-checks check \
+            --manifest-path ucel/crates/ucel-registry/Cargo.toml \
+            --baseline-root /tmp/ucel-baseline

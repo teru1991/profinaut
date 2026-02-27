@@ -9,17 +9,6 @@ pub enum SubscriptionState {
     Deadletter,
 }
 
-impl SubscriptionState {
-    fn as_str(self) -> &'static str {
-        match self {
-            SubscriptionState::Pending => "pending",
-            SubscriptionState::Inflight => "inflight",
-            SubscriptionState::Active => "active",
-            SubscriptionState::Deadletter => "deadletter",
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct SubscriptionRow {
     pub key: String,
