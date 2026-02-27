@@ -206,24 +206,21 @@ jobs:
         run: |
           set -euxo pipefail
           git fetch --no-tags --depth=1 origin master
-          rm -rf /tmp/ucel-baseline
-          mkdir -p /tmp/ucel-baseline
-          git worktree add /tmp/ucel-baseline origin/master
 
       - name: Run semver checks for ucel-core
         run: |
           set -euxo pipefail
           echo "manifest-path=ucel/crates/ucel-core/Cargo.toml"
-          echo "baseline-root=/tmp/ucel-baseline"
-          cargo semver-checks check \
+          echo "baseline-rev=origin/master"
+          cargo semver-checks check-release \
             --manifest-path ucel/crates/ucel-core/Cargo.toml \
-            --baseline-root /tmp/ucel-baseline
+            --baseline-rev origin/master
 
       - name: Run semver checks for ucel-registry
         run: |
           set -euxo pipefail
           echo "manifest-path=ucel/crates/ucel-registry/Cargo.toml"
-          echo "baseline-root=/tmp/ucel-baseline"
-          cargo semver-checks check \
+          echo "baseline-rev=origin/master"
+          cargo semver-checks check-release \
             --manifest-path ucel/crates/ucel-registry/Cargo.toml \
-            --baseline-root /tmp/ucel-baseline
+            --baseline-rev origin/master
