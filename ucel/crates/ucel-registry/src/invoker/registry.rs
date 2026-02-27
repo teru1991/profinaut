@@ -16,6 +16,7 @@ pub struct ResolvedSpec {
     pub kind: OperationKind,
     pub spec: CatalogEntry,
 }
+
 impl ResolvedSpec {
     pub fn ws_url(&self) -> Result<String, InvokerError> {
         self.spec
