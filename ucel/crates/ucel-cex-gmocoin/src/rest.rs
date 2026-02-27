@@ -22,6 +22,12 @@ pub struct GmoRest {
     creds: Option<GmoCredentials>,
 }
 
+#[derive(Debug, Deserialize)]
+struct WsAuthResp {
+    status: u16,
+    data: String, // token
+}
+
 impl GmoRest {
     pub fn new_public_only() -> Result<Self, String> {
         let client = reqwest::Client::builder()
@@ -182,13 +188,6 @@ impl GmoRest {
     // ----------------------------
     // Private WS token (ws-auth)
     // ----------------------------
-
-    #[derive(Debug, Deserialize)]
-    pub struct WsAuthResp {
-        pub status: u16,
-        pub data: String, // token
-    }
-
     /// POST /private/v1/ws-auth -> token  [oai_citation:14‡Coin API](https://api.coin.z.com/docs/)
     pub async fn ws_auth_create(&self) -> Result<String, String> {
         let r: WsAuthResp = self.request_private_any(Method::POST, "/v1/ws-auth", None, Some(serde_json::json!({}))).await?;
