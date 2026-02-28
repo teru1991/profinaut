@@ -53,10 +53,9 @@ impl SpecRegistry {
         let fixture_raw = std::fs::read_to_string(&fixtures).unwrap_or_default();
 
         for (venue, manifest) in manifests {
-            if manifest.strict && !fixture_raw.contains(&format!("\"{}\"", venue.as_str())) {
+            if manifest.strict && !fixture_raw.contains(&format!("\"{venue}\"")) {
                 return Err(InvokerError::RegistryValidation(format!(
-                    "strict venue {} missing symbol fixture",
-                    venue
+                    "strict venue {venue} missing symbol fixture",
                 )));
             }
             let catalog = load_catalog_loose(&repo_root, venue.as_str())?;
@@ -84,8 +83,7 @@ impl SpecRegistry {
                 let key = (venue.clone(), id.clone());
                 if specs.insert(key, ResolvedSpec { kind, spec }).is_some() {
                     return Err(InvokerError::RegistryValidation(format!(
-                        "duplicate id mapping: {}:{}",
-                        venue, id
+                        "duplicate id mapping: {venue}:{id}",
                     )));
                 }
             }
@@ -123,7 +121,7 @@ fn kind_gate(id: &str, kind: OperationKind, venue: &VenueId) -> Result<(), Invok
     let wsish = id.contains(".ws.");
     match (restish, wsish, kind) {
         (true, false, OperationKind::Ws) | (false, true, OperationKind::Rest) => Err(
-            InvokerError::RegistryValidation(format!("kind gate mismatch for {}:{}", venue, id)),
+            InvokerError::RegistryValidation(format!("kind gate mismatch for {venue}:{id}")),
         ),
         _ => Ok(()),
     }
@@ -163,7 +161,7 @@ fn synthetic_spec(
             channel: None,
             operation: Some("synthetic-from-coverage".into()),
             method: Some("GET".into()),
-            base_url: Some(format!("docs://{}", venue)),
+            base_url: Some(format!("docs://{venue}")),
             path: Some(format!("/{}", id.as_str().replace('.', "/"))),
             ws_url: None,
             ws: None,
@@ -178,7 +176,7 @@ fn synthetic_spec(
             method: None,
             base_url: None,
             path: None,
-            ws_url: Some(format!("wss://{}.invalid/ws", venue)),
+            ws_url: Some(format!("wss://{venue}.invalid/ws")),
             ws: None,
             auth: CatalogAuth::default(),
         },

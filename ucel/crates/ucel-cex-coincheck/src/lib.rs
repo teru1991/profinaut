@@ -1,9 +1,13 @@
+use bytes::Bytes;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use tokio::sync::mpsc;
 use tracing::info;
 use ucel_core::{ErrorCode, OpName, UcelError};
-use ucel_transport::{RequestContext, Transport, WsConnectRequest};
+use ucel_transport::{
+    enforce_auth_boundary, HttpRequest, RequestContext, Transport, WsConnectRequest,
+};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -676,3 +680,145 @@ mod tests {
 pub mod channels;
 pub mod symbols;
 pub mod ws_manager;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RestEndpointSpec {
+    pub id: String,
+    pub method: String,
+    pub base_url: String,
+    pub path: String,
+    pub requires_auth: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct CoincheckRestAdapter {
+    base_url_override: String,
+    endpoints: Vec<RestEndpointSpec>,
+}
+
+impl CoincheckRestAdapter {
+    pub fn new(base_url: impl Into<String>) -> Self {
+        Self {
+            base_url_override: base_url.into(),
+            endpoints: load_rest_endpoint_specs(),
+        }
+    }
+
+    pub async fn execute_rest<T: Transport>(
+        &self,
+        transport: &T,
+        endpoint_id: &str,
+        params: &HashMap<String, String>,
+        body: Option<Bytes>,
+        key_id: Option<String>,
+    ) -> Result<CoincheckRestResponse, UcelError> {
+        let spec = self
+            .endpoints
+            .iter()
+            .find(|entry| entry.id == endpoint_id)
+            .ok_or_else(|| {
+                UcelError::new(
+                    ErrorCode::NotSupported,
+                    format!("unknown endpoint: {endpoint_id}"),
+                )
+            })?;
+
+        let ctx = RequestContext {
+            trace_id: Uuid::new_v4().to_string(),
+            request_id: Uuid::new_v4().to_string(),
+            run_id: Uuid::new_v4().to_string(),
+            op: op_for_rest(endpoint_id),
+            venue: "coincheck".into(),
+            policy_id: "default".into(),
+            key_id: if spec.requires_auth { key_id } else { None },
+            requires_auth: spec.requires_auth,
+        };
+        enforce_auth_boundary(&ctx)?;
+
+        let mut path = spec.path.clone();
+        for (k, v) in params {
+            path = path.replace(&format!("{{{k}}}"), v);
+        }
+        let base_url = if self.base_url_override.is_empty() {
+            &spec.base_url
+        } else {
+            &self.base_url_override
+        };
+
+        let req = HttpRequest {
+            method: spec.method.clone(),
+            path: format!("{base_url}{path}"),
+            body,
+        };
+
+        let response = transport.send_http(req, ctx).await?;
+        if response.status >= 400 {
+            return Err(map_coincheck_http_error(response.status));
+        }
+
+        Ok(CoincheckRestResponse::Json(parse_json(&response.body)?))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum CoincheckRestResponse {
+    Json(serde_json::Value),
+}
+
+#[derive(Debug, Deserialize)]
+struct RestCatalog {
+    rest_endpoints: Vec<RestCatalogEntry>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RestCatalogEntry {
+    id: String,
+    method: String,
+    base_url: String,
+    path: String,
+    auth: CatalogAuth,
+}
+
+fn load_rest_endpoint_specs() -> Vec<RestEndpointSpec> {
+    let raw = include_str!("../../../../docs/exchanges/coincheck/catalog.json");
+    let catalog: RestCatalog = serde_json::from_str(raw).expect("valid coincheck catalog");
+
+    catalog
+        .rest_endpoints
+        .into_iter()
+        .map(|entry| RestEndpointSpec {
+            id: entry.id,
+            method: entry.method,
+            base_url: entry.base_url,
+            path: entry.path,
+            requires_auth: entry.auth.auth_type != "none",
+        })
+        .collect()
+}
+
+fn parse_json<T: DeserializeOwned>(body: &[u8]) -> Result<T, UcelError> {
+    serde_json::from_slice(body)
+        .map_err(|e| UcelError::new(ErrorCode::Internal, format!("json parse error: {e}")))
+}
+
+fn map_coincheck_http_error(status: u16) -> UcelError {
+    if status == 429 {
+        return UcelError::new(ErrorCode::RateLimited, "rate limited");
+    }
+    if status >= 500 {
+        return UcelError::new(ErrorCode::Upstream5xx, "upstream error");
+    }
+    UcelError::new(
+        ErrorCode::Network,
+        format!("coincheck http error status={status}"),
+    )
+}
+
+fn op_for_rest(endpoint_id: &str) -> OpName {
+    match endpoint_id {
+        "coincheck.rest.public.ticker.get" => OpName::FetchTicker,
+        "coincheck.rest.public.trades.get" => OpName::FetchTrades,
+        "coincheck.rest.public.order_books.get" => OpName::FetchOrderbookSnapshot,
+        _ => OpName::FetchStatus,
+    }
+}

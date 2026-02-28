@@ -10,14 +10,16 @@ struct ApiResp<T> {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 struct SymbolRow {
     symbol: String, // e.g. "BTC"
-    minOrderSize: String,
-    maxOrderSize: String,
-    sizeStep: String,
-    tickSize: String,
-    takerFee: String,
-    makerFee: String,
+    min_order_size: String,
+    max_order_size: String,
+    size_step: String,
+    tick_size: String,
+    taker_fee: String,
+    maker_fee: String,
 }
 
 /// GMO: Public symbols/trading rules

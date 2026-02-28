@@ -8,6 +8,13 @@ use crate::symbols::fetch_all_symbols;
 
 #[derive(Debug, Clone)]
 pub struct BitTradeWsAdapter;
+
+impl Default for BitTradeWsAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BitTradeWsAdapter {
     pub fn new() -> Self {
         Self

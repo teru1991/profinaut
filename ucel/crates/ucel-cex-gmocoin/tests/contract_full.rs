@@ -1,4 +1,3 @@
-use serde_json::json;
 use std::path::Path;
 
 use ucel_cex_gmocoin::rest::GmoCredentials;
@@ -9,7 +8,7 @@ use ucel_ws_rules::load_for_exchange;
 
 fn repo_root() -> std::path::PathBuf {
     let here = Path::new(env!("CARGO_MANIFEST_DIR"));
-    here.join("..").join("..").join("..").join("..")
+    here.join("..").join("..").join("..")
 }
 
 #[test]

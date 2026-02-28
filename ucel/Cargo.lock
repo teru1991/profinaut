@@ -3169,8 +3169,10 @@ dependencies = [
  "sha2 0.11.0-rc.5",
  "tokio",
  "ucel-core",
+ "ucel-subscription-planner",
  "ucel-testkit",
  "ucel-transport",
+ "ucel-ws-rules",
  "uuid",
 ]
 
@@ -3198,6 +3200,7 @@ name = "ucel-cex-kraken"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "bytes",
  "reqwest",
  "serde",
  "serde_json",
@@ -3206,7 +3209,9 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ucel-core",
+ "ucel-testkit",
  "ucel-transport",
+ "uuid",
 ]
 
 [[package]]
@@ -3227,6 +3232,7 @@ dependencies = [
 name = "ucel-cex-upbit"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "serde",
  "serde_json",
  "serde_yaml",

@@ -6,6 +6,13 @@ use crate::symbols::fetch_all_symbols;
 
 #[derive(Debug, Clone)]
 pub struct KrakenSpotWsAdapter;
+
+impl Default for KrakenSpotWsAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl KrakenSpotWsAdapter {
     pub fn new() -> Self {
         Self
@@ -77,10 +84,7 @@ impl WsVenueAdapter for KrakenSpotWsAdapter {
                     .get(arr.len() - 2)
                     .and_then(|x| x.as_str())
                     .unwrap_or("");
-                let pair = arr
-                    .get(arr.len() - 1)
-                    .and_then(|x| x.as_str())
-                    .map(|s| s.to_string());
+                let pair = arr.last().and_then(|x| x.as_str()).map(|s| s.to_string());
                 let fam = if channel.starts_with("ticker") {
                     Some("kraken.public.ws.ticker")
                 } else if channel.starts_with("trade") {

@@ -205,7 +205,8 @@ pub enum UsdmWsEvent {
     #[serde(rename = "depthUpdate")]
     DepthDiff {
         s: String,
-        U: u64,
+        #[serde(rename = "U")]
+        u_start: u64,
         u: u64,
         b: Vec<[String; 2]>,
         a: Vec<[String; 2]>,
@@ -224,23 +225,12 @@ pub struct LiquidationOrder {
     pub s: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct OrderBookSync {
     pub last_update_id: u64,
     pub bids: BTreeMap<String, String>,
     pub asks: BTreeMap<String, String>,
     pub degraded: bool,
-}
-
-impl Default for OrderBookSync {
-    fn default() -> Self {
-        Self {
-            last_update_id: 0,
-            bids: BTreeMap::new(),
-            asks: BTreeMap::new(),
-            degraded: false,
-        }
-    }
 }
 
 impl OrderBookSync {

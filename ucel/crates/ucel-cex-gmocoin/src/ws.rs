@@ -11,6 +11,7 @@ use crate::symbols::fetch_symbols;
 const WS_PUBLIC_V1: &str = "wss://api.coin.z.com/ws/public/v1";
 const WS_PRIVATE_V1_BASE: &str = "wss://api.coin.z.com/ws/private/v1";
 
+#[allow(dead_code)]
 fn now_unix_ms() -> u64 {
     (std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -58,11 +59,47 @@ fn weight_for_channel(channel: &str) -> u32 {
     }
 }
 
+fn public_op_id_for_channel(channel: &str) -> Option<&'static str> {
+    match channel {
+        "ticker" => Some("crypto.public.ws.ticker.update"),
+        "trades" => Some("crypto.public.ws.trades.update"),
+        "orderbooks" => Some("crypto.public.ws.orderbooks.update"),
+        _ => None,
+    }
+}
+
+fn channel_for_public_op_id(op_id: &str) -> Option<&'static str> {
+    match op_id {
+        "crypto.public.ws.ticker.update" | "fx.public.ws.ticker.update" => Some("ticker"),
+        "crypto.public.ws.trades.update" | "fx.public.ws.trades.update" => Some("trades"),
+        "crypto.public.ws.orderbooks.update" | "fx.public.ws.orderbooks.update" => {
+            Some("orderbooks")
+        }
+        _ => None,
+    }
+}
+
+fn to_ws_symbol(symbol: &str) -> String {
+    symbol.replace('/', "_")
+}
+
+fn to_canonical_symbol(symbol: &str) -> String {
+    symbol.replace('_', "/")
+}
+
 /// ----------------------------
 /// Public adapter
 /// ----------------------------
 #[derive(Debug, Clone)]
 pub struct GmoCoinPublicWsAdapter;
+
+impl Default for GmoCoinPublicWsAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+pub type GmoCoinWsAdapter = GmoCoinPublicWsAdapter;
 
 impl GmoCoinPublicWsAdapter {
     pub fn new() -> Self {
@@ -90,13 +127,24 @@ impl WsVenueAdapter for GmoCoinPublicWsAdapter {
         symbol: &str,
         params: &Value,
     ) -> Result<Vec<OutboundMsg>, String> {
-        // planner_v2 provides params["_topic"] = "channel|symbol"
+        // planner_v2 provides params["_topic"] = "channel|symbol"; fallback for coverage op_ids
         let topic = params
             .get("_topic")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| format!("missing _topic (planner_v2 required): op_id={op_id}"))?;
+            .map(|s| s.to_string())
+            .or_else(|| {
+                let channel = channel_for_public_op_id(op_id)?;
+                let ws_symbol = if symbol.is_empty() {
+                    "".to_string()
+                } else {
+                    to_ws_symbol(symbol)
+                };
+                Some(format!("{channel}|{ws_symbol}"))
+            });
 
-        let (channel, sym_in_topic) = parse_topic(topic)?;
+        let topic =
+            topic.ok_or_else(|| format!("missing _topic (planner_v2 required): op_id={op_id}"))?;
+        let (channel, sym_in_topic) = parse_topic(&topic)?;
         let sym = sym_in_topic.unwrap_or_else(|| symbol.to_string());
 
         // trades may include option=TAKER_ONLY  [oai_citation:16‡Coin API](https://api.coin.z.com/docs/)
@@ -133,7 +181,15 @@ impl WsVenueAdapter for GmoCoinPublicWsAdapter {
         let symbol = v
             .get("symbol")
             .and_then(|x| x.as_str())
-            .map(|s| s.to_string());
+            .map(to_canonical_symbol);
+
+        if let Some(op_id) = public_op_id_for_channel(channel) {
+            return InboundClass::Data {
+                op_id: Some(op_id.to_string()),
+                symbol,
+                params_canon_hint: Some("{}".into()),
+            };
+        }
 
         let topic = match (&symbol, channel) {
             (Some(sym), _) => format!("{channel}|{sym}"),
@@ -169,7 +225,7 @@ pub struct GmoCoinPrivateWsAdapter {
 
 impl GmoCoinPrivateWsAdapter {
     pub fn new(creds: GmoCredentials) -> Result<Self, String> {
-        let rest = GmoRest::new_with_credentials(creds)?;
+        let rest = GmoRest::new_with_credentials(creds);
         Ok(Self {
             rest,
             state: Arc::new(RwLock::new(TokenState {

@@ -661,7 +661,7 @@ mod tests {
     #[test]
     fn loads_all_rest_rows_from_catalog() {
         let adapter = BitflyerRestAdapter::new("http://localhost");
-        assert_eq!(adapter.endpoint_specs().len(), 49);
+        assert_eq!(adapter.endpoint_specs().len(), 50);
     }
 
     #[tokio::test(flavor = "current_thread")]
@@ -1000,8 +1000,7 @@ mod tests {
                         | MarketEvent::BoardSnapshot { .. }
                         | MarketEvent::OrderEvent { .. }
                 ),
-                "id {} should map to typed market event",
-                id
+                "id {id} should map to typed market event",
             );
         }
     }

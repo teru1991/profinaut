@@ -6,6 +6,13 @@ use crate::symbols::{fetch_all_symbols, to_exchange_symbol, to_ws_symbol};
 
 #[derive(Debug, Clone)]
 pub struct BinanceUsdmWsAdapter;
+
+impl Default for BinanceUsdmWsAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BinanceUsdmWsAdapter {
     pub fn new() -> Self {
         Self

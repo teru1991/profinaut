@@ -224,7 +224,7 @@ async fn e2e_reconnect_drip_wal() {
 
     let adapter: Arc<dyn WsVenueAdapter> = Arc::new(TestAdapter {
         exchange_id: "gmocoin".to_string(),
-        url: format!("ws://{}", addr),
+        url: format!("ws://{addr}"),
     });
 
     let shutdown = ShutdownToken {
@@ -285,7 +285,7 @@ async fn e2e_stop_on_oversized_frame() {
 
     let adapter: Arc<dyn WsVenueAdapter> = Arc::new(TestAdapter {
         exchange_id: "gmocoin".to_string(),
-        url: format!("ws://{}", addr),
+        url: format!("ws://{addr}"),
     });
 
     let shutdown = ShutdownToken {
@@ -352,7 +352,7 @@ async fn e2e_symbol_less_subscription_is_dripped() {
 
     let adapter: Arc<dyn WsVenueAdapter> = Arc::new(TestAdapter {
         exchange_id: "gmocoin".to_string(),
-        url: format!("ws://{}", addr),
+        url: format!("ws://{addr}"),
     });
 
     let shutdown = ShutdownToken {

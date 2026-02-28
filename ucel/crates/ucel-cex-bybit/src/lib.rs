@@ -93,6 +93,7 @@ enum BybitData {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 struct BybitOrderbookData {
     #[serde(default)]
     s: Option<String>,
@@ -149,6 +150,7 @@ pub struct OrderBookSyncState {
 }
 
 impl OrderBookSyncState {
+    #[allow(dead_code)]
     pub(crate) fn apply_snapshot(&mut self, data: &BybitOrderbookData) {
         self.sequence = data.u.or(data.seq);
         self.degraded = false;
@@ -156,6 +158,7 @@ impl OrderBookSyncState {
         self.asks = data.a.iter().cloned().collect();
     }
 
+    #[allow(dead_code)]
     pub(crate) fn apply_delta(
         &mut self,
         data: &BybitOrderbookData,

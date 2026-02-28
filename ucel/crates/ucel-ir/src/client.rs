@@ -159,7 +159,7 @@ impl UcelIrClient {
                     if err.kind == UcelIrErrorKind::RateLimit {
                         stats.status_429 += 1;
                     }
-                    report.errors.push(format!("edinet: {}", err));
+                    report.errors.push(format!("edinet: {err}"));
                     stats.degraded += 1;
                 }
             }
@@ -199,12 +199,12 @@ impl UcelIrClient {
                         if err.kind == UcelIrErrorKind::RateLimit {
                             stats.status_429 += 1;
                         }
-                        report.errors.push(format!("sec_edgar: {}", err));
+                        report.errors.push(format!("sec_edgar: {err}"));
                         stats.degraded += 1;
                     }
                 },
                 Err(err) => {
-                    report.errors.push(format!("sec_edgar: {}", err));
+                    report.errors.push(format!("sec_edgar: {err}"));
                     stats.degraded += 1;
                 }
             }

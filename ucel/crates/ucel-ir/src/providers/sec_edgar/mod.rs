@@ -186,7 +186,7 @@ impl SecEdgarProvider {
         let path = self
             .config
             .fixtures_dir
-            .join(format!("submissions_CIK{}.json", cik));
+            .join(format!("submissions_CIK{cik}.json"));
         let body = fs::read_to_string(path)
             .map_err(|e| UcelIrError::new(UcelIrErrorKind::Upstream, e.to_string()))?;
         serde_json::from_str(&body)

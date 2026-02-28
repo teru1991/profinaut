@@ -21,3 +21,5 @@ chrono = "0.4.44"
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt"] }
 ucel-testkit = { path = "../ucel-testkit" }
+ucel-subscription-planner = { path = "../ucel-subscription-planner" }
+ucel-ws-rules = { path = "../ucel-ws-rules" }

@@ -11,17 +11,16 @@ struct ResultBody {
     list: Vec<Item>,
 }
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct Item {
     #[serde(default)]
     status: String,
     #[serde(default)]
     symbol: Option<String>,
     #[serde(default)]
-    #[allow(non_snake_case)]
-    baseCoin: Option<String>,
+    base_coin: Option<String>,
     #[serde(default)]
-    #[allow(non_snake_case)]
-    quoteCoin: Option<String>,
+    quote_coin: Option<String>,
 }
 
 fn canon_pair(base: &str, quote: &str) -> String {
@@ -49,7 +48,7 @@ async fn fetch(category: &str) -> Result<Vec<String>, String> {
         if let Some(sym) = it.symbol {
             // optionsなどは raw symbol を優先（そのまま使う）
             out.push(sym);
-        } else if let (Some(b), Some(q)) = (it.baseCoin, it.quoteCoin) {
+        } else if let (Some(b), Some(q)) = (it.base_coin, it.quote_coin) {
             out.push(canon_pair(&b, &q));
         }
     }

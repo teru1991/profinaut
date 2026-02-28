@@ -11,6 +11,7 @@ struct PairInfo {
     #[serde(default)]
     wsname: Option<String>,
     #[serde(default)]
+    #[allow(dead_code)]
     status: Option<String>,
 }
 

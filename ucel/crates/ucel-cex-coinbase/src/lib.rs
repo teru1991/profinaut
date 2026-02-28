@@ -6,7 +6,8 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::info;
 use ucel_core::{
-    Decimal, ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side, TradeEvent, UcelError,
+    Decimal, ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side,
+    TradeEvent, UcelError,
 };
 use ucel_transport::{enforce_auth_boundary, HttpRequest, RequestContext, Transport};
 use uuid::Uuid;
@@ -387,13 +388,41 @@ pub struct RestEndpointSpec {
 }
 
 static REST_ENDPOINT_SPECS: [RestEndpointSpec; 7] = [
-    RestEndpointSpec { id: "advanced.crypto.public.rest.reference.introduction", requires_auth: false, transport_enabled: true },
-    RestEndpointSpec { id: "advanced.crypto.private.rest.reference.introduction", requires_auth: true, transport_enabled: true },
-    RestEndpointSpec { id: "exchange.crypto.public.rest.reference.introduction", requires_auth: false, transport_enabled: true },
-    RestEndpointSpec { id: "exchange.crypto.private.rest.reference.introduction", requires_auth: true, transport_enabled: true },
-    RestEndpointSpec { id: "intx.crypto.public.rest.reference.welcome", requires_auth: false, transport_enabled: true },
-    RestEndpointSpec { id: "intx.crypto.private.rest.reference.welcome", requires_auth: true, transport_enabled: true },
-    RestEndpointSpec { id: "other.other.public.rest.docs.root", requires_auth: false, transport_enabled: true },
+    RestEndpointSpec {
+        id: "advanced.crypto.public.rest.reference.introduction",
+        requires_auth: false,
+        transport_enabled: true,
+    },
+    RestEndpointSpec {
+        id: "advanced.crypto.private.rest.reference.introduction",
+        requires_auth: true,
+        transport_enabled: true,
+    },
+    RestEndpointSpec {
+        id: "exchange.crypto.public.rest.reference.introduction",
+        requires_auth: false,
+        transport_enabled: true,
+    },
+    RestEndpointSpec {
+        id: "exchange.crypto.private.rest.reference.introduction",
+        requires_auth: true,
+        transport_enabled: true,
+    },
+    RestEndpointSpec {
+        id: "intx.crypto.public.rest.reference.welcome",
+        requires_auth: false,
+        transport_enabled: true,
+    },
+    RestEndpointSpec {
+        id: "intx.crypto.private.rest.reference.welcome",
+        requires_auth: true,
+        transport_enabled: true,
+    },
+    RestEndpointSpec {
+        id: "other.other.public.rest.docs.root",
+        requires_auth: false,
+        transport_enabled: true,
+    },
 ];
 
 #[derive(Debug, Clone, Deserialize)]

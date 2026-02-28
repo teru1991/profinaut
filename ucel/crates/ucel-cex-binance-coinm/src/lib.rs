@@ -5,8 +5,8 @@ use std::collections::{HashSet, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
-use ucel_core::{ErrorCode, Exchange, OpName, UcelError};
 use ucel_core::{Decimal, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side, TradeEvent};
+use ucel_core::{ErrorCode, Exchange, OpName, UcelError};
 use ucel_transport::{
     enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport, WsConnectRequest,
 };
@@ -266,7 +266,7 @@ impl Exchange for BinanceCoinmRestAdapter {
     fn execute(&self, op: OpName) -> Result<(), UcelError> {
         Err(UcelError::new(
             ErrorCode::NotSupported,
-            format!("op {} not implemented", op),
+            format!("op {op} not implemented"),
         ))
     }
 }

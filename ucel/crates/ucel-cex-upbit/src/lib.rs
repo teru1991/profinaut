@@ -1,9 +1,13 @@
+use bytes::Bytes;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 use tokio::sync::mpsc;
 use tracing::info;
 use ucel_core::{ErrorCode, OpName, UcelError};
-use ucel_transport::{RequestContext, Transport, WsConnectRequest};
+use ucel_transport::{
+    enforce_auth_boundary, HttpRequest, RequestContext, Transport, WsConnectRequest,
+};
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
@@ -238,7 +242,7 @@ impl BackpressureQueue {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct UpbitWsAdapter {
     subscriptions: HashSet<String>,
     pub metrics: WsAdapterMetrics,
@@ -321,6 +325,347 @@ pub fn scrub_secrets(line: &str) -> String {
         })
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EndpointSpec {
+    pub id: String,
+    pub method: String,
+    pub base_url: String,
+    pub path: String,
+    pub requires_auth: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct UpbitRestAdapter {
+    endpoints: Vec<EndpointSpec>,
+}
+
+impl Default for UpbitRestAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl UpbitRestAdapter {
+    pub fn new() -> Self {
+        Self {
+            endpoints: load_endpoint_specs(),
+        }
+    }
+
+    pub fn endpoint_specs(&self) -> &[EndpointSpec] {
+        &self.endpoints
+    }
+
+    pub async fn execute_rest<T: Transport>(
+        &self,
+        transport: &T,
+        endpoint_id: &str,
+        body: Option<Bytes>,
+        key_id: Option<String>,
+    ) -> Result<UpbitRestResponse, UcelError> {
+        let spec = self
+            .endpoints
+            .iter()
+            .find(|entry| entry.id == endpoint_id)
+            .ok_or_else(|| {
+                UcelError::new(
+                    ErrorCode::NotSupported,
+                    format!("unknown endpoint: {endpoint_id}"),
+                )
+            })?;
+
+        let ctx = RequestContext {
+            trace_id: Uuid::new_v4().to_string(),
+            request_id: Uuid::new_v4().to_string(),
+            run_id: Uuid::new_v4().to_string(),
+            op: op_for_rest(endpoint_id),
+            venue: "upbit".into(),
+            policy_id: "default".into(),
+            key_id: if spec.requires_auth { key_id } else { None },
+            requires_auth: spec.requires_auth,
+        };
+        enforce_auth_boundary(&ctx)?;
+
+        let path = spec.path.replace("{unit}", "1");
+        let req = HttpRequest {
+            method: spec.method.clone(),
+            path: format!("{}{}", spec.base_url, path),
+            body,
+        };
+
+        let response = transport.send_http(req, ctx).await?;
+        if response.status >= 400 {
+            return Err(map_upbit_http_error(response.status, &response.body));
+        }
+
+        parse_upbit_response(endpoint_id, &response.body)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum UpbitRestResponse {
+    Markets(Vec<UpbitMarket>),
+    Tickers(Vec<UpbitTicker>),
+    Trades(Vec<UpbitTrade>),
+    Orderbook(Vec<UpbitOrderbook>),
+    Candles(Vec<UpbitCandle>),
+    Accounts(Vec<UpbitAccount>),
+    CreateOrder(UpbitOrder),
+    CancelOrder(UpbitOrder),
+    OpenOrders(Vec<UpbitOrder>),
+    ClosedOrders(Vec<UpbitOrder>),
+    OrderChance(UpbitOrderChance),
+    Withdraws(Vec<UpbitWithdraw>),
+    WithdrawCoin(UpbitWithdraw),
+    Deposits(Vec<UpbitDeposit>),
+    DepositAddress(UpbitDepositAddress),
+    TravelRuleVasps(Vec<UpbitVasp>),
+    WalletStatus(Vec<UpbitWalletStatus>),
+    ApiKeys(Vec<UpbitApiKey>),
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct UpbitMarket {
+    pub market: String,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct UpbitTicker {
+    pub trade_price: f64,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct UpbitTrade {
+    pub trade_price: f64,
+    pub trade_volume: f64,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct UpbitOrderbook {
+    pub market: String,
+    pub orderbook_units: Vec<UpbitOrderbookUnit>,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct UpbitOrderbookUnit {
+    pub ask_price: f64,
+    pub bid_price: f64,
+    pub ask_size: f64,
+    pub bid_size: f64,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct UpbitCandle {
+    #[serde(default)]
+    pub candle_date_time_utc: Option<String>,
+    #[serde(default)]
+    pub opening_price: Option<f64>,
+    pub trade_price: f64,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct UpbitAccount {
+    pub currency: String,
+    pub balance: String,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct UpbitOrder {
+    pub uuid: String,
+    #[serde(default)]
+    pub state: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct UpbitOrderChance {
+    pub market: UpbitMarketInfo,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct UpbitMarketInfo {
+    pub id: String,
+    #[serde(default)]
+    pub name: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct UpbitWithdraw {
+    pub currency: String,
+    #[serde(default)]
+    pub state: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct UpbitDeposit {
+    pub currency: String,
+    #[serde(default)]
+    pub state: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct UpbitDepositAddress {
+    pub currency: String,
+    pub deposit_address: String,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct UpbitVasp {
+    pub vasp_name: String,
+    pub vasp_code: String,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct UpbitWalletStatus {
+    pub currency: String,
+    pub wallet_state: String,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct UpbitApiKey {
+    pub access_key: String,
+    pub expire_at: String,
+}
+
+fn parse_upbit_response(endpoint_id: &str, body: &[u8]) -> Result<UpbitRestResponse, UcelError> {
+    match endpoint_id {
+        "quotation.public.rest.markets.list" => Ok(UpbitRestResponse::Markets(parse_json(body)?)),
+        "quotation.public.rest.ticker.pairs" => Ok(UpbitRestResponse::Tickers(parse_json(body)?)),
+        "quotation.public.rest.trades.recent" => Ok(UpbitRestResponse::Trades(parse_json(body)?)),
+        "quotation.public.rest.orderbook.snapshot" => {
+            Ok(UpbitRestResponse::Orderbook(parse_json(body)?))
+        }
+        "quotation.public.rest.candles.minutes"
+        | "quotation.public.rest.candles.days"
+        | "quotation.public.rest.candles.weeks"
+        | "quotation.public.rest.candles.months"
+        | "quotation.public.rest.candles.years" => {
+            Ok(UpbitRestResponse::Candles(parse_json(body)?))
+        }
+        "exchange.private.rest.accounts.list" => Ok(UpbitRestResponse::Accounts(parse_json(body)?)),
+        "exchange.private.rest.orders.create" => {
+            Ok(UpbitRestResponse::CreateOrder(parse_json(body)?))
+        }
+        "exchange.private.rest.orders.cancel" => {
+            Ok(UpbitRestResponse::CancelOrder(parse_json(body)?))
+        }
+        "exchange.private.rest.orders.open" => Ok(UpbitRestResponse::OpenOrders(parse_json(body)?)),
+        "exchange.private.rest.orders.closed" => {
+            Ok(UpbitRestResponse::ClosedOrders(parse_json(body)?))
+        }
+        "exchange.private.rest.orders.chance" => {
+            Ok(UpbitRestResponse::OrderChance(parse_json(body)?))
+        }
+        "exchange.private.rest.withdraws.list" => {
+            Ok(UpbitRestResponse::Withdraws(parse_json(body)?))
+        }
+        "exchange.private.rest.withdraws.coin" => {
+            Ok(UpbitRestResponse::WithdrawCoin(parse_json(body)?))
+        }
+        "exchange.private.rest.deposits.list" => Ok(UpbitRestResponse::Deposits(parse_json(body)?)),
+        "exchange.private.rest.deposits.address" => {
+            Ok(UpbitRestResponse::DepositAddress(parse_json(body)?))
+        }
+        "exchange.private.rest.travelrule.vasps" => {
+            Ok(UpbitRestResponse::TravelRuleVasps(parse_json(body)?))
+        }
+        "exchange.private.rest.service.walletstatus" => {
+            Ok(UpbitRestResponse::WalletStatus(parse_json(body)?))
+        }
+        "exchange.private.rest.keys.list" => Ok(UpbitRestResponse::ApiKeys(parse_json(body)?)),
+        _ => Err(UcelError::new(
+            ErrorCode::NotSupported,
+            format!("unknown endpoint: {endpoint_id}"),
+        )),
+    }
+}
+
+fn parse_json<T: DeserializeOwned>(body: &[u8]) -> Result<T, UcelError> {
+    serde_json::from_slice(body)
+        .map_err(|e| UcelError::new(ErrorCode::Internal, format!("json parse error: {e}")))
+}
+
+#[derive(Debug, Deserialize)]
+struct UpbitErrorEnvelope {
+    retry_after_ms: Option<u64>,
+}
+
+fn map_upbit_http_error(status: u16, body: &[u8]) -> UcelError {
+    if status == 429 {
+        let retry_after_ms = serde_json::from_slice::<UpbitErrorEnvelope>(body)
+            .ok()
+            .and_then(|env| env.retry_after_ms);
+        let mut err = UcelError::new(ErrorCode::RateLimited, "rate limited");
+        err.retry_after_ms = retry_after_ms;
+        return err;
+    }
+
+    if status >= 500 {
+        return UcelError::new(ErrorCode::Upstream5xx, "upstream error");
+    }
+
+    UcelError::new(
+        ErrorCode::Network,
+        format!("upbit http error status={status}"),
+    )
+}
+
+#[derive(Debug, Deserialize)]
+struct RestCatalog {
+    rest_endpoints: Vec<RestCatalogEntry>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RestCatalogEntry {
+    id: String,
+    method: String,
+    base_url: String,
+    path: String,
+    visibility: String,
+    auth: RestCatalogAuth,
+}
+
+#[derive(Debug, Deserialize)]
+struct RestCatalogAuth {
+    #[serde(rename = "type")]
+    auth_type: String,
+}
+
+fn load_endpoint_specs() -> Vec<EndpointSpec> {
+    let raw = include_str!("../../../../docs/exchanges/upbit/catalog.json");
+    let catalog: RestCatalog = serde_json::from_str(raw).expect("valid upbit catalog");
+
+    catalog
+        .rest_endpoints
+        .into_iter()
+        .map(|entry| EndpointSpec {
+            id: entry.id,
+            method: entry.method,
+            base_url: entry.base_url,
+            path: entry.path,
+            requires_auth: entry.auth.auth_type != "none"
+                || entry.visibility.eq_ignore_ascii_case("private"),
+        })
+        .collect()
+}
+
+fn op_for_rest(endpoint_id: &str) -> OpName {
+    match endpoint_id {
+        "quotation.public.rest.ticker.pairs" => OpName::FetchTicker,
+        "quotation.public.rest.trades.recent" => OpName::FetchTrades,
+        "quotation.public.rest.orderbook.snapshot" => OpName::FetchOrderbookSnapshot,
+        "quotation.public.rest.candles.minutes"
+        | "quotation.public.rest.candles.days"
+        | "quotation.public.rest.candles.weeks"
+        | "quotation.public.rest.candles.months"
+        | "quotation.public.rest.candles.years" => OpName::FetchKlines,
+        "exchange.private.rest.orders.create" => OpName::PlaceOrder,
+        "exchange.private.rest.orders.cancel" => OpName::CancelOrder,
+        "exchange.private.rest.orders.open" => OpName::FetchOpenOrders,
+        "exchange.private.rest.accounts.list" => OpName::FetchBalances,
+        _ => OpName::FetchStatus,
+    }
 }
 
 #[cfg(test)]

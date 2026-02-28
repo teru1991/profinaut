@@ -6,7 +6,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use ucel_core::{
-    Decimal, ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side, TradeEvent, UcelError,
+    Decimal, ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side,
+    TradeEvent, UcelError,
 };
 use ucel_transport::{enforce_auth_boundary, RequestContext, Transport, WsConnectRequest};
 use uuid::Uuid;

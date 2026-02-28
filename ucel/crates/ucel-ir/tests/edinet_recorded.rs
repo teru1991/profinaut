@@ -114,7 +114,7 @@ fn fetch_artifact_populates_hash_length_and_mime() {
         )
         .expect("artifact should be written");
 
-    assert_eq!(artifact.content_length, Some(29));
+    assert_eq!(artifact.content_length, Some(30));
     assert_eq!(artifact.mime.as_deref(), Some("application/zip"));
     assert!(artifact.sha256.as_ref().is_some_and(|v| !v.is_empty()));
     assert!(artifact.retrieved_at.is_some());

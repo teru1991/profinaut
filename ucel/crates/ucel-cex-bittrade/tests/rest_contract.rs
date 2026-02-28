@@ -59,7 +59,14 @@ async fn rest_contract_all_catalog_rows_parse() {
         let fixture_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("tests/fixtures")
             .join(format!("{}.json", spec.id));
-        let payload = std::fs::read(&fixture_path).unwrap();
+        let payload = std::fs::read(&fixture_path).unwrap_or_else(|e| {
+            panic!(
+                "missing fixture for {} at {}: {}",
+                spec.id,
+                fixture_path.display(),
+                e
+            )
+        });
         transport.enqueue_ok(200, Bytes::from(payload));
 
         let mut args = RequestArgs::default();

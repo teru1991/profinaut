@@ -7,7 +7,8 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::info;
 use ucel_core::{
-    Decimal, ErrorCode, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side, TradeEvent, UcelError,
+    Decimal, ErrorCode, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side, TradeEvent,
+    UcelError,
 };
 
 #[derive(Debug, Clone, Deserialize)]

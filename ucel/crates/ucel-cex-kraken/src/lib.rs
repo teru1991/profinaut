@@ -286,7 +286,7 @@ impl Exchange for KrakenRestAdapter {
     fn execute(&self, op: OpName) -> Result<(), UcelError> {
         Err(UcelError::new(
             ErrorCode::NotSupported,
-            format!("op {} not implemented", op),
+            format!("op {op} not implemented"),
         ))
     }
 }

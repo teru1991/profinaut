@@ -1422,6 +1422,35 @@
       "rate_limit": "see rate-limit section",
       "notes": "include special limits for large orders and new accounts",
       "source_url": "https://bf-lightning-api.readme.io/docs/rate-limit"
+    },
+    {
+      "id": "bitflyer.data.bulk.not_documented",
+      "segment": "other",
+      "access": "public",
+      "protocol": "rest",
+      "method": "N/A",
+      "base_url": "https://api.bitflyer.com",
+      "path": "N/A",
+      "version": "n/a",
+      "operation": "Bulk data feed (not documented)",
+      "auth": {
+        "type": "none"
+      },
+      "params": {
+        "query": "-",
+        "path": "-",
+        "body": "-"
+      },
+      "response": {
+        "shape": "text/spec",
+        "fields": "n/a"
+      },
+      "errors": {
+        "shape": "object"
+      },
+      "rate_limit": "N/A",
+      "notes": "No standalone historical/bulk dump endpoint documented; present to align coverage id.",
+      "source_url": "https://bf-lightning-api.readme.io/"
     }
   ],
   "ws_channels": [
