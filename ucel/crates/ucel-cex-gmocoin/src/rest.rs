@@ -1,4 +1,4 @@
-use hmac::{Hmac, Mac};
+use hmac::{Hmac, KeyInit, Mac};
 use reqwest::Method;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -12,6 +12,7 @@ type HmacSha256 = Hmac<Sha256>;
 
 #[derive(Debug, Deserialize)]
 struct WsAuthResp {
+    #[allow(dead_code)]
     status: u16,
     data: String, // token
 }
@@ -28,6 +29,7 @@ pub struct GmoRest {
     cred: Option<GmoCredentials>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 struct PrivateHeaders<'a> {
     #[serde(rename = "API-KEY")]
@@ -119,7 +121,7 @@ impl GmoRest {
         let body_str = body
             .as_ref()
             .map(|b| serde_json::to_string(b).unwrap_or_else(|_| "{}".to_string()))
-            .unwrap_or_else(|| "".to_string());
+            .unwrap_or_default();
 
         let sign = self.sign(&timestamp, &method, path, &body_str)?;
 

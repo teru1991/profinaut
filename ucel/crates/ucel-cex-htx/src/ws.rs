@@ -14,6 +14,12 @@ impl HtxSpotWsAdapter {
     }
 }
 
+impl Default for HtxSpotWsAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 fn gunzip_if_needed(raw: &[u8]) -> Vec<u8> {
     if raw.len() >= 3 && raw[0] == 0x1f && raw[1] == 0x8b && raw[2] == 0x08 {
         let mut d = GzDecoder::new(raw);
