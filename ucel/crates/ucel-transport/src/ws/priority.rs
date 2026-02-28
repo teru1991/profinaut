@@ -252,7 +252,7 @@ impl PriorityQueue {
                         remaining.min(Duration::from_millis(50)),
                         self.space_notify.notified(),
                     )
-                        .await;
+                    .await;
 
                     if self.closed.load(Ordering::SeqCst) {
                         return Ok(PushOutcome::Dropped);
@@ -367,8 +367,8 @@ mod tests {
             &policy,
             ts,
         )
-            .await
-            .unwrap();
+        .await
+        .unwrap();
 
         q.push(
             "x",
@@ -383,8 +383,8 @@ mod tests {
             &policy,
             ts,
         )
-            .await
-            .unwrap();
+        .await
+        .unwrap();
 
         q.push(
             "x",
@@ -399,8 +399,8 @@ mod tests {
             &policy,
             ts,
         )
-            .await
-            .unwrap();
+        .await
+        .unwrap();
 
         assert_eq!(q.recv().await.unwrap().frame.to_bytes(), b"ctl");
         assert_eq!(q.recv().await.unwrap().frame.to_bytes(), b"priv");
@@ -428,8 +428,8 @@ mod tests {
             &OverflowPolicy::drop_newest(),
             ts,
         )
-            .await
-            .unwrap();
+        .await
+        .unwrap();
 
         let out = q
             .push(
@@ -472,8 +472,8 @@ mod tests {
             &OverflowPolicy::drop_newest(),
             ts,
         )
-            .await
-            .unwrap();
+        .await
+        .unwrap();
 
         let policy = OverflowPolicy::SpillToDisk {
             spooler: sp,

@@ -7,7 +7,9 @@ use tokio::task::JoinHandle;
 use ucel_subscription_store::{SubscriptionRow, SubscriptionStore};
 
 use ucel_transport::ws::overflow::{DropMode, OverflowPolicy};
-use ucel_transport::ws::priority::{OutboundPriority, PriorityQueue, QueuedOutbound, WsOutboundFrame};
+use ucel_transport::ws::priority::{
+    OutboundPriority, PriorityQueue, QueuedOutbound, WsOutboundFrame,
+};
 use ucel_transport::ws::shutdown::{graceful_shutdown_ws, GracefulShutdownConfig, ShutdownToken};
 
 fn now_unix_i64() -> i64 {
@@ -112,8 +114,8 @@ async fn close_flush_requeue_join_is_enforced() {
         &policy,
         ts,
     )
-        .await
-        .unwrap();
+    .await
+    .unwrap();
 
     q.push(
         exchange_id,
@@ -128,8 +130,8 @@ async fn close_flush_requeue_join_is_enforced() {
         &policy,
         ts,
     )
-        .await
-        .unwrap();
+    .await
+    .unwrap();
 
     let shutdown = ShutdownToken {
         flag: Arc::new(AtomicBool::new(false)),
@@ -154,8 +156,8 @@ async fn close_flush_requeue_join_is_enforced() {
         writer,
         wal,
     )
-        .await
-        .unwrap();
+    .await
+    .unwrap();
 
     // Assert: queue is closed/drained
     assert!(q.is_empty().await);
@@ -189,8 +191,8 @@ async fn closing_rejects_non_control_frames_but_allows_close_request() {
         &policy,
         ts,
     )
-        .await
-        .unwrap();
+    .await
+    .unwrap();
 
     // Begin closing => reject non-control
     q.begin_closing();
@@ -218,7 +220,13 @@ async fn closing_rejects_non_control_frames_but_allows_close_request() {
         mode: DropMode::DropOldestLowPriority,
     };
     let out2 = q
-        .push(exchange_id, conn_id, QueuedOutbound::close_request(), &close_policy, ts)
+        .push(
+            exchange_id,
+            conn_id,
+            QueuedOutbound::close_request(),
+            &close_policy,
+            ts,
+        )
         .await
         .unwrap();
     assert_eq!(out2, ucel_transport::ws::priority::PushOutcome::Enqueued);

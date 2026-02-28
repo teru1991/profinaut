@@ -114,7 +114,7 @@ impl SubscriptionStore {
                  WHERE key=?1 AND state='pending'",
                 params![k, now],
             )
-                .map_err(|e| e.to_string())?;
+            .map_err(|e| e.to_string())?;
         }
         tx.commit().map_err(|e| e.to_string())?;
         Ok(keys)

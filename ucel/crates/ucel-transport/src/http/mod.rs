@@ -12,7 +12,9 @@ pub mod retry;
 use std::sync::Arc;
 use std::time::Instant;
 
-use crate::{enforce_auth_boundary, HttpRequest, HttpResponse, RequestContext, RetryPolicy, Transport};
+use crate::{
+    enforce_auth_boundary, HttpRequest, HttpResponse, RequestContext, RetryPolicy, Transport,
+};
 
 use limiter::{HttpRateLimiter, HttpRateLimiterConfig};
 use retry::{decide_retry, RetryDecision};
@@ -56,7 +58,11 @@ where
 {
     pub fn new(inner: Arc<T>, cfg: ReliableHttpConfig) -> Self {
         let limiter = Arc::new(HttpRateLimiter::new(cfg.limiter.clone()));
-        Self { inner, limiter, cfg }
+        Self {
+            inner,
+            limiter,
+            cfg,
+        }
     }
 
     async fn send_http_inner(
@@ -94,9 +100,8 @@ where
             attempt = attempt.saturating_add(1);
         }
 
-        Err(last_err.unwrap_or_else(|| {
-            UcelError::new(ucel_core::ErrorCode::Internal, "retry exhausted")
-        }))
+        Err(last_err
+            .unwrap_or_else(|| UcelError::new(ucel_core::ErrorCode::Internal, "retry exhausted")))
     }
 }
 
@@ -135,8 +140,10 @@ mod tests {
             _req: HttpRequest,
             _ctx: RequestContext,
         ) -> Result<HttpResponse, UcelError> {
-            Err(ucel_core::UcelError::new(ucel_core::ErrorCode::RateLimited, "rl")
-                .with_retry_after_ms(1))
+            Err(
+                ucel_core::UcelError::new(ucel_core::ErrorCode::RateLimited, "rl")
+                    .with_retry_after_ms(1),
+            )
         }
         async fn connect_ws(
             &self,

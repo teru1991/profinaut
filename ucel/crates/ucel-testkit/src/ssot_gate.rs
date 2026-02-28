@@ -20,7 +20,9 @@ fn collect_catalog_exchange_ids(repo_root: &Path) -> Result<BTreeSet<String>, St
     let exchanges_dir = repo_root.join("docs").join("exchanges");
     let mut out = BTreeSet::new();
 
-    for entry in fs::read_dir(&exchanges_dir).map_err(|e| format!("read_dir docs/exchanges: {e}"))? {
+    for entry in
+        fs::read_dir(&exchanges_dir).map_err(|e| format!("read_dir docs/exchanges: {e}"))?
+    {
         let entry = entry.map_err(|e| format!("read_dir entry: {e}"))?;
         if !entry.file_type().map_err(|e| e.to_string())?.is_dir() {
             continue;
@@ -31,8 +33,8 @@ fn collect_catalog_exchange_ids(repo_root: &Path) -> Result<BTreeSet<String>, St
             let raw = fs::read_to_string(&catalog_path)
                 .map_err(|e| format!("read {catalog_path:?}: {e}"))?;
             // Parse to validate JSON structure; fields are not used beyond this check.
-            let _cat: Catalog = serde_json::from_str(&raw)
-                .map_err(|e| format!("parse {catalog_path:?}: {e}"))?;
+            let _cat: Catalog =
+                serde_json::from_str(&raw).map_err(|e| format!("parse {catalog_path:?}: {e}"))?;
             out.insert(ex_id);
         }
     }
@@ -68,7 +70,9 @@ pub fn run_ssot_gate(repo_root: &Path) -> Result<(), String> {
 
     for cat in &catalog_ids {
         if !coverage_ids.contains(cat) {
-            missing.push(format!("catalog has '{cat}' but ucel/coverage/{cat}.yaml is missing"));
+            missing.push(format!(
+                "catalog has '{cat}' but ucel/coverage/{cat}.yaml is missing"
+            ));
         }
     }
 

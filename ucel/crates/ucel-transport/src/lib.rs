@@ -1,5 +1,5 @@
-pub mod ws;
 pub mod http;
+pub mod ws;
 
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};

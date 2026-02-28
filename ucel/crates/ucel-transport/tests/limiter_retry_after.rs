@@ -2,9 +2,11 @@ use std::time::{Duration, Instant};
 
 use ucel_core::{ErrorCode, UcelError};
 
-use ucel_transport::RetryPolicy;
-use ucel_transport::http::limiter::{BucketConfig, HttpRateLimiter, HttpRateLimiterConfig, VenueLimiterConfig};
+use ucel_transport::http::limiter::{
+    BucketConfig, HttpRateLimiter, HttpRateLimiterConfig, VenueLimiterConfig,
+};
 use ucel_transport::http::retry::{decide_retry, parse_retry_after_ms, RetryDecision};
+use ucel_transport::RetryPolicy;
 
 #[test]
 fn retry_after_parse_is_stable_and_tolerant() {

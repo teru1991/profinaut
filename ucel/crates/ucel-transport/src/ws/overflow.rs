@@ -25,7 +25,9 @@ pub enum DropMode {
 
 #[derive(Debug, Clone)]
 pub enum OverflowPolicy {
-    Drop { mode: DropMode },
+    Drop {
+        mode: DropMode,
+    },
     /// Wait for capacity up to `max_wait`. If still full, fallback is applied.
     SlowDown {
         max_wait: Duration,
@@ -139,7 +141,7 @@ mod tests {
             max_bytes: 512,
             fsync_mode: FsyncMode::Balanced,
         })
-            .unwrap();
+        .unwrap();
 
         sp.spill_bytes(
             "x",
@@ -152,8 +154,8 @@ mod tests {
             serde_json::json!({"why":"test"}),
             1,
         )
-            .await
-            .unwrap();
+        .await
+        .unwrap();
 
         let files: Vec<_> = std::fs::read_dir(dir.path()).unwrap().collect();
         assert!(!files.is_empty());

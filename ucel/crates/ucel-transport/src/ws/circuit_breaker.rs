@@ -139,10 +139,7 @@ impl CircuitBreaker {
                     successes: 1,
                 };
             }
-            CircuitState::HalfOpen {
-                trials,
-                successes,
-            } => {
+            CircuitState::HalfOpen { trials, successes } => {
                 let successes = successes.saturating_add(1);
                 let trials = trials.max(1);
                 if successes >= self.cfg.success_threshold {

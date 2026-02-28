@@ -69,8 +69,8 @@ async fn overflow_drop_is_deterministic_drop_oldest_low_priority() {
         &OverflowPolicy::drop_newest(),
         ts,
     )
-        .await
-        .unwrap();
+    .await
+    .unwrap();
 
     // Overflow with private: DropOldestLowPriority must evict public and accept private.
     let policy = OverflowPolicy::Drop {
@@ -108,8 +108,8 @@ async fn overflow_slowdown_waits_then_enqueues_when_space_frees() {
         &OverflowPolicy::drop_newest(),
         ts,
     )
-        .await
-        .unwrap();
+    .await
+    .unwrap();
 
     // After 50ms, receiver pops one item => space becomes available.
     let q2 = q.clone();
@@ -157,8 +157,8 @@ async fn overflow_slowdown_falls_back_when_no_space() {
         &OverflowPolicy::drop_newest(),
         ts,
     )
-        .await
-        .unwrap();
+    .await
+    .unwrap();
 
     // No receiver => no space ever frees during wait.
     let policy = OverflowPolicy::SlowDown {
@@ -202,8 +202,8 @@ async fn overflow_spill_to_disk_spills_and_is_observable() {
         &OverflowPolicy::drop_newest(),
         ts,
     )
-        .await
-        .unwrap();
+    .await
+    .unwrap();
 
     // Spill
     let policy = OverflowPolicy::SpillToDisk {

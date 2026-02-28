@@ -84,7 +84,13 @@ pub async fn graceful_shutdown_ws(
     };
 
     let _ = outq
-        .push(exchange_id, conn_id, QueuedOutbound::close_request(), &close_policy, 0)
+        .push(
+            exchange_id,
+            conn_id,
+            QueuedOutbound::close_request(),
+            &close_policy,
+            0,
+        )
         .await;
 
     // 2) flush (drain outbound queue)
