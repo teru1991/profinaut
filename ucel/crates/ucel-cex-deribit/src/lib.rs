@@ -251,6 +251,7 @@ struct JsonRpcEnvelope<T> {
 #[derive(Debug, Deserialize)]
 struct DeribitErrorPayload {
     code: i64,
+    #[allow(dead_code)]
     message: String,
 }
 

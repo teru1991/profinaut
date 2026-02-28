@@ -1,9 +1,11 @@
+use bytes::Bytes;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 use tokio::sync::mpsc;
 use tracing::info;
 use ucel_core::{ErrorCode, OpName, UcelError};
-use ucel_transport::{RequestContext, Transport, WsConnectRequest};
+use ucel_transport::{enforce_auth_boundary, HttpRequest, RequestContext, Transport, WsConnectRequest};
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
@@ -321,6 +323,459 @@ pub fn scrub_secrets(line: &str) -> String {
         })
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+// ──────────────────────────── REST adapter ────────────────────────────
+
+#[derive(Debug, Clone)]
+pub struct RestEndpointSpec {
+    pub id: &'static str,
+    pub method: &'static str,
+    pub base_url: &'static str,
+    pub path: &'static str,
+    pub requires_auth: bool,
+    pub op: OpName,
+}
+
+const REST_ENDPOINTS: [RestEndpointSpec; 22] = [
+    RestEndpointSpec {
+        id: "quotation.public.rest.markets.list",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/market/all",
+        requires_auth: false,
+        op: OpName::FetchStatus,
+    },
+    RestEndpointSpec {
+        id: "quotation.public.rest.ticker.pairs",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/ticker",
+        requires_auth: false,
+        op: OpName::FetchTicker,
+    },
+    RestEndpointSpec {
+        id: "quotation.public.rest.trades.recent",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/trades/ticks",
+        requires_auth: false,
+        op: OpName::FetchTrades,
+    },
+    RestEndpointSpec {
+        id: "quotation.public.rest.orderbook.snapshot",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/orderbook",
+        requires_auth: false,
+        op: OpName::FetchOrderbookSnapshot,
+    },
+    RestEndpointSpec {
+        id: "quotation.public.rest.candles.minutes",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/candles/minutes/{unit}",
+        requires_auth: false,
+        op: OpName::FetchKlines,
+    },
+    RestEndpointSpec {
+        id: "quotation.public.rest.candles.days",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/candles/days",
+        requires_auth: false,
+        op: OpName::FetchKlines,
+    },
+    RestEndpointSpec {
+        id: "quotation.public.rest.candles.weeks",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/candles/weeks",
+        requires_auth: false,
+        op: OpName::FetchKlines,
+    },
+    RestEndpointSpec {
+        id: "quotation.public.rest.candles.months",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/candles/months",
+        requires_auth: false,
+        op: OpName::FetchKlines,
+    },
+    RestEndpointSpec {
+        id: "quotation.public.rest.candles.years",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/candles/years",
+        requires_auth: false,
+        op: OpName::FetchKlines,
+    },
+    RestEndpointSpec {
+        id: "exchange.private.rest.accounts.list",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/accounts",
+        requires_auth: true,
+        op: OpName::FetchBalances,
+    },
+    RestEndpointSpec {
+        id: "exchange.private.rest.orders.create",
+        method: "POST",
+        base_url: "https://api.upbit.com",
+        path: "/v1/orders",
+        requires_auth: true,
+        op: OpName::PlaceOrder,
+    },
+    RestEndpointSpec {
+        id: "exchange.private.rest.orders.cancel",
+        method: "DELETE",
+        base_url: "https://api.upbit.com",
+        path: "/v1/order",
+        requires_auth: true,
+        op: OpName::CancelOrder,
+    },
+    RestEndpointSpec {
+        id: "exchange.private.rest.orders.open",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/orders/open",
+        requires_auth: true,
+        op: OpName::FetchOpenOrders,
+    },
+    RestEndpointSpec {
+        id: "exchange.private.rest.orders.closed",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/orders/closed",
+        requires_auth: true,
+        op: OpName::FetchLatestExecutions,
+    },
+    RestEndpointSpec {
+        id: "exchange.private.rest.orders.chance",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/orders/chance",
+        requires_auth: true,
+        op: OpName::FetchStatus,
+    },
+    RestEndpointSpec {
+        id: "exchange.private.rest.withdraws.list",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/withdraws",
+        requires_auth: true,
+        op: OpName::FetchStatus,
+    },
+    RestEndpointSpec {
+        id: "exchange.private.rest.withdraws.coin",
+        method: "POST",
+        base_url: "https://api.upbit.com",
+        path: "/v1/withdraws/coin",
+        requires_auth: true,
+        op: OpName::FetchStatus,
+    },
+    RestEndpointSpec {
+        id: "exchange.private.rest.deposits.list",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/deposits",
+        requires_auth: true,
+        op: OpName::FetchStatus,
+    },
+    RestEndpointSpec {
+        id: "exchange.private.rest.deposits.address",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/deposits/coin_address",
+        requires_auth: true,
+        op: OpName::FetchStatus,
+    },
+    RestEndpointSpec {
+        id: "exchange.private.rest.travelrule.vasps",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/travel_rule/vasps",
+        requires_auth: true,
+        op: OpName::FetchStatus,
+    },
+    RestEndpointSpec {
+        id: "exchange.private.rest.service.walletstatus",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/status/wallet",
+        requires_auth: true,
+        op: OpName::FetchStatus,
+    },
+    RestEndpointSpec {
+        id: "exchange.private.rest.keys.list",
+        method: "GET",
+        base_url: "https://api.upbit.com",
+        path: "/v1/api_keys",
+        requires_auth: true,
+        op: OpName::FetchStatus,
+    },
+];
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpbitMarket {
+    pub market: String,
+    pub korean_name: String,
+    pub english_name: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpbitTicker {
+    pub market: String,
+    pub trade_price: f64,
+    pub timestamp: u64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpbitTrade {
+    pub trade_price: f64,
+    pub trade_volume: f64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpbitOrderbookSnapshot {
+    pub market: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpbitCandle {
+    pub candle_date_time_utc: String,
+    pub trade_price: f64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpbitAccount {
+    pub currency: String,
+    pub balance: String,
+    pub locked: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpbitOrder {
+    pub uuid: String,
+    pub state: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpbitOrderChanceMarket {
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpbitOrderChance {
+    pub market: UpbitOrderChanceMarket,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpbitWithdraw {
+    pub currency: String,
+    pub state: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpbitWithdrawCoin {
+    pub currency: String,
+    pub state: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpbitDeposit {
+    pub currency: String,
+    pub state: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpbitDepositAddress {
+    pub currency: String,
+    pub deposit_address: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpbitVasp {
+    pub vasp_name: String,
+    pub vasp_code: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpbitWalletStatus {
+    pub currency: String,
+    pub wallet_state: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpbitApiKey {
+    pub access_key: String,
+    pub expire_at: String,
+}
+
+#[derive(Debug, Clone)]
+pub enum UpbitRestResponse {
+    Markets(Vec<UpbitMarket>),
+    Tickers(Vec<UpbitTicker>),
+    Trades(Vec<UpbitTrade>),
+    Orderbook(Vec<UpbitOrderbookSnapshot>),
+    Candles(Vec<UpbitCandle>),
+    Accounts(Vec<UpbitAccount>),
+    CreateOrder(UpbitOrder),
+    CancelOrder(UpbitOrder),
+    OpenOrders(Vec<UpbitOrder>),
+    ClosedOrders(Vec<UpbitOrder>),
+    OrderChance(UpbitOrderChance),
+    Withdraws(Vec<UpbitWithdraw>),
+    WithdrawCoin(UpbitWithdrawCoin),
+    Deposits(Vec<UpbitDeposit>),
+    DepositAddress(UpbitDepositAddress),
+    TravelRuleVasps(Vec<UpbitVasp>),
+    WalletStatus(Vec<UpbitWalletStatus>),
+    ApiKeys(Vec<UpbitApiKey>),
+}
+
+#[derive(Debug, Default)]
+pub struct UpbitRestAdapter;
+
+impl UpbitRestAdapter {
+    pub fn new() -> Self {
+        Self
+    }
+
+    pub fn endpoint_specs(&self) -> &'static [RestEndpointSpec] {
+        &REST_ENDPOINTS
+    }
+
+    pub async fn execute_rest<T: Transport>(
+        &self,
+        transport: &T,
+        endpoint_id: &str,
+        body: Option<Bytes>,
+        key_id: Option<String>,
+    ) -> Result<UpbitRestResponse, UcelError> {
+        let spec = REST_ENDPOINTS
+            .iter()
+            .find(|s| s.id == endpoint_id)
+            .ok_or_else(|| {
+                UcelError::new(
+                    ErrorCode::NotSupported,
+                    format!("unknown endpoint: {endpoint_id}"),
+                )
+            })?;
+
+        let ctx = RequestContext {
+            trace_id: Uuid::new_v4().to_string(),
+            request_id: Uuid::new_v4().to_string(),
+            run_id: Uuid::new_v4().to_string(),
+            op: spec.op,
+            venue: "upbit".into(),
+            policy_id: "default".into(),
+            key_id: if spec.requires_auth { key_id } else { None },
+            requires_auth: spec.requires_auth,
+        };
+        enforce_auth_boundary(&ctx)?;
+
+        let req = HttpRequest {
+            method: spec.method.to_string(),
+            path: format!("{}{}", spec.base_url, spec.path),
+            body,
+        };
+        let response = transport.send_http(req, ctx).await?;
+        if response.status >= 400 {
+            return Err(map_upbit_http_error(response.status, &response.body));
+        }
+
+        let parsed = match endpoint_id {
+            "quotation.public.rest.markets.list" => {
+                UpbitRestResponse::Markets(parse_json(&response.body)?)
+            }
+            "quotation.public.rest.ticker.pairs" => {
+                UpbitRestResponse::Tickers(parse_json(&response.body)?)
+            }
+            "quotation.public.rest.trades.recent" => {
+                UpbitRestResponse::Trades(parse_json(&response.body)?)
+            }
+            "quotation.public.rest.orderbook.snapshot" => {
+                UpbitRestResponse::Orderbook(parse_json(&response.body)?)
+            }
+            "quotation.public.rest.candles.minutes"
+            | "quotation.public.rest.candles.days"
+            | "quotation.public.rest.candles.weeks"
+            | "quotation.public.rest.candles.months"
+            | "quotation.public.rest.candles.years" => {
+                UpbitRestResponse::Candles(parse_json(&response.body)?)
+            }
+            "exchange.private.rest.accounts.list" => {
+                UpbitRestResponse::Accounts(parse_json(&response.body)?)
+            }
+            "exchange.private.rest.orders.create" => {
+                UpbitRestResponse::CreateOrder(parse_json(&response.body)?)
+            }
+            "exchange.private.rest.orders.cancel" => {
+                UpbitRestResponse::CancelOrder(parse_json(&response.body)?)
+            }
+            "exchange.private.rest.orders.open" => {
+                UpbitRestResponse::OpenOrders(parse_json(&response.body)?)
+            }
+            "exchange.private.rest.orders.closed" => {
+                UpbitRestResponse::ClosedOrders(parse_json(&response.body)?)
+            }
+            "exchange.private.rest.orders.chance" => {
+                UpbitRestResponse::OrderChance(parse_json(&response.body)?)
+            }
+            "exchange.private.rest.withdraws.list" => {
+                UpbitRestResponse::Withdraws(parse_json(&response.body)?)
+            }
+            "exchange.private.rest.withdraws.coin" => {
+                UpbitRestResponse::WithdrawCoin(parse_json(&response.body)?)
+            }
+            "exchange.private.rest.deposits.list" => {
+                UpbitRestResponse::Deposits(parse_json(&response.body)?)
+            }
+            "exchange.private.rest.deposits.address" => {
+                UpbitRestResponse::DepositAddress(parse_json(&response.body)?)
+            }
+            "exchange.private.rest.travelrule.vasps" => {
+                UpbitRestResponse::TravelRuleVasps(parse_json(&response.body)?)
+            }
+            "exchange.private.rest.service.walletstatus" => {
+                UpbitRestResponse::WalletStatus(parse_json(&response.body)?)
+            }
+            "exchange.private.rest.keys.list" => {
+                UpbitRestResponse::ApiKeys(parse_json(&response.body)?)
+            }
+            _ => {
+                return Err(UcelError::new(
+                    ErrorCode::NotSupported,
+                    format!("unsupported endpoint: {endpoint_id}"),
+                ))
+            }
+        };
+
+        Ok(parsed)
+    }
+}
+
+fn map_upbit_http_error(status: u16, body: &[u8]) -> UcelError {
+    if status == 429 {
+        let mut err = UcelError::new(ErrorCode::RateLimited, "rate limited");
+        err.retry_after_ms = parse_upbit_retry_after_ms(body);
+        return err;
+    }
+    if status >= 500 {
+        return UcelError::new(ErrorCode::Upstream5xx, "upstream server error");
+    }
+    UcelError::new(ErrorCode::Internal, format!("http error {status}"))
+}
+
+fn parse_upbit_retry_after_ms(body: &[u8]) -> Option<u64> {
+    let value: serde_json::Value = serde_json::from_slice(body).ok()?;
+    value.get("retry_after_ms")?.as_u64()
+}
+
+fn parse_json<T: DeserializeOwned>(bytes: &[u8]) -> Result<T, UcelError> {
+    serde_json::from_slice(bytes)
+        .map_err(|e| UcelError::new(ErrorCode::Internal, format!("json parse error: {e}")))
 }
 
 #[cfg(test)]

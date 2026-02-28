@@ -231,16 +231,11 @@ impl CoinbaseBackpressure {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum OrderbookHealth {
+    #[default]
     Ok,
     Degraded,
-}
-
-impl Default for OrderbookHealth {
-    fn default() -> Self {
-        Self::Ok
-    }
 }
 
 #[derive(Debug, Default)]
