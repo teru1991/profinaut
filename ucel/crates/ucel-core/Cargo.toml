@@ -6,3 +6,8 @@ edition = "2021"
 [dependencies]
 serde = { workspace = true }
 thiserror = { workspace = true }
+rust_decimal = { workspace = true }
+semver = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

@@ -1,13 +1,13 @@
 pub mod symbol;
+pub mod types;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use thiserror::Error;
-
-pub type Decimal = f64;
+pub use types::{Decimal, OrderStatus, OrderType, SchemaVersion, Side};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Envelope<T> {
-    pub schema_version: String,
+    pub schema_version: SchemaVersion,
     pub meta: Meta,
     pub data: T,
     pub quality: Quality,
@@ -44,15 +44,15 @@ pub struct TickerSnapshot {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TradeEvent {
     pub trade_id: String,
-    pub price: f64,
-    pub qty: f64,
-    pub side: String,
+    pub price: Decimal,
+    pub qty: Decimal,
+    pub side: Side,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OrderBookLevel {
-    pub price: f64,
-    pub qty: f64,
+    pub price: Decimal,
+    pub qty: Decimal,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -74,20 +74,20 @@ pub struct OrderBookDelta {
 pub struct OrderIntent {
     pub client_order_id: String,
     pub symbol: String,
-    pub side: String,
-    pub order_type: String,
+    pub side: Side,
+    pub order_type: OrderType,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OrderAck {
     pub order_id: String,
-    pub status: String,
+    pub status: OrderStatus,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OrderState {
     pub order_id: String,
-    pub status: String,
+    pub status: OrderStatus,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -168,6 +168,24 @@ impl UcelError {
             ban_risk: false,
             key_specific: false,
         }
+    }
+
+    pub fn is_retryable(&self) -> bool {
+        use ErrorCode::*;
+        matches!(
+            self.code,
+            RateLimited | Timeout | Network | Upstream5xx | Desync
+        )
+    }
+
+    pub fn with_retry_after_ms(mut self, milliseconds: u64) -> Self {
+        self.retry_after_ms = Some(milliseconds);
+        self
+    }
+
+    pub fn with_ban_risk(mut self, ban_risk: bool) -> Self {
+        self.ban_risk = ban_risk;
+        self
     }
 }
 
@@ -390,6 +408,7 @@ pub trait Exchange {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn op_names_display_are_canonical() {
@@ -425,5 +444,28 @@ mod tests {
         assert!(!dbg.contains("real_secret"));
         assert!(!disp.contains("real_pass"));
         assert!(dbg.contains("***"));
+    }
+
+    #[test]
+    fn enum_and_schema_contract_is_forward_compatible() {
+        let side: Side = serde_json::from_value(json!("unexpected_side")).unwrap();
+        assert_eq!(side, Side::Unknown);
+
+        let status: OrderStatus = serde_json::from_value(json!("unexpected_status")).unwrap();
+        assert_eq!(status, OrderStatus::Unknown);
+
+        let schema_version: SchemaVersion = serde_json::from_value(json!("1.2.3")).unwrap();
+        assert_eq!(schema_version, SchemaVersion::parse("1.2.3").unwrap());
+    }
+
+    #[test]
+    fn ucel_error_retry_helpers_work() {
+        let err = UcelError::new(ErrorCode::Timeout, "timeout")
+            .with_retry_after_ms(1000)
+            .with_ban_risk(true);
+
+        assert!(err.is_retryable());
+        assert_eq!(err.retry_after_ms, Some(1000));
+        assert!(err.ban_risk);
     }
 }
