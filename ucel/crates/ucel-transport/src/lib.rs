@@ -1,4 +1,6 @@
 pub mod ws;
+pub mod http;
+
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

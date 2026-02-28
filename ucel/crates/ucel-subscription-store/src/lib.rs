@@ -77,7 +77,7 @@ impl SubscriptionStore {
                     updated_at=excluded.updated_at",
                 params![r.key, r.exchange_id, r.op_id, r.symbol, r.params_json, r.assigned_conn, now],
             )
-            .map_err(|e| e.to_string())?;
+                .map_err(|e| e.to_string())?;
         }
         tx.commit().map_err(|e| e.to_string())
     }
@@ -114,7 +114,7 @@ impl SubscriptionStore {
                  WHERE key=?1 AND state='pending'",
                 params![k, now],
             )
-            .map_err(|e| e.to_string())?;
+                .map_err(|e| e.to_string())?;
         }
         tx.commit().map_err(|e| e.to_string())?;
         Ok(keys)
@@ -145,7 +145,11 @@ impl SubscriptionStore {
     pub fn mark_active(&self, key: &str, now: i64) -> Result<(), String> {
         self.conn
             .execute(
-                "UPDATE subscriptions SET state='active', first_active_at=COALESCE(first_active_at, ?2), updated_at=?2 WHERE key=?1",
+                "UPDATE subscriptions
+                 SET state='active',
+                     first_active_at=COALESCE(first_active_at, ?2),
+                     updated_at=?2
+                 WHERE key=?1",
                 params![key, now],
             )
             .map_err(|e| e.to_string())?;
@@ -188,10 +192,102 @@ impl SubscriptionStore {
             .map_err(|e| e.to_string())
     }
 
-    /// deadletterを古い順に削除（上限保持）
+    /// Requeue stale ACTIVE subscriptions back to PENDING for auto-resubscribe.
+    ///
+    /// Deterministic:
+    /// - selects oldest-stale first (by effective_last_ts)
+    /// - updates at most `max_batch`
+    ///
+    /// Stale condition:
+    /// - if last_message_at is NOT NULL: last_message_at < cutoff
+    /// - else if first_active_at is NOT NULL: first_active_at < cutoff
+    /// - else: updated_at < cutoff
+    ///
+    /// Returns number of rows changed.
+    pub fn requeue_stale_active_to_pending(
+        &self,
+        exchange_id: &str,
+        conn_id: &str,
+        stale_after_secs: i64,
+        max_batch: usize,
+        now: i64,
+    ) -> Result<usize, String> {
+        let stale_after = stale_after_secs.max(0);
+        let cutoff = now.saturating_sub(stale_after);
+
+        self.conn
+            .execute_batch("BEGIN IMMEDIATE;")
+            .map_err(|e| e.to_string())?;
+
+        let result = (|| -> Result<usize, String> {
+            let mut stmt = self
+                .conn
+                .prepare(
+                    "
+                    SELECT key
+                    FROM subscriptions
+                    WHERE exchange_id=?1
+                      AND assigned_conn=?2
+                      AND state='active'
+                      AND (
+                        (last_message_at IS NOT NULL AND last_message_at < ?3)
+                        OR (last_message_at IS NULL AND first_active_at IS NOT NULL AND first_active_at < ?3)
+                        OR (last_message_at IS NULL AND first_active_at IS NULL AND updated_at < ?3)
+                      )
+                    ORDER BY
+                      COALESCE(last_message_at, first_active_at, updated_at) ASC
+                    LIMIT ?4
+                    ",
+                )
+                .map_err(|e| e.to_string())?;
+
+            let mut rows = stmt
+                .query(params![exchange_id, conn_id, cutoff, max_batch as i64])
+                .map_err(|e| e.to_string())?;
+
+            let mut keys: Vec<String> = Vec::new();
+            while let Some(row) = rows.next().map_err(|e| e.to_string())? {
+                keys.push(row.get::<_, String>(0).map_err(|e| e.to_string())?);
+            }
+            drop(rows);
+            drop(stmt);
+
+            if keys.is_empty() {
+                return Ok(0);
+            }
+
+            let mut changed: usize = 0;
+            for k in keys {
+                let n = self
+                    .conn
+                    .execute(
+                        "UPDATE subscriptions
+                         SET state='pending', updated_at=?2
+                         WHERE key=?1 AND state='active'",
+                        params![k, now],
+                    )
+                    .map_err(|e| e.to_string())?;
+                changed += n as usize;
+            }
+
+            Ok(changed)
+        })();
+
+        match result {
+            Ok(n) => {
+                self.conn
+                    .execute_batch("COMMIT;")
+                    .map_err(|e| e.to_string())?;
+                Ok(n)
+            }
+            Err(e) => {
+                let _ = self.conn.execute_batch("ROLLBACK;");
+                Err(e)
+            }
+        }
+    }
+
     pub fn purge_deadletter_keep_last(&mut self, keep_last: usize) -> Result<usize, String> {
-        // keep_last件を残して削除
-        // sqlite: rowid を使って簡易に古いものを削除
         let sql = r#"
 DELETE FROM subscriptions
 WHERE state='deadletter'
@@ -207,7 +303,6 @@ WHERE state='deadletter'
             .map_err(|e| e.to_string())
     }
 
-    /// deadletterをTTLで削除（updated_at が古いもの）
     pub fn purge_deadletter_older_than(&mut self, older_than_unix: i64) -> Result<usize, String> {
         self.conn
             .execute(

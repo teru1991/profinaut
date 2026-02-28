@@ -4,12 +4,14 @@ use std::fs;
 use std::path::Path;
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct Catalog {
     #[serde(default)]
     ws_channels: Vec<WsSpec>,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct WsSpec {
     id: String,
 }
