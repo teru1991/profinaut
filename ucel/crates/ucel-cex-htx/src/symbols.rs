@@ -6,7 +6,7 @@ struct Resp<T> {
     data: Vec<T>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 struct Sym {
     #[serde(default)]
     symbol: String,

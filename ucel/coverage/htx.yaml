@@ -67,6 +67,3 @@ entries:
 - id: other.public.ws.other.not_applicable
   implemented: true
   tested: true
-- id: data.other.unknown.not_applicable
-  implemented: true
-  tested: true

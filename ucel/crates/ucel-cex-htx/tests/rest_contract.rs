@@ -8,7 +8,7 @@ use ucel_cex_htx::{
     log_private_ws_auth_attempt, map_htx_http_error, EndpointSpec, HtxBackpressure, HtxRestAdapter,
     HtxWsAdapter, OrderBookHealth, OrderBookResyncEngine, WsCounters, WsSubscription,
 };
-use ucel_core::{ErrorCode, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, UcelError};
+use ucel_core::{Decimal, ErrorCode, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, UcelError};
 use ucel_transport::{
     HttpRequest, HttpResponse, RequestContext, Transport, WsConnectRequest, WsStream,
 };
@@ -297,8 +297,8 @@ fn orderbook_gap_triggers_resync_then_recovered() {
     let mut e = OrderBookResyncEngine::default();
     e.ingest_delta(OrderBookDelta {
         bids: vec![OrderBookLevel {
-            price: 100.0,
-            qty: 1.0,
+            price: Decimal::from(100),
+            qty: Decimal::from(1),
         }],
         asks: vec![],
         sequence_start: 5,
@@ -308,12 +308,12 @@ fn orderbook_gap_triggers_resync_then_recovered() {
     let snapshot = e
         .apply_snapshot(OrderBookSnapshot {
             bids: vec![OrderBookLevel {
-                price: 99.0,
-                qty: 1.0,
+                price: Decimal::from(99),
+                qty: Decimal::from(1),
             }],
             asks: vec![OrderBookLevel {
-                price: 101.0,
-                qty: 1.0,
+                price: Decimal::from(101),
+                qty: Decimal::from(1),
             }],
             sequence: 4,
         })

@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
 use ucel_core::{ErrorCode, Exchange, OpName, UcelError};
-use ucel_core::{OrderBookDelta, OrderBookLevel, OrderBookSnapshot, TradeEvent};
+use ucel_core::{Decimal, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side, TradeEvent};
 use ucel_transport::{
     enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport, WsConnectRequest,
 };
@@ -412,8 +412,9 @@ impl BinanceCoinmBackpressure {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum OrderBookHealth {
+    #[default]
     Recovered,
     Degraded,
 }
@@ -423,12 +424,6 @@ pub struct OrderBookResyncEngine {
     buffered_deltas: VecDeque<OrderBookDelta>,
     expected_next: Option<u64>,
     health: OrderBookHealth,
-}
-
-impl Default for OrderBookHealth {
-    fn default() -> Self {
-        Self::Recovered
-    }
 }
 
 impl OrderBookResyncEngine {
@@ -485,7 +480,7 @@ fn merge_levels(target: &mut Vec<OrderBookLevel>, updates: Vec<OrderBookLevel>, 
             target.push(update);
         }
     }
-    target.retain(|x| x.qty > 0.0);
+    target.retain(|x| x.qty > Decimal::ZERO);
     target.sort_by(|a, b| {
         if desc {
             b.price.partial_cmp(&a.price)
@@ -527,6 +522,7 @@ struct GenericWsMsg {
 
 #[derive(Debug, Clone, Deserialize)]
 struct TradeWsMsg {
+    #[allow(dead_code)]
     e: String,
     s: String,
     p: String,
@@ -670,7 +666,7 @@ impl BinanceCoinmWsAdapter {
                     trade_id: format!("{}:{}", msg.s, msg.p),
                     price: parse_num(&msg.p)?,
                     qty: parse_num(&msg.q)?,
-                    side: if msg.m { "sell".into() } else { "buy".into() },
+                    side: if msg.m { Side::Sell } else { Side::Buy },
                 }))
             }
             "coinm.public.ws.market.depth.partial" | "coinm.public.ws.market.depth.diff" => {
@@ -742,8 +738,8 @@ fn stream_name(sub: &WsSubscription) -> String {
     }
 }
 
-fn parse_num(raw: &str) -> Result<f64, UcelError> {
-    raw.parse::<f64>()
+fn parse_num(raw: &str) -> Result<Decimal, UcelError> {
+    raw.parse::<Decimal>()
         .map_err(|e| UcelError::new(ErrorCode::Internal, format!("parse number failed: {e}")))
 }
 
@@ -966,8 +962,8 @@ mod tests {
         let mut e = OrderBookResyncEngine::default();
         e.ingest_delta(OrderBookDelta {
             bids: vec![OrderBookLevel {
-                price: 100.0,
-                qty: 1.0,
+                price: Decimal::from(100),
+                qty: Decimal::from(1),
             }],
             asks: vec![],
             sequence_start: 5,
@@ -977,12 +973,12 @@ mod tests {
         let snapshot = e
             .apply_snapshot(OrderBookSnapshot {
                 bids: vec![OrderBookLevel {
-                    price: 99.0,
-                    qty: 1.0,
+                    price: Decimal::from(99),
+                    qty: Decimal::from(1),
                 }],
                 asks: vec![OrderBookLevel {
-                    price: 101.0,
-                    qty: 1.0,
+                    price: Decimal::from(101),
+                    qty: Decimal::from(1),
                 }],
                 sequence: 4,
             })
