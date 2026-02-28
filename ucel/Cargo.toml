@@ -46,3 +46,5 @@ thiserror = "1"
 tracing = "0.1"
 tokio = { version = "1", features = ["sync", "rt"] }
 bytes = { version = "1", features = ["serde"] }
+rust_decimal = { version = "1", features = ["serde-with-float"] }
+semver = { version = "1", features = ["serde"] }
