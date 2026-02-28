@@ -17,7 +17,10 @@ use super::adapter::{InboundClass, WsVenueAdapter};
 use super::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitDecision};
 use super::limiter::{BucketConfig, WsRateLimiter, WsRateLimiterConfig};
 use super::overflow::{DropMode, OverflowPolicy, Spooler, SpoolerConfig};
-use super::priority::{classify_op_id_priority, OutboundPriority, PriorityQueue, QueuedOutbound, WsOutboundFrame};
+use super::priority::{
+    classify_op_id_priority, OutboundPriority, PriorityQueue, PushOutcome, QueuedOutbound,
+    WsOutboundFrame,
+};
 use super::reconnect::{backoff_with_jitter_ms, storm_guard};
 use super::shutdown::{graceful_shutdown_ws, GracefulShutdownConfig};
 
@@ -135,14 +138,20 @@ fn parse_stable_key(key: &str) -> Option<(&str, &str, Option<&str>, &str)> {
     }
     let exchange = parts[0];
     let op = parts[1];
-    let symbol = if parts[2].is_empty() { None } else { Some(parts[2]) };
+    let symbol = if parts[2].is_empty() {
+        None
+    } else {
+        Some(parts[2])
+    };
     let params = parts[3];
     Some((exchange, op, symbol, params))
 }
 
 fn build_overflow_policy(cfg: &WsRunConfig) -> Result<OverflowPolicy, String> {
     match cfg.overflow.mode {
-        WsOverflowMode::DropNewest => Ok(OverflowPolicy::Drop { mode: DropMode::DropNewest }),
+        WsOverflowMode::DropNewest => Ok(OverflowPolicy::Drop {
+            mode: DropMode::DropNewest,
+        }),
         WsOverflowMode::DropOldestLowPriority => Ok(OverflowPolicy::Drop {
             mode: DropMode::DropOldestLowPriority,
         }),
@@ -151,11 +160,10 @@ fn build_overflow_policy(cfg: &WsRunConfig) -> Result<OverflowPolicy, String> {
             fallback: DropMode::DropOldestLowPriority,
         }),
         WsOverflowMode::SpillToDiskThenDropOldestLowPriority => {
-            let dir = cfg
-                .overflow
-                .spill_dir
-                .as_ref()
-                .ok_or_else(|| "overflow.spill_dir is required for SpillToDisk mode".to_string())?;
+            let dir =
+                cfg.overflow.spill_dir.as_ref().ok_or_else(|| {
+                    "overflow.spill_dir is required for SpillToDisk mode".to_string()
+                })?;
             let sp = Spooler::open(SpoolerConfig::new(dir))?;
             Ok(OverflowPolicy::SpillToDisk {
                 spooler: Arc::new(sp),
@@ -175,21 +183,26 @@ pub async fn run_ws_connection(
 ) -> Result<(), String> {
     let url = adapter.ws_url();
 
-    // Subscribe limiter (rules-driven)
-    let subscribe_mps = rules
+    // ===== Rate limiting (bucketed + private priority) =====
+    //
+    // rules.rate.messages_per_second を public の基準にし、private/control は安全側に別bucket。
+    // 取引所ごとに toml で後から調整できるよう、ここは「デフォルト安全」。
+    let public_rps = rules
         .rate
         .as_ref()
         .and_then(|r| r.messages_per_second)
         .unwrap_or(1)
-        .max(1);
+        .max(1) as f64;
 
-    // Client limiter for non-subscribe outbound traffic (conservative)
-    let client_mps = 2u32;
+    // private は public より少し低くする（安全側）
+    // 本番では取引所特性に合わせて rules 側へ拡張してもOK。
+    let private_rps = (public_rps / 2.0).max(1.0);
+    let control_rps = (public_rps * 2.0).max(2.0);
 
-    let rate_limiter = Arc::new(Mutex::new(WsRateLimiter::new(WsRateLimiterConfig {
-        control: BucketConfig::per_second(client_mps as f64),
-        private: BucketConfig::per_second(subscribe_mps as f64),
-        public: BucketConfig::per_second(subscribe_mps as f64),
+    let ws_limiter = Arc::new(Mutex::new(WsRateLimiter::new(WsRateLimiterConfig {
+        control: BucketConfig::per_second(control_rps),
+        private: BucketConfig::per_second(private_rps),
+        public: BucketConfig::per_second(public_rps),
         min_gap: Duration::from_millis(0),
     })));
 
@@ -250,7 +263,10 @@ pub async fn run_ws_connection(
             }
         }
         if !storm_guard(reconnect_times.len(), cfg.reconnect_storm_max) {
-            return Err(format!("reconnect storm detected: {}", reconnect_times.len()));
+            return Err(format!(
+                "reconnect storm detected: {}",
+                reconnect_times.len()
+            ));
         }
 
         // Circuit breaker (Open cooldown / HalfOpen trial)
@@ -275,7 +291,9 @@ pub async fn run_ws_connection(
 
         info!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, url=%url, "ws connecting");
 
-        let (ws_stream, _) = match tokio::time::timeout(cfg.connect_timeout, connect_async(&url)).await {
+        let (ws_stream, _) = match tokio::time::timeout(cfg.connect_timeout, connect_async(&url))
+            .await
+        {
             Ok(Ok(v)) => v,
             Ok(Err(e)) => {
                 breaker.on_failure(Instant::now());
@@ -319,7 +337,8 @@ pub async fn run_ws_connection(
                     if shutdown2.is_triggered() && wal_rx.is_empty() {
                         break;
                     }
-                    let next = tokio::time::timeout(Duration::from_millis(200), wal_rx.recv()).await;
+                    let next =
+                        tokio::time::timeout(Duration::from_millis(200), wal_rx.recv()).await;
                     let Some(rec) = next.ok().flatten() else {
                         continue;
                     };
@@ -342,7 +361,7 @@ pub async fn run_ws_connection(
             let conn_id = cfg.conn_id.clone();
             let shutdown2 = shutdown.clone();
             let outq2 = outq.clone();
-            let limiter = rate_limiter.clone();
+            let ws_limiter = ws_limiter.clone();
             tokio::spawn(async move {
                 loop {
                     if shutdown2.is_triggered() && outq2.is_empty().await {
@@ -352,9 +371,9 @@ pub async fn run_ws_connection(
                         break;
                     };
 
-                    // Rate limit client outbound
+                    // Rate limit by priority bucket
                     let w = {
-                        let mut lim = limiter.lock().await;
+                        let mut lim = ws_limiter.lock().await;
                         lim.acquire_wait(item.priority, Instant::now())
                     };
                     if w > Duration::from_secs(0) {
@@ -404,7 +423,7 @@ pub async fn run_ws_connection(
                     writer,
                     wal_writer,
                 )
-                    .await;
+                .await;
                 return Ok(());
             }
 
@@ -421,7 +440,7 @@ pub async fn run_ws_connection(
                 if last_periodic_ping.elapsed() >= intv {
                     last_periodic_ping = Instant::now();
                     if let Some(p) = adapter.ping_msg() {
-                        let _ = outq
+                        let out = outq
                             .push(
                                 &cfg.exchange_id,
                                 &cfg.conn_id,
@@ -435,7 +454,17 @@ pub async fn run_ws_connection(
                                 &overflow_policy,
                                 now_unix_u64(),
                             )
-                            .await;
+                            .await
+                            .unwrap_or(PushOutcome::Dropped);
+                        match out {
+                            PushOutcome::Enqueued => {}
+                            PushOutcome::Dropped => {
+                                warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, op_id="ws.control.ping", priority=%OutboundPriority::Control.as_str(), "outbound overflow -> dropped");
+                            }
+                            PushOutcome::Spilled => {
+                                warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, op_id="ws.control.ping", priority=%OutboundPriority::Control.as_str(), "outbound overflow -> spilled-to-disk");
+                            }
+                        }
                     }
                 }
             }
@@ -444,7 +473,7 @@ pub async fn run_ws_connection(
             if last_inbound.elapsed() >= hb_idle {
                 // Try ping once before breaking (best effort)
                 if let Some(p) = adapter.ping_msg() {
-                    let _ = outq
+                    let out = outq
                         .push(
                             &cfg.exchange_id,
                             &cfg.conn_id,
@@ -458,7 +487,17 @@ pub async fn run_ws_connection(
                             &overflow_policy,
                             now_unix_u64(),
                         )
-                        .await;
+                        .await
+                        .unwrap_or(PushOutcome::Dropped);
+                    match out {
+                        PushOutcome::Enqueued => {}
+                        PushOutcome::Dropped => {
+                            warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, op_id="ws.control.ping", priority=%OutboundPriority::Control.as_str(), "outbound overflow -> dropped");
+                        }
+                        PushOutcome::Spilled => {
+                            warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, op_id="ws.control.ping", priority=%OutboundPriority::Control.as_str(), "outbound overflow -> spilled-to-disk");
+                        }
+                    }
                 }
                 warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, "idle timeout -> reconnect");
                 break;
@@ -512,8 +551,8 @@ pub async fn run_ws_connection(
 
                     let symbol: &str = sym_opt.unwrap_or("");
 
-                    let params: Value =
-                        serde_json::from_str(params_canon).unwrap_or_else(|_| serde_json::json!({}));
+                    let params: Value = serde_json::from_str(params_canon)
+                        .unwrap_or_else(|_| serde_json::json!({}));
 
                     let msgs = match adapter.build_subscribe(op_id, symbol, &params) {
                         Ok(m) => m,
@@ -532,7 +571,7 @@ pub async fn run_ws_connection(
 
                     // subscribe limiter
                     let w = {
-                        let mut lim = rate_limiter.lock().await;
+                        let mut lim = ws_limiter.lock().await;
                         lim.acquire_wait(prio, Instant::now())
                     };
                     if w > Duration::from_secs(0) {
@@ -540,7 +579,7 @@ pub async fn run_ws_connection(
                     }
 
                     for m in msgs {
-                        let _ = outq
+                        let out = outq
                             .push(
                                 &cfg.exchange_id,
                                 &cfg.conn_id,
@@ -554,7 +593,17 @@ pub async fn run_ws_connection(
                                 &overflow_policy,
                                 now_unix_u64(),
                             )
-                            .await;
+                            .await
+                            .unwrap_or(PushOutcome::Dropped);
+                        match out {
+                            PushOutcome::Enqueued => {}
+                            PushOutcome::Dropped => {
+                                warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, op_id=%op_id, priority=%prio.as_str(), "outbound overflow -> dropped");
+                            }
+                            PushOutcome::Spilled => {
+                                warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, op_id=%op_id, priority=%prio.as_str(), "outbound overflow -> spilled-to-disk");
+                            }
+                        }
                     }
                 }
             }
@@ -568,12 +617,22 @@ pub async fn run_ws_connection(
 
             let msg = match item {
                 Ok(m) => m,
-                Err(_) => break,
+                Err(e) => {
+                    if e.to_string().to_ascii_lowercase().contains("rate") {
+                        let mut lim = ws_limiter.lock().await;
+                        lim.apply_penalty(
+                            OutboundPriority::Private,
+                            Instant::now(),
+                            Duration::from_millis(250),
+                        );
+                    }
+                    break;
+                }
             };
 
             match msg {
                 Message::Ping(p) => {
-                    let _ = outq
+                    let out = outq
                         .push(
                             &cfg.exchange_id,
                             &cfg.conn_id,
@@ -587,7 +646,17 @@ pub async fn run_ws_connection(
                             &overflow_policy,
                             now_unix_u64(),
                         )
-                        .await;
+                        .await
+                        .unwrap_or(PushOutcome::Dropped);
+                    match out {
+                        PushOutcome::Enqueued => {}
+                        PushOutcome::Dropped => {
+                            warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, op_id="ws.control.pong", priority=%OutboundPriority::Control.as_str(), "outbound overflow -> dropped");
+                        }
+                        PushOutcome::Spilled => {
+                            warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, op_id="ws.control.pong", priority=%OutboundPriority::Control.as_str(), "outbound overflow -> spilled-to-disk");
+                        }
+                    }
                     last_inbound = Instant::now();
                     continue;
                 }
@@ -611,7 +680,7 @@ pub async fn run_ws_connection(
         // reconnect path: request close, then abort tasks only if they do not join quickly
         // (best effort, because we are not in shutdown)
         outq.begin_closing();
-        let _ = outq
+        let out = outq
             .push(
                 &cfg.exchange_id,
                 &cfg.conn_id,
@@ -621,7 +690,17 @@ pub async fn run_ws_connection(
                 },
                 now_unix_u64(),
             )
-            .await;
+            .await
+            .unwrap_or(PushOutcome::Dropped);
+        match out {
+            PushOutcome::Enqueued => {}
+            PushOutcome::Dropped => {
+                warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, op_id="ws.control.close", priority=%OutboundPriority::Control.as_str(), "outbound overflow -> dropped");
+            }
+            PushOutcome::Spilled => {
+                warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, op_id="ws.control.close", priority=%OutboundPriority::Control.as_str(), "outbound overflow -> spilled-to-disk");
+            }
+        }
         outq.close();
 
         // ensure subscriptions get resubscribed on new socket
@@ -632,10 +711,16 @@ pub async fn run_ws_connection(
         let mut writer = writer;
         let mut wal_writer = wal_writer;
 
-        if tokio::time::timeout(Duration::from_secs(2), &mut writer).await.is_err() {
+        if tokio::time::timeout(Duration::from_secs(2), &mut writer)
+            .await
+            .is_err()
+        {
             writer.abort();
         }
-        if tokio::time::timeout(Duration::from_secs(2), &mut wal_writer).await.is_err() {
+        if tokio::time::timeout(Duration::from_secs(2), &mut wal_writer)
+            .await
+            .is_err()
+        {
             wal_writer.abort();
         }
 
@@ -677,7 +762,12 @@ async fn handle_inbound(
             }
             meta.insert("kind".into(), serde_json::Value::String("data".into()));
         }
-        InboundClass::Nack { reason, op_id, symbol, .. } => {
+        InboundClass::Nack {
+            reason,
+            op_id,
+            symbol,
+            ..
+        } => {
             meta.insert("reason".into(), serde_json::Value::String(reason.clone()));
             if let Some(op) = op_id.as_ref() {
                 meta.insert("op_id".into(), serde_json::Value::String(op.clone()));
@@ -719,7 +809,11 @@ async fn handle_inbound(
     // Update subscription store: mark active + bump message timestamp
     let now = now_unix_i64();
     match classified {
-        InboundClass::Ack { op_id, symbol, params_canon_hint } => {
+        InboundClass::Ack {
+            op_id,
+            symbol,
+            params_canon_hint,
+        } => {
             let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
             let key = store.find_key_by_fields(
                 &cfg.exchange_id,
@@ -733,7 +827,11 @@ async fn handle_inbound(
                 store.bump_last_message(&k, now)?;
             }
         }
-        InboundClass::Data { op_id, symbol, params_canon_hint } => {
+        InboundClass::Data {
+            op_id,
+            symbol,
+            params_canon_hint,
+        } => {
             if let (Some(op), Some(sym)) = (op_id, symbol) {
                 let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
                 let key = store.find_key_by_fields(
@@ -749,7 +847,12 @@ async fn handle_inbound(
                 }
             }
         }
-        InboundClass::Nack { reason, op_id, symbol, params_canon_hint } => {
+        InboundClass::Nack {
+            reason,
+            op_id,
+            symbol,
+            params_canon_hint,
+        } => {
             let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
             if let Some(op) = op_id {
                 let key = store.find_key_by_fields(
@@ -769,4 +872,3 @@ async fn handle_inbound(
 
     Ok(())
 }
-
