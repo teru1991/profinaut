@@ -299,7 +299,7 @@ impl<T: Transport> BittradeRestClient<T> {
                 self.timeout,
                 self.transport.send_http(req.clone(), ctx.clone()),
             )
-            .await;
+                .await;
 
             let resp = match send {
                 Ok(v) => v,
