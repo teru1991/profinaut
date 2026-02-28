@@ -436,27 +436,14 @@
       "commit_shas": [],
       "notes": []
     },
-    "UCEL-DECIMAL-A1-001": {
-      "branch": "docs/ucel-decimal-a1-001",
+    "UCEL-DECIMAL-C-001": {
+      "branch": "docs/ucel-decimal-c-001",
       "artifacts": [
-        "docs/specs/ucel/decimal_policy/A1_core_policy_and_tick_step.md",
-        "docs/README.md",
-        "docs/verification/ucel-decimal-a1-001.md"
+        "docs/specs/ucel/decimal_policy/C_tests_scaffold.md",
+        "docs/verification/ucel-decimal-c-001.md"
       ],
       "verification_evidence": [
-        "docs/verification/ucel-decimal-a1-001.md"
-      ]
-    },
-    "UCEL-DECIMAL-A2-001": {
-      "branch": "docs/ucel-decimal-a2-001",
-      "artifacts": [
-        "docs/specs/ucel/decimal_policy/decimal_policy_spec.md",
-        "docs/specs/ucel/decimal_policy/A2_serde_guard.md",
-        "docs/README.md",
-        "docs/verification/ucel-decimal-a2-001.md"
-      ],
-      "verification_evidence": [
-        "docs/verification/ucel-decimal-a2-001.md"
+        "docs/verification/ucel-decimal-c-001.md"
       ]
     }
   },
