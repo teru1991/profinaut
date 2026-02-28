@@ -1,0 +1,61 @@
+diff –git a/ucel/crates/ucel-core/src/lib.rs b/ucel/crates/ucel-core/src/lib.rs
+index 1d2a32f..c8c7b2a 100644
+— a/ucel/crates/ucel-core/src/lib.rs
++++ b/ucel/crates/ucel-core/src/lib.rs
+@@ -1,8 +1,14 @@
+pub mod symbol;
+pub mod types;
+use serde::{Deserialize, Serialize};
+use std::fmt;
+use thiserror::Error;
+-pub use types::{Decimal, OrderStatus, OrderType, SchemaVersion, Side};
++pub use types::{Decimal, OrderStatus, OrderType, SchemaVersion, Side};
++
++// NOTE:
++// Decimal policy/newtypes will be introduced under ucel-core (separate tasks).
++// This patch only removes f64 from critical structs to prevent order/accounting accidents.
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Envelope {
+@@ -80,16 +86,16 @@ pub struct Meta {
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FillEvent {
+pub order_id: String,
+pub fill_id: String,
+	•	pub price: f64,
+	•	pub qty: f64,
+
+	•	pub price: Decimal,
+	•	pub qty: Decimal,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Balance {
+pub asset: String,
+	•	pub free: f64,
+	•	pub locked: f64,
+
+	•	pub free: Decimal,
+	•	pub locked: Decimal,
+}
+diff –git a/ucel/crates/ucel-core/src/types.rs b/ucel/crates/ucel-core/src/types.rs
+index 4f588c1..d9b0a66 100644
+— a/ucel/crates/ucel-core/src/types.rs
++++ b/ucel/crates/ucel-core/src/types.rs
+@@ -1,12 +1,14 @@
+use rust_decimal::Decimal as RustDecimal;
+use semver::Version;
+use serde::{Deserialize, Serialize};
+use std::str::FromStr;
+
+/// Canonical numeric type for price/qty/money.
+/// rust_decimal’s serde-with-float feature enables decoding JSON floats while preserving Decimal internally.
+pub type Decimal = RustDecimal;
++
++// NOTE: Decimal policy / guard / tick-step / newtypes will live in ucel-core (separate tasks).
+
+/// Schema version stored as SemVer.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SchemaVersion(pub Version);

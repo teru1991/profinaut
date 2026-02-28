@@ -455,6 +455,17 @@
       "verification_evidence": [
         "docs/verification/ucel-decimal-d1-001.md"
       ]
+    },
+    "UCEL-DECIMAL-A-CORE-001": {
+      "branch": "docs/ucel-decimal-a-core-001",
+      "artifacts": [
+        "docs/patches/ucel/UCEL-DECIMAL-A-CORE-001.md",
+        "docs/patches/ucel/UCEL-DECIMAL-A-CORE-001.patch",
+        "docs/verification/ucel-decimal-a-core-001.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/ucel-decimal-a-core-001.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
