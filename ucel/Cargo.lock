@@ -3223,6 +3223,7 @@ dependencies = [
 name = "ucel-cex-upbit"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "serde",
  "serde_json",
  "serde_yaml",
