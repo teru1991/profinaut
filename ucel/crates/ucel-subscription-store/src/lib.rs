@@ -166,6 +166,16 @@ impl SubscriptionStore {
         Ok(())
     }
 
+    pub fn requeue_key_to_pending(&self, key: &str, now: i64) -> Result<(), String> {
+        self.conn
+            .execute(
+                "UPDATE subscriptions SET state='pending', updated_at=?2 WHERE key=?1",
+                rusqlite::params![key, now],
+            )
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
     pub fn bump_last_message(&self, key: &str, ts: i64) -> Result<(), String> {
         self.conn
             .execute(
