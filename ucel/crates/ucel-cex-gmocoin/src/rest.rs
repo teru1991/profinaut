@@ -232,6 +232,6 @@ impl GmoRest {
             None,
             Some(serde_json::json!({ "token": token })),
         )
-            .await
+        .await
     }
 }
