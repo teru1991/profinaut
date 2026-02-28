@@ -14,34 +14,104 @@ use ucel_subscription_store::SubscriptionStore;
 use ucel_ws_rules::ExchangeWsRules;
 
 use super::adapter::{InboundClass, WsVenueAdapter};
+use super::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitDecision};
+use super::limiter::{BucketConfig, WsRateLimiter, WsRateLimiterConfig};
+use super::overflow::{DropMode, OverflowPolicy, Spooler, SpoolerConfig};
+use super::priority::{classify_op_id_priority, OutboundPriority, PriorityQueue, QueuedOutbound, WsOutboundFrame};
 use super::reconnect::{backoff_with_jitter_ms, storm_guard};
+use super::shutdown::{graceful_shutdown_ws, GracefulShutdownConfig};
 
 #[derive(Clone, Debug)]
 pub struct WsRunConfig {
     pub exchange_id: String,
     pub conn_id: String,
 
-    pub recv_queue_cap: usize,
+    /// outbound queue capacity (writer queue)
+    pub out_queue_cap: usize,
+
+    /// WAL queue capacity
+    pub wal_queue_cap: usize,
+
+    /// inbound frame safety
     pub max_frame_bytes: usize,
+
+    /// max inflight pulled from store per drip tick
     pub max_inflight_per_conn: usize,
 
     pub connect_timeout: Duration,
     pub idle_timeout: Duration,
 
+    /// reconnect storm guard params
     pub reconnect_storm_window: Duration,
     pub reconnect_storm_max: usize,
+
+    /// subscription stale detection (auto requeue -> auto resubscribe)
+    pub stale_after: Duration,
+    pub stale_sweep_interval: Duration,
+    pub stale_max_batch: usize,
+
+    /// circuit breaker
+    pub breaker: CircuitBreakerConfig,
+
+    /// overflow/backpressure policy
+    pub overflow: WsOverflowConfig,
+
+    /// graceful shutdown config
+    pub graceful: GracefulShutdownConfig,
 }
 
-#[derive(Clone)]
-pub struct ShutdownToken {
-    pub flag: Arc<std::sync::atomic::AtomicBool>,
+#[derive(Clone, Debug)]
+pub enum WsOverflowMode {
+    DropNewest,
+    DropOldestLowPriority,
+    SlowDownThenDropOldestLowPriority,
+    SpillToDiskThenDropOldestLowPriority,
 }
-impl ShutdownToken {
-    pub fn is_triggered(&self) -> bool {
-        use std::sync::atomic::Ordering;
-        self.flag.load(Ordering::SeqCst)
+
+#[derive(Clone, Debug)]
+pub struct WsOverflowConfig {
+    pub mode: WsOverflowMode,
+    /// used only for SpillToDisk*
+    pub spill_dir: Option<String>,
+    /// used only for SlowDown*
+    pub slowdown_max_wait: Duration,
+}
+
+impl Default for WsOverflowConfig {
+    fn default() -> Self {
+        Self {
+            mode: WsOverflowMode::SlowDownThenDropOldestLowPriority,
+            spill_dir: None,
+            slowdown_max_wait: Duration::from_millis(200),
+        }
     }
 }
+
+impl Default for WsRunConfig {
+    fn default() -> Self {
+        Self {
+            exchange_id: "unknown".into(),
+            conn_id: "conn".into(),
+            out_queue_cap: 256,
+            wal_queue_cap: 8192,
+            max_frame_bytes: 1024 * 1024,
+            max_inflight_per_conn: 10,
+            connect_timeout: Duration::from_secs(5),
+            idle_timeout: Duration::from_secs(30),
+            reconnect_storm_window: Duration::from_secs(30),
+            reconnect_storm_max: 10,
+            stale_after: Duration::from_secs(60),
+            stale_sweep_interval: Duration::from_secs(5),
+            stale_max_batch: 200,
+            breaker: CircuitBreakerConfig::default(),
+            overflow: WsOverflowConfig::default(),
+            graceful: GracefulShutdownConfig::default(),
+        }
+    }
+}
+
+/// Backward-compat re-export (tests/importers may refer to ws::connection::ShutdownToken)
+pub use super::shutdown::ShutdownToken;
 
 fn now_unix_i64() -> i64 {
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -65,77 +135,34 @@ fn parse_stable_key(key: &str) -> Option<(&str, &str, Option<&str>, &str)> {
     }
     let exchange = parts[0];
     let op = parts[1];
-    let symbol = if parts[2].is_empty() {
-        None
-    } else {
-        Some(parts[2])
-    };
+    let symbol = if parts[2].is_empty() { None } else { Some(parts[2]) };
     let params = parts[3];
     Some((exchange, op, symbol, params))
 }
 
-#[derive(Clone)]
-struct FixedWindowLimiter {
-    max_per_sec: u32,
-    window_start: Instant,
-    used: u32,
-}
-impl FixedWindowLimiter {
-    fn new(max_per_sec: u32) -> Self {
-        Self {
-            max_per_sec: max_per_sec.max(1),
-            window_start: Instant::now(),
-            used: 0,
+fn build_overflow_policy(cfg: &WsRunConfig) -> Result<OverflowPolicy, String> {
+    match cfg.overflow.mode {
+        WsOverflowMode::DropNewest => Ok(OverflowPolicy::Drop { mode: DropMode::DropNewest }),
+        WsOverflowMode::DropOldestLowPriority => Ok(OverflowPolicy::Drop {
+            mode: DropMode::DropOldestLowPriority,
+        }),
+        WsOverflowMode::SlowDownThenDropOldestLowPriority => Ok(OverflowPolicy::SlowDown {
+            max_wait: cfg.overflow.slowdown_max_wait,
+            fallback: DropMode::DropOldestLowPriority,
+        }),
+        WsOverflowMode::SpillToDiskThenDropOldestLowPriority => {
+            let dir = cfg
+                .overflow
+                .spill_dir
+                .as_ref()
+                .ok_or_else(|| "overflow.spill_dir is required for SpillToDisk mode".to_string())?;
+            let sp = Spooler::open(SpoolerConfig::new(dir))?;
+            Ok(OverflowPolicy::SpillToDisk {
+                spooler: Arc::new(sp),
+                fallback: DropMode::DropOldestLowPriority,
+            })
         }
     }
-    fn allow_or_wait(&mut self) -> Duration {
-        let now = Instant::now();
-        if now.duration_since(self.window_start) >= Duration::from_secs(1) {
-            self.window_start = now;
-            self.used = 0;
-        }
-        if self.used < self.max_per_sec {
-            self.used += 1;
-            Duration::from_secs(0)
-        } else {
-            Duration::from_secs(1).saturating_sub(now.duration_since(self.window_start))
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-struct WalQueuePolicy {
-    cap: usize,
-}
-impl Default for WalQueuePolicy {
-    fn default() -> Self {
-        Self { cap: 8192 }
-    }
-}
-
-#[derive(Clone, Debug)]
-struct SendBackpressurePolicy {
-    throttle_after_ms: u64,
-    throttle_consecutive: u32,
-    stop_after_ms: u64,
-    stop_consecutive: u32,
-    throttle_pause: Duration,
-}
-impl Default for SendBackpressurePolicy {
-    fn default() -> Self {
-        Self {
-            throttle_after_ms: 200,
-            throttle_consecutive: 5,
-            stop_after_ms: 1000,
-            stop_consecutive: 10,
-            throttle_pause: Duration::from_secs(2),
-        }
-    }
-}
-
-enum OutboundFrame {
-    Text(String),
-    Pong(Vec<u8>),
 }
 
 pub async fn run_ws_connection(
@@ -148,23 +175,32 @@ pub async fn run_ws_connection(
 ) -> Result<(), String> {
     let url = adapter.ws_url();
 
+    // Subscribe limiter (rules-driven)
     let subscribe_mps = rules
         .rate
         .as_ref()
         .and_then(|r| r.messages_per_second)
         .unwrap_or(1)
         .max(1);
-    let client_mps = 2u32; // conservative
 
-    let mut sub_limiter = FixedWindowLimiter::new(subscribe_mps);
-    let client_limiter = FixedWindowLimiter::new(client_mps);
+    // Client limiter for non-subscribe outbound traffic (conservative)
+    let client_mps = 2u32;
 
+    let rate_limiter = Arc::new(Mutex::new(WsRateLimiter::new(WsRateLimiterConfig {
+        control: BucketConfig::per_second(client_mps as f64),
+        private: BucketConfig::per_second(subscribe_mps as f64),
+        public: BucketConfig::per_second(subscribe_mps as f64),
+        min_gap: Duration::from_millis(0),
+    })));
+
+    // Heartbeat / idle
     let hb_idle = rules
         .heartbeat
         .as_ref()
         .and_then(|h| h.idle_timeout_secs)
         .map(Duration::from_secs)
         .unwrap_or(cfg.idle_timeout);
+
     let ping_interval = rules
         .heartbeat
         .as_ref()
@@ -187,21 +223,23 @@ pub async fn run_ws_connection(
         Some(Duration::from_secs(max_age))
     };
 
-    let wal_policy = WalQueuePolicy::default();
-    let send_bp = SendBackpressurePolicy::default();
+    let overflow_policy = build_overflow_policy(&cfg)?;
+    let mut breaker = CircuitBreaker::new(cfg.breaker.clone());
 
     let mut reconnect_attempt: u32 = 0;
     let mut reconnect_times: VecDeque<Instant> = VecDeque::new();
 
+    // === Outer reconnect loop ===
     loop {
         if shutdown.is_triggered() {
             let _ = store.requeue_active_to_pending(&cfg.exchange_id, &cfg.conn_id, now_unix_i64());
             return Ok(());
         }
 
+        // Always start by requeueing active/inflight to pending before a fresh connect.
         let _ = store.requeue_active_to_pending(&cfg.exchange_id, &cfg.conn_id, now_unix_i64());
 
-        // storm guard
+        // Storm guard
         let nowi = Instant::now();
         reconnect_times.push_back(nowi);
         while let Some(front) = reconnect_times.front() {
@@ -212,19 +250,35 @@ pub async fn run_ws_connection(
             }
         }
         if !storm_guard(reconnect_times.len(), cfg.reconnect_storm_max) {
-            return Err(format!(
-                "reconnect storm detected: {}",
-                reconnect_times.len()
-            ));
+            return Err(format!("reconnect storm detected: {}", reconnect_times.len()));
+        }
+
+        // Circuit breaker (Open cooldown / HalfOpen trial)
+        match breaker.before_attempt(Instant::now()) {
+            CircuitDecision::Allow => {}
+            CircuitDecision::Wait(d) => {
+                warn!(
+                    exchange_id=%cfg.exchange_id,
+                    conn=%cfg.conn_id,
+                    wait_ms=d.as_millis() as u64,
+                    state=?breaker.kind(),
+                    "circuit breaker open -> waiting"
+                );
+                tokio::time::sleep(d).await;
+                continue;
+            }
+        }
+
+        if breaker.kind() == super::circuit_breaker::CircuitStateKind::HalfOpen {
+            breaker.on_half_open_trial();
         }
 
         info!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, url=%url, "ws connecting");
 
-        let (ws_stream, _) = match tokio::time::timeout(cfg.connect_timeout, connect_async(&url))
-            .await
-        {
+        let (ws_stream, _) = match tokio::time::timeout(cfg.connect_timeout, connect_async(&url)).await {
             Ok(Ok(v)) => v,
             Ok(Err(e)) => {
+                breaker.on_failure(Instant::now());
                 let backoff = backoff_with_jitter_ms(reconnect_attempt, 200, 30_000, 250);
                 reconnect_attempt = reconnect_attempt.saturating_add(1);
                 warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, err=%e, backoff_ms=backoff, "connect error");
@@ -232,6 +286,7 @@ pub async fn run_ws_connection(
                 continue;
             }
             Err(_) => {
+                breaker.on_failure(Instant::now());
                 let backoff = backoff_with_jitter_ms(reconnect_attempt, 200, 30_000, 250);
                 reconnect_attempt = reconnect_attempt.saturating_add(1);
                 warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, backoff_ms=backoff, "connect timeout");
@@ -240,24 +295,35 @@ pub async fn run_ws_connection(
             }
         };
 
+        // Connection established => mark breaker success (we got a socket)
+        breaker.on_success(Instant::now());
         reconnect_attempt = 0;
-        let conn_started = Instant::now();
 
+        let conn_started = Instant::now();
         let (mut write, mut read) = ws_stream.split();
 
-        let (tx, mut rx) = mpsc::channel::<OutboundFrame>(cfg.recv_queue_cap);
-        let (wal_tx, mut wal_rx) = mpsc::channel::<RawRecord>(wal_policy.cap);
+        // Priority outbound queue (private-first) + graceful close marker.
+        let outq = PriorityQueue::new(cfg.out_queue_cap);
 
+        // WAL queue
+        let (wal_tx, mut wal_rx) = mpsc::channel::<RawRecord>(cfg.wal_queue_cap);
+
+        // WAL writer task (drain-friendly)
         let wal_writer = {
             let wal = wal.clone();
             let exchange_id = cfg.exchange_id.clone();
             let conn_id = cfg.conn_id.clone();
-            let shutdown = shutdown.clone();
+            let shutdown2 = shutdown.clone();
             tokio::spawn(async move {
-                while let Some(rec) = wal_rx.recv().await {
-                    if shutdown.is_triggered() {
+                loop {
+                    if shutdown2.is_triggered() && wal_rx.is_empty() {
                         break;
                     }
+                    let next = tokio::time::timeout(Duration::from_millis(200), wal_rx.recv()).await;
+                    let Some(rec) = next.ok().flatten() else {
+                        continue;
+                    };
+
                     let r = {
                         let mut w = wal.lock().await;
                         w.append(&rec)
@@ -270,49 +336,79 @@ pub async fn run_ws_connection(
             })
         };
 
+        // Writer task (drain-friendly, close->flush->join works)
         let writer = {
             let exchange_id = cfg.exchange_id.clone();
             let conn_id = cfg.conn_id.clone();
-            let shutdown = shutdown.clone();
-            let mut client_limiter = client_limiter.clone();
+            let shutdown2 = shutdown.clone();
+            let outq2 = outq.clone();
+            let limiter = rate_limiter.clone();
             tokio::spawn(async move {
-                while let Some(f) = rx.recv().await {
-                    if shutdown.is_triggered() {
+                loop {
+                    if shutdown2.is_triggered() && outq2.is_empty().await {
                         break;
                     }
-                    let w = client_limiter.allow_or_wait();
+                    let Some(item) = outq2.recv().await else {
+                        break;
+                    };
+
+                    // Rate limit client outbound
+                    let w = {
+                        let mut lim = limiter.lock().await;
+                        lim.acquire_wait(item.priority, Instant::now())
+                    };
                     if w > Duration::from_secs(0) {
                         tokio::time::sleep(w).await;
                     }
-                    let res = match f {
-                        OutboundFrame::Text(t) => write.send(Message::Text(t)).await,
-                        OutboundFrame::Pong(p) => write.send(Message::Pong(p)).await,
-                    };
-                    if res.is_err() {
-                        warn!(exchange_id=%exchange_id, conn=%conn_id, "write failed");
-                        break;
+
+                    match item.frame {
+                        WsOutboundFrame::CloseRequest => {
+                            // Send close frame and exit.
+                            let _ = write.send(Message::Close(None)).await;
+                            break;
+                        }
+                        WsOutboundFrame::Text(t) => {
+                            if write.send(Message::Text(t)).await.is_err() {
+                                warn!(exchange_id=%exchange_id, conn=%conn_id, "write failed");
+                                break;
+                            }
+                        }
+                        WsOutboundFrame::Pong(p) => {
+                            if write.send(Message::Pong(p)).await.is_err() {
+                                warn!(exchange_id=%exchange_id, conn=%conn_id, "write failed");
+                                break;
+                            }
+                        }
                     }
                 }
             })
         };
 
+        // Timers
         let mut last_inbound = Instant::now();
         let mut last_drip = Instant::now();
         let mut last_periodic_ping = Instant::now();
+        let mut last_stale_sweep = Instant::now();
 
-        let mut drip_paused_until: Option<Instant> = None;
-        let mut slow_send_consecutive: u32 = 0;
-        let mut very_slow_send_consecutive: u32 = 0;
-
+        // === Inner run loop ===
         loop {
+            // Shutdown => graceful path (close->flush->requeue->join)
             if shutdown.is_triggered() {
-                let _ =
-                    store.requeue_active_to_pending(&cfg.exchange_id, &cfg.conn_id, now_unix_i64());
-                writer.abort();
-                wal_writer.abort();
+                let _ = graceful_shutdown_ws(
+                    cfg.graceful.clone(),
+                    &cfg.exchange_id,
+                    &cfg.conn_id,
+                    store,
+                    &outq,
+                    &shutdown,
+                    writer,
+                    wal_writer,
+                )
+                    .await;
                 return Ok(());
             }
 
+            // Preemptive rotate
             if let Some(ma) = max_age {
                 if conn_started.elapsed() >= ma {
                     warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, "max_connection_age reached -> rotate reconnect");
@@ -320,30 +416,81 @@ pub async fn run_ws_connection(
                 }
             }
 
+            // Periodic ping (venue adapter)
             if let Some(intv) = ping_interval {
                 if last_periodic_ping.elapsed() >= intv {
                     last_periodic_ping = Instant::now();
                     if let Some(p) = adapter.ping_msg() {
-                        let _ = tx.send(OutboundFrame::Text(p.text)).await;
+                        let _ = outq
+                            .push(
+                                &cfg.exchange_id,
+                                &cfg.conn_id,
+                                QueuedOutbound {
+                                    priority: OutboundPriority::Control,
+                                    op_id: Some("ws.control.ping".into()),
+                                    symbol: None,
+                                    frame: WsOutboundFrame::Text(p.text),
+                                    meta: serde_json::json!({"kind":"ping"}),
+                                },
+                                &overflow_policy,
+                                now_unix_u64(),
+                            )
+                            .await;
                     }
                 }
             }
 
+            // Idle detection => reconnect
             if last_inbound.elapsed() >= hb_idle {
+                // Try ping once before breaking (best effort)
                 if let Some(p) = adapter.ping_msg() {
-                    let _ = tx.send(OutboundFrame::Text(p.text)).await;
+                    let _ = outq
+                        .push(
+                            &cfg.exchange_id,
+                            &cfg.conn_id,
+                            QueuedOutbound {
+                                priority: OutboundPriority::Control,
+                                op_id: Some("ws.control.ping".into()),
+                                symbol: None,
+                                frame: WsOutboundFrame::Text(p.text),
+                                meta: serde_json::json!({"kind":"ping"}),
+                            },
+                            &overflow_policy,
+                            now_unix_u64(),
+                        )
+                        .await;
                 }
                 warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, "idle timeout -> reconnect");
                 break;
             }
 
-            if let Some(until) = drip_paused_until {
-                if Instant::now() >= until {
-                    drip_paused_until = None;
+            // Stale sweep => active stale -> pending (auto resubscribe)
+            if last_stale_sweep.elapsed() >= cfg.stale_sweep_interval {
+                last_stale_sweep = Instant::now();
+                let now = now_unix_i64();
+                let stale_after_secs = cfg.stale_after.as_secs() as i64;
+                let changed = store
+                    .requeue_stale_active_to_pending(
+                        &cfg.exchange_id,
+                        &cfg.conn_id,
+                        stale_after_secs,
+                        cfg.stale_max_batch,
+                        now,
+                    )
+                    .unwrap_or(0);
+
+                if changed > 0 {
+                    warn!(
+                        exchange_id=%cfg.exchange_id,
+                        conn=%cfg.conn_id,
+                        changed,
+                        "stale subscriptions requeued -> will resubscribe"
+                    );
                 }
             }
 
-            if drip_paused_until.is_none() && last_drip.elapsed() >= Duration::from_millis(200) {
+            // Drip pending subscriptions (private priority via op_id classifier)
+            if last_drip.elapsed() >= Duration::from_millis(200) {
                 last_drip = Instant::now();
                 let now = now_unix_i64();
 
@@ -353,6 +500,7 @@ pub async fn run_ws_connection(
                     cfg.max_inflight_per_conn,
                     now,
                 )?;
+
                 for key in keys {
                     let (_ex, op_id, sym_opt, params_canon) = match parse_stable_key(&key) {
                         Some(v) => v,
@@ -361,15 +509,12 @@ pub async fn run_ws_connection(
                             continue;
                         }
                     };
+
                     let symbol: &str = sym_opt.unwrap_or("");
 
-                    let w = sub_limiter.allow_or_wait();
-                    if w > Duration::from_secs(0) {
-                        tokio::time::sleep(w).await;
-                    }
+                    let params: Value =
+                        serde_json::from_str(params_canon).unwrap_or_else(|_| serde_json::json!({}));
 
-                    let params: Value = serde_json::from_str(params_canon)
-                        .unwrap_or_else(|_| serde_json::json!({}));
                     let msgs = match adapter.build_subscribe(op_id, symbol, &params) {
                         Ok(m) => m,
                         Err(e) => {
@@ -378,42 +523,43 @@ pub async fn run_ws_connection(
                         }
                     };
 
+                    // priority: classify by op_id (private-first)
+                    let p = classify_op_id_priority(op_id);
+                    let prio = match p {
+                        OutboundPriority::Private => OutboundPriority::Private,
+                        _ => OutboundPriority::Public,
+                    };
+
+                    // subscribe limiter
+                    let w = {
+                        let mut lim = rate_limiter.lock().await;
+                        lim.acquire_wait(prio, Instant::now())
+                    };
+                    if w > Duration::from_secs(0) {
+                        tokio::time::sleep(w).await;
+                    }
+
                     for m in msgs {
-                        let t0 = Instant::now();
-                        if tx.send(OutboundFrame::Text(m.text)).await.is_err() {
-                            warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, "outbound queue closed");
-                            break;
-                        }
-                        let dt = t0.elapsed();
-
-                        if dt >= Duration::from_millis(send_bp.stop_after_ms) {
-                            very_slow_send_consecutive += 1;
-                        } else {
-                            very_slow_send_consecutive = 0;
-                        }
-
-                        if dt >= Duration::from_millis(send_bp.throttle_after_ms) {
-                            slow_send_consecutive += 1;
-                        } else {
-                            slow_send_consecutive = 0;
-                        }
-
-                        if slow_send_consecutive >= send_bp.throttle_consecutive {
-                            warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, "send backpressure -> throttle drip");
-                            drip_paused_until = Some(Instant::now() + send_bp.throttle_pause);
-                            slow_send_consecutive = 0;
-                        }
-
-                        if very_slow_send_consecutive >= send_bp.stop_consecutive {
-                            writer.abort();
-                            wal_writer.abort();
-                            return Err("send backpressure stop".into());
-                        }
+                        let _ = outq
+                            .push(
+                                &cfg.exchange_id,
+                                &cfg.conn_id,
+                                QueuedOutbound {
+                                    priority: prio,
+                                    op_id: Some(op_id.to_string()),
+                                    symbol: sym_opt.map(|s| s.to_string()),
+                                    frame: WsOutboundFrame::Text(m.text),
+                                    meta: serde_json::json!({"kind":"subscribe"}),
+                                },
+                                &overflow_policy,
+                                now_unix_u64(),
+                            )
+                            .await;
                     }
                 }
             }
 
-            // inbound
+            // Inbound read (bounded wait)
             let next = tokio::time::timeout(Duration::from_millis(250), read.next()).await;
             let maybe_item = next.unwrap_or_default();
             let Some(item) = maybe_item else {
@@ -427,7 +573,21 @@ pub async fn run_ws_connection(
 
             match msg {
                 Message::Ping(p) => {
-                    let _ = tx.send(OutboundFrame::Pong(p)).await;
+                    let _ = outq
+                        .push(
+                            &cfg.exchange_id,
+                            &cfg.conn_id,
+                            QueuedOutbound {
+                                priority: OutboundPriority::Control,
+                                op_id: Some("ws.control.pong".into()),
+                                symbol: None,
+                                frame: WsOutboundFrame::Pong(p),
+                                meta: serde_json::json!({"kind":"pong"}),
+                            },
+                            &overflow_policy,
+                            now_unix_u64(),
+                        )
+                        .await;
                     last_inbound = Instant::now();
                     continue;
                 }
@@ -437,20 +597,49 @@ pub async fn run_ws_connection(
                 }
                 Message::Close(_) => break,
                 Message::Text(t) => {
-                    handle_inbound(&adapter, &cfg, store, &wal_tx, &tx, t.into_bytes()).await?;
+                    handle_inbound(&adapter, &cfg, store, &wal_tx, t.into_bytes()).await?;
                     last_inbound = Instant::now();
                 }
                 Message::Binary(b) => {
-                    handle_inbound(&adapter, &cfg, store, &wal_tx, &tx, b).await?;
+                    handle_inbound(&adapter, &cfg, store, &wal_tx, b).await?;
                     last_inbound = Instant::now();
                 }
                 _ => {}
             }
         }
 
-        writer.abort();
-        wal_writer.abort();
+        // reconnect path: request close, then abort tasks only if they do not join quickly
+        // (best effort, because we are not in shutdown)
+        outq.begin_closing();
+        let _ = outq
+            .push(
+                &cfg.exchange_id,
+                &cfg.conn_id,
+                QueuedOutbound::close_request(),
+                &OverflowPolicy::Drop {
+                    mode: DropMode::DropOldestLowPriority,
+                },
+                now_unix_u64(),
+            )
+            .await;
+        outq.close();
 
+        // ensure subscriptions get resubscribed on new socket
+        let _ = store.requeue_active_to_pending(&cfg.exchange_id, &cfg.conn_id, now_unix_i64());
+
+        // join with timeout, then abort if needed
+        // (this avoids runaway tasks and is safer than immediate abort)
+        let mut writer = writer;
+        let mut wal_writer = wal_writer;
+
+        if tokio::time::timeout(Duration::from_secs(2), &mut writer).await.is_err() {
+            writer.abort();
+        }
+        if tokio::time::timeout(Duration::from_secs(2), &mut wal_writer).await.is_err() {
+            wal_writer.abort();
+        }
+
+        // backoff before reconnect
         let backoff = backoff_with_jitter_ms(reconnect_attempt, 200, 30_000, 250);
         reconnect_attempt = reconnect_attempt.saturating_add(1);
         tokio::time::sleep(Duration::from_millis(backoff)).await;
@@ -462,7 +651,6 @@ async fn handle_inbound(
     cfg: &WsRunConfig,
     store: &mut SubscriptionStore,
     wal_tx: &mpsc::Sender<RawRecord>,
-    out_tx: &mpsc::Sender<OutboundFrame>,
     raw: Vec<u8>,
 ) -> Result<(), String> {
     if raw.len() > cfg.max_frame_bytes {
@@ -470,10 +658,6 @@ async fn handle_inbound(
     }
 
     let classified = adapter.classify_inbound(&raw);
-
-    if let InboundClass::Respond { msg } = &classified {
-        let _ = out_tx.send(OutboundFrame::Text(msg.text.clone())).await;
-    }
 
     let mut meta = serde_json::Map::new();
     match &classified {
@@ -493,12 +677,7 @@ async fn handle_inbound(
             }
             meta.insert("kind".into(), serde_json::Value::String("data".into()));
         }
-        InboundClass::Nack {
-            reason,
-            op_id,
-            symbol,
-            ..
-        } => {
+        InboundClass::Nack { reason, op_id, symbol, .. } => {
             meta.insert("reason".into(), serde_json::Value::String(reason.clone()));
             if let Some(op) = op_id.as_ref() {
                 meta.insert("op_id".into(), serde_json::Value::String(op.clone()));
@@ -537,13 +716,10 @@ async fn handle_inbound(
         .await
         .map_err(|_| "WAL writer stopped -> stop".to_string())?;
 
+    // Update subscription store: mark active + bump message timestamp
     let now = now_unix_i64();
     match classified {
-        InboundClass::Ack {
-            op_id,
-            symbol,
-            params_canon_hint,
-        } => {
+        InboundClass::Ack { op_id, symbol, params_canon_hint } => {
             let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
             let key = store.find_key_by_fields(
                 &cfg.exchange_id,
@@ -557,11 +733,7 @@ async fn handle_inbound(
                 store.bump_last_message(&k, now)?;
             }
         }
-        InboundClass::Data {
-            op_id,
-            symbol,
-            params_canon_hint,
-        } => {
+        InboundClass::Data { op_id, symbol, params_canon_hint } => {
             if let (Some(op), Some(sym)) = (op_id, symbol) {
                 let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
                 let key = store.find_key_by_fields(
@@ -577,12 +749,7 @@ async fn handle_inbound(
                 }
             }
         }
-        InboundClass::Nack {
-            reason,
-            op_id,
-            symbol,
-            params_canon_hint,
-        } => {
+        InboundClass::Nack { reason, op_id, symbol, params_canon_hint } => {
             let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
             if let Some(op) = op_id {
                 let key = store.find_key_by_fields(
@@ -602,3 +769,4 @@ async fn handle_inbound(
 
     Ok(())
 }
+

@@ -6,12 +6,15 @@ use futures_util::{SinkExt, StreamExt};
 use serde_json::{json, Value};
 use tokio::net::TcpListener;
 use tokio::sync::{oneshot, Mutex};
+use tokio::task::LocalSet;
 use tokio_tungstenite::tungstenite::Message;
 
 use ucel_subscription_planner::{canon_params, stable_key, SubscriptionKey};
 use ucel_subscription_store::{SubscriptionRow, SubscriptionStore};
 use ucel_transport::ws::adapter::{InboundClass, OutboundMsg, WsVenueAdapter};
-use ucel_transport::ws::connection::{run_ws_connection, ShutdownToken, WsRunConfig};
+use ucel_transport::ws::connection::{run_ws_connection, ShutdownToken, WsOverflowConfig, WsOverflowMode, WsRunConfig};
+use ucel_transport::ws::circuit_breaker::CircuitBreakerConfig;
+use ucel_transport::ws::shutdown::GracefulShutdownConfig;
 use ucel_ws_rules::load_for_exchange;
 
 #[derive(Clone)]
@@ -46,7 +49,7 @@ impl WsVenueAdapter for TestAdapter {
                 "op_id": op_id,
                 "symbol": symbol
             })
-            .to_string(),
+                .to_string(),
         }])
     }
 
@@ -177,7 +180,23 @@ max_symbols_per_conn = 5
     std::fs::write(dir.join(format!("{exchange_id}.toml")), toml).unwrap();
 }
 
-#[tokio::test]
+fn default_breaker() -> CircuitBreakerConfig {
+    CircuitBreakerConfig {
+        failure_threshold: 3,
+        success_threshold: 1,
+        cooldown: Duration::from_millis(200),
+        half_open_max_trials: 2,
+    }
+}
+
+fn default_graceful() -> GracefulShutdownConfig {
+    GracefulShutdownConfig {
+        drain_timeout: Duration::from_secs(2),
+        join_timeout: Duration::from_secs(2),
+    }
+}
+
+#[tokio::test(flavor = "current_thread")]
 async fn e2e_reconnect_drip_wal() {
     // fake server: first connection closes after first subscribe => reconnect
     let (addr, stop_tx, received) = spawn_fake_ws_server(true, false, 0).await;
@@ -195,8 +214,8 @@ async fn e2e_reconnect_drip_wal() {
         64 * 1024 * 1024,
         ucel_journal::FsyncMode::Balanced,
     )
-    .map_err(|e| e.to_string())
-    .unwrap();
+        .map_err(|e| e.to_string())
+        .unwrap();
     let wal = Arc::new(Mutex::new(wal));
 
     // store seed (stable key)
@@ -230,36 +249,59 @@ async fn e2e_reconnect_drip_wal() {
     let shutdown = ShutdownToken {
         flag: Arc::new(AtomicBool::new(false)),
     };
+
     let cfg = WsRunConfig {
         exchange_id: "gmocoin".to_string(),
         conn_id: "gmocoin-conn-1".to_string(),
-        recv_queue_cap: 256,
+
+        out_queue_cap: 256,
+        wal_queue_cap: 8192,
         max_frame_bytes: 1024 * 1024,
         max_inflight_per_conn: 10,
+
         connect_timeout: Duration::from_secs(2),
         idle_timeout: Duration::from_secs(2),
+
         reconnect_storm_window: Duration::from_secs(30),
         reconnect_storm_max: 10,
+
+        stale_after: Duration::from_secs(60),
+        stale_sweep_interval: Duration::from_secs(2),
+        stale_max_batch: 200,
+
+        breaker: default_breaker(),
+
+        overflow: WsOverflowConfig {
+            mode: WsOverflowMode::SlowDownThenDropOldestLowPriority,
+            spill_dir: None,
+            slowdown_max_wait: Duration::from_millis(100),
+        },
+
+        graceful: default_graceful(),
     };
 
-    // run in background, then stop
-    let run = tokio::spawn(async move {
-        run_ws_connection(adapter, rules, &mut store, wal, cfg, shutdown).await
-    });
+    let local = LocalSet::new();
+    local
+        .run_until(async move {
+            // run in background, then stop
+            let run = tokio::task::spawn_local(async move {
+                run_ws_connection(adapter, rules, &mut store, wal, cfg, shutdown).await
+            });
 
-    tokio::time::sleep(Duration::from_millis(800)).await;
-    // stop server + cancel task（connectionはreconnectを続けるのでここで止める）
-    let _ = stop_tx.send(());
+            tokio::time::sleep(Duration::from_millis(800)).await;
+            let _ = stop_tx.send(());
 
-    // received at least one subscribe
-    let r = received.lock().await.clone();
-    assert!(!r.is_empty(), "server should receive subscribe");
-    // WAL should have file
-    // （ucel-journal の出力ファイル名は実装依存なので “ディレクトリに何か増えた” を見る）
-    let wal_files: Vec<_> = std::fs::read_dir(tmp.path().join("wal")).unwrap().collect();
-    assert!(!wal_files.is_empty(), "wal dir should have files");
+            // received at least one subscribe
+            let r = received.lock().await.clone();
+            assert!(!r.is_empty(), "server should receive subscribe");
 
-    run.abort();
+            // WAL should have file
+            let wal_files: Vec<_> = std::fs::read_dir(tmp.path().join("wal")).unwrap().collect();
+            assert!(!wal_files.is_empty(), "wal dir should have files");
+
+            run.abort();
+        })
+        .await;
 }
 
 #[tokio::test]
@@ -277,8 +319,8 @@ async fn e2e_stop_on_oversized_frame() {
         64 * 1024 * 1024,
         ucel_journal::FsyncMode::Balanced,
     )
-    .map_err(|e| e.to_string())
-    .unwrap();
+        .map_err(|e| e.to_string())
+        .unwrap();
     let wal = Arc::new(Mutex::new(wal));
 
     let mut store = SubscriptionStore::open(":memory:").unwrap();
@@ -291,16 +333,35 @@ async fn e2e_stop_on_oversized_frame() {
     let shutdown = ShutdownToken {
         flag: Arc::new(AtomicBool::new(false)),
     };
+
     let cfg = WsRunConfig {
         exchange_id: "gmocoin".to_string(),
         conn_id: "gmocoin-conn-1".to_string(),
-        recv_queue_cap: 64,
+
+        out_queue_cap: 64,
+        wal_queue_cap: 1024,
         max_frame_bytes: 1024, // small => trigger stop
         max_inflight_per_conn: 1,
+
         connect_timeout: Duration::from_secs(2),
         idle_timeout: Duration::from_secs(2),
+
         reconnect_storm_window: Duration::from_secs(30),
         reconnect_storm_max: 10,
+
+        stale_after: Duration::from_secs(60),
+        stale_sweep_interval: Duration::from_secs(2),
+        stale_max_batch: 200,
+
+        breaker: default_breaker(),
+
+        overflow: WsOverflowConfig {
+            mode: WsOverflowMode::DropNewest,
+            spill_dir: None,
+            slowdown_max_wait: Duration::from_millis(50),
+        },
+
+        graceful: default_graceful(),
     };
 
     let res = run_ws_connection(adapter, rules, &mut store, wal, cfg, shutdown).await;
@@ -309,7 +370,7 @@ async fn e2e_stop_on_oversized_frame() {
     let _ = stop_tx.send(());
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "current_thread")]
 async fn e2e_symbol_less_subscription_is_dripped() {
     let (addr, stop_tx, received) = spawn_fake_ws_server(false, false, 0).await;
 
@@ -324,8 +385,8 @@ async fn e2e_symbol_less_subscription_is_dripped() {
         64 * 1024 * 1024,
         ucel_journal::FsyncMode::Balanced,
     )
-    .map_err(|e| e.to_string())
-    .unwrap();
+        .map_err(|e| e.to_string())
+        .unwrap();
     let wal = Arc::new(Mutex::new(wal));
 
     let mut store = SubscriptionStore::open(":memory:").unwrap();
@@ -358,30 +419,55 @@ async fn e2e_symbol_less_subscription_is_dripped() {
     let shutdown = ShutdownToken {
         flag: Arc::new(AtomicBool::new(false)),
     };
+
     let cfg = WsRunConfig {
         exchange_id: "gmocoin".to_string(),
         conn_id: "gmocoin-conn-1".to_string(),
-        recv_queue_cap: 256,
+
+        out_queue_cap: 256,
+        wal_queue_cap: 8192,
         max_frame_bytes: 1024 * 1024,
         max_inflight_per_conn: 10,
+
         connect_timeout: Duration::from_secs(2),
         idle_timeout: Duration::from_secs(2),
+
         reconnect_storm_window: Duration::from_secs(30),
         reconnect_storm_max: 10,
+
+        stale_after: Duration::from_secs(60),
+        stale_sweep_interval: Duration::from_secs(2),
+        stale_max_batch: 200,
+
+        breaker: default_breaker(),
+
+        overflow: WsOverflowConfig {
+            mode: WsOverflowMode::SlowDownThenDropOldestLowPriority,
+            spill_dir: None,
+            slowdown_max_wait: Duration::from_millis(100),
+        },
+
+        graceful: default_graceful(),
     };
 
-    let run = tokio::spawn(async move {
-        run_ws_connection(adapter, rules, &mut store, wal, cfg, shutdown).await
-    });
+    let local = LocalSet::new();
+    local
+        .run_until(async move {
+            let run = tokio::task::spawn_local(async move {
+                run_ws_connection(adapter, rules, &mut store, wal, cfg, shutdown).await
+            });
 
-    tokio::time::sleep(Duration::from_millis(500)).await;
-    let _ = stop_tx.send(());
+            tokio::time::sleep(Duration::from_millis(500)).await;
+            let _ = stop_tx.send(());
 
-    let r = received.lock().await.clone();
-    assert!(
-        r.iter().any(|m| m.contains("\"symbol\":\"\"")),
-        "server should receive subscribe with empty symbol for symbol-less key"
-    );
+            let r = received.lock().await.clone();
+            assert!(
+                r.iter().any(|m| m.contains("\"symbol\":\"\"")),
+                "server should receive subscribe with empty symbol for symbol-less key"
+            );
 
-    run.abort();
+            run.abort();
+        })
+        .await;
 }
+

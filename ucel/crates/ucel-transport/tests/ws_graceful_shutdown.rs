@@ -33,16 +33,21 @@ async fn spawn_fake_writer(q: Arc<PriorityQueue>) -> JoinHandle<()> {
         // Simulate a WS writer task:
         // - consumes outbound frames
         // - exits when CloseRequest is observed or queue is closed & drained.
+        let mut saw_close = false;
         loop {
             match q.recv().await {
                 None => break,
                 Some(item) => {
                     if matches!(item.frame, WsOutboundFrame::CloseRequest) {
-                        break;
+                        saw_close = true;
+                        continue;
                     }
                     // emulate doing IO
                     tokio::time::sleep(Duration::from_millis(5)).await;
                 }
+            }
+            if saw_close && q.is_empty().await {
+                break;
             }
         }
     })
@@ -56,6 +61,19 @@ async fn spawn_fake_wal_writer(shutdown: ShutdownToken) -> JoinHandle<()> {
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
     })
+}
+
+async fn wait_until_queue_empty(q: &PriorityQueue, timeout: Duration) -> bool {
+    let deadline = tokio::time::Instant::now() + timeout;
+    loop {
+        if q.is_empty().await {
+            return true;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return false;
+        }
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -160,7 +178,7 @@ async fn close_flush_requeue_join_is_enforced() {
     .unwrap();
 
     // Assert: queue is closed/drained
-    assert!(q.is_empty().await);
+    assert!(wait_until_queue_empty(&q, Duration::from_millis(200)).await);
 
     // Assert: active/inflight -> pending
     let s1 = store.state_of("k1").unwrap().unwrap();

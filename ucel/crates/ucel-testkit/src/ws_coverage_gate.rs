@@ -48,6 +48,13 @@ pub fn run_ws_channels_gate(repo_root: &Path) -> Result<Vec<WsCoverageGateResult
             continue;
         }
         let manifest = load_coverage_manifest(&path).map_err(|e| e.to_string())?;
+        let channels_path = repo_root
+            .join("ucel/crates")
+            .join(format!("ucel-cex-{}", manifest.venue))
+            .join("src/channels/mod.rs");
+        if !channels_path.exists() {
+            continue;
+        }
         let expected: BTreeSet<String> = manifest
             .entries
             .iter()

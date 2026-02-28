@@ -267,7 +267,7 @@ impl SubscriptionStore {
                         params![k, now],
                     )
                     .map_err(|e| e.to_string())?;
-                changed += n as usize;
+                changed += n;
             }
 
             Ok(changed)
