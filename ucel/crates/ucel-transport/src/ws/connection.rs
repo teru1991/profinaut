@@ -10,6 +10,11 @@ use tokio_tungstenite::{connect_async, tungstenite::Message};
 use tracing::{info, warn};
 
 use ucel_journal::RawRecord;
+
+use crate::stability::events::{
+    ConnState, ReconnectReason, ShutdownPhase, TransportStabilityEvent,
+};
+use crate::stability::{map_breaker_state, map_outcome, StabilityHub};
 use ucel_subscription_store::SubscriptionStore;
 use ucel_ws_rules::ExchangeWsRules;
 
@@ -238,6 +243,7 @@ pub async fn run_ws_connection(
 
     let overflow_policy = build_overflow_policy(&cfg)?;
     let mut breaker = CircuitBreaker::new(cfg.breaker.clone());
+    let stability = Arc::new(StabilityHub::new());
 
     let mut reconnect_attempt: u32 = 0;
     let mut reconnect_times: VecDeque<Instant> = VecDeque::new();
@@ -245,6 +251,12 @@ pub async fn run_ws_connection(
     // === Outer reconnect loop ===
     loop {
         if shutdown.is_triggered() {
+            stability.emit(TransportStabilityEvent::ReconnectAttempt {
+                exchange_id: cfg.exchange_id.clone(),
+                conn_id: cfg.conn_id.clone(),
+                reason: ReconnectReason::Shutdown,
+                attempt: reconnect_attempt as u64,
+            });
             let _ = store.requeue_active_to_pending(&cfg.exchange_id, &cfg.conn_id, now_unix_i64());
             return Ok(());
         }
@@ -280,6 +292,17 @@ pub async fn run_ws_connection(
                     state=?breaker.kind(),
                     "circuit breaker open -> waiting"
                 );
+                stability.emit(TransportStabilityEvent::CircuitBreakerState {
+                    exchange_id: cfg.exchange_id.clone(),
+                    conn_id: cfg.conn_id.clone(),
+                    state: map_breaker_state(breaker.kind()),
+                });
+                stability.emit(TransportStabilityEvent::ReconnectAttempt {
+                    exchange_id: cfg.exchange_id.clone(),
+                    conn_id: cfg.conn_id.clone(),
+                    reason: ReconnectReason::CircuitOpenWait,
+                    attempt: reconnect_attempt as u64,
+                });
                 tokio::time::sleep(d).await;
                 continue;
             }
@@ -300,6 +323,12 @@ pub async fn run_ws_connection(
                 let backoff = backoff_with_jitter_ms(reconnect_attempt, 200, 30_000, 250);
                 reconnect_attempt = reconnect_attempt.saturating_add(1);
                 warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, err=%e, backoff_ms=backoff, "connect error");
+                stability.emit(TransportStabilityEvent::ReconnectAttempt {
+                    exchange_id: cfg.exchange_id.clone(),
+                    conn_id: cfg.conn_id.clone(),
+                    reason: ReconnectReason::ConnectError,
+                    attempt: reconnect_attempt as u64,
+                });
                 tokio::time::sleep(Duration::from_millis(backoff)).await;
                 continue;
             }
@@ -308,6 +337,12 @@ pub async fn run_ws_connection(
                 let backoff = backoff_with_jitter_ms(reconnect_attempt, 200, 30_000, 250);
                 reconnect_attempt = reconnect_attempt.saturating_add(1);
                 warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, backoff_ms=backoff, "connect timeout");
+                stability.emit(TransportStabilityEvent::ReconnectAttempt {
+                    exchange_id: cfg.exchange_id.clone(),
+                    conn_id: cfg.conn_id.clone(),
+                    reason: ReconnectReason::ConnectTimeout,
+                    attempt: reconnect_attempt as u64,
+                });
                 tokio::time::sleep(Duration::from_millis(backoff)).await;
                 continue;
             }
@@ -319,6 +354,12 @@ pub async fn run_ws_connection(
 
         let conn_started = Instant::now();
         let (mut write, mut read) = ws_stream.split();
+        stability.emit(TransportStabilityEvent::ConnectionState {
+            exchange_id: cfg.exchange_id.clone(),
+            conn_id: cfg.conn_id.clone(),
+            state: ConnState::Connected,
+        });
+        stability.add_gauge("active_conn", 1);
 
         // Priority outbound queue (private-first) + graceful close marker.
         let outq = PriorityQueue::new(cfg.out_queue_cap);
@@ -332,11 +373,13 @@ pub async fn run_ws_connection(
             let exchange_id = cfg.exchange_id.clone();
             let conn_id = cfg.conn_id.clone();
             let shutdown2 = shutdown.clone();
+            let stability2 = stability.clone();
             tokio::spawn(async move {
                 loop {
                     if shutdown2.is_triggered() && wal_rx.is_empty() {
                         break;
                     }
+                    stability2.set_gauge("wal_queue_len", wal_rx.len() as i64);
                     let next =
                         tokio::time::timeout(Duration::from_millis(200), wal_rx.recv()).await;
                     let Some(rec) = next.ok().flatten() else {
@@ -362,11 +405,13 @@ pub async fn run_ws_connection(
             let shutdown2 = shutdown.clone();
             let outq2 = outq.clone();
             let ws_limiter2 = ws_limiter.clone();
+            let stability2 = stability.clone();
             tokio::spawn(async move {
                 loop {
                     if shutdown2.is_triggered() && outq2.is_empty().await {
                         break;
                     }
+                    stability2.set_gauge("outq_len", outq2.len() as i64);
                     let Some(item) = outq2.recv().await else {
                         break;
                     };
@@ -413,6 +458,16 @@ pub async fn run_ws_connection(
         loop {
             // Shutdown => graceful path (close->flush->requeue->join)
             if shutdown.is_triggered() {
+                stability.emit(TransportStabilityEvent::ConnectionState {
+                    exchange_id: cfg.exchange_id.clone(),
+                    conn_id: cfg.conn_id.clone(),
+                    state: ConnState::ShuttingDown,
+                });
+                stability.emit(TransportStabilityEvent::ShutdownPhase {
+                    exchange_id: cfg.exchange_id.clone(),
+                    conn_id: cfg.conn_id.clone(),
+                    phase: ShutdownPhase::CloseRequested,
+                });
                 let _ = graceful_shutdown_ws(
                     cfg.graceful.clone(),
                     &cfg.exchange_id,
@@ -424,6 +479,17 @@ pub async fn run_ws_connection(
                     wal_writer,
                 )
                 .await;
+                stability.emit(TransportStabilityEvent::ShutdownPhase {
+                    exchange_id: cfg.exchange_id.clone(),
+                    conn_id: cfg.conn_id.clone(),
+                    phase: ShutdownPhase::Joined,
+                });
+                stability.emit(TransportStabilityEvent::ConnectionState {
+                    exchange_id: cfg.exchange_id.clone(),
+                    conn_id: cfg.conn_id.clone(),
+                    state: ConnState::Disconnected,
+                });
+                stability.add_gauge("active_conn", -1);
                 return Ok(());
             }
 
@@ -431,6 +497,12 @@ pub async fn run_ws_connection(
             if let Some(ma) = max_age {
                 if conn_started.elapsed() >= ma {
                     warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, "max_connection_age reached -> rotate reconnect");
+                    stability.emit(TransportStabilityEvent::ReconnectAttempt {
+                        exchange_id: cfg.exchange_id.clone(),
+                        conn_id: cfg.conn_id.clone(),
+                        reason: ReconnectReason::MaxAge,
+                        attempt: reconnect_attempt as u64,
+                    });
                     break;
                 }
             }
@@ -456,6 +528,16 @@ pub async fn run_ws_connection(
                             )
                             .await
                             .unwrap_or(PushOutcome::Dropped);
+                        stability.emit(TransportStabilityEvent::OutqOverflowOutcome {
+                            exchange_id: cfg.exchange_id.clone(),
+                            conn_id: cfg.conn_id.clone(),
+                            outcome: map_outcome(out),
+                        });
+                        stability.emit(TransportStabilityEvent::OutqOverflowOutcome {
+                            exchange_id: cfg.exchange_id.clone(),
+                            conn_id: cfg.conn_id.clone(),
+                            outcome: map_outcome(out),
+                        });
                         match out {
                             PushOutcome::Enqueued => {}
                             PushOutcome::Dropped => {
@@ -500,6 +582,12 @@ pub async fn run_ws_connection(
                     }
                 }
                 warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, "idle timeout -> reconnect");
+                stability.emit(TransportStabilityEvent::ReconnectAttempt {
+                    exchange_id: cfg.exchange_id.clone(),
+                    conn_id: cfg.conn_id.clone(),
+                    reason: ReconnectReason::IdleTimeout,
+                    attempt: reconnect_attempt as u64,
+                });
                 break;
             }
 
@@ -595,6 +683,11 @@ pub async fn run_ws_connection(
                             )
                             .await
                             .unwrap_or(PushOutcome::Dropped);
+                        stability.emit(TransportStabilityEvent::OutqOverflowOutcome {
+                            exchange_id: cfg.exchange_id.clone(),
+                            conn_id: cfg.conn_id.clone(),
+                            outcome: map_outcome(out),
+                        });
                         match out {
                             PushOutcome::Enqueued => {}
                             PushOutcome::Dropped => {
@@ -620,11 +713,14 @@ pub async fn run_ws_connection(
                 Err(e) => {
                     if e.to_string().to_ascii_lowercase().contains("rate") {
                         let mut lim = ws_limiter.lock().await;
-                        lim.apply_penalty(
-                            OutboundPriority::Private,
-                            Instant::now(),
-                            Duration::from_millis(250),
-                        );
+                        let p = Duration::from_millis(250);
+                        lim.apply_penalty(OutboundPriority::Private, Instant::now(), p);
+                        stability.emit(TransportStabilityEvent::RlPenaltyApplied {
+                            exchange_id: cfg.exchange_id.clone(),
+                            conn_id: cfg.conn_id.clone(),
+                            priority: OutboundPriority::Private,
+                            penalty_ms: p.as_millis() as u64,
+                        });
                     }
                     break;
                 }
@@ -664,20 +760,43 @@ pub async fn run_ws_connection(
                     last_inbound = Instant::now();
                     continue;
                 }
-                Message::Close(_) => break,
+                Message::Close(_) => {
+                    stability.emit(TransportStabilityEvent::ReconnectAttempt {
+                        exchange_id: cfg.exchange_id.clone(),
+                        conn_id: cfg.conn_id.clone(),
+                        reason: ReconnectReason::CloseFrame,
+                        attempt: reconnect_attempt as u64,
+                    });
+                    break;
+                }
                 Message::Text(t) => {
-                    handle_inbound(&adapter, &cfg, store, &wal_tx, &ws_limiter, t.into_bytes())
-                        .await?;
+                    handle_inbound(
+                        &adapter,
+                        &cfg,
+                        store,
+                        &wal_tx,
+                        &ws_limiter,
+                        &stability,
+                        t.into_bytes(),
+                    )
+                    .await?;
                     last_inbound = Instant::now();
                 }
                 Message::Binary(b) => {
-                    handle_inbound(&adapter, &cfg, store, &wal_tx, &ws_limiter, b).await?;
+                    handle_inbound(&adapter, &cfg, store, &wal_tx, &ws_limiter, &stability, b)
+                        .await?;
                     last_inbound = Instant::now();
                 }
                 _ => {}
             }
         }
 
+        stability.emit(TransportStabilityEvent::ConnectionState {
+            exchange_id: cfg.exchange_id.clone(),
+            conn_id: cfg.conn_id.clone(),
+            state: ConnState::Disconnected,
+        });
+        stability.add_gauge("active_conn", -1);
         // reconnect path: request close, then abort tasks only if they do not join quickly
         // (best effort, because we are not in shutdown)
         outq.begin_closing();
@@ -717,12 +836,22 @@ pub async fn run_ws_connection(
             .is_err()
         {
             writer.abort();
+            stability.emit(TransportStabilityEvent::ShutdownPhase {
+                exchange_id: cfg.exchange_id.clone(),
+                conn_id: cfg.conn_id.clone(),
+                phase: ShutdownPhase::AbortTimeout,
+            });
         }
         if tokio::time::timeout(Duration::from_secs(2), &mut wal_writer)
             .await
             .is_err()
         {
             wal_writer.abort();
+            stability.emit(TransportStabilityEvent::ShutdownPhase {
+                exchange_id: cfg.exchange_id.clone(),
+                conn_id: cfg.conn_id.clone(),
+                phase: ShutdownPhase::AbortTimeout,
+            });
         }
 
         // backoff before reconnect
@@ -766,6 +895,7 @@ async fn handle_inbound(
     store: &mut SubscriptionStore,
     wal_tx: &mpsc::Sender<RawRecord>,
     ws_limiter: &Arc<Mutex<WsRateLimiter>>,
+    stability: &Arc<StabilityHub>,
     raw: Vec<u8>,
 ) -> Result<(), String> {
     if raw.len() > cfg.max_frame_bytes {
@@ -927,6 +1057,14 @@ async fn handle_inbound(
 
                             // pendingへ戻し、cooldownをセット
                             store.apply_rate_limit_cooldown(&k, now, cooldown_secs)?;
+                            let prio = classify_op_id_priority(&op);
+                            stability.emit(TransportStabilityEvent::RlCooldownSet {
+                                exchange_id: cfg.exchange_id.clone(),
+                                conn_id: cfg.conn_id.clone(),
+                                priority: prio,
+                                cooldown_secs,
+                                attempts,
+                            });
 
                             warn!(
                                 exchange_id=%cfg.exchange_id,
@@ -961,6 +1099,12 @@ async fn handle_inbound(
                         let mut lim = ws_limiter.lock().await;
                         lim.apply_penalty(prio, Instant::now(), pen);
                     }
+                    stability.emit(TransportStabilityEvent::RlPenaltyApplied {
+                        exchange_id: cfg.exchange_id.clone(),
+                        conn_id: cfg.conn_id.clone(),
+                        priority: prio,
+                        penalty_ms: pen.as_millis() as u64,
+                    });
                     warn!(
                         exchange_id=%cfg.exchange_id,
                         conn=%cfg.conn_id,
