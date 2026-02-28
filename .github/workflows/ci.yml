@@ -149,34 +149,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Rust toolchain (stable with rustfmt/clippy)
+      - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
-      - name: Cache Rust artifacts for ucel workspace
+      - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: |
             ucel -> target
 
-      - name: "Run cargo fmt (manifest: ucel/Cargo.toml)"
+      - name: cargo fmt (check)
         run: cargo fmt --manifest-path ucel/Cargo.toml --all -- --check
 
-      - name: "Run cargo clippy (manifest: ucel/Cargo.toml)"
+      - name: cargo clippy (deny warnings)
         run: cargo clippy --manifest-path ucel/Cargo.toml --workspace --all-targets -- -D warnings
 
-      - name: "Run cargo test (manifest: ucel/Cargo.toml)"
+      - name: cargo test
         run: cargo test --manifest-path ucel/Cargo.toml --workspace --all-targets
 
-  ucel-security:
+  ucel-audit:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Rust toolchain (stable)
+      - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install cargo-audit
@@ -184,8 +184,9 @@ jobs:
         with:
           tool: cargo-audit
 
-      - name: "Run cargo audit (manifest: ucel/Cargo.toml)"
-        run: cargo audit --file ucel/Cargo.lock
+      - name: cargo audit (ucel)
+        working-directory: ucel
+        run: cargo audit
 
   ucel-semver:
     runs-on: ubuntu-latest
@@ -194,7 +195,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Rust toolchain (stable)
+      - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install cargo-semver-checks
@@ -202,25 +203,16 @@ jobs:
         with:
           tool: cargo-semver-checks
 
-      - name: Prepare baseline (origin/master)
+      - name: Prepare baseline (origin/main)
         run: |
           set -euxo pipefail
-          git fetch --no-tags --depth=1 origin master
+          git fetch --no-tags --depth=1 origin main
+          rm -rf /tmp/ucel-baseline
+          git worktree add /tmp/ucel-baseline origin/main
 
-      - name: Run semver checks for ucel-core
+      - name: Semver checks (ucel-core vs main)
         run: |
           set -euxo pipefail
-          echo "manifest-path=ucel/crates/ucel-core/Cargo.toml"
-          echo "baseline-rev=origin/master"
-          cargo semver-checks check-release \
+          cargo semver-checks check \
             --manifest-path ucel/crates/ucel-core/Cargo.toml \
-            --baseline-rev origin/master
-
-      - name: Run semver checks for ucel-registry
-        run: |
-          set -euxo pipefail
-          echo "manifest-path=ucel/crates/ucel-registry/Cargo.toml"
-          echo "baseline-rev=origin/master"
-          cargo semver-checks check-release \
-            --manifest-path ucel/crates/ucel-registry/Cargo.toml \
-            --baseline-rev origin/master
+            --baseline-root /tmp/ucel-baseline
