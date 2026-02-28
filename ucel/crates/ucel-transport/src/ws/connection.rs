@@ -1114,6 +1114,15 @@ async fn handle_inbound(
                         "ws rate-limit -> applied limiter penalty"
                     );
                 }
+
+                warn!(
+                    exchange_id=%cfg.exchange_id,
+                    conn=%cfg.conn_id,
+                    penalty_ms=pen.as_millis() as u64,
+                    priority=%prio.as_str(),
+                    reason=%reason,
+                    "ws nack rate-limit -> applied limiter penalty"
+                );
             }
         }
         _ => {}
