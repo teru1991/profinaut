@@ -1,5 +1,7 @@
 use std::time::{Duration, Instant};
 
+// NOTE: bucketed WS outbound limiter (control/private/public).
+
 use super::priority::OutboundPriority;
 
 /// Token-bucket config for WS outbound.
@@ -170,18 +172,33 @@ mod tests {
     #[test]
     fn buckets_are_separate() {
         let mut lim = WsRateLimiter::new(WsRateLimiterConfig {
-            control: BucketConfig { capacity: 1.0, refill_per_sec: 1.0 },
-            private: BucketConfig { capacity: 1.0, refill_per_sec: 1.0 },
-            public: BucketConfig { capacity: 1.0, refill_per_sec: 1.0 },
+            control: BucketConfig {
+                capacity: 1.0,
+                refill_per_sec: 1.0,
+            },
+            private: BucketConfig {
+                capacity: 1.0,
+                refill_per_sec: 1.0,
+            },
+            public: BucketConfig {
+                capacity: 1.0,
+                refill_per_sec: 1.0,
+            },
             min_gap: Duration::from_millis(0),
         });
 
         let t0 = Instant::now();
-        assert_eq!(lim.acquire_wait(OutboundPriority::Public, t0), Duration::from_secs(0));
+        assert_eq!(
+            lim.acquire_wait(OutboundPriority::Public, t0),
+            Duration::from_secs(0)
+        );
         assert!(lim.acquire_wait(OutboundPriority::Public, t0) > Duration::from_millis(0));
 
         // Private bucket is separate => still grants
-        assert_eq!(lim.acquire_wait(OutboundPriority::Private, t0), Duration::from_secs(0));
+        assert_eq!(
+            lim.acquire_wait(OutboundPriority::Private, t0),
+            Duration::from_secs(0)
+        );
     }
 
     #[test]
