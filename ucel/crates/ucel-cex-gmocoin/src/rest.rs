@@ -53,7 +53,13 @@ impl GmoRest {
         }
     }
 
-    fn sign(&self, timestamp: &str, method: &Method, path: &str, body: &str) -> Result<String, String> {
+    fn sign(
+        &self,
+        timestamp: &str,
+        method: &Method,
+        path: &str,
+        body: &str,
+    ) -> Result<String, String> {
         let cred = self
             .cred
             .as_ref()
@@ -90,7 +96,9 @@ impl GmoRest {
         if !resp.status().is_success() {
             return Err(format!("gmo public error status={}", resp.status()));
         }
-        resp.json::<serde_json::Value>().await.map_err(|e| e.to_string())
+        resp.json::<serde_json::Value>()
+            .await
+            .map_err(|e| e.to_string())
     }
 
     async fn request_private_any<T: DeserializeOwned>(
@@ -206,7 +214,12 @@ impl GmoRest {
     /// POST /private/v1/ws-auth -> token  [oai_citation:14‡Coin API](https://api.coin.z.com/docs/)
     pub async fn ws_auth_create(&self) -> Result<String, String> {
         let r: WsAuthResp = self
-            .request_private_any(Method::POST, "/v1/ws-auth", None, Some(serde_json::json!({})))
+            .request_private_any(
+                Method::POST,
+                "/v1/ws-auth",
+                None,
+                Some(serde_json::json!({})),
+            )
             .await?;
         Ok(r.data)
     }
@@ -219,6 +232,6 @@ impl GmoRest {
             None,
             Some(serde_json::json!({ "token": token })),
         )
-            .await
+        .await
     }
 }
