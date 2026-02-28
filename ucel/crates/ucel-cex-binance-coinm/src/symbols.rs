@@ -8,8 +8,9 @@ struct ExchangeInfo {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SymbolInfo {
-    // これを使わないなら削除が一番きれい（serdeは未知フィールドを無視します）
+    #[allow(dead_code)]
     symbol: String,
+    status: String,
     base_asset: String,
     quote_asset: String,
 }
@@ -43,7 +44,7 @@ pub async fn fetch_all_symbols() -> Result<Vec<String>, String> {
     let mut out = Vec::new();
     for s in body.symbols {
         if s.status == "TRADING" {
-            out.push(to_canonical_symbol(&s.baseAsset, &s.quoteAsset));
+            out.push(to_canonical_symbol(&s.base_asset, &s.quote_asset));
         }
     }
     out.sort();

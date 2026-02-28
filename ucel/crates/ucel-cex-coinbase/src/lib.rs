@@ -6,9 +6,9 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::info;
 use ucel_core::{
-    ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, TradeEvent, UcelError,
+    Decimal, ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side, TradeEvent, UcelError,
 };
-use ucel_transport::{enforce_auth_boundary, RequestContext};
+use ucel_transport::{enforce_auth_boundary, HttpRequest, RequestContext, Transport};
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
@@ -132,15 +132,15 @@ enum CoinbaseWsMessage {
 #[derive(Debug, Clone, Deserialize)]
 struct TradeWire {
     trade_id: String,
-    price: f64,
-    qty: f64,
-    side: String,
+    price: Decimal,
+    qty: Decimal,
+    side: Side,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 struct LevelWire {
-    price: f64,
-    qty: f64,
+    price: Decimal,
+    qty: Decimal,
 }
 
 pub fn decode_market_event(raw: &[u8]) -> Result<MarketEvent, UcelError> {
@@ -231,16 +231,11 @@ impl CoinbaseBackpressure {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum OrderbookHealth {
+    #[default]
     Ok,
     Degraded,
-}
-
-impl Default for OrderbookHealth {
-    fn default() -> Self {
-        Self::Ok
-    }
 }
 
 #[derive(Debug, Default)]
@@ -384,6 +379,95 @@ pub fn build_subscribe_payload(
         .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown channel"))
 }
 
+#[derive(Debug, Clone)]
+pub struct RestEndpointSpec {
+    pub id: &'static str,
+    pub requires_auth: bool,
+    pub transport_enabled: bool,
+}
+
+static REST_ENDPOINT_SPECS: [RestEndpointSpec; 7] = [
+    RestEndpointSpec { id: "advanced.crypto.public.rest.reference.introduction", requires_auth: false, transport_enabled: true },
+    RestEndpointSpec { id: "advanced.crypto.private.rest.reference.introduction", requires_auth: true, transport_enabled: true },
+    RestEndpointSpec { id: "exchange.crypto.public.rest.reference.introduction", requires_auth: false, transport_enabled: true },
+    RestEndpointSpec { id: "exchange.crypto.private.rest.reference.introduction", requires_auth: true, transport_enabled: true },
+    RestEndpointSpec { id: "intx.crypto.public.rest.reference.welcome", requires_auth: false, transport_enabled: true },
+    RestEndpointSpec { id: "intx.crypto.private.rest.reference.welcome", requires_auth: true, transport_enabled: true },
+    RestEndpointSpec { id: "other.other.public.rest.docs.root", requires_auth: false, transport_enabled: true },
+];
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct RestReferenceBody {
+    pub id: String,
+    pub source: String,
+}
+
+#[derive(Debug)]
+pub enum CoinbaseRestResponse {
+    Reference(RestReferenceBody),
+    ReferenceOnly(RestReferenceBody),
+}
+
+#[derive(Default)]
+pub struct CoinbaseRestAdapter;
+
+impl CoinbaseRestAdapter {
+    pub fn new() -> Self {
+        Self
+    }
+
+    pub fn endpoint_specs() -> &'static [RestEndpointSpec] {
+        &REST_ENDPOINT_SPECS
+    }
+
+    pub async fn execute_rest<T: Transport>(
+        &self,
+        transport: &T,
+        id: &str,
+        _symbol: Option<String>,
+        key_id: Option<String>,
+    ) -> Result<CoinbaseRestResponse, UcelError> {
+        let spec = REST_ENDPOINT_SPECS
+            .iter()
+            .find(|s| s.id == id)
+            .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown endpoint"))?;
+        let ctx = RequestContext {
+            trace_id: Uuid::new_v4().to_string(),
+            request_id: Uuid::new_v4().to_string(),
+            run_id: Uuid::new_v4().to_string(),
+            op: OpName::FetchStatus,
+            venue: "coinbase".into(),
+            policy_id: "default".into(),
+            key_id,
+            requires_auth: spec.requires_auth,
+        };
+        enforce_auth_boundary(&ctx)?;
+        let resp = transport
+            .send_http(
+                HttpRequest {
+                    path: format!("/rest/{id}"),
+                    method: "GET".into(),
+                    body: None,
+                },
+                ctx,
+            )
+            .await?;
+        if resp.status == 429 {
+            let retry_after_ms = serde_json::from_slice::<serde_json::Value>(&resp.body)
+                .ok()
+                .and_then(|v| v["retry_after_ms"].as_u64());
+            return Err(UcelError::new(ErrorCode::RateLimited, "rate limited")
+                .with_retry_after_ms(retry_after_ms.unwrap_or(0)));
+        }
+        if resp.status >= 500 {
+            return Err(UcelError::new(ErrorCode::Upstream5xx, "upstream error"));
+        }
+        let body: RestReferenceBody = serde_json::from_slice(&resp.body)
+            .map_err(|e| UcelError::new(ErrorCode::Internal, e.to_string()))?;
+        Ok(CoinbaseRestResponse::Reference(body))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -487,8 +571,10 @@ mod tests {
 
     #[test]
     fn duplicate_or_out_of_order_policy_is_safe_resync() {
-        let mut engine = OrderbookResync::default();
-        engine.next_sequence = Some(5);
+        let mut engine = OrderbookResync {
+            next_sequence: Some(5),
+            ..Default::default()
+        };
         let err = engine
             .ingest_delta(OrderBookDelta {
                 bids: vec![],

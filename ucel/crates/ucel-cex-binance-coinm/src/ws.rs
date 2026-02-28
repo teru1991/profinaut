@@ -4,7 +4,7 @@ use ucel_transport::ws::adapter::{InboundClass, OutboundMsg, WsVenueAdapter};
 
 use crate::symbols::{fetch_all_symbols, to_exchange_symbol, to_ws_symbol};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct BinanceCoinmWsAdapter;
 impl BinanceCoinmWsAdapter {
     pub fn new() -> Self {

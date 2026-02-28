@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
 use ucel_core::{
-    ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, TradeEvent, UcelError,
+    Decimal, ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side, TradeEvent, UcelError,
 };
 use ucel_transport::{
     enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport, WsConnectRequest,
@@ -63,6 +63,12 @@ pub struct HtxRestAdapter {
     pub endpoints: Arc<Vec<EndpointSpec>>,
     pub http_client: reqwest::Client,
     pub retry_policy: RetryPolicy,
+}
+
+impl Default for HtxRestAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl HtxRestAdapter {
@@ -182,16 +188,11 @@ impl HtxBackpressure {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum OrderBookHealth {
+    #[default]
     Recovered,
     Degraded,
-}
-
-impl Default for OrderBookHealth {
-    fn default() -> Self {
-        Self::Recovered
-    }
 }
 
 #[derive(Debug, Default)]
@@ -259,7 +260,7 @@ fn merge_levels(target: &mut Vec<OrderBookLevel>, updates: Vec<OrderBookLevel>, 
             target.push(update);
         }
     }
-    target.retain(|x| x.qty > 0.0);
+    target.retain(|x| x.qty > Decimal::ZERO);
     target.sort_by(|a, b| {
         if desc {
             b.price.partial_cmp(&a.price)
@@ -297,12 +298,12 @@ struct SpotWsMsg {
 #[derive(Debug, Clone, Deserialize)]
 struct SpotTick {
     #[serde(default)]
-    bids: Vec<(f64, f64)>,
+    bids: Vec<(Decimal, Decimal)>,
     #[serde(default)]
-    asks: Vec<(f64, f64)>,
-    price: Option<f64>,
-    amount: Option<f64>,
-    direction: Option<String>,
+    asks: Vec<(Decimal, Decimal)>,
+    price: Option<Decimal>,
+    amount: Option<Decimal>,
+    direction: Option<Side>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -500,7 +501,7 @@ impl HtxWsAdapter {
                     ),
                     price: tick.price.unwrap_or_default(),
                     qty: tick.amount.unwrap_or_default(),
-                    side: tick.direction.unwrap_or_else(|| "unknown".to_string()),
+                    side: tick.direction.unwrap_or(Side::Unknown),
                 }));
             }
             let bids = tick

@@ -6,7 +6,7 @@ use ucel_transport::ws::adapter::{InboundClass, OutboundMsg, WsVenueAdapter};
 
 use crate::symbols::fetch_spot_symbols;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct HtxSpotWsAdapter;
 impl HtxSpotWsAdapter {
     pub fn new() -> Self {

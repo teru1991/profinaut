@@ -2,8 +2,8 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 struct ExchangeInfo {
-    #[serde(default)]
-    optionSymbols: Vec<OptionSymbol>,
+    #[serde(default, rename = "optionSymbols")]
+    option_symbols: Vec<OptionSymbol>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -36,7 +36,7 @@ pub async fn fetch_all_symbols() -> Result<Vec<String>, String> {
     let body: ExchangeInfo = resp.json().await.map_err(|e| e.to_string())?;
 
     let mut out = Vec::new();
-    for s in body.optionSymbols {
+    for s in body.option_symbols {
         if let Some(st) = s.status.as_deref() {
             if st != "TRADING" && st != "trading" {
                 continue;

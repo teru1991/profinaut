@@ -7,7 +7,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::info;
 use ucel_core::{
-    ErrorCode, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, TradeEvent, UcelError,
+    Decimal, ErrorCode, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side, TradeEvent, UcelError,
 };
 
 #[derive(Debug, Clone, Deserialize)]
@@ -383,9 +383,9 @@ struct TickerMsg {
 #[derive(Deserialize)]
 struct TradeMsg {
     trade_id: String,
-    price: f64,
-    qty: f64,
-    side: String,
+    price: Decimal,
+    qty: Decimal,
+    side: Side,
 }
 
 #[derive(Deserialize)]

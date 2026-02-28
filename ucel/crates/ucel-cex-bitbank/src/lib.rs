@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use ucel_core::{
-    ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, TradeEvent, UcelError,
+    Decimal, ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side, TradeEvent, UcelError,
 };
 use ucel_transport::{enforce_auth_boundary, RequestContext, Transport, WsConnectRequest};
 use uuid::Uuid;
@@ -77,7 +77,7 @@ impl BitbankWsBackpressure {
 pub enum MarketEvent {
     Ticker {
         pair: String,
-        last: f64,
+        last: Decimal,
     },
     Trade(TradeEvent),
     OrderBookDelta(OrderBookDelta),
@@ -278,7 +278,7 @@ struct TradeMsg {
     transaction_id: String,
     price: String,
     amount: String,
-    side: String,
+    side: Side,
 }
 #[derive(Deserialize)]
 struct DepthMsg {
@@ -301,8 +301,8 @@ struct UserMsg {
 fn parse_json<T: DeserializeOwned>(b: &Bytes) -> Result<T, UcelError> {
     serde_json::from_slice(b).map_err(|e| UcelError::new(ErrorCode::Internal, format!("json: {e}")))
 }
-fn num(v: &str) -> Result<f64, UcelError> {
-    v.parse()
+fn num(v: &str) -> Result<Decimal, UcelError> {
+    v.parse::<Decimal>()
         .map_err(|_| UcelError::new(ErrorCode::Internal, "num"))
 }
 fn levels(v: Vec<[String; 2]>) -> Result<Vec<OrderBookLevel>, UcelError> {
