@@ -12,12 +12,24 @@ struct ApiResp<T> {
 #[derive(Debug, Deserialize)]
 struct SymbolRow {
     symbol: String, // e.g. "BTC"
-    minOrderSize: String,
-    maxOrderSize: String,
-    sizeStep: String,
-    tickSize: String,
-    takerFee: String,
-    makerFee: String,
+    #[serde(rename = "minOrderSize")]
+    #[allow(dead_code)]
+    min_order_size: String,
+    #[serde(rename = "maxOrderSize")]
+    #[allow(dead_code)]
+    max_order_size: String,
+    #[serde(rename = "sizeStep")]
+    #[allow(dead_code)]
+    size_step: String,
+    #[serde(rename = "tickSize")]
+    #[allow(dead_code)]
+    tick_size: String,
+    #[serde(rename = "takerFee")]
+    #[allow(dead_code)]
+    taker_fee: String,
+    #[serde(rename = "makerFee")]
+    #[allow(dead_code)]
+    maker_fee: String,
 }
 
 /// GMO: Public symbols/trading rules

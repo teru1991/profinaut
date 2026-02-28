@@ -11,13 +11,6 @@ use crate::symbols::fetch_symbols;
 const WS_PUBLIC_V1: &str = "wss://api.coin.z.com/ws/public/v1";
 const WS_PRIVATE_V1_BASE: &str = "wss://api.coin.z.com/ws/private/v1";
 
-fn now_unix_ms() -> u64 {
-    (std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_millis()) as u64
-}
-
 /// Internal topic encoding for GMO:
 /// - Public:  "{channel}|{symbol}"  (+ optional params.option)
 /// - Private: "{channel}"          (+ optional params.option)
@@ -67,6 +60,12 @@ pub struct GmoCoinPublicWsAdapter;
 impl GmoCoinPublicWsAdapter {
     pub fn new() -> Self {
         Self
+    }
+}
+
+impl Default for GmoCoinPublicWsAdapter {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -169,7 +168,7 @@ pub struct GmoCoinPrivateWsAdapter {
 
 impl GmoCoinPrivateWsAdapter {
     pub fn new(creds: GmoCredentials) -> Result<Self, String> {
-        let rest = GmoRest::new_with_credentials(creds)?;
+        let rest = GmoRest::new_with_credentials(creds);
         Ok(Self {
             rest,
             state: Arc::new(RwLock::new(TokenState {

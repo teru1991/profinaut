@@ -134,6 +134,12 @@ impl HtxRestAdapter {
     }
 }
 
+impl Default for HtxRestAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct WsSubscription {
     pub channel_id: String,
@@ -182,16 +188,11 @@ impl HtxBackpressure {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum OrderBookHealth {
+    #[default]
     Recovered,
     Degraded,
-}
-
-impl Default for OrderBookHealth {
-    fn default() -> Self {
-        Self::Recovered
-    }
 }
 
 #[derive(Debug, Default)]
