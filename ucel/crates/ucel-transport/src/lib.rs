@@ -1,4 +1,5 @@
 pub mod http;
+pub mod stability;
 pub mod ws;
 
 use bytes::Bytes;
