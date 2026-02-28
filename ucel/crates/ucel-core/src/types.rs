@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 /// Canonical numeric type for price/qty/money.
-/// `serde-with-float` enables decoding JSON floats while preserving Decimal internally.
+/// rust_decimal's `serde-with-float` feature enables decoding JSON floats while preserving Decimal internally.
 pub type Decimal = RustDecimal;
 
 /// Schema version stored as SemVer.
@@ -15,7 +15,7 @@ impl SchemaVersion {
     pub fn parse(s: &str) -> Result<Self, String> {
         Version::parse(s)
             .map(SchemaVersion)
-            .map_err(|e| e.to_string())
+            .map_err(|e| format!("invalid schema version `{s}`: {e}"))
     }
 }
 

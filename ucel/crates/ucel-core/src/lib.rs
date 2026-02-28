@@ -178,8 +178,8 @@ impl UcelError {
         )
     }
 
-    pub fn with_retry_after_ms(mut self, ms: u64) -> Self {
-        self.retry_after_ms = Some(ms);
+    pub fn with_retry_after_ms(mut self, milliseconds: u64) -> Self {
+        self.retry_after_ms = Some(milliseconds);
         self
     }
 
