@@ -51,7 +51,8 @@ impl SubscriptionStore {
               last_error TEXT,
               updated_at INTEGER NOT NULL,
               first_active_at INTEGER,
-              last_message_at INTEGER
+              last_message_at INTEGER,
+              rate_limit_until INTEGER
             );
             CREATE INDEX IF NOT EXISTS idx_subs_exchange_conn_state
               ON subscriptions(exchange_id, assigned_conn, state);
@@ -59,7 +60,15 @@ impl SubscriptionStore {
               ON subscriptions(exchange_id, assigned_conn, op_id, symbol, params_json);
             ",
             )
-            .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())?;
+
+        // ---- schema migration (idempotent-ish) ----
+        let _ = self.conn.execute(
+            "ALTER TABLE subscriptions ADD COLUMN rate_limit_until INTEGER",
+            [],
+        );
+
+        Ok(())
     }
 
     pub fn seed(&mut self, rows: &[SubscriptionRow], now: i64) -> Result<(), String> {
@@ -93,13 +102,17 @@ impl SubscriptionStore {
         let mut stmt = tx
             .prepare(
                 "SELECT key FROM subscriptions
-             WHERE exchange_id=?1 AND assigned_conn=?2 AND state='pending'
-             ORDER BY updated_at ASC LIMIT ?3",
+         WHERE exchange_id=?1
+           AND assigned_conn=?2
+           AND state='pending'
+           AND (rate_limit_until IS NULL OR rate_limit_until <= ?4)
+         ORDER BY updated_at ASC
+         LIMIT ?3",
             )
             .map_err(|e| e.to_string())?;
 
         let mut rows = stmt
-            .query(params![exchange_id, conn_id, max_n as i64])
+            .query(rusqlite::params![exchange_id, conn_id, max_n as i64, now])
             .map_err(|e| e.to_string())?;
         let mut keys = Vec::new();
         while let Some(row) = rows.next().map_err(|e| e.to_string())? {
@@ -174,6 +187,37 @@ impl SubscriptionStore {
             )
             .map_err(|e| e.to_string())?;
         Ok(())
+    }
+
+    pub fn apply_rate_limit_cooldown(
+        &self,
+        key: &str,
+        now: i64,
+        cooldown_secs: i64,
+    ) -> Result<(), String> {
+        let until = now.saturating_add(cooldown_secs.max(0));
+        self.conn
+            .execute(
+                "UPDATE subscriptions
+             SET state='pending',
+                 rate_limit_until=?2,
+                 updated_at=?3
+             WHERE key=?1",
+                rusqlite::params![key, until, now],
+            )
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn attempts_of(&self, key: &str) -> Result<Option<i64>, String> {
+        self.conn
+            .query_row(
+                "SELECT attempts FROM subscriptions WHERE key=?1",
+                rusqlite::params![key],
+                |r| r.get(0),
+            )
+            .optional()
+            .map_err(|e| e.to_string())
     }
 
     pub fn bump_last_message(&self, key: &str, ts: i64) -> Result<(), String> {
