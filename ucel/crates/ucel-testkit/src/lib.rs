@@ -1,5 +1,6 @@
 pub mod coverage;
 pub mod okx;
+pub mod ssot_gate;
 pub mod ws_coverage_gate;
 
 use serde::{Deserialize, Serialize};
