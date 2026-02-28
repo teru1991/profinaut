@@ -939,6 +939,37 @@ async fn handle_inbound(
                     "ws rate-limit -> applied limiter penalty"
                 );
             }
+
+            // 2) penalty auto-apply
+            // - retry_after_ms があればそれを尊重
+            // - なくても reason が rate-limit 系なら安全側のデフォルトを適用
+            let mut penalty = retry_after_ms.map(Duration::from_millis);
+            if penalty.is_none() && looks_like_rate_limited(&reason) {
+                // 安全側デフォルト（調整可能）
+                penalty = Some(Duration::from_millis(500));
+            }
+
+            if let Some(pen) = penalty {
+                // private/public を op_id で推定（無いなら public 扱い）
+                let prio = match op_id.as_deref() {
+                    Some(op) => classify_op_id_priority(op),
+                    None => OutboundPriority::Public,
+                };
+
+                {
+                    let mut lim = ws_limiter.lock().await;
+                    lim.apply_penalty(prio, Instant::now(), pen);
+                }
+
+                warn!(
+                    exchange_id=%cfg.exchange_id,
+                    conn=%cfg.conn_id,
+                    penalty_ms=pen.as_millis() as u64,
+                    priority=%prio.as_str(),
+                    reason=%reason,
+                    "ws nack rate-limit -> applied limiter penalty"
+                );
+            }
         }
         _ => {}
     }
