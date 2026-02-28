@@ -870,8 +870,13 @@ async fn handle_inbound(
             params_canon_hint,
             retry_after_ms,
         } => {
-            // 1) deadletter or mark (既存ロジック)
+            let now = now_unix_i64();
             let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
+
+            // 1) rate-limit 判定
+            let is_rl = looks_like_rate_limited(&reason);
+
+            // 2) 対象subscription key を引く（見つからなければ何もしない）
             if let Some(op) = op_id.clone() {
                 let key = store.find_key_by_fields(
                     &cfg.exchange_id,
@@ -880,11 +885,59 @@ async fn handle_inbound(
                     symbol.as_deref(),
                     params_canon,
                 )?;
+
                 if let Some(k) = key {
-                    // rate-limit nack は deadletter にしない方が復帰しやすいが、
-                    // ここは既存方針に合わせる。必要なら "pendingへ戻す" に変更可能。
-                    store.mark_deadletter(&k, &format!("nack:{reason}"), now)?;
+                    if is_rl {
+                        // ★ RL の場合：deadletterにしない。pendingへ戻して復帰優先。
+                        // これにより "penalty -> drip -> 再購読" が動く。
+                        store.requeue_key_to_pending(&k, now)?;
+                        warn!(
+                            exchange_id=%cfg.exchange_id,
+                            conn=%cfg.conn_id,
+                            key=%k,
+                            reason=%reason,
+                            "ws nack (rate-limit) -> requeue to pending"
+                        );
+                    } else {
+                        // RL以外：仕様どおり deadletter（設計/実装/契約の問題）
+                        store.mark_deadletter(&k, &format!("nack:{reason}"), now)?;
+                        warn!(
+                            exchange_id=%cfg.exchange_id,
+                            conn=%cfg.conn_id,
+                            key=%k,
+                            reason=%reason,
+                            "ws nack (non-rate-limit) -> deadletter"
+                        );
+                    }
                 }
+            }
+
+            // 3) penalty auto-apply（RLの時だけ適用する方が安全）
+            let mut penalty = retry_after_ms.map(Duration::from_millis);
+            if penalty.is_none() && is_rl {
+                // 安全側デフォルト
+                penalty = Some(Duration::from_millis(500));
+            }
+
+            if let Some(pen) = penalty {
+                let prio = match op_id.as_deref() {
+                    Some(op) => classify_op_id_priority(op),
+                    None => OutboundPriority::Public,
+                };
+
+                {
+                    let mut lim = ws_limiter.lock().await;
+                    lim.apply_penalty(prio, Instant::now(), pen);
+                }
+
+                warn!(
+                    exchange_id=%cfg.exchange_id,
+                    conn=%cfg.conn_id,
+                    penalty_ms=pen.as_millis() as u64,
+                    priority=%prio.as_str(),
+                    reason=%reason,
+                    "ws rate-limit -> applied limiter penalty"
+                );
             }
 
             // 2) penalty auto-apply

@@ -389,6 +389,20 @@
       "pr_urls": [],
       "commit_shas": [],
       "notes": []
+    },
+    "UCEL-WS-NACK-RL-REQUEUE-001": {
+      "branch": "ws/ucel-ws-nack-rl-requeue-001",
+      "artifacts": [
+        "ucel/crates/ucel-subscription-store/src/lib.rs",
+        "ucel/crates/ucel-transport/src/ws/connection.rs",
+        "docs/verification/UCEL-WS-NACK-RL-REQUEUE-001.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-WS-NACK-RL-REQUEUE-001.md"
+      ],
+      "pr_urls": [],
+      "commit_shas": [],
+      "notes": []
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
