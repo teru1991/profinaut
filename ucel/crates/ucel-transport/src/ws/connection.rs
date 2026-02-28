@@ -361,7 +361,7 @@ pub async fn run_ws_connection(
             let conn_id = cfg.conn_id.clone();
             let shutdown2 = shutdown.clone();
             let outq2 = outq.clone();
-            let ws_limiter = ws_limiter.clone();
+            let ws_limiter2 = ws_limiter.clone();
             tokio::spawn(async move {
                 loop {
                     if shutdown2.is_triggered() && outq2.is_empty().await {
@@ -373,7 +373,7 @@ pub async fn run_ws_connection(
 
                     // Rate limit by priority bucket
                     let w = {
-                        let mut lim = ws_limiter.lock().await;
+                        let mut lim = ws_limiter2.lock().await;
                         lim.acquire_wait(item.priority, Instant::now())
                     };
                     if w > Duration::from_secs(0) {
@@ -666,11 +666,12 @@ pub async fn run_ws_connection(
                 }
                 Message::Close(_) => break,
                 Message::Text(t) => {
-                    handle_inbound(&adapter, &cfg, store, &wal_tx, t.into_bytes()).await?;
+                    handle_inbound(&adapter, &cfg, store, &wal_tx, &ws_limiter, t.into_bytes())
+                        .await?;
                     last_inbound = Instant::now();
                 }
                 Message::Binary(b) => {
-                    handle_inbound(&adapter, &cfg, store, &wal_tx, b).await?;
+                    handle_inbound(&adapter, &cfg, store, &wal_tx, &ws_limiter, b).await?;
                     last_inbound = Instant::now();
                 }
                 _ => {}
@@ -731,11 +732,22 @@ pub async fn run_ws_connection(
     }
 }
 
+fn looks_like_rate_limited(reason: &str) -> bool {
+    let s = reason.to_ascii_lowercase();
+    s.contains("rate")
+        || s.contains("limit")
+        || s.contains("too many")
+        || s.contains("throttle")
+        || s.contains("429")
+        || s.contains("slow down")
+}
+
 async fn handle_inbound(
     adapter: &Arc<dyn WsVenueAdapter>,
     cfg: &WsRunConfig,
     store: &mut SubscriptionStore,
     wal_tx: &mpsc::Sender<RawRecord>,
+    ws_limiter: &Arc<Mutex<WsRateLimiter>>,
     raw: Vec<u8>,
 ) -> Result<(), String> {
     if raw.len() > cfg.max_frame_bytes {
@@ -766,6 +778,7 @@ async fn handle_inbound(
             reason,
             op_id,
             symbol,
+            retry_after_ms,
             ..
         } => {
             meta.insert("reason".into(), serde_json::Value::String(reason.clone()));
@@ -774,6 +787,9 @@ async fn handle_inbound(
             }
             if let Some(s) = symbol.as_ref() {
                 meta.insert("symbol".into(), serde_json::Value::String(s.clone()));
+            }
+            if let Some(ms) = retry_after_ms.as_ref() {
+                meta.insert("retry_after_ms".into(), serde_json::Value::from(*ms));
             }
             meta.insert("kind".into(), serde_json::Value::String("nack".into()));
         }
@@ -852,9 +868,11 @@ async fn handle_inbound(
             op_id,
             symbol,
             params_canon_hint,
+            retry_after_ms,
         } => {
+            // 1) deadletter or mark (既存ロジック)
             let params_canon = params_canon_hint.as_deref().unwrap_or("{}");
-            if let Some(op) = op_id {
+            if let Some(op) = op_id.clone() {
                 let key = store.find_key_by_fields(
                     &cfg.exchange_id,
                     &cfg.conn_id,
@@ -863,8 +881,41 @@ async fn handle_inbound(
                     params_canon,
                 )?;
                 if let Some(k) = key {
+                    // rate-limit nack は deadletter にしない方が復帰しやすいが、
+                    // ここは既存方針に合わせる。必要なら "pendingへ戻す" に変更可能。
                     store.mark_deadletter(&k, &format!("nack:{reason}"), now)?;
                 }
+            }
+
+            // 2) penalty auto-apply
+            // - retry_after_ms があればそれを尊重
+            // - なくても reason が rate-limit 系なら安全側のデフォルトを適用
+            let mut penalty = retry_after_ms.map(Duration::from_millis);
+            if penalty.is_none() && looks_like_rate_limited(&reason) {
+                // 安全側デフォルト（調整可能）
+                penalty = Some(Duration::from_millis(500));
+            }
+
+            if let Some(pen) = penalty {
+                // private/public を op_id で推定（無いなら public 扱い）
+                let prio = match op_id.as_deref() {
+                    Some(op) => classify_op_id_priority(op),
+                    None => OutboundPriority::Public,
+                };
+
+                {
+                    let mut lim = ws_limiter.lock().await;
+                    lim.apply_penalty(prio, Instant::now(), pen);
+                }
+
+                warn!(
+                    exchange_id=%cfg.exchange_id,
+                    conn=%cfg.conn_id,
+                    penalty_ms=pen.as_millis() as u64,
+                    priority=%prio.as_str(),
+                    reason=%reason,
+                    "ws nack rate-limit -> applied limiter penalty"
+                );
             }
         }
         _ => {}
