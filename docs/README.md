@@ -101,3 +101,5 @@ SSOTと矛盾する場合は **必ずSSOT側が正** です。
 - docs/specs/system/error_catalog_ssot.md
 - docs/specs/system/schema_registry_contract_index.md
 - docs/specs/system/runbook_index.md
+- UCEL Decimal Policy: docs/specs/ucel/decimal_policy/A1_core_policy_and_tick_step.md
+- UCEL Decimal Policy Spec: docs/specs/ucel/decimal_policy/decimal_policy_spec.md
