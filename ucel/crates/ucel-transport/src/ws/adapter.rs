@@ -23,6 +23,9 @@ pub enum InboundClass {
         op_id: Option<String>,
         symbol: Option<String>,
         params_canon_hint: Option<String>,
+        /// Optional: server hints when to retry (ms).
+        /// If provided, transport will apply limiter penalty automatically.
+        retry_after_ms: Option<u64>,
     },
     /// HTX/BitTrade app ping -> immediate pong send
     Respond {
