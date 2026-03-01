@@ -16,6 +16,7 @@ Rule: ここは手順（可変）。固定仕様（Core）は docs/specs/** に�
 
 ## 2. ドメイン別Runbook（カテゴリ索引）
 ### 2.1 Safety / Execution
+- Apply Step 2 (CEX connectors): docs/runbooks/ucel_decimal_apply_step2_cex_connectors.md
 - docs/runbooks/ucel_decimal_apply_step1_core_and_symbol.md
 - docs/runbooks/ucel_decimal_policy_verification.md
 - docs/runbooks/ucel_decimal_policy_incidents.md
