@@ -739,8 +739,16 @@ fn stream_name(sub: &WsSubscription) -> String {
 }
 
 fn parse_num(raw: &str) -> Result<Decimal, UcelError> {
-    raw.parse::<Decimal>()
-        .map_err(|e| UcelError::new(ErrorCode::Internal, format!("parse number failed: {e}")))
+    let d = raw
+        .parse::<Decimal>()
+        .map_err(|e| UcelError::new(ErrorCode::Internal, format!("parse number failed: {e}")))?;
+    if d.is_sign_negative() {
+        return Err(UcelError::new(
+            ErrorCode::WsProtocolViolation,
+            "negative decimal is not allowed",
+        ));
+    }
+    Ok(d)
 }
 
 pub fn log_private_ws_auth_attempt(key_id: Option<&str>, _api_key: &str, _api_secret: &str) {

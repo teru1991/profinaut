@@ -1,7 +1,8 @@
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use ucel_core::{ErrorCode, OpName, UcelError};
+use ucel_core::decimal::serde::deserialize_decimal_observation;
+use ucel_core::{Decimal, ErrorCode, OpName, UcelError};
 use ucel_transport::{enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport};
 use uuid::Uuid;
 
@@ -219,10 +220,10 @@ pub struct PrivateGetAccountSummaryParams {
 #[derive(Debug, Clone, Serialize)]
 pub struct PrivateOrderParams {
     pub instrument_name: String,
-    pub amount: f64,
+    pub amount: Decimal,
     #[serde(rename = "type")]
     pub order_type: String,
-    pub price: Option<f64>,
+    pub price: Option<Decimal>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -262,35 +263,47 @@ pub struct DeribitInstrument {
     pub base_currency: String,
     pub quote_currency: String,
     pub settlement_currency: String,
-    pub tick_size: f64,
+    #[serde(deserialize_with = "deserialize_decimal_observation")]
+    pub tick_size: Decimal,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct DeribitTicker {
     pub instrument_name: String,
     pub timestamp: i64,
-    pub last_price: Option<f64>,
-    pub best_bid_price: Option<f64>,
-    pub best_ask_price: Option<f64>,
-    pub mark_price: Option<f64>,
+    #[serde(default, deserialize_with = "deserialize_opt_decimal_observation")]
+    pub last_price: Option<Decimal>,
+    #[serde(default, deserialize_with = "deserialize_opt_decimal_observation")]
+    pub best_bid_price: Option<Decimal>,
+    #[serde(default, deserialize_with = "deserialize_opt_decimal_observation")]
+    pub best_ask_price: Option<Decimal>,
+    #[serde(default, deserialize_with = "deserialize_opt_decimal_observation")]
+    pub mark_price: Option<Decimal>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct DeribitOrderBook {
     pub timestamp: i64,
     pub instrument_name: String,
-    pub bids: Vec<[f64; 2]>,
-    pub asks: Vec<[f64; 2]>,
+    #[serde(deserialize_with = "deserialize_levels_observation")]
+    pub bids: Vec<[Decimal; 2]>,
+    #[serde(deserialize_with = "deserialize_levels_observation")]
+    pub asks: Vec<[Decimal; 2]>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct DeribitChartData {
     pub ticks: Vec<i64>,
-    pub open: Vec<f64>,
-    pub high: Vec<f64>,
-    pub low: Vec<f64>,
-    pub close: Vec<f64>,
-    pub volume: Vec<f64>,
+    #[serde(deserialize_with = "deserialize_vec_decimal_observation")]
+    pub open: Vec<Decimal>,
+    #[serde(deserialize_with = "deserialize_vec_decimal_observation")]
+    pub high: Vec<Decimal>,
+    #[serde(deserialize_with = "deserialize_vec_decimal_observation")]
+    pub low: Vec<Decimal>,
+    #[serde(deserialize_with = "deserialize_vec_decimal_observation")]
+    pub close: Vec<Decimal>,
+    #[serde(deserialize_with = "deserialize_vec_decimal_observation")]
+    pub volume: Vec<Decimal>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -305,8 +318,10 @@ pub struct DeribitAuthToken {
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct DeribitAccountSummary {
     pub currency: String,
-    pub balance: Option<f64>,
-    pub available_funds: Option<f64>,
+    #[serde(default, deserialize_with = "deserialize_opt_decimal_observation")]
+    pub balance: Option<Decimal>,
+    #[serde(default, deserialize_with = "deserialize_opt_decimal_observation")]
+    pub available_funds: Option<Decimal>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -315,9 +330,33 @@ pub struct DeribitOrderResult {
     pub instrument_name: String,
     pub direction: Option<String>,
     pub order_type: Option<String>,
-    pub amount: Option<f64>,
-    pub price: Option<f64>,
+    #[serde(default, deserialize_with = "deserialize_opt_decimal_observation")]
+    pub amount: Option<Decimal>,
+    #[serde(default, deserialize_with = "deserialize_opt_decimal_observation")]
+    pub price: Option<Decimal>,
     pub order_state: Option<String>,
+}
+
+fn deserialize_opt_decimal_observation<'de, D>(deserializer: D) -> Result<Option<Decimal>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Option::<GDecimal>::deserialize(deserializer).map(|x| x.map(|v| v.0))
+}
+
+fn deserialize_vec_decimal_observation<'de, D>(deserializer: D) -> Result<Vec<Decimal>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Vec::<GDecimal>::deserialize(deserializer).map(|vals| vals.into_iter().map(|v| v.0).collect())
+}
+
+fn deserialize_levels_observation<'de, D>(deserializer: D) -> Result<Vec<[Decimal; 2]>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let vals = Vec::<[GDecimal; 2]>::deserialize(deserializer)?;
+    Ok(vals.into_iter().map(|x| [x[0].0, x[1].0]).collect())
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -576,3 +615,5 @@ mod tests {
 pub mod channels;
 pub mod symbols;
 pub mod ws_manager;
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+struct GDecimal(#[serde(deserialize_with = "deserialize_decimal_observation")] Decimal);

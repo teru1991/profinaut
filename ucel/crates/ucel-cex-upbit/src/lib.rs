@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 use tokio::sync::mpsc;
 use tracing::info;
-use ucel_core::{ErrorCode, OpName, UcelError};
+use ucel_core::decimal::serde::deserialize_decimal_observation;
+use ucel_core::{Decimal, ErrorCode, OpName, UcelError};
 use ucel_transport::{
     enforce_auth_boundary, HttpRequest, RequestContext, Transport, WsConnectRequest,
 };
@@ -68,21 +69,21 @@ pub struct UpbitSubscribeFrame {
 pub enum MarketEvent {
     Ticker {
         code: String,
-        trade_price: f64,
+        trade_price: Decimal,
     },
     Trade {
         code: String,
-        trade_price: f64,
-        trade_volume: f64,
+        trade_price: Decimal,
+        trade_volume: Decimal,
     },
     Orderbook {
         code: String,
-        total_ask_size: Option<f64>,
-        total_bid_size: Option<f64>,
+        total_ask_size: Option<Decimal>,
+        total_bid_size: Option<Decimal>,
     },
     Candle {
         code: String,
-        trade_price: f64,
+        trade_price: Decimal,
     },
     SubscriptionList {
         channels: Vec<String>,
@@ -101,23 +102,35 @@ pub enum MarketEvent {
 #[serde(tag = "type")]
 enum UpbitMessage {
     #[serde(rename = "ticker")]
-    Ticker { code: String, trade_price: f64 },
+    Ticker {
+        code: String,
+        #[serde(deserialize_with = "deserialize_decimal_observation")]
+        trade_price: Decimal,
+    },
     #[serde(rename = "trade")]
     Trade {
         code: String,
-        trade_price: f64,
-        trade_volume: f64,
+        #[serde(deserialize_with = "deserialize_decimal_observation")]
+        trade_price: Decimal,
+        #[serde(deserialize_with = "deserialize_decimal_observation")]
+        trade_volume: Decimal,
     },
     #[serde(rename = "orderbook")]
     Orderbook {
         code: String,
-        total_ask_size: Option<f64>,
-        total_bid_size: Option<f64>,
+        #[serde(default, deserialize_with = "deserialize_opt_decimal_observation")]
+        total_ask_size: Option<Decimal>,
+        #[serde(default, deserialize_with = "deserialize_opt_decimal_observation")]
+        total_bid_size: Option<Decimal>,
         #[serde(rename = "timestamp")]
         _timestamp: Option<u64>,
     },
     #[serde(rename = "candle")]
-    Candle { code: String, trade_price: f64 },
+    Candle {
+        code: String,
+        #[serde(deserialize_with = "deserialize_decimal_observation")]
+        trade_price: Decimal,
+    },
     #[serde(rename = "list_subscriptions")]
     ListSubscriptions { codes: Vec<String> },
     #[serde(rename = "myOrder")]
@@ -130,6 +143,25 @@ enum UpbitMessage {
         currency: Option<String>,
         balance: Option<String>,
     },
+}
+
+fn deserialize_opt_decimal_observation<'de, D>(deserializer: D) -> Result<Option<Decimal>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Option::<serde_json::Value>::deserialize(deserializer)?.map_or(Ok(None), |v| {
+        let raw = v.to_string();
+        let d = raw
+            .trim_matches('"')
+            .parse::<Decimal>()
+            .map_err(serde::de::Error::custom)?;
+        let policy = ucel_core::decimal::DecimalPolicy::for_observation_relaxed();
+        policy
+            .guard()
+            .validate(d)
+            .map(Some)
+            .map_err(serde::de::Error::custom)
+    })
 }
 
 pub fn normalize_ws_message(raw: &str) -> Result<MarketEvent, UcelError> {
@@ -433,13 +465,16 @@ pub struct UpbitMarket {
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct UpbitTicker {
-    pub trade_price: f64,
+    #[serde(deserialize_with = "deserialize_decimal_observation")]
+    pub trade_price: Decimal,
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct UpbitTrade {
-    pub trade_price: f64,
-    pub trade_volume: f64,
+    #[serde(deserialize_with = "deserialize_decimal_observation")]
+    pub trade_price: Decimal,
+    #[serde(deserialize_with = "deserialize_decimal_observation")]
+    pub trade_volume: Decimal,
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
@@ -450,19 +485,24 @@ pub struct UpbitOrderbook {
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct UpbitOrderbookUnit {
-    pub ask_price: f64,
-    pub bid_price: f64,
-    pub ask_size: f64,
-    pub bid_size: f64,
+    #[serde(deserialize_with = "deserialize_decimal_observation")]
+    pub ask_price: Decimal,
+    #[serde(deserialize_with = "deserialize_decimal_observation")]
+    pub bid_price: Decimal,
+    #[serde(deserialize_with = "deserialize_decimal_observation")]
+    pub ask_size: Decimal,
+    #[serde(deserialize_with = "deserialize_decimal_observation")]
+    pub bid_size: Decimal,
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct UpbitCandle {
     #[serde(default)]
     pub candle_date_time_utc: Option<String>,
-    #[serde(default)]
-    pub opening_price: Option<f64>,
-    pub trade_price: f64,
+    #[serde(default, deserialize_with = "deserialize_opt_decimal_observation")]
+    pub opening_price: Option<Decimal>,
+    #[serde(deserialize_with = "deserialize_decimal_observation")]
+    pub trade_price: Decimal,
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]

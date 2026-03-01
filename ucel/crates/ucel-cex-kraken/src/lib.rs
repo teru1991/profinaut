@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use ucel_core::{ErrorCode, Exchange, OpName, UcelError};
+use ucel_core::order_gate::OrderGate;
+use ucel_core::{Decimal, ErrorCode, Exchange, OpName, Side, StepSize, TickSize, UcelError};
 use ucel_transport::{enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport};
 use uuid::Uuid;
 
@@ -581,7 +582,38 @@ impl KrakenWsAdapter {
                 serde_json::json!({"method":"subscribe","params":{"channel":"instrument","symbol":[symbol]}})
             }
             "spot.private.ws.v2.trade.add_order" => {
-                serde_json::json!({"method":"add_order","params":{"token":token.unwrap_or_default(),"order_type":"limit","side":"buy","order_qty":0.01,"symbol":symbol,"limit_price":30000}})
+                {
+                    let tick_size = Decimal::from_str_exact("0.01").unwrap();
+                    let step_size = Decimal::from_str_exact("0.001").unwrap();
+
+                    let gate = OrderGate::default();
+                    let (price_mode, qty_mode) = OrderGate::recommended_modes(Side::Buy);
+
+                    let raw_price = Decimal::from_str_exact("30000").unwrap();
+                    let raw_qty = Decimal::from_str_exact("0.01").unwrap();
+
+                    let (p, q) = gate
+                        .quantize_limit(
+                            Side::Buy,
+                            raw_price,
+                            raw_qty,
+                            TickSize(tick_size),
+                            StepSize(step_size),
+                            price_mode,
+                            qty_mode,
+                        )
+                        .map_err(|e| UcelError::new(ErrorCode::InvalidOrder, e.to_string()))?;
+
+                    // tick/step comes from upper-layer filters/catalog injection in production path.
+                    serde_json::json!({"method":"add_order","params":{
+                        "token":token.unwrap_or_default(),
+                        "order_type":"limit",
+                        "side":"buy",
+                        "order_qty": q.as_decimal().to_string(),
+                        "symbol":symbol,
+                        "limit_price": p.as_decimal().to_string()
+                    }})
+                }
             }
             "futures.public.ws.other.market.ticker.subscribe" => {
                 serde_json::json!({"event":"subscribe","feed":"ticker","product_ids":[symbol]})
