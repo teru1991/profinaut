@@ -1,9 +1,13 @@
+pub mod decimal;
+pub mod order_gate;
 pub mod symbol;
 pub mod types;
+pub mod value;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use thiserror::Error;
 pub use types::{Decimal, OrderStatus, OrderType, SchemaVersion, Side};
+pub use value::{Notional, Price, Qty, StepSize, TickSize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Envelope<T> {
@@ -94,15 +98,15 @@ pub struct OrderState {
 pub struct FillEvent {
     pub order_id: String,
     pub fill_id: String,
-    pub price: f64,
-    pub qty: f64,
+    pub price: Decimal,
+    pub qty: Decimal,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Balance {
     pub asset: String,
-    pub free: f64,
-    pub locked: f64,
+    pub free: Decimal,
+    pub locked: Decimal,
 }
 
 pub type Balances = Vec<Balance>;
