@@ -18,6 +18,7 @@ pub struct IngestConfig {
     pub wal_max_bytes: u64,
     pub fsync_mode: ucel_journal::FsyncMode,
 
+    #[allow(dead_code)]
     pub recv_queue_cap: usize,
     pub max_frame_bytes: usize,
     pub max_inflight_per_conn: usize,
@@ -30,6 +31,7 @@ pub struct IngestConfig {
 
     pub max_connections_per_exchange: usize,
 
+    #[allow(dead_code)]
     pub enable_private_ws: bool,
     pub exchange_allowlist: Vec<String>,
 

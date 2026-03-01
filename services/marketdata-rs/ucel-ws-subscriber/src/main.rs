@@ -11,7 +11,6 @@ mod supervisor;
 use config::IngestConfig;
 use state::AppState;
 use supervisor::{run_supervisor, SupervisorShutdown};
-use tokio::task::LocalSet;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {

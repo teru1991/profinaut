@@ -80,7 +80,7 @@ impl BitgetWsAdapter {
     /// - "_w": weight (we set weights in YAML)
     /// - plus "interval" for candles (because YAML has params.interval)
     fn params_canon_hint_for(inst_type: &str, channel: &str, inst_id: &str) -> String {
-        let (op_id, interval_opt, weight) = opid_interval_weight(inst_type, channel);
+        let (_op_id, interval_opt, weight) = opid_interval_weight(inst_type, channel);
 
         // build a minimal params object that matches planner seed keys
         let mut obj = serde_json::Map::new();

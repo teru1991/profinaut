@@ -178,6 +178,9 @@ fn apply_stability_overrides(mut cfg: WsRunConfig, rules: &ExchangeWsRules) -> W
             if let Some(v) = rl.max_cooldown_secs {
                 cfg.rl_max_cooldown_secs = v.max(1);
             }
+            if let Some(v) = rl.default_penalty_ms {
+                cfg.rl_default_penalty_ms = v.max(1);
+            }
         }
 
         if let Some(cb) = &st.circuit_breaker {
@@ -273,91 +276,6 @@ fn build_overflow_policy(cfg: &WsRunConfig) -> Result<OverflowPolicy, String> {
             })
         }
     }
-}
-
-fn apply_stability_overrides(mut cfg: WsRunConfig, rules: &ExchangeWsRules) -> WsRunConfig {
-    if let Some(st) = &rules.stability {
-        if let Some(rl) = &st.rate_limit {
-            if let Some(v) = rl.max_attempts {
-                cfg.rl_max_attempts = v.max(1);
-            }
-            if let Some(v) = rl.base_cooldown_secs {
-                cfg.rl_base_cooldown_secs = v.max(1);
-            }
-            if let Some(v) = rl.max_cooldown_secs {
-                cfg.rl_max_cooldown_secs = v.max(1);
-            }
-            if let Some(v) = rl.default_penalty_ms {
-                cfg.rl_default_penalty_ms = v.max(1);
-            }
-        }
-
-        if let Some(cb) = &st.circuit_breaker {
-            if let Some(v) = cb.failure_threshold {
-                cfg.breaker.failure_threshold = v.max(1);
-            }
-            if let Some(v) = cb.success_threshold {
-                cfg.breaker.success_threshold = v.max(1);
-            }
-            if let Some(v) = cb.cooldown_ms {
-                cfg.breaker.cooldown = Duration::from_millis(v.max(1));
-            }
-            if let Some(v) = cb.half_open_max_trials {
-                cfg.breaker.half_open_max_trials = v.max(1);
-            }
-        }
-
-        if let Some(of) = &st.overflow {
-            if let Some(mode) = &of.mode {
-                cfg.overflow.mode = match mode.to_ascii_lowercase().as_str() {
-                    "drop_newest" => WsOverflowMode::DropNewest,
-                    "drop_oldest_low_priority" => WsOverflowMode::DropOldestLowPriority,
-                    "slowdown_then_drop_oldest_low_priority" => {
-                        WsOverflowMode::SlowDownThenDropOldestLowPriority
-                    }
-                    "spill_to_disk_then_drop_oldest_low_priority" => {
-                        WsOverflowMode::SpillToDiskThenDropOldestLowPriority
-                    }
-                    _ => cfg.overflow.mode,
-                };
-            }
-            if let Some(v) = of.slowdown_max_wait_ms {
-                cfg.overflow.slowdown_max_wait = Duration::from_millis(v.max(1));
-            }
-            if let Some(v) = &of.spill_dir {
-                cfg.overflow.spill_dir = Some(v.clone());
-            }
-        }
-
-        if let Some(s) = &st.stale {
-            if let Some(v) = s.stale_after_secs {
-                cfg.stale_after = Duration::from_secs(v.max(1));
-            }
-            if let Some(v) = s.sweep_interval_ms {
-                cfg.stale_sweep_interval = Duration::from_millis(v.max(10));
-            }
-            if let Some(v) = s.max_batch {
-                cfg.stale_max_batch = v.max(1);
-            }
-        }
-
-        if let Some(g) = &st.graceful {
-            if let Some(v) = g.drain_timeout_ms {
-                cfg.graceful.drain_timeout = Duration::from_millis(v.max(1));
-            }
-            if let Some(v) = g.join_timeout_ms {
-                cfg.graceful.join_timeout = Duration::from_millis(v.max(1));
-            }
-        }
-    }
-    cfg
-}
-
-pub fn apply_stability_overrides_for_test(
-    cfg: WsRunConfig,
-    rules: &ExchangeWsRules,
-) -> WsRunConfig {
-    apply_stability_overrides(cfg, rules)
 }
 
 pub async fn run_ws_connection(
@@ -1014,6 +932,7 @@ pub async fn run_ws_connection(
                         store,
                         &wal_tx,
                         &ws_limiter,
+                        &rules,
                         &stability,
                         &obs_metrics,
                         &obs_events,
@@ -1126,7 +1045,7 @@ async fn handle_inbound(
     store: &mut SubscriptionStore,
     wal_tx: &mpsc::Sender<RawRecord>,
     ws_limiter: &Arc<Mutex<WsRateLimiter>>,
-    rules: &ExchangeWsRules,
+    _rules: &ExchangeWsRules,
     stability: &Arc<StabilityHub>,
     obs_metrics: &Arc<TransportMetrics>,
     obs_events: &Arc<StabilityEventRing>,

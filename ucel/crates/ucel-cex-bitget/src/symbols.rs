@@ -20,8 +20,8 @@ struct SpotSymbolRow {
 #[derive(Debug, Deserialize)]
 struct FuturesContractRow {
     symbol: String, // e.g. BTCUSDT
-    #[serde(default)]
-    symbolStatus: String, // normal/listed/maintain/...
+    #[serde(default, rename = "symbolStatus")]
+    symbol_status: String, // normal/listed/maintain/...
 }
 
 /// Fetch all SPOT symbols (instId list like "BTCUSDT").
@@ -90,7 +90,7 @@ pub async fn fetch_futures_symbols(product_type: &str) -> Result<Vec<String>, St
     let mut out = Vec::new();
     for r in body.data {
         // "normal" is tradable. :contentReference[oaicite:6]{index=6}
-        if r.symbolStatus == "normal" {
+        if r.symbol_status == "normal" {
             out.push(r.symbol);
         }
     }

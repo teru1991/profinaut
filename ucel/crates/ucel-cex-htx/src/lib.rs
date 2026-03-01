@@ -5,7 +5,6 @@ use std::collections::{BTreeMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
-use ucel_core::decimal::serde::deserialize_decimal_observation;
 use ucel_core::{
     Decimal, ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side,
     TradeEvent, UcelError,

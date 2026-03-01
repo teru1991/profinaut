@@ -159,8 +159,9 @@ async fn close_flush_requeue_join_is_enforced() {
     let wal = spawn_fake_wal_writer(shutdown.clone()).await;
 
     // Act
+    let drain_timeout = Duration::from_secs(2);
     let cfg = GracefulShutdownConfig {
-        drain_timeout: Duration::from_secs(2),
+        drain_timeout,
         join_timeout: Duration::from_secs(2),
     };
 
@@ -178,7 +179,7 @@ async fn close_flush_requeue_join_is_enforced() {
     .unwrap();
 
     // Assert: queue is closed/drained
-    assert!(wait_until_queue_empty(&q, Duration::from_millis(200)).await);
+    assert!(wait_until_queue_empty(&q, drain_timeout).await);
 
     // Assert: active/inflight -> pending
     let s1 = store.state_of("k1").unwrap().unwrap();

@@ -7,12 +7,10 @@ struct Resp {
 }
 #[derive(Debug, Deserialize)]
 struct Item {
-    #[serde(default)]
-    #[allow(non_snake_case)]
-    instId: String,
-    #[serde(default)]
-    #[allow(non_snake_case)]
-    instType: String,
+    #[serde(default, rename = "instId")]
+    inst_id: String,
+    #[serde(default, rename = "instType")]
+    inst_type: String,
 }
 
 pub fn to_canonical_symbol(inst_id: &str) -> String { inst_id.replace('-', "/") }
@@ -31,7 +29,7 @@ pub async fn fetch_symbols_by_inst_type(inst_type: &str) -> Result<Vec<String>, 
     let body: Resp = resp.json().await.map_err(|e| e.to_string())?;
     let mut out = Vec::new();
     for i in body.data {
-        if i.instType == inst_type { out.push(to_canonical_symbol(&i.instId)); }
+        if i.inst_type == inst_type { out.push(to_canonical_symbol(&i.inst_id)); }
     }
     out.sort();
     out.dedup();
