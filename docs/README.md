@@ -89,6 +89,7 @@ SSOTと矛盾する場合は **必ずSSOT側が正** です。
 - Data Classification: docs/specs/security/data_classification_handling_spec.md
 - Env/Mode Matrix: docs/specs/system/environment_mode_matrix.md
 - Runbooks Index: docs/runbooks/README.md
+- Apply Step 1 (Decimal Core): docs/runbooks/ucel_decimal_apply_step1_core_and_symbol.md
 - UCEL Golden Compatibility: docs/specs/ucel_golden/compatibility_notes.md
 - UCEL Library Hardening File-level Plan: docs/plans/ucel/ucel_library_hardening_filelevel_plan.md
 
