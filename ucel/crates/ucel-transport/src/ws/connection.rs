@@ -74,6 +74,8 @@ pub struct WsRunConfig {
     pub rl_base_cooldown_secs: i64,
     /// max cooldown seconds for RL exponential backoff
     pub rl_max_cooldown_secs: i64,
+    /// fallback RL penalty when retry_after is absent
+    pub rl_default_penalty_ms: u64,
 }
 
 #[derive(Clone, Debug)]
@@ -125,6 +127,7 @@ impl Default for WsRunConfig {
             rl_max_attempts: 20,
             rl_base_cooldown_secs: 1,
             rl_max_cooldown_secs: 60,
+            rl_default_penalty_ms: 500,
         }
     }
 }
@@ -272,6 +275,91 @@ fn build_overflow_policy(cfg: &WsRunConfig) -> Result<OverflowPolicy, String> {
     }
 }
 
+fn apply_stability_overrides(mut cfg: WsRunConfig, rules: &ExchangeWsRules) -> WsRunConfig {
+    if let Some(st) = &rules.stability {
+        if let Some(rl) = &st.rate_limit {
+            if let Some(v) = rl.max_attempts {
+                cfg.rl_max_attempts = v.max(1);
+            }
+            if let Some(v) = rl.base_cooldown_secs {
+                cfg.rl_base_cooldown_secs = v.max(1);
+            }
+            if let Some(v) = rl.max_cooldown_secs {
+                cfg.rl_max_cooldown_secs = v.max(1);
+            }
+            if let Some(v) = rl.default_penalty_ms {
+                cfg.rl_default_penalty_ms = v.max(1);
+            }
+        }
+
+        if let Some(cb) = &st.circuit_breaker {
+            if let Some(v) = cb.failure_threshold {
+                cfg.breaker.failure_threshold = v.max(1);
+            }
+            if let Some(v) = cb.success_threshold {
+                cfg.breaker.success_threshold = v.max(1);
+            }
+            if let Some(v) = cb.cooldown_ms {
+                cfg.breaker.cooldown = Duration::from_millis(v.max(1));
+            }
+            if let Some(v) = cb.half_open_max_trials {
+                cfg.breaker.half_open_max_trials = v.max(1);
+            }
+        }
+
+        if let Some(of) = &st.overflow {
+            if let Some(mode) = &of.mode {
+                cfg.overflow.mode = match mode.to_ascii_lowercase().as_str() {
+                    "drop_newest" => WsOverflowMode::DropNewest,
+                    "drop_oldest_low_priority" => WsOverflowMode::DropOldestLowPriority,
+                    "slowdown_then_drop_oldest_low_priority" => {
+                        WsOverflowMode::SlowDownThenDropOldestLowPriority
+                    }
+                    "spill_to_disk_then_drop_oldest_low_priority" => {
+                        WsOverflowMode::SpillToDiskThenDropOldestLowPriority
+                    }
+                    _ => cfg.overflow.mode,
+                };
+            }
+            if let Some(v) = of.slowdown_max_wait_ms {
+                cfg.overflow.slowdown_max_wait = Duration::from_millis(v.max(1));
+            }
+            if let Some(v) = &of.spill_dir {
+                cfg.overflow.spill_dir = Some(v.clone());
+            }
+        }
+
+        if let Some(s) = &st.stale {
+            if let Some(v) = s.stale_after_secs {
+                cfg.stale_after = Duration::from_secs(v.max(1));
+            }
+            if let Some(v) = s.sweep_interval_ms {
+                cfg.stale_sweep_interval = Duration::from_millis(v.max(10));
+            }
+            if let Some(v) = s.max_batch {
+                cfg.stale_max_batch = v.max(1);
+            }
+        }
+
+        if let Some(g) = &st.graceful {
+            if let Some(v) = g.drain_timeout_ms {
+                cfg.graceful.drain_timeout = Duration::from_millis(v.max(1));
+            }
+            if let Some(v) = g.join_timeout_ms {
+                cfg.graceful.join_timeout = Duration::from_millis(v.max(1));
+            }
+        }
+    }
+    cfg
+}
+
+pub fn apply_stability_overrides_for_test(
+    cfg: WsRunConfig,
+    rules: &ExchangeWsRules,
+) -> WsRunConfig {
+    apply_stability_overrides(cfg, rules)
+}
+
 pub async fn run_ws_connection(
     adapter: Arc<dyn WsVenueAdapter>,
     rules: ExchangeWsRules,
@@ -294,6 +382,8 @@ pub async fn run_ws_connection(
         .unwrap_or(1)
         .max(1) as f64;
 
+    // private は public より少し低くする（安全側）
+    // 本番では取引所特性に合わせて rules 側へ拡張してもOK。
     let (control_rps, private_rps, public_rps, min_gap_ms) = if let Some(st) = &rules.stability {
         if let Some(b) = &st.buckets {
             let public = b.public_rps.unwrap_or(public_rps).max(1.0);
@@ -924,7 +1014,6 @@ pub async fn run_ws_connection(
                         store,
                         &wal_tx,
                         &ws_limiter,
-                        &rules,
                         &stability,
                         &obs_metrics,
                         &obs_events,
@@ -1237,13 +1326,7 @@ async fn handle_inbound(
             if is_rl {
                 let mut penalty = retry_after_ms.map(Duration::from_millis);
                 if penalty.is_none() {
-                    let default_penalty_ms = rules
-                        .stability
-                        .as_ref()
-                        .and_then(|s| s.rate_limit.as_ref())
-                        .and_then(|r| r.default_penalty_ms)
-                        .unwrap_or(500);
-                    penalty = Some(Duration::from_millis(default_penalty_ms));
+                    penalty = Some(Duration::from_millis(cfg.rl_default_penalty_ms));
                 }
                 if let Some(pen) = penalty {
                     let prio = match op_id.as_deref() {

@@ -282,6 +282,7 @@ async fn e2e_reconnect_drip_wal() {
         rl_max_attempts: 20,
         rl_base_cooldown_secs: 1,
         rl_max_cooldown_secs: 60,
+        rl_default_penalty_ms: 500,
 
         graceful: default_graceful(),
     };
@@ -370,6 +371,7 @@ async fn e2e_stop_on_oversized_frame() {
         rl_max_attempts: 20,
         rl_base_cooldown_secs: 1,
         rl_max_cooldown_secs: 60,
+        rl_default_penalty_ms: 500,
 
         graceful: default_graceful(),
     };
@@ -460,6 +462,7 @@ async fn e2e_symbol_less_subscription_is_dripped() {
         rl_max_attempts: 20,
         rl_base_cooldown_secs: 1,
         rl_max_cooldown_secs: 60,
+        rl_default_penalty_ms: 500,
 
         graceful: default_graceful(),
     };

@@ -2,31 +2,34 @@
 
 ## 1) Changed files
 - docs/status/trace-index.json
+- docs/verification/UCEL-TRANSPORT-STABILITY-003.md
 - ucel/Cargo.lock
 - ucel/crates/ucel-transport/Cargo.toml
 - ucel/crates/ucel-transport/src/ws/connection.rs
+- ucel/crates/ucel-transport/tests/ws_connection_e2e.rs
+- ucel/crates/ucel-transport/tests/ws_rate_limit_nack_cooldown.rs
 - ucel/crates/ucel-transport/tests/ws_rules_stability_apply.rs
 - ucel/crates/ucel-ws-rules/Cargo.toml
 - ucel/crates/ucel-ws-rules/rules/bitget-spot.toml
+- ucel/crates/ucel-ws-rules/rules/bybit-spot.toml
 - ucel/crates/ucel-ws-rules/rules/gmocoin.toml
-- ucel/crates/ucel-ws-rules/rules/okx-spot.toml
 - ucel/crates/ucel-ws-rules/src/loader.rs
 - ucel/crates/ucel-ws-rules/src/model.rs
-- docs/verification/UCEL-TRANSPORT-STABILITY-003.md
 
 ## 2) What / Why
-Extended `ucel-ws-rules` schema with optional `[stability]` sections (buckets/rate_limit/circuit_breaker/overflow/stale/graceful) to make transport stability parameters exchange-configurable while preserving backward compatibility when section is absent. Added loader-side strict validation for present-but-invalid stability values via checked loading path, and tests to ensure bad config fails fast. Unified `ucel-transport` to apply stability overrides from rules into `WsRunConfig`, limiter construction (`min_gap` + bucket rates), and RL default penalty fallback. Added transport gate test verifying that circuit-breaker, RL, stale, and graceful override values are applied.
+Added backward-compatible `[stability]` schema to `ucel-ws-rules` so WS stability parameters (bucket, RL, breaker, overflow, stale, graceful) can be controlled by TOML as SSOT. Added loader validation in strict mode that rejects invalid stability values to fail fast on broken configs. Updated transport WS connection to apply rules-based stability overrides into `WsRunConfig`, and to prefer stability bucket/min-gap values for rate limiter construction plus configurable RL fallback penalty. Added gate test to verify rules-to-config override behavior and updated existing tests for new config field. Added sample stability blocks to representative exchange TOML files.
 
 ## 3) Self-check
-- Allowed-path check: command executed; this repository stores Rust crates under `ucel/crates/**` and lockfile under `ucel/Cargo.lock`, so strict root-level allowlist pattern reports these despite task-targeted paths.
+- Allowed-path check: only `docs/**` and `ucel/crates/**` and `ucel/Cargo.lock` changed (repo places Rust workspace under `ucel/`).
 - Tests added/updated:
-  - `ucel/crates/ucel-transport/tests/ws_rules_stability_apply.rs` (new)
-  - `ucel/crates/ucel-ws-rules/src/loader.rs` unit tests (new)
-- Build/Unit tests:
+  - Added `ucel/crates/ucel-transport/tests/ws_rules_stability_apply.rs`
+  - Updated `ucel/crates/ucel-transport/tests/ws_connection_e2e.rs`
+  - Updated `ucel/crates/ucel-transport/tests/ws_rate_limit_nack_cooldown.rs`
+- Commands run:
   - `cd ucel && cargo test -p ucel-ws-rules` => PASS
   - `cd ucel && cargo test -p ucel-transport` => PASS
   - `cd ucel && cargo test -p ucel-subscription-store` => PASS
 - trace-index JSON check:
   - `python -m json.tool docs/status/trace-index.json > /dev/null` => PASS
 - Secrets scan:
-  - `rg -n "(api[_-]?key|secret|token|password|Authorization:|BEGIN [A-Z ]*PRIVATE KEY)" ucel/crates/ucel-ws-rules/src ucel/crates/ucel-ws-rules/rules ucel/crates/ucel-transport/src/ws/connection.rs` => reviewed; no secrets introduced in this task.
+  - `rg -n "(api[_-]?key|secret|token|password|Authorization:|BEGIN [A-Z ]*PRIVATE KEY)" docs/verification/UCEL-TRANSPORT-STABILITY-003.md ucel/crates/ucel-ws-rules/rules ucel/crates/ucel-ws-rules/src ucel/crates/ucel-transport/src/ws/connection.rs` => no secrets added.

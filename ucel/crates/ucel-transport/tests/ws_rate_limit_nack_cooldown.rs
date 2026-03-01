@@ -172,6 +172,7 @@ async fn ws_nack_rate_limit_sets_cooldown() {
     let cfg = WsRunConfig {
         exchange_id: "gmocoin".to_string(),
         conn_id: "gmocoin-conn-1".to_string(),
+        rl_default_penalty_ms: 500,
         ..Default::default()
     };
 

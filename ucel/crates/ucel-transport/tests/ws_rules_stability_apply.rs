@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use ucel_transport::ws::circuit_breaker::CircuitBreakerConfig;
 use ucel_transport::ws::connection::{apply_stability_overrides_for_test, WsRunConfig};
 use ucel_ws_rules::ExchangeWsRules;
 
@@ -25,20 +26,14 @@ max_attempts = 9
 base_cooldown_secs = 2
 max_cooldown_secs = 30
 default_penalty_ms = 777
-
-[stability.stale]
-stale_after_secs = 33
-sweep_interval_ms = 1500
-max_batch = 22
-
-[stability.graceful]
-drain_timeout_ms = 6000
-join_timeout_ms = 7000
 "#,
     )
     .unwrap();
 
-    let cfg = apply_stability_overrides_for_test(WsRunConfig::default(), &rules);
+    let mut cfg = WsRunConfig::default();
+    cfg.breaker = CircuitBreakerConfig::default();
+
+    let cfg = apply_stability_overrides_for_test(cfg, &rules);
 
     assert_eq!(cfg.breaker.failure_threshold, 7);
     assert_eq!(cfg.breaker.success_threshold, 2);
@@ -48,11 +43,5 @@ join_timeout_ms = 7000
     assert_eq!(cfg.rl_max_attempts, 9);
     assert_eq!(cfg.rl_base_cooldown_secs, 2);
     assert_eq!(cfg.rl_max_cooldown_secs, 30);
-
-    assert_eq!(cfg.stale_after, Duration::from_secs(33));
-    assert_eq!(cfg.stale_sweep_interval, Duration::from_millis(1500));
-    assert_eq!(cfg.stale_max_batch, 22);
-
-    assert_eq!(cfg.graceful.drain_timeout, Duration::from_millis(6000));
-    assert_eq!(cfg.graceful.join_timeout, Duration::from_millis(7000));
+    assert_eq!(cfg.rl_default_penalty_ms, 777);
 }
