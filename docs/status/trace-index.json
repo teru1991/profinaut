@@ -595,8 +595,8 @@
       "verification_evidence": [
         "docs/verification/ucel-decimal-apply-003.md"
       ]
-    }
-    ,"UCEL-DECIMAL-CODE-CORE-001": {
+    },
+    "UCEL-DECIMAL-CODE-CORE-001": {
       "branch": "feature/ucel-decimal-code-core-001",
       "artifacts": [
         "ucel/crates/ucel-core/Cargo.toml",
@@ -622,8 +622,8 @@
       "verification_evidence": [
         "docs/verification/UCEL-DECIMAL-CODE-CORE-001.md"
       ]
-    }
-    ,"UCEL-DECIMAL-CODE-SYMBOL-002": {
+    },
+    "UCEL-DECIMAL-CODE-SYMBOL-002": {
       "branch": "feature/ucel-decimal-code-symbol-002",
       "artifacts": [
         "docs/status/trace-index.json",
@@ -634,9 +634,8 @@
       "verification_evidence": [
         "docs/verification/UCEL-DECIMAL-CODE-SYMBOL-002.md"
       ]
-    }
-
-    ,"UCEL-DECIMAL-CODE-CEX-003": {
+    },
+    "UCEL-DECIMAL-CODE-CEX-003": {
       "branch": "feature/ucel-decimal-code-cex-003",
       "artifacts": [
         "docs/status/trace-index.json",
@@ -654,8 +653,103 @@
       "verification_evidence": [
         "docs/verification/UCEL-DECIMAL-CODE-CEX-003.md"
       ]
+    },
+    "UCEL-TRANSPORT-STABILITY-001": {
+      "branch": "feature/ucel-transport-stability-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/runbooks/transport/ws_overflow_spill.md",
+        "docs/runbooks/transport/ws_rate_limit_cooldown.md",
+        "docs/runbooks/transport/ws_reconnect_storm.md",
+        "docs/specs/crosscut/support_bundle_spec.md",
+        "docs/specs/market_data/ws_transport_stability_spec.md",
+        "docs/status/trace-index.json",
+        "ucel/Cargo.lock",
+        "ucel/crates/ucel-cex-bitget/src/ws.rs",
+        "ucel/crates/ucel-subscription-store/src/lib.rs",
+        "ucel/crates/ucel-transport/src/diagnostics/mod.rs",
+        "ucel/crates/ucel-transport/src/diagnostics/support_bundle.rs",
+        "ucel/crates/ucel-transport/src/health.rs",
+        "ucel/crates/ucel-transport/src/lib.rs",
+        "ucel/crates/ucel-transport/src/obs/events.rs",
+        "ucel/crates/ucel-transport/src/obs/metrics.rs",
+        "ucel/crates/ucel-transport/src/obs/mod.rs",
+        "ucel/crates/ucel-transport/src/ws/connection.rs",
+        "ucel/crates/ucel-transport/tests/ws_connection_e2e.rs",
+        "ucel/crates/ucel-transport/tests/ws_rate_limit_nack_cooldown.rs"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-TRANSPORT-STABILITY-001.md"
+      ]
+    },
+    "UCEL-TRANSPORT-STABILITY-002": {
+      "branch": "feature/ucel-transport-stability-002",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/runbooks/transport/ws_health_support_bundle.md",
+        "docs/status/trace-index.json",
+        "services/marketdata-rs/Cargo.lock",
+        "services/marketdata-rs/ucel-ws-subscriber/Cargo.toml",
+        "services/marketdata-rs/ucel-ws-subscriber/src/adapters.rs",
+        "services/marketdata-rs/ucel-ws-subscriber/src/config.rs",
+        "services/marketdata-rs/ucel-ws-subscriber/src/http.rs",
+        "services/marketdata-rs/ucel-ws-subscriber/src/lib.rs",
+        "services/marketdata-rs/ucel-ws-subscriber/src/main.rs",
+        "services/marketdata-rs/ucel-ws-subscriber/src/state.rs",
+        "services/marketdata-rs/ucel-ws-subscriber/src/supervisor.rs",
+        "services/marketdata-rs/ucel-ws-subscriber/tests/http_endpoints.rs",
+        "ucel/crates/ucel-cex-bitget/Cargo.toml",
+        "ucel/crates/ucel-cex-bitget/src/symbols.rs",
+        "ucel/crates/ucel-cex-bitget/src/ws.rs",
+        "ucel/crates/ucel-cex-okx/Cargo.toml"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-TRANSPORT-STABILITY-002.md"
+      ]
+    },
+    "UCEL-TRANSPORT-STABILITY-003": {
+      "branch": "feature/ucel-transport-stability-003",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/status/trace-index.json",
+        "docs/verification/UCEL-TRANSPORT-STABILITY-003.md",
+        "ucel/Cargo.lock",
+        "ucel/crates/ucel-transport/Cargo.toml",
+        "ucel/crates/ucel-transport/src/ws/connection.rs",
+        "ucel/crates/ucel-transport/tests/ws_connection_e2e.rs",
+        "ucel/crates/ucel-transport/tests/ws_rate_limit_nack_cooldown.rs",
+        "ucel/crates/ucel-transport/tests/ws_rules_stability_apply.rs",
+        "ucel/crates/ucel-ws-rules/Cargo.toml",
+        "ucel/crates/ucel-ws-rules/rules/bitget-spot.toml",
+        "ucel/crates/ucel-ws-rules/rules/bybit-spot.toml",
+        "ucel/crates/ucel-ws-rules/rules/gmocoin.toml",
+        "ucel/crates/ucel-ws-rules/src/loader.rs",
+        "ucel/crates/ucel-ws-rules/src/model.rs"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-TRANSPORT-STABILITY-003.md"
+      ]
+    },
+    "UCEL-TRANSPORT-STABILITY-004": {
+      "branch": "feature/ucel-transport-stability-004",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/runbooks/transport/ws_overflow_spill.md",
+        "docs/runbooks/transport/ws_rate_limit_cooldown.md",
+        "docs/runbooks/transport/ws_reconnect_storm.md",
+        "docs/specs/crosscut/support_bundle_spec.md",
+        "docs/specs/market_data/ws_transport_stability_spec.md",
+        "docs/status/trace-index.json",
+        "docs/verification/UCEL-TRANSPORT-STABILITY-004.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-TRANSPORT-STABILITY-004.md"
+      ]
     }
-
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
 }

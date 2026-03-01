@@ -6,12 +6,17 @@ use std::sync::{
 };
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
+
+use crate::state::AppState;
 use tracing::{error, info, warn};
 
 use ucel_subscription_planner::{
-    canon_params, extract_ws_ops, generate_plan, generate_plan_v2, load_coverage_v2, load_manifest, stable_key,
+    canon_params, extract_ws_ops, generate_plan, generate_plan_v2, load_coverage_v2, load_manifest,
+    stable_key,
 };
 use ucel_subscription_store::{SubscriptionRow, SubscriptionStore};
+use ucel_transport::health::{HealthReason, TransportHealth};
+use ucel_transport::obs::StabilityEvent;
 use ucel_transport::ws::connection::{run_ws_connection, ShutdownToken, WsRunConfig};
 use ucel_ws_rules::{load_for_exchange, SupportLevel};
 
@@ -21,7 +26,9 @@ pub struct SupervisorShutdown {
 }
 impl SupervisorShutdown {
     pub fn new() -> Self {
-        Self { flag: Arc::new(AtomicBool::new(false)) }
+        Self {
+            flag: Arc::new(AtomicBool::new(false)),
+        }
     }
     pub fn trigger(&self) {
         self.flag.store(true, Ordering::SeqCst);
@@ -30,24 +37,39 @@ impl SupervisorShutdown {
         self.flag.load(Ordering::SeqCst)
     }
     pub fn token(&self) -> ShutdownToken {
-        ShutdownToken { flag: self.flag.clone() }
+        ShutdownToken {
+            flag: self.flag.clone(),
+        }
     }
 }
 
 fn now_unix_i64() -> i64 {
     use std::time::{SystemTime, UNIX_EPOCH};
-    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i64
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64
 }
 
 fn should_include_public_crypto(op: &str) -> bool {
     op.starts_with("crypto.public.ws.")
 }
 
-pub async fn run_supervisor(cfg: &IngestConfig, shutdown: SupervisorShutdown) -> Result<(), String> {
+pub async fn run_supervisor(
+    cfg: &IngestConfig,
+    shutdown: SupervisorShutdown,
+    state: AppState,
+) -> Result<(), String> {
     std::fs::create_dir_all(&cfg.journal_dir).map_err(|e| e.to_string())?;
     let wal = ucel_journal::WalWriter::open(&cfg.journal_dir, cfg.wal_max_bytes, cfg.fsync_mode)
         .map_err(|e| e.to_string())?;
     let wal = Arc::new(Mutex::new(wal));
+
+    *state.rules_snapshot.write() = serde_json::json!({
+        "exchange_allowlist": cfg.exchange_allowlist.clone(),
+        "rules_dir": cfg.rules_dir.display().to_string(),
+        "note": "redacted"
+    });
 
     let mut handles: Vec<JoinHandle<()>> = Vec::new();
 
@@ -128,7 +150,8 @@ pub async fn run_supervisor(cfg: &IngestConfig, shutdown: SupervisorShutdown) ->
 
         // Seed store
         {
-            let mut store = SubscriptionStore::open(cfg.store_path.to_str().unwrap_or("/tmp/ucel.sqlite"))?;
+            let mut store =
+                SubscriptionStore::open(cfg.store_path.to_str().unwrap_or("/tmp/ucel.sqlite"))?;
             let now = now_unix_i64();
 
             let rows: Vec<SubscriptionRow> = plan
@@ -165,21 +188,23 @@ pub async fn run_supervisor(cfg: &IngestConfig, shutdown: SupervisorShutdown) ->
             let wal = wal.clone();
             let store_path = cfg.store_path.clone();
             let token = shutdown.token();
-
+            let state = state.clone();
             let run_cfg = WsRunConfig {
                 exchange_id: exchange.clone(),
                 conn_id: cp.conn_id.clone(),
-                recv_queue_cap: cfg.recv_queue_cap,
                 max_frame_bytes: cfg.max_frame_bytes,
                 max_inflight_per_conn: cfg.max_inflight_per_conn,
                 connect_timeout: cfg.connect_timeout,
                 idle_timeout: cfg.idle_timeout,
                 reconnect_storm_window: cfg.reconnect_storm_window,
                 reconnect_storm_max: cfg.reconnect_storm_max,
+                ..Default::default()
             };
 
-            let h = tokio::spawn(async move {
-                let mut store = match SubscriptionStore::open(store_path.to_str().unwrap_or("/tmp/ucel.sqlite")) {
+            let h = tokio::task::spawn_local(async move {
+                let mut store = match SubscriptionStore::open(
+                    store_path.to_str().unwrap_or("/tmp/ucel.sqlite"),
+                ) {
                     Ok(s) => s,
                     Err(e) => {
                         error!(exchange=%exchange, conn=%run_cfg.conn_id, err=%e, "store open failed");
@@ -187,7 +212,16 @@ pub async fn run_supervisor(cfg: &IngestConfig, shutdown: SupervisorShutdown) ->
                     }
                 };
 
-                if let Err(e) = run_ws_connection(adapter, rules, &mut store, wal, run_cfg, token).await {
+                if let Err(e) =
+                    run_ws_connection(adapter, rules, &mut store, wal, run_cfg, token).await
+                {
+                    ucel_transport::obs::TransportMetrics::inc(&state.metrics.reconnect_failure);
+                    state.events.push(StabilityEvent::now(
+                        &exchange,
+                        &cp.conn_id,
+                        "connection_ended",
+                        serde_json::json!({"error": e.to_string()}),
+                    ));
                     warn!(exchange=%exchange, conn=%cp.conn_id, err=%e, "connection ended");
                 }
             });
@@ -195,13 +229,36 @@ pub async fn run_supervisor(cfg: &IngestConfig, shutdown: SupervisorShutdown) ->
         }
     }
 
-    // maintenance: periodic deadletter purge
+    // maintenance + health snapshot loop
     let mut last_maintenance = std::time::Instant::now();
+    let mut last_health = std::time::Instant::now();
     while !shutdown.is_triggered() {
         tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+        if last_health.elapsed() >= std::time::Duration::from_secs(2) {
+            last_health = std::time::Instant::now();
+            let failures = state
+                .metrics
+                .reconnect_failure
+                .load(std::sync::atomic::Ordering::Relaxed);
+            let mut reasons = Vec::new();
+            if failures > 0 {
+                reasons.push(HealthReason {
+                    code: "RECONNECT_FAILURE".to_string(),
+                    detail: format!("failures={failures}"),
+                });
+            }
+            let h = if reasons.is_empty() {
+                TransportHealth::healthy()
+            } else {
+                TransportHealth::degraded(reasons)
+            };
+            *state.health.write() = h;
+        }
         if last_maintenance.elapsed() >= std::time::Duration::from_secs(300) {
             last_maintenance = std::time::Instant::now();
-            if let Ok(mut store) = SubscriptionStore::open(cfg.store_path.to_str().unwrap_or("/tmp/ucel.sqlite")) {
+            if let Ok(mut store) =
+                SubscriptionStore::open(cfg.store_path.to_str().unwrap_or("/tmp/ucel.sqlite"))
+            {
                 let _ = store.purge_deadletter_keep_last(5000);
             }
         }
@@ -209,7 +266,11 @@ pub async fn run_supervisor(cfg: &IngestConfig, shutdown: SupervisorShutdown) ->
 
     info!(handles=%handles.len(), "shutdown: joining tasks");
     let grace = cfg.shutdown_grace;
-    let join_all = async { for h in handles { let _ = h.await; } };
+    let join_all = async {
+        for h in handles {
+            let _ = h.await;
+        }
+    };
     if tokio::time::timeout(grace, join_all).await.is_err() {
         warn!("shutdown grace exceeded; rely on token + process exit");
     }

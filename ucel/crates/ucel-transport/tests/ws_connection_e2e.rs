@@ -12,8 +12,10 @@ use tokio_tungstenite::tungstenite::Message;
 use ucel_subscription_planner::{canon_params, stable_key, SubscriptionKey};
 use ucel_subscription_store::{SubscriptionRow, SubscriptionStore};
 use ucel_transport::ws::adapter::{InboundClass, OutboundMsg, WsVenueAdapter};
-use ucel_transport::ws::connection::{run_ws_connection, ShutdownToken, WsOverflowConfig, WsOverflowMode, WsRunConfig};
 use ucel_transport::ws::circuit_breaker::CircuitBreakerConfig;
+use ucel_transport::ws::connection::{
+    run_ws_connection, ShutdownToken, WsOverflowConfig, WsOverflowMode, WsRunConfig,
+};
 use ucel_transport::ws::shutdown::GracefulShutdownConfig;
 use ucel_ws_rules::load_for_exchange;
 
@@ -49,7 +51,7 @@ impl WsVenueAdapter for TestAdapter {
                 "op_id": op_id,
                 "symbol": symbol
             })
-                .to_string(),
+            .to_string(),
         }])
     }
 
@@ -214,8 +216,8 @@ async fn e2e_reconnect_drip_wal() {
         64 * 1024 * 1024,
         ucel_journal::FsyncMode::Balanced,
     )
-        .map_err(|e| e.to_string())
-        .unwrap();
+    .map_err(|e| e.to_string())
+    .unwrap();
     let wal = Arc::new(Mutex::new(wal));
 
     // store seed (stable key)
@@ -277,6 +279,11 @@ async fn e2e_reconnect_drip_wal() {
             slowdown_max_wait: Duration::from_millis(100),
         },
 
+        rl_max_attempts: 20,
+        rl_base_cooldown_secs: 1,
+        rl_max_cooldown_secs: 60,
+        rl_default_penalty_ms: 500,
+
         graceful: default_graceful(),
     };
 
@@ -319,8 +326,8 @@ async fn e2e_stop_on_oversized_frame() {
         64 * 1024 * 1024,
         ucel_journal::FsyncMode::Balanced,
     )
-        .map_err(|e| e.to_string())
-        .unwrap();
+    .map_err(|e| e.to_string())
+    .unwrap();
     let wal = Arc::new(Mutex::new(wal));
 
     let mut store = SubscriptionStore::open(":memory:").unwrap();
@@ -361,6 +368,11 @@ async fn e2e_stop_on_oversized_frame() {
             slowdown_max_wait: Duration::from_millis(50),
         },
 
+        rl_max_attempts: 20,
+        rl_base_cooldown_secs: 1,
+        rl_max_cooldown_secs: 60,
+        rl_default_penalty_ms: 500,
+
         graceful: default_graceful(),
     };
 
@@ -385,8 +397,8 @@ async fn e2e_symbol_less_subscription_is_dripped() {
         64 * 1024 * 1024,
         ucel_journal::FsyncMode::Balanced,
     )
-        .map_err(|e| e.to_string())
-        .unwrap();
+    .map_err(|e| e.to_string())
+    .unwrap();
     let wal = Arc::new(Mutex::new(wal));
 
     let mut store = SubscriptionStore::open(":memory:").unwrap();
@@ -447,6 +459,11 @@ async fn e2e_symbol_less_subscription_is_dripped() {
             slowdown_max_wait: Duration::from_millis(100),
         },
 
+        rl_max_attempts: 20,
+        rl_base_cooldown_secs: 1,
+        rl_max_cooldown_secs: 60,
+        rl_default_penalty_ms: 500,
+
         graceful: default_graceful(),
     };
 
@@ -470,4 +487,3 @@ async fn e2e_symbol_less_subscription_is_dripped() {
         })
         .await;
 }
-

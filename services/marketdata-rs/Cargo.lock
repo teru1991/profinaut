@@ -2642,6 +2642,7 @@ name = "ucel-cex-bitget"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "bytes",
  "reqwest",
  "serde",
  "serde_json",
@@ -2650,6 +2651,7 @@ dependencies = [
  "tracing",
  "ucel-core",
  "ucel-transport",
+ "uuid",
 ]
 
 [[package]]
@@ -2745,6 +2747,7 @@ name = "ucel-cex-okx"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "bytes",
  "reqwest",
  "serde",
  "serde_json",
@@ -2753,6 +2756,7 @@ dependencies = [
  "tracing",
  "ucel-core",
  "ucel-transport",
+ "uuid",
 ]
 
 [[package]]
@@ -2762,6 +2766,7 @@ dependencies = [
  "rust_decimal",
  "semver",
  "serde",
+ "serde_json",
  "thiserror 1.0.69",
 ]
 
@@ -2818,9 +2823,9 @@ dependencies = [
 name = "ucel-symbol-core"
 version = "0.1.0"
 dependencies = [
- "rust_decimal",
  "serde",
  "serde_json",
+ "ucel-core",
  "uuid",
 ]
 
@@ -2880,8 +2885,13 @@ dependencies = [
 name = "ucel-ws-subscriber"
 version = "0.1.0"
 dependencies = [
+ "axum",
+ "http",
+ "parking_lot",
  "serde",
+ "serde_json",
  "tokio",
+ "tower",
  "tracing",
  "tracing-subscriber",
  "ucel-cex-binance",

@@ -6,18 +6,18 @@ use ucel_cex_gmocoin::rest::GmoCredentials;
 use ucel_cex_gmocoin::ws::{GmoCoinPrivateWsAdapter, GmoCoinPublicWsAdapter};
 
 // ---------- Existing exchanges ----------
-use ucel_cex_bybit::ws::BybitWsAdapter;
-use ucel_cex_bitget::ws::BitgetSpotWsAdapter;
-use ucel_cex_okx::ws::OkxWsAdapter;
-use ucel_cex_kraken::ws::KrakenSpotWsAdapter;
-use ucel_cex_htx::ws::HtxSpotWsAdapter;
+use ucel_cex_bitget::ws::BitgetWsAdapter;
 use ucel_cex_bittrade::ws::BitTradeWsAdapter;
+use ucel_cex_bybit::ws::BybitWsAdapter;
+use ucel_cex_htx::ws::HtxSpotWsAdapter;
+use ucel_cex_kraken::ws::KrakenSpotWsAdapter;
+use ucel_cex_okx::ws::OkxWsAdapter;
 
 // Binance split adapters
 use ucel_cex_binance::ws::BinanceSpotWsAdapter;
-use ucel_cex_binance_usdm::ws::BinanceUsdmWsAdapter;
 use ucel_cex_binance_coinm::ws::BinanceCoinmWsAdapter;
 use ucel_cex_binance_options::ws::BinanceOptionsWsAdapter;
+use ucel_cex_binance_usdm::ws::BinanceUsdmWsAdapter;
 
 // ---------- Future JP exchanges (placeholders) ----------
 // When you add these crates later, enable via Cargo features and uncomment the uses.
@@ -57,7 +57,7 @@ pub fn create(exchange_id: &str) -> Result<Arc<dyn WsVenueAdapter>, String> {
         // ----------------------------
         // Bitget
         // ----------------------------
-        "bitget-spot" => Ok(Arc::new(BitgetSpotWsAdapter::new())),
+        "bitget-spot" => Ok(Arc::new(BitgetWsAdapter::spot())),
 
         // ----------------------------
         // OKX

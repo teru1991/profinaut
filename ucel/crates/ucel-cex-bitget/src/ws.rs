@@ -26,16 +26,24 @@ pub struct BitgetWsAdapter {
 
 impl BitgetWsAdapter {
     pub fn spot() -> Self {
-        Self { kind: BitgetKind::Spot }
+        Self {
+            kind: BitgetKind::Spot,
+        }
     }
     pub fn usdt_futures() -> Self {
-        Self { kind: BitgetKind::UsdtFutures }
+        Self {
+            kind: BitgetKind::UsdtFutures,
+        }
     }
     pub fn coin_futures() -> Self {
-        Self { kind: BitgetKind::CoinFutures }
+        Self {
+            kind: BitgetKind::CoinFutures,
+        }
     }
     pub fn usdc_futures() -> Self {
-        Self { kind: BitgetKind::UsdcFutures }
+        Self {
+            kind: BitgetKind::UsdcFutures,
+        }
     }
 
     fn exchange_id_str(&self) -> &'static str {
@@ -76,7 +84,10 @@ impl BitgetWsAdapter {
 
         // build a minimal params object that matches planner seed keys
         let mut obj = serde_json::Map::new();
-        obj.insert("_topic".into(), Value::String(format!("{inst_type}|{channel}|{inst_id}")));
+        obj.insert(
+            "_topic".into(),
+            Value::String(format!("{inst_type}|{channel}|{inst_id}")),
+        );
         obj.insert("_w".into(), Value::Number((weight as u64).into()));
         if let Some(interval) = interval_opt {
             obj.insert("interval".into(), Value::String(interval.to_string()));
@@ -103,7 +114,7 @@ impl BitgetWsAdapter {
                 "instId": inst_id
             }]
         })
-            .to_string())
+        .to_string())
     }
 }
 
@@ -161,10 +172,17 @@ impl WsVenueAdapter for BitgetWsAdapter {
     /// - websocket forcibly disconnected every 24 hours
     /// - accept up to 10 messages/sec :contentReference[oaicite:9]{index=9}
     fn ping_msg(&self) -> Option<OutboundMsg> {
-        Some(OutboundMsg { text: "ping".to_string() })
+        Some(OutboundMsg {
+            text: "ping".to_string(),
+        })
     }
 
-    fn build_subscribe(&self, op_id: &str, _symbol: &str, params: &Value) -> Result<Vec<OutboundMsg>, String> {
+    fn build_subscribe(
+        &self,
+        op_id: &str,
+        _symbol: &str,
+        params: &Value,
+    ) -> Result<Vec<OutboundMsg>, String> {
         let topic = params
             .get("_topic")
             .and_then(|v| v.as_str())
@@ -209,8 +227,18 @@ impl WsVenueAdapter for BitgetWsAdapter {
         // We treat it as Ack/Nack to activate subscriptions quickly.
         if let Some(event) = v.get("event").and_then(|x| x.as_str()) {
             if event == "error" {
-                let msg = v.get("msg").and_then(|x| x.as_str()).unwrap_or("error").to_string();
-                return InboundClass::Nack { reason: msg, op_id: None, symbol: None, params_canon_hint: None };
+                let msg = v
+                    .get("msg")
+                    .and_then(|x| x.as_str())
+                    .unwrap_or("error")
+                    .to_string();
+                return InboundClass::Nack {
+                    reason: msg,
+                    op_id: None,
+                    symbol: None,
+                    params_canon_hint: None,
+                    retry_after_ms: None,
+                };
             }
             if event == "subscribe" || event == "unsubscribe" {
                 // best-effort parse arg to mark active
@@ -221,10 +249,14 @@ impl WsVenueAdapter for BitgetWsAdapter {
 
                     if !inst_type.is_empty() && !channel.is_empty() {
                         let (op, _interval, _w) = opid_interval_weight(inst_type, channel);
-                        let hint = params_canon_hint_for(inst_type, channel, inst_id);
+                        let hint = Self::params_canon_hint_for(inst_type, channel, inst_id);
                         return InboundClass::Ack {
                             op_id: op,
-                            symbol: if inst_id.is_empty() { None } else { Some(inst_id.to_string()) },
+                            symbol: if inst_id.is_empty() {
+                                None
+                            } else {
+                                Some(inst_id.to_string())
+                            },
                             params_canon_hint: Some(hint),
                         };
                     }
@@ -241,10 +273,14 @@ impl WsVenueAdapter for BitgetWsAdapter {
 
             if !inst_type.is_empty() && !channel.is_empty() {
                 let (op, _interval, _w) = opid_interval_weight(inst_type, channel);
-                let hint = params_canon_hint_for(inst_type, channel, inst_id);
+                let hint = Self::params_canon_hint_for(inst_type, channel, inst_id);
                 return InboundClass::Data {
                     op_id: Some(op),
-                    symbol: if inst_id.is_empty() { None } else { Some(inst_id.to_string()) },
+                    symbol: if inst_id.is_empty() {
+                        None
+                    } else {
+                        Some(inst_id.to_string())
+                    },
                     params_canon_hint: Some(hint),
                 };
             }

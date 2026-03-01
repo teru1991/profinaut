@@ -107,3 +107,31 @@ SemVer:
 - MAJOR: remove required minimum contents or relax secret-free guarantee
 - MINOR: add recommended sections or optional fields
 - PATCH: editorial clarifications
+
+---
+
+## 9. Transport Stability Extension (WS)
+For WS transport diagnostics, support bundle should include:
+- transport health snapshot (`Healthy/Degraded/Unhealthy/Unknown` + reasons),
+- transport metrics snapshot (reconnect, breaker, overflow, rate-limit penalty/cooldown, deadletter, queue gauges),
+- recent stability events tail,
+- redacted WS rules snapshot.
+
+This extension is additive and keeps the manifest-first contract unchanged.
+
+## 10. Transport (WS) additions
+- health: status, reasons[]
+- metrics:
+  - reconnect_attempts/reconnect_success/reconnect_failure
+  - breaker_open
+  - stale_requeued
+  - outq_dropped/outq_spilled
+  - rl_penalty_applied/rl_cooldown_set
+  - deadletter_count
+  - outq_len/wal_queue_len/last_inbound_age_ms
+- events_tail: stability events ring (fixed max N)
+- rules_snapshot: redacted, secrets must not be included
+
+## 11. Security / Redaction
+- API keys, secrets, tokens, PII must never be included.
+- If rules can contain secrets, caller must redact before embedding rules_snapshot.
