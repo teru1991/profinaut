@@ -2,7 +2,7 @@ use bytes::Bytes;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 use ucel_cex_deribit::*;
-use ucel_core::{ErrorCode, UcelError};
+use ucel_core::{Decimal, ErrorCode, UcelError};
 use ucel_transport::{
     HttpRequest, HttpResponse, RequestContext, Transport, WsConnectRequest, WsStream,
 };
@@ -54,8 +54,8 @@ async fn rest_catalog_all_ids_have_success_parse_fixture() {
         (DeribitRestRequest::PublicGetTradingViewChartData(PublicGetTradingViewChartDataParams { instrument_name: "BTC-PERPETUAL".into(), start_timestamp: 1, end_timestamp: 2, resolution: "1".into() }), br#"{"jsonrpc":"2.0","id":1,"result":{"ticks":[1],"open":[1.0],"high":[1.0],"low":[1.0],"close":[1.0],"volume":[1.0]}}"#.to_vec(), None),
         (DeribitRestRequest::PublicAuth(PublicAuthParams { grant_type: "client_credentials".into(), client_id: Some("id".into()), client_secret: Some("sec".into()) }), br#"{"jsonrpc":"2.0","id":1,"result":{"access_token":"a","expires_in":10,"token_type":"bearer"}}"#.to_vec(), None),
         (DeribitRestRequest::PrivateGetAccountSummary(PrivateGetAccountSummaryParams { currency: "BTC".into(), extended: None }), br#"{"jsonrpc":"2.0","id":1,"result":{"currency":"BTC","balance":1.0}}"#.to_vec(), Some("k".to_string())),
-        (DeribitRestRequest::PrivateBuy(PrivateOrderParams { instrument_name: "BTC-PERPETUAL".into(), amount: 1.0, order_type: "limit".into(), price: Some(1.0) }), br#"{"jsonrpc":"2.0","id":1,"result":{"order_id":"o1","instrument_name":"BTC-PERPETUAL"}}"#.to_vec(), Some("k".to_string())),
-        (DeribitRestRequest::PrivateSell(PrivateOrderParams { instrument_name: "BTC-PERPETUAL".into(), amount: 1.0, order_type: "limit".into(), price: Some(1.0) }), br#"{"jsonrpc":"2.0","id":1,"result":{"order_id":"o2","instrument_name":"BTC-PERPETUAL"}}"#.to_vec(), Some("k".to_string())),
+        (DeribitRestRequest::PrivateBuy(PrivateOrderParams { instrument_name: "BTC-PERPETUAL".into(), amount: "1.0".parse::<Decimal>().unwrap(), order_type: "limit".into(), price: Some("1.0".parse::<Decimal>().unwrap()) }), br#"{"jsonrpc":"2.0","id":1,"result":{"order_id":"o1","instrument_name":"BTC-PERPETUAL"}}"#.to_vec(), Some("k".to_string())),
+        (DeribitRestRequest::PrivateSell(PrivateOrderParams { instrument_name: "BTC-PERPETUAL".into(), amount: "1.0".parse::<Decimal>().unwrap(), order_type: "limit".into(), price: Some("1.0".parse::<Decimal>().unwrap()) }), br#"{"jsonrpc":"2.0","id":1,"result":{"order_id":"o2","instrument_name":"BTC-PERPETUAL"}}"#.to_vec(), Some("k".to_string())),
         (DeribitRestRequest::PrivateCancel(PrivateCancelParams { order_id: "o1".into() }), br#"{"jsonrpc":"2.0","id":1,"result":{"order_id":"o1"}}"#.to_vec(), Some("k".to_string())),
     ];
 

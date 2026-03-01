@@ -583,14 +583,18 @@ fn parse_upbit_response(endpoint_id: &str, body: &[u8]) -> Result<UpbitRestRespo
         | "quotation.public.rest.candles.years" => {
             Ok(UpbitRestResponse::Candles(parse_json(body)?))
         }
-        "exchange.private.rest.accounts.list" => Ok(UpbitRestResponse::Accounts(parse_json(body)?)),
+        "exchange.private.rest.accounts.list" => {
+            Ok(UpbitRestResponse::Accounts(parse_json(body)?))
+        }
         "exchange.private.rest.orders.create" => {
             Ok(UpbitRestResponse::CreateOrder(parse_json(body)?))
         }
         "exchange.private.rest.orders.cancel" => {
             Ok(UpbitRestResponse::CancelOrder(parse_json(body)?))
         }
-        "exchange.private.rest.orders.open" => Ok(UpbitRestResponse::OpenOrders(parse_json(body)?)),
+        "exchange.private.rest.orders.open" => {
+            Ok(UpbitRestResponse::OpenOrders(parse_json(body)?))
+        }
         "exchange.private.rest.orders.closed" => {
             Ok(UpbitRestResponse::ClosedOrders(parse_json(body)?))
         }
@@ -603,7 +607,9 @@ fn parse_upbit_response(endpoint_id: &str, body: &[u8]) -> Result<UpbitRestRespo
         "exchange.private.rest.withdraws.coin" => {
             Ok(UpbitRestResponse::WithdrawCoin(parse_json(body)?))
         }
-        "exchange.private.rest.deposits.list" => Ok(UpbitRestResponse::Deposits(parse_json(body)?)),
+        "exchange.private.rest.deposits.list" => {
+            Ok(UpbitRestResponse::Deposits(parse_json(body)?))
+        }
         "exchange.private.rest.deposits.address" => {
             Ok(UpbitRestResponse::DepositAddress(parse_json(body)?))
         }
@@ -613,7 +619,9 @@ fn parse_upbit_response(endpoint_id: &str, body: &[u8]) -> Result<UpbitRestRespo
         "exchange.private.rest.service.walletstatus" => {
             Ok(UpbitRestResponse::WalletStatus(parse_json(body)?))
         }
-        "exchange.private.rest.keys.list" => Ok(UpbitRestResponse::ApiKeys(parse_json(body)?)),
+        "exchange.private.rest.keys.list" => {
+            Ok(UpbitRestResponse::ApiKeys(parse_json(body)?))
+        }
         _ => Err(UcelError::new(
             ErrorCode::NotSupported,
             format!("unknown endpoint: {endpoint_id}"),
@@ -799,14 +807,14 @@ mod tests {
         q.try_push(
             MarketEvent::Candle {
                 code: "KRW-BTC".into(),
-                trade_price: 1.0,
+                trade_price: "1.0".parse::<Decimal>().unwrap(),
             },
             &mut m,
         );
         q.try_push(
             MarketEvent::Candle {
                 code: "KRW-ETH".into(),
-                trade_price: 2.0,
+                trade_price: "2.0".parse::<Decimal>().unwrap(),
             },
             &mut m,
         );
