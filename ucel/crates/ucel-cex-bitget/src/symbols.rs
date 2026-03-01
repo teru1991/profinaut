@@ -7,22 +7,21 @@ const REST_BASE: &str = "https://api.bitget.com";
 struct ApiResp<T> {
     code: String,
     msg: String,
-    #[serde(default)]
     data: Vec<T>,
 }
 
 #[derive(Debug, Deserialize)]
 struct SpotSymbolRow {
-    symbol: String,      // e.g. BTCUSDT
+    symbol: String, // e.g. BTCUSDT
     #[serde(default)]
-    status: String,      // online/gray/offline/halt
+    status: String, // online/gray/offline/halt
 }
 
 #[derive(Debug, Deserialize)]
 struct FuturesContractRow {
-    symbol: String,         // e.g. BTCUSDT
+    symbol: String, // e.g. BTCUSDT
     #[serde(default)]
-    symbolStatus: String,   // normal/listed/maintain/...
+    symbolStatus: String, // normal/listed/maintain/...
 }
 
 /// Fetch all SPOT symbols (instId list like "BTCUSDT").
@@ -41,7 +40,10 @@ pub async fn fetch_spot_symbols() -> Result<Vec<String>, String> {
 
     let body: ApiResp<SpotSymbolRow> = resp.json().await.map_err(|e| e.to_string())?;
     if body.code != "00000" {
-        return Err(format!("bitget spot symbols api code={} msg={}", body.code, body.msg));
+        return Err(format!(
+            "bitget spot symbols api code={} msg={}",
+            body.code, body.msg
+        ));
     }
 
     let mut out = Vec::new();
@@ -60,7 +62,10 @@ pub async fn fetch_spot_symbols() -> Result<Vec<String>, String> {
 /// "USDT-FUTURES" | "COIN-FUTURES" | "USDC-FUTURES"
 /// Endpoint: GET /api/v2/mix/market/contracts?productType=... :contentReference[oaicite:5]{index=5}
 pub async fn fetch_futures_symbols(product_type: &str) -> Result<Vec<String>, String> {
-    let url = format!("{REST_BASE}/api/v2/mix/market/contracts?productType={}", product_type);
+    let url = format!(
+        "{REST_BASE}/api/v2/mix/market/contracts?productType={}",
+        product_type
+    );
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(20))
         .build()
@@ -68,12 +73,18 @@ pub async fn fetch_futures_symbols(product_type: &str) -> Result<Vec<String>, St
 
     let resp = client.get(&url).send().await.map_err(|e| e.to_string())?;
     if !resp.status().is_success() {
-        return Err(format!("bitget futures contracts http status={}", resp.status()));
+        return Err(format!(
+            "bitget futures contracts http status={}",
+            resp.status()
+        ));
     }
 
     let body: ApiResp<FuturesContractRow> = resp.json().await.map_err(|e| e.to_string())?;
     if body.code != "00000" {
-        return Err(format!("bitget futures contracts api code={} msg={}", body.code, body.msg));
+        return Err(format!(
+            "bitget futures contracts api code={} msg={}",
+            body.code, body.msg
+        ));
     }
 
     let mut out = Vec::new();
