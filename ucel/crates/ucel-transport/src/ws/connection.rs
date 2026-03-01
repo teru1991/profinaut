@@ -11,6 +11,7 @@ use tracing::{info, warn};
 
 use ucel_journal::RawRecord;
 
+use crate::obs::{StabilityEvent, StabilityEventRing, TransportMetrics};
 use crate::stability::events::{
     ConnState, ReconnectReason, ShutdownPhase, TransportStabilityEvent,
 };
@@ -66,6 +67,13 @@ pub struct WsRunConfig {
 
     /// graceful shutdown config
     pub graceful: GracefulShutdownConfig,
+
+    /// max retry attempts for rate-limit nack before deadletter
+    pub rl_max_attempts: i64,
+    /// base cooldown seconds for RL exponential backoff
+    pub rl_base_cooldown_secs: i64,
+    /// max cooldown seconds for RL exponential backoff
+    pub rl_max_cooldown_secs: i64,
 }
 
 #[derive(Clone, Debug)]
@@ -114,6 +122,9 @@ impl Default for WsRunConfig {
             breaker: CircuitBreakerConfig::default(),
             overflow: WsOverflowConfig::default(),
             graceful: GracefulShutdownConfig::default(),
+            rl_max_attempts: 20,
+            rl_base_cooldown_secs: 1,
+            rl_max_cooldown_secs: 60,
         }
     }
 }
@@ -244,6 +255,8 @@ pub async fn run_ws_connection(
     let overflow_policy = build_overflow_policy(&cfg)?;
     let mut breaker = CircuitBreaker::new(cfg.breaker.clone());
     let stability = Arc::new(StabilityHub::new());
+    let obs_metrics = TransportMetrics::new();
+    let obs_events = StabilityEventRing::new(512);
 
     let mut reconnect_attempt: u32 = 0;
     let mut reconnect_times: VecDeque<Instant> = VecDeque::new();
@@ -313,6 +326,7 @@ pub async fn run_ws_connection(
         }
 
         info!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, url=%url, "ws connecting");
+        TransportMetrics::inc(&obs_metrics.reconnect_attempts);
 
         let (ws_stream, _) = match tokio::time::timeout(cfg.connect_timeout, connect_async(&url))
             .await
@@ -320,6 +334,7 @@ pub async fn run_ws_connection(
             Ok(Ok(v)) => v,
             Ok(Err(e)) => {
                 breaker.on_failure(Instant::now());
+                TransportMetrics::inc(&obs_metrics.reconnect_failure);
                 let backoff = backoff_with_jitter_ms(reconnect_attempt, 200, 30_000, 250);
                 reconnect_attempt = reconnect_attempt.saturating_add(1);
                 warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, err=%e, backoff_ms=backoff, "connect error");
@@ -334,6 +349,7 @@ pub async fn run_ws_connection(
             }
             Err(_) => {
                 breaker.on_failure(Instant::now());
+                TransportMetrics::inc(&obs_metrics.reconnect_failure);
                 let backoff = backoff_with_jitter_ms(reconnect_attempt, 200, 30_000, 250);
                 reconnect_attempt = reconnect_attempt.saturating_add(1);
                 warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, backoff_ms=backoff, "connect timeout");
@@ -350,6 +366,13 @@ pub async fn run_ws_connection(
 
         // Connection established => mark breaker success (we got a socket)
         breaker.on_success(Instant::now());
+        TransportMetrics::inc(&obs_metrics.reconnect_success);
+        obs_events.push(StabilityEvent::now(
+            &cfg.exchange_id,
+            &cfg.conn_id,
+            "reconnect_success",
+            serde_json::json!({}),
+        ));
         reconnect_attempt = 0;
 
         let conn_started = Instant::now();
@@ -715,6 +738,13 @@ pub async fn run_ws_connection(
                         let mut lim = ws_limiter.lock().await;
                         let p = Duration::from_millis(250);
                         lim.apply_penalty(OutboundPriority::Private, Instant::now(), p);
+                        TransportMetrics::inc(&obs_metrics.rl_penalty_applied);
+                        obs_events.push(StabilityEvent::now(
+                            &cfg.exchange_id,
+                            &cfg.conn_id,
+                            "rl_penalty_applied",
+                            serde_json::json!({"penalty_ms": p.as_millis() as u64, "priority": OutboundPriority::Private.as_str()}),
+                        ));
                         stability.emit(TransportStabilityEvent::RlPenaltyApplied {
                             exchange_id: cfg.exchange_id.clone(),
                             conn_id: cfg.conn_id.clone(),
@@ -777,14 +807,26 @@ pub async fn run_ws_connection(
                         &wal_tx,
                         &ws_limiter,
                         &stability,
+                        &obs_metrics,
+                        &obs_events,
                         t.into_bytes(),
                     )
                     .await?;
                     last_inbound = Instant::now();
                 }
                 Message::Binary(b) => {
-                    handle_inbound(&adapter, &cfg, store, &wal_tx, &ws_limiter, &stability, b)
-                        .await?;
+                    handle_inbound(
+                        &adapter,
+                        &cfg,
+                        store,
+                        &wal_tx,
+                        &ws_limiter,
+                        &stability,
+                        &obs_metrics,
+                        &obs_events,
+                        b,
+                    )
+                    .await?;
                     last_inbound = Instant::now();
                 }
                 _ => {}
@@ -861,10 +903,6 @@ pub async fn run_ws_connection(
     }
 }
 
-const RL_MAX_ATTEMPTS: i64 = 20;
-const RL_BASE_COOLDOWN_SECS: i64 = 1;
-const RL_MAX_COOLDOWN_SECS: i64 = 60;
-
 fn looks_like_rate_limited(reason: &str) -> bool {
     let s = reason.to_ascii_lowercase();
     s.contains("rate")
@@ -896,6 +934,8 @@ async fn handle_inbound(
     wal_tx: &mpsc::Sender<RawRecord>,
     ws_limiter: &Arc<Mutex<WsRateLimiter>>,
     stability: &Arc<StabilityHub>,
+    obs_metrics: &Arc<TransportMetrics>,
+    obs_events: &Arc<StabilityEventRing>,
     raw: Vec<u8>,
 ) -> Result<(), String> {
     if raw.len() > cfg.max_frame_bytes {
@@ -1035,12 +1075,13 @@ async fn handle_inbound(
                     if is_rl {
                         // attempts 上限で deadletter
                         let attempts = store.attempts_of(&k)?.unwrap_or(0);
-                        if attempts >= RL_MAX_ATTEMPTS {
+                        if attempts >= cfg.rl_max_attempts {
                             store.mark_deadletter(
                                 &k,
                                 &format!("nack:rate-limit:max-attempts:{reason}"),
                                 now,
                             )?;
+                            TransportMetrics::inc(&obs_metrics.deadletter_count);
                             warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, key=%k, attempts, "rl loop -> deadletter");
                         } else {
                             // retry_after を優先し、なければ attempts に応じた backoff cooldown
@@ -1050,14 +1091,16 @@ async fn handle_inbound(
                             } else {
                                 rl_cooldown_secs(
                                     attempts + 1,
-                                    RL_BASE_COOLDOWN_SECS,
-                                    RL_MAX_COOLDOWN_SECS,
+                                    cfg.rl_base_cooldown_secs,
+                                    cfg.rl_max_cooldown_secs,
                                 )
                             };
 
                             // pendingへ戻し、cooldownをセット
                             store.apply_rate_limit_cooldown(&k, now, cooldown_secs)?;
                             let prio = classify_op_id_priority(&op);
+                            TransportMetrics::inc(&obs_metrics.rl_cooldown_set);
+                            obs_events.push(StabilityEvent::now(&cfg.exchange_id, &cfg.conn_id, "rl_cooldown_set", serde_json::json!({"key": k, "cooldown_secs": cooldown_secs, "attempts": attempts})));
                             stability.emit(TransportStabilityEvent::RlCooldownSet {
                                 exchange_id: cfg.exchange_id.clone(),
                                 conn_id: cfg.conn_id.clone(),
@@ -1079,6 +1122,7 @@ async fn handle_inbound(
                     } else {
                         // RL以外は deadletter
                         store.mark_deadletter(&k, &format!("nack:{reason}"), now)?;
+                        TransportMetrics::inc(&obs_metrics.deadletter_count);
                         warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, key=%k, reason=%reason, "ws nack (non-rate-limit) -> deadletter");
                     }
                 }
@@ -1099,6 +1143,8 @@ async fn handle_inbound(
                         let mut lim = ws_limiter.lock().await;
                         lim.apply_penalty(prio, Instant::now(), pen);
                     }
+                    TransportMetrics::inc(&obs_metrics.rl_penalty_applied);
+                    obs_events.push(StabilityEvent::now(&cfg.exchange_id, &cfg.conn_id, "rl_penalty_applied", serde_json::json!({"penalty_ms": pen.as_millis() as u64, "priority": prio.as_str()})));
                     stability.emit(TransportStabilityEvent::RlPenaltyApplied {
                         exchange_id: cfg.exchange_id.clone(),
                         conn_id: cfg.conn_id.clone(),
@@ -1114,15 +1160,6 @@ async fn handle_inbound(
                         "ws rate-limit -> applied limiter penalty"
                     );
                 }
-
-                warn!(
-                    exchange_id=%cfg.exchange_id,
-                    conn=%cfg.conn_id,
-                    penalty_ms=pen.as_millis() as u64,
-                    priority=%prio.as_str(),
-                    reason=%reason,
-                    "ws nack rate-limit -> applied limiter penalty"
-                );
             }
         }
         _ => {}

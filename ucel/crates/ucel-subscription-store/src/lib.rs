@@ -376,6 +376,17 @@ WHERE state='deadletter'
             .optional()
             .map_err(|e| e.to_string())
     }
+
+    pub fn rate_limit_until_of(&self, key: &str) -> Result<Option<i64>, String> {
+        self.conn
+            .query_row(
+                "SELECT rate_limit_until FROM subscriptions WHERE key=?1",
+                rusqlite::params![key],
+                |r| r.get(0),
+            )
+            .optional()
+            .map_err(|e| e.to_string())
+    }
 }
 
 #[cfg(test)]

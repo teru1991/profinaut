@@ -210,7 +210,13 @@ impl WsVenueAdapter for BitgetWsAdapter {
         if let Some(event) = v.get("event").and_then(|x| x.as_str()) {
             if event == "error" {
                 let msg = v.get("msg").and_then(|x| x.as_str()).unwrap_or("error").to_string();
-                return InboundClass::Nack { reason: msg, op_id: None, symbol: None, params_canon_hint: None };
+                return InboundClass::Nack {
+                    reason: msg,
+                    op_id: None,
+                    symbol: None,
+                    params_canon_hint: None,
+                    retry_after_ms: None,
+                };
             }
             if event == "subscribe" || event == "unsubscribe" {
                 // best-effort parse arg to mark active
