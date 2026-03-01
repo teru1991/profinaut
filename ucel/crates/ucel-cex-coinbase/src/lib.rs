@@ -5,6 +5,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::info;
+use ucel_core::decimal::serde::deserialize_decimal_observation;
 use ucel_core::{
     Decimal, ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side,
     TradeEvent, UcelError,
@@ -89,7 +90,7 @@ pub enum MarketEvent {
     Ticker {
         channel_id: String,
         symbol: String,
-        price: f64,
+        price: Decimal,
     },
     Trades {
         channel_id: String,
@@ -112,7 +113,8 @@ enum CoinbaseWsMessage {
     Ticker {
         channel_id: String,
         symbol: String,
-        price: f64,
+        #[serde(deserialize_with = "deserialize_decimal_observation")]
+        price: Decimal,
     },
     #[serde(rename = "trades")]
     Trades {
@@ -133,14 +135,18 @@ enum CoinbaseWsMessage {
 #[derive(Debug, Clone, Deserialize)]
 struct TradeWire {
     trade_id: String,
+    #[serde(deserialize_with = "deserialize_decimal_observation")]
     price: Decimal,
+    #[serde(deserialize_with = "deserialize_decimal_observation")]
     qty: Decimal,
     side: Side,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 struct LevelWire {
+    #[serde(deserialize_with = "deserialize_decimal_observation")]
     price: Decimal,
+    #[serde(deserialize_with = "deserialize_decimal_observation")]
     qty: Decimal,
 }
 

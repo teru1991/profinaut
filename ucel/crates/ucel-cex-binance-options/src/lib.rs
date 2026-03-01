@@ -5,7 +5,8 @@ use std::collections::{HashSet, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use ucel_core::{ErrorCode, OpName, UcelError};
+use ucel_core::decimal::serde::deserialize_decimal_observation;
+use ucel_core::{Decimal, ErrorCode, OpName, UcelError};
 use ucel_transport::{
     enforce_auth_boundary, HttpRequest, RequestContext, Transport, WsConnectRequest,
 };
@@ -229,25 +230,25 @@ impl BinanceOptionsBackpressure {
 pub enum MarketEvent {
     Trade {
         symbol: String,
-        price: f64,
+        price: Decimal,
     },
     Ticker {
         symbol: String,
-        last_price: f64,
+        last_price: Decimal,
     },
     Kline {
         symbol: String,
         interval: String,
-        close: f64,
+        close: Decimal,
     },
     DepthDelta(OrderBookDelta),
     MarkPrice {
         underlying: String,
-        mark_price: f64,
+        mark_price: Decimal,
     },
     IndexPrice {
         underlying: String,
-        index_price: f64,
+        index_price: Decimal,
     },
 }
 
@@ -424,14 +425,14 @@ impl BinanceOptionsWsAdapter {
                 let m: TradeWs = parse_json(raw)?;
                 Ok(MarketEvent::Trade {
                     symbol: m.symbol,
-                    price: parse_num(&m.price)?,
+                    price: m.price,
                 })
             }
             "options.public.ws.ticker" => {
                 let m: TickerWs = parse_json(raw)?;
                 Ok(MarketEvent::Ticker {
                     symbol: m.symbol,
-                    last_price: parse_num(&m.last_price)?,
+                    last_price: m.last_price,
                 })
             }
             "options.public.ws.kline" => {
@@ -439,7 +440,7 @@ impl BinanceOptionsWsAdapter {
                 Ok(MarketEvent::Kline {
                     symbol: m.symbol,
                     interval: m.kline.interval,
-                    close: parse_num(&m.kline.close)?,
+                    close: m.kline.close,
                 })
             }
             "options.public.ws.depth" => {
@@ -454,14 +455,14 @@ impl BinanceOptionsWsAdapter {
                 let m: MarkPriceWs = parse_json(raw)?;
                 Ok(MarketEvent::MarkPrice {
                     underlying: m.underlying,
-                    mark_price: parse_num(&m.mark_price)?,
+                    mark_price: m.mark_price,
                 })
             }
             "options.public.ws.indexprice" => {
                 let m: IndexPriceWs = parse_json(raw)?;
                 Ok(MarketEvent::IndexPrice {
                     underlying: m.underlying,
-                    index_price: parse_num(&m.index_price)?,
+                    index_price: m.index_price,
                 })
             }
             _ => Err(UcelError::new(
@@ -491,15 +492,15 @@ pub fn sanitize_log_line(line: &str) -> String {
 struct TradeWs {
     #[serde(rename = "s")]
     symbol: String,
-    #[serde(rename = "p")]
-    price: String,
+    #[serde(rename = "p", deserialize_with = "deserialize_decimal_observation")]
+    price: Decimal,
 }
 #[derive(Debug, Deserialize)]
 struct TickerWs {
     #[serde(rename = "s")]
     symbol: String,
-    #[serde(rename = "c")]
-    last_price: String,
+    #[serde(rename = "c", deserialize_with = "deserialize_decimal_observation")]
+    last_price: Decimal,
 }
 #[derive(Debug, Deserialize)]
 struct KlineWs {
@@ -512,8 +513,8 @@ struct KlineWs {
 struct KlineInner {
     #[serde(rename = "i")]
     interval: String,
-    #[serde(rename = "c")]
-    close: String,
+    #[serde(rename = "c", deserialize_with = "deserialize_decimal_observation")]
+    close: Decimal,
 }
 #[derive(Debug, Deserialize)]
 struct DepthWs {
@@ -527,26 +528,21 @@ struct DepthWs {
 struct MarkPriceWs {
     #[serde(rename = "u")]
     underlying: String,
-    #[serde(rename = "mp")]
-    mark_price: String,
+    #[serde(rename = "mp", deserialize_with = "deserialize_decimal_observation")]
+    mark_price: Decimal,
 }
 #[derive(Debug, Deserialize)]
 struct IndexPriceWs {
     #[serde(rename = "u")]
     underlying: String,
-    #[serde(rename = "ip")]
-    index_price: String,
+    #[serde(rename = "ip", deserialize_with = "deserialize_decimal_observation")]
+    index_price: Decimal,
 }
 
 fn parse_json<T: DeserializeOwned>(raw: &Bytes) -> Result<T, UcelError> {
     serde_json::from_slice(raw)
         .map_err(|e| UcelError::new(ErrorCode::Internal, format!("json parse: {e}")))
 }
-fn parse_num(v: &str) -> Result<f64, UcelError> {
-    v.parse::<f64>()
-        .map_err(|e| UcelError::new(ErrorCode::WsProtocolViolation, format!("invalid num: {e}")))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -5,6 +5,7 @@ use std::collections::{BTreeMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
+use ucel_core::decimal::serde::deserialize_decimal_observation;
 use ucel_core::{
     Decimal, ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side,
     TradeEvent, UcelError,
@@ -298,13 +299,67 @@ struct SpotWsMsg {
 
 #[derive(Debug, Clone, Deserialize)]
 struct SpotTick {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_levels_observation")]
     bids: Vec<(Decimal, Decimal)>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_levels_observation")]
     asks: Vec<(Decimal, Decimal)>,
+    #[serde(default, deserialize_with = "deserialize_opt_decimal_observation")]
     price: Option<Decimal>,
+    #[serde(default, deserialize_with = "deserialize_opt_decimal_observation")]
     amount: Option<Decimal>,
     direction: Option<Side>,
+}
+
+fn deserialize_opt_decimal_observation<'de, D>(deserializer: D) -> Result<Option<Decimal>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Option::<serde_json::Value>::deserialize(deserializer)?.map_or(Ok(None), |v| {
+        let d = v
+            .to_string()
+            .trim_matches('"')
+            .parse::<Decimal>()
+            .map_err(serde::de::Error::custom)?;
+        ucel_core::decimal::DecimalPolicy::for_observation_relaxed()
+            .guard()
+            .validate(d)
+            .map(Some)
+            .map_err(serde::de::Error::custom)
+    })
+}
+
+fn deserialize_levels_observation<'de, D>(
+    deserializer: D,
+) -> Result<Vec<(Decimal, Decimal)>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let vals = Vec::<[serde_json::Value; 2]>::deserialize(deserializer)?;
+    vals.into_iter()
+        .map(|x| {
+            let a = x[0]
+                .to_string()
+                .trim_matches('"')
+                .parse::<Decimal>()
+                .map_err(serde::de::Error::custom)?;
+            let b = x[1]
+                .to_string()
+                .trim_matches('"')
+                .parse::<Decimal>()
+                .map_err(serde::de::Error::custom)?;
+            let policy = ucel_core::decimal::DecimalPolicy::for_observation_relaxed();
+            Ok((
+                policy
+                    .guard()
+                    .validate(a)
+                    .map_err(serde::de::Error::custom)?,
+                policy
+                    .guard()
+                    .validate(b)
+                    .map_err(serde::de::Error::custom)?,
+            ))
+        })
+        .collect()
 }
 
 #[derive(Debug, Clone, Deserialize)]

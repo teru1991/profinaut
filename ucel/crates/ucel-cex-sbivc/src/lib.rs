@@ -6,6 +6,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::info;
+use ucel_core::decimal::serde::deserialize_decimal_observation;
 use ucel_core::{
     Decimal, ErrorCode, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side, TradeEvent,
     UcelError,
@@ -188,7 +189,7 @@ impl<E: WsExecutor> SbivcWsClient<E> {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum MarketEvent {
-    Ticker { symbol: String, last: f64 },
+    Ticker { symbol: String, last: Decimal },
     Trade(TradeEvent),
     OrderBookSnapshot(OrderBookSnapshot),
     OrderBookDelta(OrderBookDelta),
@@ -378,7 +379,8 @@ fn parse_json<T: DeserializeOwned>(body: &[u8]) -> Result<T, UcelError> {
 #[derive(Deserialize)]
 struct TickerMsg {
     symbol: String,
-    last: f64,
+    #[serde(deserialize_with = "deserialize_decimal_observation")]
+    last: Decimal,
 }
 
 #[derive(Deserialize)]

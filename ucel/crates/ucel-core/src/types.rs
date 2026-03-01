@@ -5,6 +5,7 @@ use std::str::FromStr;
 
 /// Canonical numeric type for price/qty/money.
 /// rust_decimal's `serde-with-float` feature enables decoding JSON floats while preserving Decimal internally.
+/// Decimal type alone is not sufficient; `ucel_core::decimal` is the SSOT for policy (guard/rounding/tick-step).
 pub type Decimal = RustDecimal;
 
 /// Schema version stored as SemVer.

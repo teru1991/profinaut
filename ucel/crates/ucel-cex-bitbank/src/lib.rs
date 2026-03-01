@@ -303,8 +303,16 @@ fn parse_json<T: DeserializeOwned>(b: &Bytes) -> Result<T, UcelError> {
     serde_json::from_slice(b).map_err(|e| UcelError::new(ErrorCode::Internal, format!("json: {e}")))
 }
 fn num(v: &str) -> Result<Decimal, UcelError> {
-    v.parse::<Decimal>()
-        .map_err(|_| UcelError::new(ErrorCode::Internal, "num"))
+    let d = v
+        .parse::<Decimal>()
+        .map_err(|_| UcelError::new(ErrorCode::Internal, "num"))?;
+    if d.is_sign_negative() {
+        return Err(UcelError::new(
+            ErrorCode::WsProtocolViolation,
+            "negative decimal is not allowed",
+        ));
+    }
+    Ok(d)
 }
 fn levels(v: Vec<[String; 2]>) -> Result<Vec<OrderBookLevel>, UcelError> {
     v.into_iter()
