@@ -30,6 +30,7 @@ tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time", "ne
 futures-util = "0.3"
 serde_json = { workspace = true }
 async-trait = "0.1"
+toml = "0.8"
 
 # IMPORTANT: TLS support for tests — permessage-deflate removed in tokio-tungstenite 0.24
 tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }

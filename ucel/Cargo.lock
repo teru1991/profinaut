@@ -3401,6 +3401,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "tokio-tungstenite",
+ "toml",
  "tracing",
  "ucel-core",
  "ucel-journal",
@@ -3414,6 +3415,7 @@ name = "ucel-ws-rules"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "tempfile",
  "toml",
 ]
 
