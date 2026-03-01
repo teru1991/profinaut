@@ -1,0 +1,155 @@
+diff –git a/ucel/crates/ucel-symbol-core/Cargo.toml b/ucel/crates/ucel-symbol-core/Cargo.toml
+index 1ad9e2f..b3b9c8c 100644
+— a/ucel/crates/ucel-symbol-core/Cargo.toml
++++ b/ucel/crates/ucel-symbol-core/Cargo.toml
+@@ -1,16 +1,16 @@
+[package]
+name = “ucel-symbol-core”
+version = “0.1.0”
+edition.workspace = true
+
+[dependencies]
+-rust_decimal = { version = “1”, features = [“serde”] }
++ucel-core = { path = “../ucel-core” }
+serde.workspace = true
+serde_json.workspace = true
+uuid = { version = “1”, features = [“serde”, “v4”] }
+
+[dev-dependencies]
+serde_json.workspace = true
+diff –git a/ucel/crates/ucel-symbol-core/src/lib.rs b/ucel/crates/ucel-symbol-core/src/lib.rs
+index 9d39a7a..c2b1b93 100644
+— a/ucel/crates/ucel-symbol-core/src/lib.rs
++++ b/ucel/crates/ucel-symbol-core/src/lib.rs
+@@ -1,6 +1,9 @@
+-use rust_decimal::Decimal;
+-use rust_decimal::RoundingStrategy;
++use ucel_core::Decimal;
++use ucel_core::decimal::{DecimalPolicy, DecimalPolicyError, QuantizeMode, CoreStepSize, CoreTickSize};
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
++use std::str::FromStr;
+use std::time::SystemTime;
+
+pub type InstrumentMeta = BTreeMap<String, String>;
+@@ -4105,22 +4108,73 @@ pub fn cmp_decimal(a: Decimal, b: Decimal) -> std::cmp::Ordering {
+normalize_decimal(a).cmp(&normalize_decimal(b))
+}
+
+pub fn normalize_decimal(x: Decimal) -> Decimal {
+x.normalize()
+}
+
++/// Symbol-layer relaxed policy:
++/// - allow_zero/allow_negative must be true for observational/symbol metadata usage
++/// - still enforces max_scale (default=18) and optional magnitude bound.
++fn policy_relaxed() -> DecimalPolicy {
+	•	let mut p = DecimalPolicy::default();
+	•	p.allow_zero = true;
+	•	p.allow_negative = true;
+	•	p
++}
+	•	
+
+pub fn round_price(value: Decimal, precision: u32) -> Decimal {
+	•	value.round_dp_with_strategy(precision, RoundingStrategy::MidpointAwayFromZero)
+
+	•	// SSOT rounding strategy lives in ucel-core::decimal::DecimalPolicy
+	•	// Use relaxed policy here to avoid rejecting zero/negative in symbol/observation layer.
+	•	policy_relaxed()
+	•	
+
+   .round_price(value, precision)
+
+
+	•	
+
+   .expect("symbol-layer rounding must not fail guard under relaxed policy")
+
+
+
+}
+
+pub fn round_qty(value: Decimal, precision: u32) -> Decimal {
+	•	value.round_dp_with_strategy(precision, RoundingStrategy::ToZero)
+
+	•	policy_relaxed()
+	•	
+
+   .round_qty(value, precision)
+
+
+	•	
+
+   .expect("symbol-layer rounding must not fail guard under relaxed policy")
+
+
+
+}
+
+pub fn format_decimal(value: Decimal) -> String {
+normalize_decimal(value).to_string()
+}
+
++// —————————————————————————
++// Tick/Step SSOT helpers (additive API)
++// —————————————————————————
++
++/// Validate that price conforms to tick_size (strict).
++pub fn validate_price_tick(price: Decimal, tick_size: Decimal) -> Result<(), DecimalPolicyError> {
+	•	let p = policy_relaxed();
+	•	p.validate_price_tick(price, CoreTickSize(tick_size))
++}
+	•	
+
++/// Validate that qty conforms to step_size (strict).
++pub fn validate_qty_step(qty: Decimal, step_size: Decimal) -> Result<(), DecimalPolicyError> {
+	•	let p = policy_relaxed();
+	•	p.validate_qty_step(qty, CoreStepSize(step_size))
++}
+	•	
+
++/// Quantize a price by tick size.
++pub fn quantize_price(price: Decimal, tick_size: Decimal, mode: QuantizeMode) -> Result<Decimal, DecimalPolicyError> {
+	•	let p = policy_relaxed();
+	•	p.quantize_price(price, CoreTickSize(tick_size), mode)
++}
+	•	
+
++/// Quantize a qty by step size (lot size).
++pub fn quantize_qty(qty: Decimal, step_size: Decimal, mode: QuantizeMode) -> Result<Decimal, DecimalPolicyError> {
+	•	let p = policy_relaxed();
+	•	p.quantize_qty(qty, CoreStepSize(step_size), mode)
++}
+	•	
+
+#[cfg(test)]
+mod tests {
+use super::*;
+	•	use rust_decimal::prelude::FromStr;
+#[test]
+fn precision_helpers_work() {
+	•	
+
+   let a = Decimal::from_str("1.2300").unwrap();
+
+
+	•	
+
+   let b = Decimal::from_str("1.23").unwrap();
+
+
+
+	•	
+
+   let a = Decimal::from_str("1.2300").unwrap();
+
+
+	•	
+
+   let b = Decimal::from_str("1.23").unwrap();
+   assert_eq!(cmp_decimal(a, b), std::cmp::Ordering::Equal);
+   assert_eq!(format_decimal(a), "1.23");
+
+}
+}
