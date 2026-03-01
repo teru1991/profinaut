@@ -596,6 +596,46 @@
         "docs/verification/ucel-decimal-apply-003.md"
       ]
     }
+    ,"UCEL-DECIMAL-CODE-CORE-001": {
+      "branch": "feature/ucel-decimal-code-core-001",
+      "artifacts": [
+        "ucel/crates/ucel-core/Cargo.toml",
+        "ucel/crates/ucel-core/src/lib.rs",
+        "ucel/crates/ucel-core/src/types.rs",
+        "ucel/crates/ucel-core/src/decimal/mod.rs",
+        "ucel/crates/ucel-core/src/decimal/guard.rs",
+        "ucel/crates/ucel-core/src/decimal/tick_step.rs",
+        "ucel/crates/ucel-core/src/decimal/policy.rs",
+        "ucel/crates/ucel-core/src/decimal/serde.rs",
+        "ucel/crates/ucel-core/src/value/mod.rs",
+        "ucel/crates/ucel-core/src/value/tick_step.rs",
+        "ucel/crates/ucel-core/src/value/price.rs",
+        "ucel/crates/ucel-core/src/value/qty.rs",
+        "ucel/crates/ucel-core/src/value/notional.rs",
+        "ucel/crates/ucel-core/src/order_gate/mod.rs",
+        "ucel/crates/ucel-core/src/order_gate/gate.rs",
+        "ucel/crates/ucel-core/tests/order_gate_enforcement.rs",
+        "ucel/crates/ucel-core/tests/value_class_serde.rs",
+        "docs/verification/UCEL-DECIMAL-CODE-CORE-001.md",
+        "docs/status/trace-index.json"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-DECIMAL-CODE-CORE-001.md"
+      ]
+    }
+    ,"UCEL-DECIMAL-CODE-SYMBOL-002": {
+      "branch": "feature/ucel-decimal-code-symbol-002",
+      "artifacts": [
+        "docs/status/trace-index.json",
+        "docs/verification/UCEL-DECIMAL-CODE-SYMBOL-002.md",
+        "ucel/crates/ucel-symbol-core/Cargo.toml",
+        "ucel/crates/ucel-symbol-core/src/lib.rs"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-DECIMAL-CODE-SYMBOL-002.md"
+      ]
+    }
+
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
 }
