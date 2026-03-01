@@ -1,3 +1,5 @@
+pub mod market_meta_store;
+
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -341,3 +343,5 @@ mod tests {
         assert!(matches!(events[0], SymbolEvent::ParamChanged { .. }));
     }
 }
+
+pub use market_meta_store::{MarketMetaEvent, MarketMetaRegistrySnapshot, MarketMetaStore};
