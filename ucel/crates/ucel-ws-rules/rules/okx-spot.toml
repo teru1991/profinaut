@@ -15,3 +15,21 @@ entitlement = "public_only"
 [safety_profile]
 max_streams_per_conn = 4096
 max_symbols_per_conn = 4096
+
+[stability.buckets]
+public_rps = 10.0
+private_rps = 5.0
+control_rps = 20.0
+min_gap_ms = 0
+
+[stability.rate_limit]
+max_attempts = 20
+base_cooldown_secs = 1
+max_cooldown_secs = 60
+default_penalty_ms = 500
+
+[stability.circuit_breaker]
+failure_threshold = 5
+success_threshold = 2
+cooldown_ms = 20000
+half_open_max_trials = 3
