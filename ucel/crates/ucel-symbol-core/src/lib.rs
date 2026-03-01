@@ -1,8 +1,10 @@
-use rust_decimal::Decimal;
-use rust_decimal::RoundingStrategy;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::time::SystemTime;
+use ucel_core::decimal::{
+    CoreStepSize, CoreTickSize, DecimalPolicy, DecimalPolicyError, QuantizeMode,
+};
+use ucel_core::Decimal;
 
 pub type InstrumentMeta = BTreeMap<String, serde_json::Value>;
 pub const SYMBOL_SCHEMA_VERSION: u16 = 1;
@@ -165,12 +167,51 @@ pub fn normalize_decimal(x: Decimal) -> Decimal {
     x.normalize()
 }
 
+fn policy_relaxed() -> DecimalPolicy {
+    let p = DecimalPolicy::for_observation_relaxed();
+    // symbol層は “丸め/量子化” の補助。execution gate には使わない。
+    p
+}
+
 pub fn round_price(value: Decimal, precision: u32) -> Decimal {
-    value.round_dp_with_strategy(precision, RoundingStrategy::MidpointAwayFromZero)
+    policy_relaxed()
+        .round_price(value, precision)
+        .expect("symbol-layer rounding must not fail under relaxed policy")
 }
 
 pub fn round_qty(value: Decimal, precision: u32) -> Decimal {
-    value.round_dp_with_strategy(precision, RoundingStrategy::ToZero)
+    policy_relaxed()
+        .round_qty(value, precision)
+        .expect("symbol-layer rounding must not fail under relaxed policy")
+}
+
+// Tick/Step SSOT helpers (additive API)
+pub fn validate_price_tick(price: Decimal, tick_size: Decimal) -> Result<(), DecimalPolicyError> {
+    let p = policy_relaxed();
+    p.validate_price_tick(price, CoreTickSize(tick_size))
+}
+
+pub fn validate_qty_step(qty: Decimal, step_size: Decimal) -> Result<(), DecimalPolicyError> {
+    let p = policy_relaxed();
+    p.validate_qty_step(qty, CoreStepSize(step_size))
+}
+
+pub fn quantize_price(
+    price: Decimal,
+    tick_size: Decimal,
+    mode: QuantizeMode,
+) -> Result<Decimal, DecimalPolicyError> {
+    let p = policy_relaxed();
+    p.quantize_price(price, CoreTickSize(tick_size), mode)
+}
+
+pub fn quantize_qty(
+    qty: Decimal,
+    step_size: Decimal,
+    mode: QuantizeMode,
+) -> Result<Decimal, DecimalPolicyError> {
+    let p = policy_relaxed();
+    p.quantize_qty(qty, CoreStepSize(step_size), mode)
 }
 
 pub fn format_decimal(value: Decimal) -> String {
@@ -180,7 +221,7 @@ pub fn format_decimal(value: Decimal) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rust_decimal::prelude::FromStr;
+    use std::str::FromStr;
 
     #[test]
     fn precision_helpers_work() {
@@ -197,6 +238,37 @@ mod tests {
             "1.23"
         );
         assert_eq!(format_decimal(a), "1.23");
+
+        assert!(validate_price_tick(
+            Decimal::from_str("1.23").unwrap(),
+            Decimal::from_str("0.01").unwrap()
+        )
+        .is_ok());
+        assert!(validate_qty_step(
+            Decimal::from_str("0.123").unwrap(),
+            Decimal::from_str("0.001").unwrap()
+        )
+        .is_ok());
+        assert_eq!(
+            quantize_price(
+                Decimal::from_str("1.234").unwrap(),
+                Decimal::from_str("0.01").unwrap(),
+                QuantizeMode::Floor,
+            )
+            .unwrap()
+            .to_string(),
+            "1.23"
+        );
+        assert_eq!(
+            quantize_qty(
+                Decimal::from_str("0.1239").unwrap(),
+                Decimal::from_str("0.001").unwrap(),
+                QuantizeMode::ToZero,
+            )
+            .unwrap()
+            .to_string(),
+            "0.123"
+        );
     }
 
     #[test]
