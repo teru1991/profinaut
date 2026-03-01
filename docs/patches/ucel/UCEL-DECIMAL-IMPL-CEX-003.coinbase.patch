@@ -1,0 +1,55 @@
+diff --git a/ucel/crates/ucel-cex-coinbase/src/lib.rs b/ucel/crates/ucel-cex-coinbase/src/lib.rs
+index 25d1c0a..c9a7f19 100644
+--- a/ucel/crates/ucel-cex-coinbase/src/lib.rs
++++ b/ucel/crates/ucel-cex-coinbase/src/lib.rs
+@@ -1,6 +1,7 @@
+ use bytes::Bytes;
+ use serde::{Deserialize, Serialize};
+ use std::collections::{HashSet, VecDeque};
+ use std::sync::atomic::{AtomicU64, Ordering};
+ use std::sync::Arc;
+ use tokio::sync::Mutex;
+@@ -12,6 +13,7 @@ use ucel_core::{
+     Decimal, ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side,
+     TradeEvent, UcelError,
+ };
++use ucel_core::decimal::serde::deserialize_decimal_guarded_default;
+ use ucel_transport::{enforce_auth_boundary, HttpRequest, RestRequestSpec, WsChannelSpec, WsMsg};
+ 
+ #[derive(Debug, Clone, PartialEq)]
+ pub enum MarketEvent {
+     Ticker {
+         channel_id: String,
+         symbol: String,
+-        price: f64,
++        price: Decimal,
+     },
+@@ -104,12 +106,13 @@ enum CoinbaseWsMessage {
+     #[serde(rename = "ticker")]
+     Ticker {
+         channel_id: String,
+         symbol: String,
+-        price: f64,
++        #[serde(deserialize_with = "deserialize_decimal_guarded_default")]
++        price: Decimal,
+     },
+@@ -126,10 +129,14 @@ enum CoinbaseWsMessage {
+ }
+ 
+ #[derive(Debug, Clone, Deserialize)]
+ struct TradeWire {
+     trade_id: String,
++    #[serde(deserialize_with = "deserialize_decimal_guarded_default")]
+     price: Decimal,
++    #[serde(deserialize_with = "deserialize_decimal_guarded_default")]
+     qty: Decimal,
+     side: Side,
+ }
+ 
+ #[derive(Debug, Clone, Deserialize)]
+ struct LevelWire {
++    #[serde(deserialize_with = "deserialize_decimal_guarded_default")]
+     price: Decimal,
++    #[serde(deserialize_with = "deserialize_decimal_guarded_default")]
+     qty: Decimal,
+ }
