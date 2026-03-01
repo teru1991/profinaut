@@ -15,3 +15,19 @@ entitlement = "public_only"
 [safety_profile]
 max_streams_per_conn = 256
 max_symbols_per_conn = 256
+
+[stability.buckets]
+public_rps = 10.0
+private_rps = 5.0
+control_rps = 20.0
+min_gap_ms = 0
+
+[stability.rate_limit]
+max_attempts = 20
+base_cooldown_secs = 1
+max_cooldown_secs = 60
+default_penalty_ms = 500
+
+[stability.overflow]
+mode = "slowdown_then_drop_oldest_low_priority"
+slowdown_max_wait_ms = 200
