@@ -1,0 +1,18 @@
+{
+  "markets": [
+    {
+      "id": { "exchange": "bitbank", "market_type": "spot", "raw_symbol": "BTC/JPY" },
+      "base": "BTC",
+      "quote": "JPY",
+      "tick_size": "1",
+      "step_size": "0.0001",
+      "min_qty": "0.0001",
+      "max_qty": null,
+      "min_notional": "500",
+      "price_precision": 0,
+      "qty_precision": 4,
+      "contract_size": null,
+      "meta": { "fixture": true, "venue": "bitbank" }
+    }
+  ]
+}

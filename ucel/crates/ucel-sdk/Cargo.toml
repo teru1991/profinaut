@@ -7,6 +7,9 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 ucel-core = { path = "../ucel-core" }
 ucel-registry = { path = "../ucel-registry" }
+ucel-symbol-adapter = { path = "../ucel-symbol-adapter" }
+ucel-symbol-store = { path = "../ucel-symbol-store" }
+ucel-symbol-core = { path = "../ucel-symbol-core" }
 
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
