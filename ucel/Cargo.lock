@@ -3356,9 +3356,9 @@ dependencies = [
 name = "ucel-symbol-core"
 version = "0.1.0"
 dependencies = [
- "rust_decimal",
  "serde",
  "serde_json",
+ "ucel-core",
  "uuid",
 ]
 
