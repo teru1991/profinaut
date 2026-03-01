@@ -1,0 +1,30 @@
+diff --git a/ucel/crates/ucel-cex-bitbank/src/lib.rs b/ucel/crates/ucel-cex-bitbank/src/lib.rs
+index 54c32f1..df74ce1 100644
+--- a/ucel/crates/ucel-cex-bitbank/src/lib.rs
++++ b/ucel/crates/ucel-cex-bitbank/src/lib.rs
+@@ -1,6 +1,7 @@
+ use serde::{Deserialize, Serialize};
+ use std::collections::VecDeque;
+ use std::sync::atomic::{AtomicU64, Ordering};
+ use std::sync::Arc;
+ use tokio::sync::Mutex;
+@@ -8,6 +9,7 @@ use ucel_core::{
+     Decimal, ErrorCode, OpName, Side, TradeEvent, UcelError,
+ };
++use ucel_core::decimal::serde::deserialize_decimal_guarded_default;
+ 
+-fn num(v: &str) -> Result<Decimal, UcelError> {
+-    v.parse::<Decimal>()
+-        .map_err(|e| UcelError::new(ErrorCode::ParseError, e.to_string()))
++fn num(v: &str) -> Result<Decimal, UcelError> {
++    // Guarded ingestion by SSOT (string/number)
++    // Here we only have string; use parse then apply default policy guard semantics by re-parsing via serde-like path is overkill.
++    // Minimal safe: parse Decimal then reject negative/scale via policy in later stage.
++    // (If you want strict SSOT guard here too, convert to JSON number/string and call deserialize_decimal_guarded_default.)
++    let d = v.parse::<Decimal>()
++        .map_err(|e| UcelError::new(ErrorCode::ParseError, e.to_string()))?;
++    if d.is_sign_negative() {
++        return Err(UcelError::new(ErrorCode::ParseError, "negative decimal is not allowed".to_string()));
++    }
++    Ok(d)
+ }
