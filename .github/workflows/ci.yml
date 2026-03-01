@@ -214,6 +214,6 @@ jobs:
       - name: Semver checks (ucel-core vs main)
         run: |
           set -euxo pipefail
-          cargo semver-checks check \
+          cargo semver-checks check-release \
             --manifest-path ucel/crates/ucel-core/Cargo.toml \
             --baseline-root /tmp/ucel-baseline
