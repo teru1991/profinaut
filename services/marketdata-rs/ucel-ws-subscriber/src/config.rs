@@ -57,7 +57,8 @@ impl IngestConfig {
         let connect_timeout = Duration::from_secs(env_u64("UCEL_CONNECT_TIMEOUT_SECS", 10)?);
         let idle_timeout = Duration::from_secs(env_u64("UCEL_IDLE_TIMEOUT_SECS", 30)?);
 
-        let reconnect_storm_window = Duration::from_secs(env_u64("UCEL_RECONNECT_STORM_WINDOW_SECS", 30)?);
+        let reconnect_storm_window =
+            Duration::from_secs(env_u64("UCEL_RECONNECT_STORM_WINDOW_SECS", 30)?);
         let reconnect_storm_max = env_usize("UCEL_RECONNECT_STORM_MAX", 12)?;
 
         let max_connections_per_exchange = env_usize("UCEL_MAX_CONNECTIONS_PER_EXCHANGE", 512)?;
@@ -101,29 +102,41 @@ fn env_path(key: &str, default: &str) -> PathBuf {
 }
 fn env_u64(key: &str, default: u64) -> Result<u64, String> {
     match std::env::var(key) {
-        Ok(v) => v.parse::<u64>().map_err(|e| format!("{key} parse error: {e}")),
+        Ok(v) => v
+            .parse::<u64>()
+            .map_err(|e| format!("{key} parse error: {e}")),
         Err(_) => Ok(default),
     }
 }
 fn env_usize(key: &str, default: usize) -> Result<usize, String> {
     match std::env::var(key) {
-        Ok(v) => v.parse::<usize>().map_err(|e| format!("{key} parse error: {e}")),
+        Ok(v) => v
+            .parse::<usize>()
+            .map_err(|e| format!("{key} parse error: {e}")),
         Err(_) => Ok(default),
     }
 }
 fn env_bool(key: &str, default: bool) -> bool {
     match std::env::var(key) {
-        Ok(v) => matches!(v.as_str(), "1" | "true" | "TRUE" | "yes" | "YES" | "on" | "ON"),
+        Ok(v) => matches!(
+            v.as_str(),
+            "1" | "true" | "TRUE" | "yes" | "YES" | "on" | "ON"
+        ),
         Err(_) => default,
     }
 }
 fn env_opt_csv(key: &str) -> Option<Vec<String>> {
     std::env::var(key).ok().map(|v| {
-        v.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect()
+        v.split(',')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect()
     })
 }
 fn env_fsync_mode(key: &str, default: &str) -> ucel_journal::FsyncMode {
-    let v = std::env::var(key).unwrap_or_else(|_| default.to_string()).to_lowercase();
+    let v = std::env::var(key)
+        .unwrap_or_else(|_| default.to_string())
+        .to_lowercase();
     match v.as_str() {
         "safe" | "every" | "every_record" => ucel_journal::FsyncMode::SafeEveryRecord,
         "balanced" => ucel_journal::FsyncMode::Balanced,

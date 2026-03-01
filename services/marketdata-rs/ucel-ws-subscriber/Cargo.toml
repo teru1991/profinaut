@@ -27,6 +27,11 @@ ucel-cex-binance-coinm = { path = "../../../ucel/crates/ucel-cex-binance-coinm" 
 ucel-cex-binance-options = { path = "../../../ucel/crates/ucel-cex-binance-options" }
 
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+axum = { version = "0.7" }
+parking_lot = "0.12"
+http = "1"
+tower = { version = "0.5", features = ["util"] }
 tracing = "0.1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "time"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
