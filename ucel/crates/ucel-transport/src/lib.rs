@@ -2,6 +2,11 @@ pub mod http;
 pub mod stability;
 pub mod ws;
 
+pub mod health;
+pub mod obs;
+
+pub mod diagnostics;
+
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
