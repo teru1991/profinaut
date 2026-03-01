@@ -16,6 +16,7 @@ Rule: ここは手順（可変）。固定仕様（Core）は docs/specs/** に�
 
 ## 2. ドメイン別Runbook（カテゴリ索引）
 ### 2.1 Safety / Execution
+- docs/runbooks/ucel_decimal_policy_verification.md
 - docs/runbooks/ucel_decimal_policy_incidents.md
 - docs/runbooks/safety_operations.md
 - docs/runbooks/execution_failures_playbook.md

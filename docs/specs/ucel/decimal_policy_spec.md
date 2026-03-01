@@ -139,3 +139,4 @@ Decimal Policy を docs に固定し、実装とテストを同じSSOTに追随�
 ## 12. 入口リンク（運用SSOT）
 - OrderGate Spec: docs/specs/ucel/order_gate_spec.md
 - Incident Runbook: docs/runbooks/ucel_decimal_policy_incidents.md
+- Verification Runbook: docs/runbooks/ucel_decimal_policy_verification.md

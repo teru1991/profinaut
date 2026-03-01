@@ -107,3 +107,4 @@ SSOTと矛盾する場合は **必ずSSOT側が正** です。
 - UCEL Decimal Policy Spec (SSOT): docs/specs/ucel/decimal_policy_spec.md
 - UCEL OrderGate Spec (SSOT): docs/specs/ucel/order_gate_spec.md
 - UCEL Decimal Policy Incident Runbook: docs/runbooks/ucel_decimal_policy_incidents.md
+- UCEL Decimal Policy Verification Runbook: docs/runbooks/ucel_decimal_policy_verification.md
