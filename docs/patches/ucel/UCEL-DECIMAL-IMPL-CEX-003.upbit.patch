@@ -1,0 +1,78 @@
+diff --git a/ucel/crates/ucel-cex-upbit/src/lib.rs b/ucel/crates/ucel-cex-upbit/src/lib.rs
+index 0f1f0a3..b7a07a2 100644
+--- a/ucel/crates/ucel-cex-upbit/src/lib.rs
++++ b/ucel/crates/ucel-cex-upbit/src/lib.rs
+@@ -1,6 +1,7 @@
+ use serde::{Deserialize, Serialize};
+ use std::collections::VecDeque;
+ use std::sync::atomic::{AtomicU64, Ordering};
+ use std::sync::Arc;
+ use tokio::sync::Mutex;
+@@ -8,6 +9,7 @@ use ucel_core::{
+     Decimal, ErrorCode, OpName, Side, TradeEvent, UcelError,
+ };
++use ucel_core::decimal::serde::deserialize_decimal_guarded_default;
+ use ucel_transport::{WsChannelSpec, WsMsg};
+ 
+@@ -58,26 +60,26 @@ pub enum MarketEvent {
+     Ticker {
+         code: String,
+-        trade_price: f64,
++        trade_price: Decimal,
+     },
+     Trade {
+         code: String,
+-        trade_price: f64,
+-        trade_volume: f64,
++        trade_price: Decimal,
++        trade_volume: Decimal,
+     },
+     Orderbook {
+         code: String,
+-        total_ask_size: Option<f64>,
+-        total_bid_size: Option<f64>,
++        total_ask_size: Option<Decimal>,
++        total_bid_size: Option<Decimal>,
+     },
+     Candle {
+         code: String,
+-        trade_price: f64,
++        trade_price: Decimal,
+     },
+@@ -95,18 +97,22 @@ enum UpbitMessage {
+     #[serde(rename = "ticker")]
+-    Ticker { code: String, trade_price: f64 },
++    Ticker {
++        code: String,
++        #[serde(deserialize_with = "deserialize_decimal_guarded_default")]
++        trade_price: Decimal
++    },
+     #[serde(rename = "trade")]
+     Trade {
+         code: String,
+-        trade_price: f64,
+-        trade_volume: f64,
++        #[serde(deserialize_with = "deserialize_decimal_guarded_default")]
++        trade_price: Decimal,
++        #[serde(deserialize_with = "deserialize_decimal_guarded_default")]
++        trade_volume: Decimal,
+     },
+     #[serde(rename = "orderbook")]
+     Orderbook {
+         code: String,
+-        total_ask_size: Option<f64>,
+-        total_bid_size: Option<f64>,
++        #[serde(default)]
++        total_ask_size: Option<Decimal>,
++        #[serde(default)]
++        total_bid_size: Option<Decimal>,
+         #[serde(rename = "timestamp")]
+         _timestamp: Option<u64>,
+     },
+     #[serde(rename = "candle")]
+-    Candle { code: String, trade_price: f64 },
++    Candle {
++        code: String,
++        #[serde(deserialize_with = "deserialize_decimal_guarded_default")]
++        trade_price: Decimal
++    },

@@ -1,0 +1,59 @@
+diff --git a/ucel/crates/ucel-cex-htx/src/lib.rs b/ucel/crates/ucel-cex-htx/src/lib.rs
+index 6a1f5aa..1e7b9e2 100644
+--- a/ucel/crates/ucel-cex-htx/src/lib.rs
++++ b/ucel/crates/ucel-cex-htx/src/lib.rs
+@@ -1,6 +1,7 @@
+ use flate2::read::GzDecoder;
+ use serde::{Deserialize, Serialize};
+ use std::collections::{HashSet, VecDeque};
+ use std::io::Read;
+ use std::sync::atomic::{AtomicU64, Ordering};
+ use std::sync::Arc;
+@@ -8,6 +9,7 @@ use ucel_core::{
+     Decimal, ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side,
+     TradeEvent, UcelError,
+ };
++use ucel_core::decimal::serde::deserialize_decimal_guarded_default;
+ use ucel_transport::{WsChannelSpec, WsMsg};
+ 
++#[derive(Debug, Clone, Copy, Deserialize)]
++struct GDecimal(#[serde(deserialize_with = "deserialize_decimal_guarded_default")] Decimal);
++impl From<GDecimal> for Decimal { fn from(v: GDecimal) -> Self { v.0 } }
++
+@@ -297,14 +304,14 @@ struct SpotTick {
+     #[serde(default)]
+-    bids: Vec<(Decimal, Decimal)>,
++    bids: Vec<(GDecimal, GDecimal)>,
+     #[serde(default)]
+-    asks: Vec<(Decimal, Decimal)>,
+-    price: Option<Decimal>,
+-    amount: Option<Decimal>,
++    asks: Vec<(GDecimal, GDecimal)>,
++    price: Option<GDecimal>,
++    amount: Option<GDecimal>,
+     direction: Option<Side>,
+ }
+@@ -496,8 +503,8 @@ impl HtxWsAdapter {
+             if tick.price.is_some() {
+                 return Ok(MarketEvent::Trade(TradeEvent {
+@@ -504,8 +511,8 @@ impl HtxWsAdapter {
+                     ),
+-                    price: tick.price.unwrap_or_default(),
+-                    qty: tick.amount.unwrap_or_default(),
++                    price: tick.price.map(|x| x.0).unwrap_or_default(),
++                    qty: tick.amount.map(|x| x.0).unwrap_or_default(),
+                     side: tick.direction.unwrap_or(Side::Unknown),
+                 }));
+             }
+             let bids = tick
+                 .bids
+                 .into_iter()
+-                .map(|(price, qty)| OrderBookLevel { price, qty })
++                .map(|(price, qty)| OrderBookLevel { price: price.0, qty: qty.0 })
+                 .collect::<Vec<_>>();
+             let asks = tick
+                 .asks
+                 .into_iter()
+-                .map(|(price, qty)| OrderBookLevel { price, qty })
++                .map(|(price, qty)| OrderBookLevel { price: price.0, qty: qty.0 })
+                 .collect::<Vec<_>>();

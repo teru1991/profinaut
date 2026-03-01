@@ -1,0 +1,44 @@
+diff --git a/ucel/crates/ucel-cex-binance-options/src/lib.rs b/ucel/crates/ucel-cex-binance-options/src/lib.rs
+index 1c3a9ab..6b0fe4e 100644
+--- a/ucel/crates/ucel-cex-binance-options/src/lib.rs
++++ b/ucel/crates/ucel-cex-binance-options/src/lib.rs
+@@ -1,6 +1,7 @@
+ use serde::{Deserialize, Serialize};
+ use std::collections::VecDeque;
+ use std::sync::atomic::{AtomicU64, Ordering};
+ use std::sync::Arc;
+ use tokio::sync::Mutex;
+@@ -8,6 +9,7 @@ use ucel_core::{
+     Decimal, ErrorCode, OpName, Side, TradeEvent, UcelError,
+ };
++use ucel_core::decimal::serde::deserialize_decimal_guarded_default;
+ use ucel_transport::{WsChannelSpec, WsMsg};
+ 
+@@ -229,20 +230,26 @@ struct TickerWire {
+     symbol: String,
+-    price: f64,
+-    last_price: f64,
+-    close: f64,
+-    mark_price: f64,
+-    index_price: f64,
++    #[serde(deserialize_with = "deserialize_decimal_guarded_default")]
++    price: Decimal,
++    #[serde(deserialize_with = "deserialize_decimal_guarded_default")]
++    last_price: Decimal,
++    #[serde(deserialize_with = "deserialize_decimal_guarded_default")]
++    close: Decimal,
++    #[serde(deserialize_with = "deserialize_decimal_guarded_default")]
++    mark_price: Decimal,
++    #[serde(deserialize_with = "deserialize_decimal_guarded_default")]
++    index_price: Decimal,
+ }
+@@ -542,12 +549,12 @@ fn parse_num(v: &str) -> Result<f64, UcelError> {
+-    v.parse::<f64>()
+-        .map_err(|e| UcelError::new(ErrorCode::ParseError, e.to_string()))
++fn parse_num(v: &str) -> Result<Decimal, UcelError> {
++    v.parse::<Decimal>()
++        .map_err(|e| UcelError::new(ErrorCode::ParseError, e.to_string()))
+ }
+
+NOTE: このpatchにより parse_num() の戻り型が Decimal に変わるため、同ファイル内で parse_num() を受けている箇所は（コンパイルエラーが出た行を起点に）Decimalへ伝播させる。
+反映工程では cargo test -p ucel-cex-binance-options を必ず回し、エラー箇所を Decimal 化する（ここが “迷い” になりがちなので、次タスク（反映タスク）で自動修正の順序を固定する）。
