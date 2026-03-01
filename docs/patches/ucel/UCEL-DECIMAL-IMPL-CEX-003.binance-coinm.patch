@@ -1,0 +1,29 @@
+diff --git a/ucel/crates/ucel-cex-binance-coinm/src/lib.rs b/ucel/crates/ucel-cex-binance-coinm/src/lib.rs
+index 5a9c9c1..0f8c2d4 100644
+--- a/ucel/crates/ucel-cex-binance-coinm/src/lib.rs
++++ b/ucel/crates/ucel-cex-binance-coinm/src/lib.rs
+@@ -1,6 +1,7 @@
+ use serde::{Deserialize, Serialize};
+ use std::collections::VecDeque;
+ use std::sync::atomic::{AtomicU64, Ordering};
+ use std::sync::Arc;
+ use tokio::sync::Mutex;
+@@ -8,6 +9,7 @@ use ucel_core::{
+     Decimal, ErrorCode, OpName, Side, TradeEvent, UcelError,
+ };
++use ucel_core::decimal::serde::deserialize_decimal_guarded_default;
+ 
+@@ -739,7 +740,14 @@ fn parse_decimal(raw: &str) -> Result<Decimal, UcelError> {
+-    raw.parse::<Decimal>()
+-        .map_err(|e| UcelError::new(ErrorCode::ParseError, e.to_string()))
++    let d = raw
++        .parse::<Decimal>()
++        .map_err(|e| UcelError::new(ErrorCode::ParseError, e.to_string()))?;
++    if d.is_sign_negative() {
++        return Err(UcelError::new(
++            ErrorCode::ParseError,
++            "negative decimal is not allowed".to_string(),
++        ));
++    }
++    Ok(d)
+ }
