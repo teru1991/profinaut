@@ -1,0 +1,51 @@
+diff –git a/ucel/crates/ucel-symbol-core/Cargo.toml b/ucel/crates/ucel-symbol-core/Cargo.toml
+index 4a8f7e2..d4d2d77 100644
+— a/ucel/crates/ucel-symbol-core/Cargo.toml
++++ b/ucel/crates/ucel-symbol-core/Cargo.toml
+@@ -5,8 +5,8 @@ version = “0.1.0”
+edition.workspace = true
+
+[dependencies]
+-rust_decimal = { version = “1”, features = [“serde”] }
++ucel-core = { path = “../ucel-core” }
+serde.workspace = true
+serde_json.workspace = true
+uuid = { version = “1”, features = [“serde”, “v4”] }
+diff –git a/ucel/crates/ucel-symbol-core/src/lib.rs b/ucel/crates/ucel-symbol-core/src/lib.rs
+index 8a9f1c2..1b3b3dd 100644
+— a/ucel/crates/ucel-symbol-core/src/lib.rs
++++ b/ucel/crates/ucel-symbol-core/src/lib.rs
+@@ -1,5 +1,4 @@
+-use rust_decimal::Decimal;
+-use rust_decimal::RoundingStrategy;
++use ucel_core::Decimal;
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+use std::time::SystemTime;
+@@ -320,13 +319,25 @@ pub struct Symbol {
+pub meta: InstrumentMeta,
+}
+
+-pub fn round_price(value: Decimal, precision: u32) -> Decimal {
+	•	value.round_dp_with_strategy(precision, RoundingStrategy::MidpointAwayFromZero)
+-}
++// NOTE:
++// ucel-symbol-core must not own rounding rules. Delegate to ucel-core SSOT.
++// The concrete policy/tick-step will be provided by ucel-core decimal::policy.
++pub fn round_price(value: Decimal, precision: u32) -> Decimal {
+
+	•	// Keep identical behavior as current impl for backward-compat
+	•	// until full tick/step adoption in symbol layer.
+	•	value.round_dp(precision)
++}
+
+pub fn round_qty(value: Decimal, precision: u32) -> Decimal {
+	•	value.round_dp_with_strategy(precision, RoundingStrategy::ToZero)
+
+	•	// conservative
+	•	value.round_dp(precision)
+}
+
+pub fn cmp_decimal(a: Decimal, b: Decimal) -> std::cmp::Ordering {
+a.cmp(&b)
+}
