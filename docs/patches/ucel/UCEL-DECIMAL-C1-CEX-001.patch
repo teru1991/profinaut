@@ -1,0 +1,137 @@
+diff –git a/ucel/crates/ucel-cex-coinbase/src/lib.rs b/ucel/crates/ucel-cex-coinbase/src/lib.rs
+index 8f7a2aa..1a2b9f1 100644
+— a/ucel/crates/ucel-cex-coinbase/src/lib.rs
++++ b/ucel/crates/ucel-cex-coinbase/src/lib.rs
+@@ -1,6 +1,7 @@
+use bytes::Bytes;
+use serde::{Deserialize, Serialize};
++use serde::de::Error as _;
+use std::collections::{HashSet, VecDeque};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
+@@ -16,6 +17,29 @@ use ucel_transport::{enforce_auth_boundary, HttpRequest, R
+TradeEvent, UcelError,
+};
+
++// Local guarded decimal deserializer (temporary).
++// Final state: use ucel_core::decimal::serde::* SSOT once available.
++fn de_decimal<’de, D>(deserializer: D) -> Result<Decimal, D::Error>
++where
++	•	D: serde::Deserializer<’de>,
++{
++	•	#[derive(Deserialize)]
++	•	#[serde(untagged)]
++	•	enum AnyNum {
++	•	
++
+   Str(String),
++
++
++	•	
++
+   Num(serde_json::Number),
++
++
++	•	}
++	•	let v = AnyNum::deserialize(deserializer)?;
++	•	let s = match v {
++	•	
++
+   AnyNum::Str(s) => s,
++
++
++	•	
++
+   AnyNum::Num(n) => n.to_string(),
++
++
++	•	};
++	•	let d = s.parse::().map_err(D::Error::custom)?;
++	•	if d.is_sign_negative() {
++	•	
++
+   return Err(D::Error::custom("negative decimal is not allowed"));
++
++
++	•	}
++	•	Ok(d)
++}
++	•	
++
+ #[derive(Debug, Clone, PartialEq)]
+pub enum MarketEvent {
+Ticker {
+channel_id: String,
+symbol: String,
++	•	
++
+   price: f64,
++
++
++
++	•	
++
+   price: Decimal,
++
+},
+Trades {
+channel_id: String,
+@@ -44,11 +68,12 @@ enum CoinbaseWsMessage {
+#[serde(rename = “ticker”)]
+Ticker {
+channel_id: String,
+symbol: String,
++
++	•	
++
+   price: f64,
++
++
++
++	•	
++
+   #[serde(deserialize_with = "de_decimal")]
++
++	•	
++
+   price: Decimal,
++
+},
+diff –git a/ucel/crates/ucel-cex-binance-options/src/lib.rs b/ucel/crates/ucel-cex-binance-options/src/lib.rs
+index 5e7b19d..e41c3cd 100644
+— a/ucel/crates/ucel-cex-binance-options/src/lib.rs
++++ b/ucel/crates/ucel-cex-binance-options/src/lib.rs
+@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
++use serde::de::Error as _;
+use std::collections::VecDeque;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
+@@ -10,6 +11,28 @@ use ucel_core::{
+Decimal, ErrorCode, OpName, Side, TradeEvent, UcelError,
+};
+
++fn de_decimal<’de, D>(deserializer: D) -> Result<Decimal, D::Error>
++where
++	•	D: serde::Deserializer<’de>,
++{
++	•	#[derive(Deserialize)]
++	•	#[serde(untagged)]
++	•	enum AnyNum { Str(String), Num(serde_json::Number) }
++	•	let v = AnyNum::deserialize(deserializer)?;
++	•	let s = match v { AnyNum::Str(s) => s, AnyNum::Num(n) => n.to_string() };
++	•	let d = s.parse::().map_err(D::Error::custom)?;
++	•	if d.is_sign_negative() { return Err(D::Error::custom(“negative decimal is not allowed”)); }
++	•	Ok(d)
++}
++	•	
++
+@@ -120,9 +150,9 @@ struct SomeWire {
++	•	pub price: f64,
++	•	pub mark_price: f64,
++	•	pub index_price: f64,
++
++	•	#[serde(deserialize_with = “de_decimal”)] pub price: Decimal,
++	•	#[serde(deserialize_with = “de_decimal”)] pub mark_price: Decimal,
++	•	#[serde(deserialize_with = “de_decimal”)] pub index_price: Decimal,
+}

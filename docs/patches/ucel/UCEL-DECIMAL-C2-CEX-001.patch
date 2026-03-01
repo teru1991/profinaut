@@ -1,0 +1,49 @@
+diff –git a/ucel/crates/ucel-cex-bitbank/src/lib.rs b/ucel/crates/ucel-cex-bitbank/src/lib.rs
+index 0c1a9a1..c3df2b0 100644
+— a/ucel/crates/ucel-cex-bitbank/src/lib.rs
++++ b/ucel/crates/ucel-cex-bitbank/src/lib.rs
+@@ -1,3 +1,4 @@
++use serde::de::Error as _;
+use serde::{Deserialize, Serialize};
+use ucel_core::Decimal;
+
++fn parse_decimal_guarded(s: &str) -> Result<Decimal, String> {
+	•	let d = s.parse::().map_err(|e| format!(“invalid decimal {s}: {e}”))?;
+	•	if d.is_sign_negative() {
+	•	
+
+   return Err(format!("negative decimal not allowed: {s}"));
+
+
+	•	}
+	•	Ok(d)
++}
+	•	
+
+fn num(v: &str) -> Decimal {
+	•	v.parse::().unwrap()
+
+	•	parse_decimal_guarded(v).unwrap()
+}
+diff –git a/ucel/crates/ucel-cex-htx/src/lib.rs b/ucel/crates/ucel-cex-htx/src/lib.rs
+index 91b2b77..0c8b6a1 100644
+— a/ucel/crates/ucel-cex-htx/src/lib.rs
++++ b/ucel/crates/ucel-cex-htx/src/lib.rs
+@@ -1,3 +1,4 @@
++use serde::de::Error as _;
+use serde::{Deserialize, Serialize};
+use ucel_core::Decimal;
+
++fn de_decimal<’de, D>(deserializer: D) -> Result<Decimal, D::Error>
++where
++	•	D: serde::Deserializer<’de>,
++{
++	•	#[derive(Deserialize)]
++	•	#[serde(untagged)]
++	•	enum AnyNum { Str(String), Num(serde_json::Number) }
++	•	let v = AnyNum::deserialize(deserializer)?;
++	•	let s = match v { AnyNum::Str(s) => s, AnyNum::Num(n) => n.to_string() };
++	•	let d = s.parse::().map_err(D::Error::custom)?;
++	•	if d.is_sign_negative() { return Err(D::Error::custom(“negative decimal is not allowed”)); }
++	•	Ok(d)
++}

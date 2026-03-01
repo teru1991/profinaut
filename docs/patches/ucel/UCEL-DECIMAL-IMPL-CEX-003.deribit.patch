@@ -1,0 +1,86 @@
+diff --git a/ucel/crates/ucel-cex-deribit/src/lib.rs b/ucel/crates/ucel-cex-deribit/src/lib.rs
+index 2c0e3f0..55a4b84 100644
+--- a/ucel/crates/ucel-cex-deribit/src/lib.rs
++++ b/ucel/crates/ucel-cex-deribit/src/lib.rs
+@@ -1,6 +1,8 @@
+ use serde::{Deserialize, Serialize};
+ use std::collections::VecDeque;
+ use std::sync::atomic::{AtomicU64, Ordering};
+ use std::sync::Arc;
+ use tokio::sync::Mutex;
+@@ -8,6 +10,8 @@ use ucel_core::{
+     Decimal, ErrorCode, OpName, Side, TradeEvent, UcelError,
+ };
++use ucel_core::decimal::serde::deserialize_decimal_guarded_default;
++use serde::de::Error as _;
+ 
++// Guarded wrapper for nested arrays (e.g., orderbook levels).
++#[derive(Debug, Clone, Copy, Deserialize)]
++struct GDecimal(#[serde(deserialize_with = "deserialize_decimal_guarded_default")] Decimal);
++impl From<GDecimal> for Decimal { fn from(v: GDecimal) -> Self { v.0 } }
++
+@@ -210,11 +214,11 @@ pub struct PrivateOrderParams {
+     pub instrument_name: String,
+-    pub amount: f64,
++    pub amount: Decimal,
+     #[serde(rename = "type")]
+     pub order_type: String,
+-    pub price: Option<f64>,
++    pub price: Option<Decimal>,
+ }
+@@ -262,7 +266,8 @@ pub struct DeribitInstrument {
+     pub base_currency: String,
+     pub quote_currency: String,
+     pub settlement_currency: String,
+-    pub tick_size: f64,
++    #[serde(deserialize_with = "deserialize_decimal_guarded_default")]
++    pub tick_size: Decimal,
+ }
+@@ -270,11 +275,15 @@ pub struct DeribitTicker {
+     pub instrument_name: String,
+     pub timestamp: i64,
+-    pub last_price: Option<f64>,
+-    pub best_bid_price: Option<f64>,
+-    pub best_ask_price: Option<f64>,
+-    pub mark_price: Option<f64>,
++    #[serde(default)]
++    pub last_price: Option<Decimal>,
++    #[serde(default)]
++    pub best_bid_price: Option<Decimal>,
++    #[serde(default)]
++    pub best_ask_price: Option<Decimal>,
++    #[serde(default)]
++    pub mark_price: Option<Decimal>,
+ }
+@@ -284,8 +293,8 @@ pub struct DeribitOrderBook {
+     pub timestamp: i64,
+     pub instrument_name: String,
+-    pub bids: Vec<[f64; 2]>,
+-    pub asks: Vec<[f64; 2]>,
++    pub bids: Vec<[GDecimal; 2]>,
++    pub asks: Vec<[GDecimal; 2]>,
+ }
+@@ -295,12 +304,12 @@ pub struct DeribitChartData {
+     pub ticks: Vec<i64>,
+-    pub open: Vec<f64>,
+-    pub high: Vec<f64>,
+-    pub low: Vec<f64>,
+-    pub close: Vec<f64>,
+-    pub volume: Vec<f64>,
++    pub open: Vec<Decimal>,
++    pub high: Vec<Decimal>,
++    pub low: Vec<Decimal>,
++    pub close: Vec<Decimal>,
++    pub volume: Vec<Decimal>,
+ }
+@@ -324,8 +333,10 @@ pub struct DeribitAccountSummary {
+     pub currency: String,
+-    pub balance: Option<f64>,
+-    pub available_funds: Option<f64>,
++    #[serde(default)]
++    pub balance: Option<Decimal>,
++    #[serde(default)]
++    pub available_funds: Option<Decimal>,
+ }
+
+NOTE: Deribit の orderbook bids/asks は [GDecimal;2] へ変更したため、既存の変換処理で Decimal が必要な箇所は .into() で変換する（反映工程でコンパイルエラー箇所を機械的に修正できる）。

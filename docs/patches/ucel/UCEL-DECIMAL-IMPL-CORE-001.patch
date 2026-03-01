@@ -1,0 +1,845 @@
+diff –git a/ucel/crates/ucel-core/Cargo.toml b/ucel/crates/ucel-core/Cargo.toml
+index 0a1884a..4e0d8a1 100644
+— a/ucel/crates/ucel-core/Cargo.toml
++++ b/ucel/crates/ucel-core/Cargo.toml
+@@ -6,10 +6,11 @@ edition = “2021”
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+rust_decimal = { workspace = true }
+semver = { workspace = true }
++serde_json = { workspace = true }
+
+[dev-dependencies]
+-serde_json = { workspace = true }
++serde_json = { workspace = true }
+diff –git a/ucel/crates/ucel-core/src/lib.rs b/ucel/crates/ucel-core/src/lib.rs
+index 5c48f7e..a0a0d89 100644
+— a/ucel/crates/ucel-core/src/lib.rs
++++ b/ucel/crates/ucel-core/src/lib.rs
+@@ -1,8 +1,15 @@
++pub mod decimal;
+pub mod symbol;
+pub mod types;
++pub mod value;
+use serde::{Deserialize, Serialize};
+use std::fmt;
+use thiserror::Error;
+pub use types::{Decimal, OrderStatus, OrderType, SchemaVersion, Side};
++pub use value::{Notional, Price, Qty, StepSize, TickSize};
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Envelope {
+@@ -84,16 +91,16 @@ pub struct OrderBookDelta {
+pub struct FillEvent {
+pub order_id: String,
+pub fill_id: String,
+	•	pub price: f64,
+	•	pub qty: f64,
+
+	•	pub price: Decimal,
+	•	pub qty: Decimal,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Balance {
+pub asset: String,
+	•	pub free: f64,
+	•	pub locked: f64,
+
+	•	pub free: Decimal,
+	•	pub locked: Decimal,
+}
+
+pub type Balances = Vec;
+diff –git a/ucel/crates/ucel-core/src/types.rs b/ucel/crates/ucel-core/src/types.rs
+index 4f588c1..a7c3f0b 100644
+— a/ucel/crates/ucel-core/src/types.rs
++++ b/ucel/crates/ucel-core/src/types.rs
+@@ -3,10 +3,14 @@ use semver::Version;
+use serde::{Deserialize, Serialize};
+use std::str::FromStr;
+
+/// Canonical numeric type for price/qty/money.
+/// rust_decimal’s serde-with-float feature enables decoding JSON floats while preserving Decimal internally.
+pub type Decimal = RustDecimal;
++
++// NOTE:
++// Decimal “type” alone is not sufficient to prevent order/accounting accidents.
++// UCEL fixes rounding/tick-step/guard rules under ucel-core::decimal (SSOT).
+
+/// Schema version stored as SemVer.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SchemaVersion(pub Version);
+diff –git a/ucel/crates/ucel-core/src/decimal/mod.rs b/ucel/crates/ucel-core/src/decimal/mod.rs
+new file mode 100644
+index 0000000..8a5e7c6
+— /dev/null
++++ b/ucel/crates/ucel-core/src/decimal/mod.rs
+@@ -0,0 +1,13 @@
++//! UCEL Decimal policy SSOT.
++//! Centralizes rounding/comparison assumptions/tick-step/guard rules.
++
++pub mod guard;
++pub mod policy;
++pub mod serde;
++pub mod tick_step;
++
++pub use guard::{DecimalGuard, DecimalGuardError};
++pub use policy::{DecimalPolicy, DecimalPolicyError};
++pub use tick_step::{QuantizeMode, StepSize as CoreStepSize, TickSize as CoreTickSize, TickStepError};
+diff –git a/ucel/crates/ucel-core/src/decimal/guard.rs b/ucel/crates/ucel-core/src/decimal/guard.rs
+new file mode 100644
+index 0000000..6c7a24c
+— /dev/null
++++ b/ucel/crates/ucel-core/src/decimal/guard.rs
+@@ -0,0 +1,62 @@
++use rust_decimal::Decimal;
++
++#[derive(Debug, Clone)]
++pub struct DecimalGuard {
+	•	pub max_scale: u32,
+	•	pub max_abs: Option,
+	•	pub allow_negative: bool,
+	•	pub allow_zero: bool,
++}
+	•	
+
++impl DecimalGuard {
+	•	pub fn validate(&self, v: Decimal) -> Result<Decimal, DecimalGuardError> {
+	•	
+
+   if !self.allow_negative && v.is_sign_negative() {
+
+
+	•	
+
+       return Err(DecimalGuardError::NegativeNotAllowed { value: v });
+
+
+	•	
+
+   }
+
+
+	•	
+
+   if !self.allow_zero && v.is_zero() {
+
+
+	•	
+
+       return Err(DecimalGuardError::ZeroNotAllowed);
+
+
+	•	
+
+   }
+
+
+	•	
+
+   let scale = v.scale();
+
+
+	•	
+
+   if scale > self.max_scale {
+
+
+	•	
+
+       return Err(DecimalGuardError::ScaleExceeded {
+
+
+	•	
+
+           scale,
+
+
+	•	
+
+           max_scale: self.max_scale,
+
+
+	•	
+
+       });
+
+
+	•	
+
+   }
+
+
+	•	
+
+   if let Some(max_abs) = self.max_abs {
+
+
+	•	
+
+       if v.abs() > max_abs {
+
+
+	•	
+
+           return Err(DecimalGuardError::MagnitudeExceeded { value: v, max_abs });
+
+
+	•	
+
+       }
+
+
+	•	
+
+   }
+
+
+	•	
+
+   Ok(v)
+
+
+	•	}
++}
+	•	
+
++#[derive(Debug, thiserror::Error)]
++pub enum DecimalGuardError {
+	•	#[error(“negative decimal is not allowed: {value}”)]
+	•	NegativeNotAllowed { value: Decimal },
+	•	#[error(“zero is not allowed”)]
+	•	ZeroNotAllowed,
+	•	#[error(“scale exceeded: scale={scale}, max_scale={max_scale}”)]
+	•	ScaleExceeded { scale: u32, max_scale: u32 },
+	•	#[error(“magnitude exceeded: value={value}, max_abs={max_abs}”)]
+	•	MagnitudeExceeded { value: Decimal, max_abs: Decimal },
++}
+diff –git a/ucel/crates/ucel-core/src/decimal/tick_step.rs b/ucel/crates/ucel-core/src/decimal/tick_step.rs
+new file mode 100644
+index 0000000..c7ffb6a
+— /dev/null
++++ b/ucel/crates/ucel-core/src/decimal/tick_step.rs
+@@ -0,0 +1,113 @@
++use rust_decimal::Decimal;
+	•	
+
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub enum QuantizeMode {
+	•	Floor,
+	•	Ceil,
+	•	Nearest,
+	•	ToZero,
++}
+	•	
+
++#[derive(Debug, Clone, Copy)]
++pub struct TickSize(pub Decimal);
++
++#[derive(Debug, Clone, Copy)]
++pub struct StepSize(pub Decimal);
++
++impl TickSize {
+	•	pub fn validate(&self, v: Decimal) -> Result<(), TickStepError> {
+	•	
+
+   validate_multiple(v, self.0, "tick")
+
+
+	•	}
+	•	pub fn quantize(&self, v: Decimal, mode: QuantizeMode) -> Result<Decimal, TickStepError> {
+	•	
+
+   quantize_multiple(v, self.0, mode, "tick")
+
+
+	•	}
++}
+	•	
+
++impl StepSize {
+	•	pub fn validate(&self, v: Decimal) -> Result<(), TickStepError> {
+	•	
+
+   validate_multiple(v, self.0, "step")
+
+
+	•	}
+	•	pub fn quantize(&self, v: Decimal, mode: QuantizeMode) -> Result<Decimal, TickStepError> {
+	•	
+
+   quantize_multiple(v, self.0, mode, "step")
+
+
+	•	}
++}
+	•	
+
++fn validate_multiple(v: Decimal, unit: Decimal, kind: &’static str) -> Result<(), TickStepError> {
+	•	if unit <= Decimal::ZERO {
+	•	
+
+   return Err(TickStepError::UnitInvalid { kind });
+
+
+	•	}
+	•	let q = v / unit;
+	•	if !q.fract().is_zero() {
+	•	
+
+   return Err(TickStepError::NotAMultiple { kind, value: v, unit });
+
+
+	•	}
+	•	Ok(())
++}
+	•	
+
++fn quantize_multiple(
+	•	v: Decimal,
+	•	unit: Decimal,
+	•	mode: QuantizeMode,
+	•	kind: &’static str,
++) -> Result<Decimal, TickStepError> {
+	•	if unit <= Decimal::ZERO {
+	•	
+
+   return Err(TickStepError::UnitInvalid { kind });
+
+
+	•	}
+	•	let q = v / unit;
+	•	let q2 = match mode {
+	•	
+
+   QuantizeMode::Floor => q.floor(),
+
+
+	•	
+
+   QuantizeMode::Ceil => q.ceil(),
+
+
+	•	
+
+   QuantizeMode::ToZero => q.trunc(),
+
+
+	•	
+
+   QuantizeMode::Nearest => {
+
+
+	•	
+
+       let frac = q.fract().abs();
+
+
+	•	
+
+       if frac == Decimal::new(5, 1) {
+
+
+	•	
+
+           if q.is_sign_negative() { q.floor() } else { q.ceil() }
+
+
+	•	
+
+       } else {
+
+
+	•	
+
+           q.round()
+
+
+	•	
+
+       }
+
+
+	•	
+
+   }
+
+
+	•	};
+	•	Ok(q2 * unit)
++}
+	•	
+
++#[derive(Debug, thiserror::Error)]
++pub enum TickStepError {
+	•	#[error(”{kind} unit is invalid (must be > 0)”)]
+	•	UnitInvalid { kind: &’static str },
+	•	#[error(”{kind} violation: value={value} is not a multiple of unit={unit}”)]
+	•	NotAMultiple { kind: &’static str, value: Decimal, unit: Decimal },
++}
+diff –git a/ucel/crates/ucel-core/src/decimal/policy.rs b/ucel/crates/ucel-core/src/decimal/policy.rs
+new file mode 100644
+index 0000000..1d98e6f
+— /dev/null
++++ b/ucel/crates/ucel-core/src/decimal/policy.rs
+@@ -0,0 +1,102 @@
++use rust_decimal::Decimal;
++use rust_decimal::RoundingStrategy;
+	•	
+
++use super::guard::{DecimalGuard, DecimalGuardError};
++use super::tick_step::{QuantizeMode, StepSize, TickSize, TickStepError};
++
++#[derive(Debug, Clone)]
++pub struct DecimalPolicy {
+	•	pub max_scale: u32,
+	•	pub max_abs: Option,
+	•	pub price_rounding: RoundingStrategy,
+	•	pub qty_rounding: RoundingStrategy,
+	•	pub allow_negative: bool,
+	•	pub allow_zero: bool,
++}
+	•	
+
++impl Default for DecimalPolicy {
+	•	fn default() -> Self {
+	•	
+
+   Self {
+
+
+	•	
+
+       max_scale: 18,
+
+
+	•	
+
+       max_abs: None,
+
+
+	•	
+
+       // "round half up" equivalent
+
+
+	•	
+
+       price_rounding: RoundingStrategy::MidpointAwayFromZero,
+
+
+	•	
+
+       // conservative
+
+
+	•	
+
+       qty_rounding: RoundingStrategy::ToZero,
+
+
+	•	
+
+       allow_negative: false,
+
+
+	•	
+
+       allow_zero: false,
+
+
+	•	
+
+   }
+
+
+	•	}
++}
+	•	
+
++impl DecimalPolicy {
+	•	pub fn guard(&self) -> DecimalGuard {
+	•	
+
+   DecimalGuard {
+
+
+	•	
+
+       max_scale: self.max_scale,
+
+
+	•	
+
+       max_abs: self.max_abs,
+
+
+	•	
+
+       allow_negative: self.allow_negative,
+
+
+	•	
+
+       allow_zero: self.allow_zero,
+
+
+	•	
+
+   }
+
+
+	•	}
+	•	
+	•	pub fn round_price(&self, v: Decimal, scale: u32) -> Result<Decimal, DecimalGuardError> {
+	•	
+
+   let v = self.guard().validate(v)?;
+
+
+	•	
+
+   Ok(v.round_dp_with_strategy(scale, self.price_rounding))
+
+
+	•	}
+	•	
+	•	pub fn round_qty(&self, v: Decimal, scale: u32) -> Result<Decimal, DecimalGuardError> {
+	•	
+
+   let v = self.guard().validate(v)?;
+
+
+	•	
+
+   Ok(v.round_dp_with_strategy(scale, self.qty_rounding))
+
+
+	•	}
+	•	
+	•	pub fn validate_price_tick(&self, v: Decimal, tick: TickSize) -> Result<(), DecimalPolicyError> {
+	•	
+
+   let v = self.guard().validate(v)?;
+
+
+	•	
+
+   tick.validate(v)?;
+
+
+	•	
+
+   Ok(())
+
+
+	•	}
+	•	
+	•	pub fn validate_qty_step(&self, v: Decimal, step: StepSize) -> Result<(), DecimalPolicyError> {
+	•	
+
+   let v = self.guard().validate(v)?;
+
+
+	•	
+
+   step.validate(v)?;
+
+
+	•	
+
+   Ok(())
+
+
+	•	}
+	•	
+	•	pub fn quantize_price(&self, v: Decimal, tick: TickSize, mode: QuantizeMode) -> Result<Decimal, DecimalPolicyError> {
+	•	
+
+   let v = self.guard().validate(v)?;
+
+
+	•	
+
+   Ok(tick.quantize(v, mode)?)
+
+
+	•	}
+	•	
+	•	pub fn quantize_qty(&self, v: Decimal, step: StepSize, mode: QuantizeMode) -> Result<Decimal, DecimalPolicyError> {
+	•	
+
+   let v = self.guard().validate(v)?;
+
+
+	•	
+
+   Ok(step.quantize(v, mode)?)
+
+
+	•	}
++}
+	•	
+
++#[derive(Debug, thiserror::Error)]
++pub enum DecimalPolicyError {
+	•	#[error(“decimal guard error: {0}”)]
+	•	Guard(#[from] DecimalGuardError),
+	•	#[error(“tick/step error: {0}”)]
+	•	TickStep(#[from] TickStepError),
++}
+diff –git a/ucel/crates/ucel-core/src/decimal/serde.rs b/ucel/crates/ucel-core/src/decimal/serde.rs
+new file mode 100644
+index 0000000..f4a8fb4
+— /dev/null
++++ b/ucel/crates/ucel-core/src/decimal/serde.rs
+@@ -0,0 +1,58 @@
++use rust_decimal::Decimal;
++use serde::{Deserialize, Deserializer};
+	•	
+
++use super::policy::DecimalPolicy;
++
++/// Deserialize Decimal from string/number and apply UCEL guard (SSOT).
++pub fn deserialize_decimal_guarded<’de, D>(
+	•	deserializer: D,
+	•	policy: &DecimalPolicy,
++) -> Result<Decimal, D::Error>
++where
+	•	D: Deserializer<’de>,
++{
+	•	#[derive(Deserialize)]
+	•	#[serde(untagged)]
+	•	enum AnyDecimal {
+	•	
+
+   Str(String),
+
+
+	•	
+
+   Num(serde_json::Number),
+
+
+	•	}
+	•	
+	•	let any = AnyDecimal::deserialize(deserializer).map_err(serde::de::Error::custom)?;
+	•	let s = match any {
+	•	
+
+   AnyDecimal::Str(s) => s,
+
+
+	•	
+
+   AnyDecimal::Num(n) => n.to_string(),
+
+
+	•	};
+	•	
+	•	let d = s.parse::().map_err(serde::de::Error::custom)?;
+	•	policy.guard().validate(d).map_err(serde::de::Error::custom)
++}
+	•	
+
++/// Convenience: guarded decimal with default policy.
++pub fn deserialize_decimal_guarded_default<’de, D>(deserializer: D) -> Result<Decimal, D::Error>
++where
+	•	D: Deserializer<’de>,
++{
+	•	let policy = DecimalPolicy::default();
+	•	deserialize_decimal_guarded(deserializer, &policy)
++}
+diff –git a/ucel/crates/ucel-core/src/value/mod.rs b/ucel/crates/ucel-core/src/value/mod.rs
+new file mode 100644
+index 0000000..7e9c9cf
+— /dev/null
++++ b/ucel/crates/ucel-core/src/value/mod.rs
+@@ -0,0 +1,10 @@
++pub mod notional;
++pub mod price;
++pub mod qty;
++pub mod tick_step;
+	•	
+
++pub use notional::Notional;
++pub use price::Price;
++pub use qty::Qty;
++pub use tick_step::{StepSize, TickSize};
+diff –git a/ucel/crates/ucel-core/src/value/tick_step.rs b/ucel/crates/ucel-core/src/value/tick_step.rs
+new file mode 100644
+index 0000000..c5d707a
+— /dev/null
++++ b/ucel/crates/ucel-core/src/value/tick_step.rs
+@@ -0,0 +1,26 @@
++use rust_decimal::Decimal;
++
++use crate::decimal::tick_step::{StepSize as CoreStepSize, TickSize as CoreTickSize};
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub struct TickSize(pub Decimal);
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub struct StepSize(pub Decimal);
++
++impl TickSize {
+	•	pub fn to_core(self) -> CoreTickSize {
+	•	
+
+   CoreTickSize(self.0)
+
+
+	•	}
++}
+	•	
+
++impl StepSize {
+	•	pub fn to_core(self) -> CoreStepSize {
+	•	
+
+   CoreStepSize(self.0)
+
+
+	•	}
++}
+diff –git a/ucel/crates/ucel-core/src/value/price.rs b/ucel/crates/ucel-core/src/value/price.rs
+new file mode 100644
+index 0000000..cf26c2c
+— /dev/null
++++ b/ucel/crates/ucel-core/src/value/price.rs
+@@ -0,0 +1,31 @@
++use rust_decimal::Decimal;
+	•	
+
++use crate::decimal::policy::{DecimalPolicy, DecimalPolicyError};
++use crate::decimal::tick_step::QuantizeMode;
++use crate::value::TickSize;
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub struct Price(Decimal);
++
++impl Price {
+	•	pub fn as_decimal(&self) -> Decimal {
+	•	
+
+   self.0
+
+
+	•	}
+	•	
+	•	pub fn try_new_strict(policy: &DecimalPolicy, v: Decimal, tick: TickSize) -> Result<Self, DecimalPolicyError> {
+	•	
+
+   policy.validate_price_tick(v, tick.to_core())?;
+
+
+	•	
+
+   Ok(Self(v))
+
+
+	•	}
+	•	
+	•	pub fn try_new_quantized(policy: &DecimalPolicy, v: Decimal, tick: TickSize, mode: QuantizeMode) -> Result<Self, DecimalPolicyError> {
+	•	
+
+   let v2 = policy.quantize_price(v, tick.to_core(), mode)?;
+
+
+	•	
+
+   Ok(Self(v2))
+
+
+	•	}
++}
+diff –git a/ucel/crates/ucel-core/src/value/qty.rs b/ucel/crates/ucel-core/src/value/qty.rs
+new file mode 100644
+index 0000000..e4a0e6c
+— /dev/null
++++ b/ucel/crates/ucel-core/src/value/qty.rs
+@@ -0,0 +1,31 @@
++use rust_decimal::Decimal;
+	•	
+
++use crate::decimal::policy::{DecimalPolicy, DecimalPolicyError};
++use crate::decimal::tick_step::QuantizeMode;
++use crate::value::StepSize;
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub struct Qty(Decimal);
++
++impl Qty {
+	•	pub fn as_decimal(&self) -> Decimal {
+	•	
+
+   self.0
+
+
+	•	}
+	•	
+	•	pub fn try_new_strict(policy: &DecimalPolicy, v: Decimal, step: StepSize) -> Result<Self, DecimalPolicyError> {
+	•	
+
+   policy.validate_qty_step(v, step.to_core())?;
+
+
+	•	
+
+   Ok(Self(v))
+
+
+	•	}
+	•	
+	•	pub fn try_new_quantized(policy: &DecimalPolicy, v: Decimal, step: StepSize, mode: QuantizeMode) -> Result<Self, DecimalPolicyError> {
+	•	
+
+   let v2 = policy.quantize_qty(v, step.to_core(), mode)?;
+
+
+	•	
+
+   Ok(Self(v2))
+
+
+	•	}
++}
+diff –git a/ucel/crates/ucel-core/src/value/notional.rs b/ucel/crates/ucel-core/src/value/notional.rs
+new file mode 100644
+index 0000000..c96e0c9
+— /dev/null
++++ b/ucel/crates/ucel-core/src/value/notional.rs
+@@ -0,0 +1,22 @@
++use rust_decimal::Decimal;
+	•	
+
++use crate::decimal::guard::{DecimalGuardError};
++use crate::decimal::policy::DecimalPolicy;
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub struct Notional(Decimal);
++
++impl Notional {
+	•	pub fn as_decimal(&self) -> Decimal {
+	•	
+
+   self.0
+
+
+	•	}
+	•	
+	•	pub fn try_new(policy: &DecimalPolicy, v: Decimal) -> Result<Self, DecimalGuardError> {
+	•	
+
+   let v = policy.guard().validate(v)?;
+
+
+	•	
+
+   Ok(Self(v))
+
+
+	•	}
++}
