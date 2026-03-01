@@ -6,6 +6,8 @@ use ucel_core::decimal::{
 };
 use ucel_core::Decimal;
 
+pub mod market_meta;
+
 pub type InstrumentMeta = BTreeMap<String, serde_json::Value>;
 pub const SYMBOL_SCHEMA_VERSION: u16 = 1;
 
@@ -113,6 +115,15 @@ pub struct SnapshotOrigin {
     pub restored: bool,
 }
 
+impl Default for SnapshotOrigin {
+    fn default() -> Self {
+        Self {
+            source: SnapshotSource::Rest,
+            restored: false,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Snapshot {
     pub snapshot_id: String,
@@ -217,6 +228,11 @@ pub fn quantize_qty(
 pub fn format_decimal(value: Decimal) -> String {
     normalize_decimal(value).to_string()
 }
+
+pub use market_meta::{
+    MarketMeta, MarketMetaError, MarketMetaId, MarketMetaSnapshot, OrderSide, TickStepRounding,
+    MARKET_META_SCHEMA_VERSION,
+};
 
 #[cfg(test)]
 mod tests {
