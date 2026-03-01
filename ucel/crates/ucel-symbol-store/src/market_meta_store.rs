@@ -3,9 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime};
-use ucel_symbol_core::{
-    cmp_decimal, Exchange, MarketMeta, MarketMetaId, MarketMetaSnapshot, MarketType,
-};
+use ucel_symbol_core::{cmp_decimal, MarketMeta, MarketMetaId, MarketMetaSnapshot};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MarketMetaRegistrySnapshot {
@@ -88,7 +86,13 @@ impl MarketMetaStore {
         let keys: Vec<MarketMetaId> = self
             .map
             .iter()
-            .filter_map(|e| (e.value().expires_at <= now).then(|| e.key().clone()))
+            .filter_map(|e| {
+                if e.value().expires_at <= now {
+                    Some(e.key().clone())
+                } else {
+                    None
+                }
+            })
             .collect();
 
         for k in keys {
@@ -116,19 +120,29 @@ impl MarketMetaStore {
     fn apply_snapshot(&self, snapshot: MarketMetaSnapshot, is_full: bool) -> Vec<MarketMetaEvent> {
         let mut events = Vec::new();
 
+        // 入力を map 化（同一キーが来たら後勝ち）
         let mut incoming: BTreeMap<MarketMetaId, MarketMeta> = BTreeMap::new();
         for m in snapshot.markets {
+            // 安全優先: validate_meta() 失敗は受入拒否 (skip)
             if m.validate_meta().is_ok() {
                 incoming.insert(m.id.clone(), m);
             }
         }
 
         if is_full {
+            // snapshotに無いものは削除
             let stale: Vec<MarketMetaId> = self
                 .map
                 .iter()
-                .filter_map(|cur| (!incoming.contains_key(cur.key())).then(|| cur.key().clone()))
+                .filter_map(|cur| {
+                    if incoming.contains_key(cur.key()) {
+                        None
+                    } else {
+                        Some(cur.key().clone())
+                    }
+                })
                 .collect();
+
             for k in stale {
                 if let Some((_, entry)) = self.map.remove(&k) {
                     let ver = self.bump_version();
@@ -143,6 +157,7 @@ impl MarketMetaStore {
             }
         }
 
+        // upsert
         for (id, meta) in incoming {
             let expires_at = Instant::now() + self.ttl;
 
@@ -169,6 +184,7 @@ impl MarketMetaStore {
                         store_version: ver,
                     });
                 } else {
+                    // 変化なしでも TTL 延長
                     self.map.insert(
                         id,
                         Entry {
@@ -198,6 +214,7 @@ impl MarketMetaStore {
         events
     }
 
+    /// 期限切れなら None。期限内なら clone を返す
     pub fn get(&self, id: &MarketMetaId) -> Option<MarketMeta> {
         let now = Instant::now();
         if let Some(entry) = self.map.get(id) {
@@ -213,8 +230,8 @@ impl MarketMetaStore {
 
     pub fn get_by_parts(
         &self,
-        exchange: Exchange,
-        market_type: MarketType,
+        exchange: ucel_symbol_core::Exchange,
+        market_type: ucel_symbol_core::MarketType,
         raw_symbol: &str,
     ) -> Option<MarketMeta> {
         let id = MarketMetaId::new(exchange, market_type, raw_symbol.to_string());

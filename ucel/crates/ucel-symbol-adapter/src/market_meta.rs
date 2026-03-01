@@ -38,6 +38,8 @@ pub trait MarketMetaFetcher: Send + Sync {
     fn capabilities(&self) -> MarketMetaConnectorCapabilities;
     fn rate_limit_policy(&self) -> MarketMetaRateLimitPolicy;
 
+    /// 取引所から market meta の snapshot を取得し、正規形 MarketMetaSnapshot を返す。
+    /// ここで MarketMeta.validate_meta() を満たすように “正規化済み” であること。
     async fn fetch_market_meta_snapshot(
         &self,
         ctx: &MarketMetaContext,
