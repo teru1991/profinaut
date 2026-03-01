@@ -522,22 +522,15 @@
         "docs/verification/ucel-decimal-impl-symbol-002.md"
       ]
     },
-    "UCEL-DECIMAL-IMPL-CEX-003": {
-      "branch": "docs/ucel-decimal-impl-cex-003",
+    "UCEL-DECIMAL-REMAIN-1-001": {
+      "branch": "docs/ucel-decimal-remain-1-001",
       "artifacts": [
-        "docs/patches/ucel/UCEL-DECIMAL-IMPL-CEX-003.md",
-        "docs/patches/ucel/UCEL-DECIMAL-IMPL-CEX-003.coinbase.patch",
-        "docs/patches/ucel/UCEL-DECIMAL-IMPL-CEX-003.upbit.patch",
-        "docs/patches/ucel/UCEL-DECIMAL-IMPL-CEX-003.binance-options.patch",
-        "docs/patches/ucel/UCEL-DECIMAL-IMPL-CEX-003.deribit.patch",
-        "docs/patches/ucel/UCEL-DECIMAL-IMPL-CEX-003.bitbank.patch",
-        "docs/patches/ucel/UCEL-DECIMAL-IMPL-CEX-003.binance-coinm.patch",
-        "docs/patches/ucel/UCEL-DECIMAL-IMPL-CEX-003.htx.patch",
-        "docs/patches/ucel/UCEL-DECIMAL-IMPL-CEX-003.sbivc.patch",
-        "docs/verification/ucel-decimal-impl-cex-003.md"
+        "docs/patches/ucel/UCEL-DECIMAL-REMAIN-1-001.md",
+        "docs/patches/ucel/UCEL-DECIMAL-REMAIN-1-001.patch",
+        "docs/verification/ucel-decimal-remain-1-001.md"
       ],
       "verification_evidence": [
-        "docs/verification/ucel-decimal-impl-cex-003.md"
+        "docs/verification/ucel-decimal-remain-1-001.md"
       ]
     }
   },
