@@ -119,3 +119,23 @@ Decimal Policy を docs に固定し、実装とテストを同じSSOTに追随�
 	•	ucel-core: Decimal Policy / Guard / TickStep / Newtypes の正本
 	•	ucel-symbol-core: ucel-core の policy に委譲（独自丸め禁止）
 	•	CEX connectors: 入力の guard / 出力の tick/step 適用（f64禁止）
+
+## 11. 完了条件（Definition of Done / DoD）
+本仕様が「実装完了」と言える条件は以下（全て満たすこと）:
+
+1) ucel-core が SSOT として提供すること:
+   - `ucel_core::decimal` に guard/policy/tick-step/serde が存在
+   - `ucel_core::order_gate::OrderGate` が存在し、発注直前で tick/step を最終強制できる
+2) 発注境界での強制:
+   - 少なくとも代表的な発注経路（例: Kraken add_order など）で OrderGate を必ず通す
+   - tick/step 違反は Err で拒否され、ログ/メトリクスに残る（※ログ設計は上位層）
+3) 入力経路（WS/REST）での拒否:
+   - CEXコネクタの主要wireで f64 が残っていない
+   - serde/parse により、不正値（負値、scale超過、ゼロ禁止など）が入口で拒否される
+4) テスト:
+   - ucel-core に OrderGate の回帰テストが存在し、tick/step と拒否が検証されている
+   - 値クラス別 serde（execution/observation/balance）の差分がテストされている
+
+## 12. 入口リンク（運用SSOT）
+- OrderGate Spec: docs/specs/ucel/order_gate_spec.md
+- Incident Runbook: docs/runbooks/ucel_decimal_policy_incidents.md

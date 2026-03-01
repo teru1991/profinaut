@@ -103,3 +103,7 @@ SSOTと矛盾する場合は **必ずSSOT側が正** です。
 - docs/specs/system/runbook_index.md
 - UCEL Decimal Policy: docs/specs/ucel/decimal_policy/A1_core_policy_and_tick_step.md
 - UCEL Decimal Policy Spec: docs/specs/ucel/decimal_policy/decimal_policy_spec.md
+
+- UCEL Decimal Policy Spec (SSOT): docs/specs/ucel/decimal_policy_spec.md
+- UCEL OrderGate Spec (SSOT): docs/specs/ucel/order_gate_spec.md
+- UCEL Decimal Policy Incident Runbook: docs/runbooks/ucel_decimal_policy_incidents.md

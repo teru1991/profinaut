@@ -1,0 +1,162 @@
+diff --git a/ucel/crates/ucel-core/src/lib.rs b/ucel/crates/ucel-core/src/lib.rs
+index a0a0d89..7f7c9a1 100644
+--- a/ucel/crates/ucel-core/src/lib.rs
++++ b/ucel/crates/ucel-core/src/lib.rs
+@@ -1,6 +1,7 @@
+ pub mod decimal;
++pub mod order_gate;
+ pub mod symbol;
+ pub mod types;
+ pub mod value;
+@@ -8,6 +9,7 @@ use serde::{Deserialize, Serialize};
+ use std::fmt;
+ use thiserror::Error;
+ pub use types::{Decimal, OrderStatus, OrderType, SchemaVersion, Side};
+ pub use value::{Notional, Price, Qty, StepSize, TickSize};
++pub use order_gate::{OrderGate, OrderGateError};
+
+diff --git a/ucel/crates/ucel-core/src/decimal/policy.rs b/ucel/crates/ucel-core/src/decimal/policy.rs
+index 1d98e6f..6d4f5e2 100644
+--- a/ucel/crates/ucel-core/src/decimal/policy.rs
++++ b/ucel/crates/ucel-core/src/decimal/policy.rs
+@@ -19,6 +19,7 @@ pub struct DecimalPolicy {
+     pub qty_rounding: RoundingStrategy,
+     pub allow_negative: bool,
+     pub allow_zero: bool,
+ }
+@@ -39,6 +40,44 @@ impl Default for DecimalPolicy {
+     }
+ }
+ 
+ impl DecimalPolicy {
++    /// Policy for order prices/qty used for execution (strict).
++    /// - no negative
++    /// - no zero
++    pub fn for_execution_strict() -> Self {
++        Self::default()
++    }
++
++    /// Policy for balances (zero allowed).
++    pub fn for_balance() -> Self {
++        let mut p = Self::default();
++        p.allow_zero = true;
++        p
++    }
++
++    /// Policy for observational data (ticker/mark/index), where zero/negative can be seen transiently.
++    /// NOTE: this must NEVER be used at the final execution gate.
++    pub fn for_observation_relaxed() -> Self {
++        let mut p = Self::default();
++        p.allow_zero = true;
++        p.allow_negative = true;
++        p
++    }
++
+     pub fn guard(&self) -> DecimalGuard {
+         DecimalGuard {
+             max_scale: self.max_scale,
+             max_abs: self.max_abs,
+@@ -93,6 +132,7 @@ impl DecimalPolicy {
+     }
+ }
+
+diff --git a/ucel/crates/ucel-core/src/order_gate/mod.rs b/ucel/crates/ucel-core/src/order_gate/mod.rs
+new file mode 100644
+index 0000000..8b2d5aa
+--- /dev/null
++++ b/ucel/crates/ucel-core/src/order_gate/mod.rs
+@@ -0,0 +1,6 @@
++//! Order Gate (final enforcement) SSOT.
++
++mod gate;
++
++pub use gate::{OrderGate, OrderGateError};
+
+diff --git a/ucel/crates/ucel-core/src/order_gate/gate.rs b/ucel/crates/ucel-core/src/order_gate/gate.rs
+new file mode 100644
+index 0000000..c8dfd0f
+--- /dev/null
++++ b/ucel/crates/ucel-core/src/order_gate/gate.rs
+@@ -0,0 +1,128 @@
++use crate::decimal::policy::{DecimalPolicy, DecimalPolicyError};
++use crate::decimal::tick_step::QuantizeMode;
++use crate::{Decimal, Side};
++use crate::value::{Price, Qty, TickSize, StepSize};
++
++/// OrderGate is the single canonical place to enforce:
++/// - decimal guard (invalid values rejected)
++/// - tick/step application (validate or quantize)
++/// This must be called right before placing an order (execution boundary).
++#[derive(Debug, Clone)]
++pub struct OrderGate {
++    policy: DecimalPolicy,
++}
++
++impl Default for OrderGate {
++    fn default() -> Self {
++        Self { policy: DecimalPolicy::for_execution_strict() }
++    }
++}
++
++impl OrderGate {
++    pub fn new(policy: DecimalPolicy) -> Self {
++        Self { policy }
++    }
++
++    /// Strict validation: reject if not aligned to tick/step.
++    pub fn validate_limit(
++        &self,
++        price: Decimal,
++        qty: Decimal,
++        tick: TickSize,
++        step: StepSize,
++    ) -> Result<(Price, Qty), OrderGateError> {
++        // validate tick/step (also validates guard)
++        self.policy.validate_price_tick(price, tick.to_core())?;
++        self.policy.validate_qty_step(qty, step.to_core())?;
++        Ok((
++            Price::try_new_strict(&self.policy, price, tick)?,
++            Qty::try_new_strict(&self.policy, qty, step)?,
++        ))
++    }
++
++    /// Quantize then validate: used when upstream provides "raw" price/qty.
++    /// Caller must choose mode. Provide recommended mode helpers per side.
++    pub fn quantize_limit(
++        &self,
++        side: Side,
++        price: Decimal,
++        qty: Decimal,
++        tick: TickSize,
++        step: StepSize,
++        price_mode: QuantizeMode,
++        qty_mode: QuantizeMode,
++    ) -> Result<(Price, Qty), OrderGateError> {
++        let _ = side; // kept for future: side-specific enforcement/metrics
++        let p = Price::try_new_quantized(&self.policy, price, tick, price_mode)?;
++        let q = Qty::try_new_quantized(&self.policy, qty, step, qty_mode)?;
++        // strict re-validate (defense in depth)
++        self.policy.validate_price_tick(p.as_decimal(), tick.to_core())?;
++        self.policy.validate_qty_step(q.as_decimal(), step.to_core())?;
++        Ok((p, q))
++    }
++
++    /// Recommended safe quantize modes:
++    /// - Qty: ToZero (avoid over-order)
++    /// - Price: BUY -> Ceil, SELL -> Floor (typical maker/safety guidance)
++    pub fn recommended_modes(side: Side) -> (QuantizeMode, QuantizeMode) {
++        let qty_mode = QuantizeMode::ToZero;
++        let price_mode = match side {
++            Side::Buy => QuantizeMode::Ceil,
++            Side::Sell => QuantizeMode::Floor,
++            _ => QuantizeMode::Nearest,
++        };
++        (price_mode, qty_mode)
++    }
++}
++
++#[derive(Debug, thiserror::Error)]
++pub enum OrderGateError {
++    #[error("decimal policy error: {0}")]
++    Policy(#[from] DecimalPolicyError),
++}
