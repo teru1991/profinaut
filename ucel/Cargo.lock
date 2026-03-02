@@ -3461,6 +3461,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "ucel-cex-binance",
+ "ucel-cex-bybit",
  "ucel-core",
  "ucel-registry",
  "ucel-subscription-planner",

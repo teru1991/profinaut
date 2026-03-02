@@ -1,0 +1,9 @@
+{
+  "topic": "orderbook.1.BTCUSDT",
+  "type": "snapshot",
+  "data": {
+    "s": "BTCUSDT",
+    "b": [],
+    "a": []
+  }
+}
