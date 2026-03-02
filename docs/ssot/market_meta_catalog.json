@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "exchange": "upbit",
+      "market_type": "spot",
+      "raw_symbol": "KRW-BTC",
+      "base": "BTC",
+      "quote": "KRW",
+      "tick_size": "1000",
+      "step_size": "0.00000001",
+      "min_qty": "0.00000001",
+      "min_notional": null,
+      "price_precision": 0,
+      "qty_precision": 8,
+      "note": "Upbit KRW market unit(호가단위) for BTC range >= 2,000,000 KRW and BTC min order quantity from official support/docs; keep aligned with latest KRW ladder policy"
+    }
+  ]
+}

@@ -3039,6 +3039,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "ucel-core",
+ "ucel-market-meta-catalog",
  "ucel-symbol-core",
  "ucel-testkit",
  "ucel-transport",
@@ -3058,6 +3059,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ucel-core",
+ "ucel-market-meta-catalog",
  "ucel-symbol-core",
  "ucel-transport",
  "uuid",
@@ -3167,6 +3169,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ucel-core",
+ "ucel-market-meta-catalog",
  "ucel-symbol-core",
  "ucel-transport",
  "uuid",
@@ -3283,6 +3286,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ucel-core",
+ "ucel-market-meta-catalog",
  "ucel-symbol-core",
 ]
 
@@ -3297,6 +3301,7 @@ dependencies = [
  "tokio",
  "tracing",
  "ucel-core",
+ "ucel-market-meta-catalog",
  "ucel-symbol-core",
  "ucel-transport",
  "uuid",
@@ -3342,6 +3347,16 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+]
+
+[[package]]
+name = "ucel-market-meta-catalog"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "ucel-core",
+ "ucel-symbol-core",
 ]
 
 [[package]]
