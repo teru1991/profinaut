@@ -1,0 +1,12 @@
+{
+  "endpoint_id": "openapi.public.ws.ticker.snapshot",
+  "payload": {
+    "type": "ticker",
+    "content": {
+      "symbol": "BTC_KRW",
+      "bidPrice": "64990000",
+      "askPrice": "65010000",
+      "closePrice": "65000000"
+    }
+  }
+}

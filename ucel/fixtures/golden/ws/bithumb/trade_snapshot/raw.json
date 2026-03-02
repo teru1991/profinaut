@@ -1,0 +1,13 @@
+{
+  "endpoint_id": "openapi.public.ws.trade.snapshot",
+  "payload": {
+    "type": "trade",
+    "content": {
+      "symbol": "BTC_KRW",
+      "contNo": "1293847",
+      "contPrice": "65000000",
+      "contQty": "0.0100",
+      "buySellGb": "1"
+    }
+  }
+}
