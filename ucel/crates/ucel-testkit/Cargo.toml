@@ -14,3 +14,4 @@ ucel-cex-binance = { path = "../ucel-cex-binance" }
 ucel-subscription-planner = { path = "../ucel-subscription-planner" }
 
 ucel-cex-bybit = { path = "../ucel-cex-bybit" }
+ucel-cex-bithumb = { path = "../ucel-cex-bithumb" }
