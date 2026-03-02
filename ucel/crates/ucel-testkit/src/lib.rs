@@ -1,6 +1,8 @@
 pub mod coverage;
 pub mod okx;
 pub mod ssot_gate;
+pub mod ssot_integrity_gate;
+pub mod ssot_integrity_gate_types;
 pub mod ws_coverage_gate;
 
 use serde::{Deserialize, Serialize};
@@ -100,6 +102,19 @@ impl CatalogContractIndex {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CoverageSupport {
+    Supported,
+    NotSupported,
+}
+
+impl Default for CoverageSupport {
+    fn default() -> Self {
+        Self::Supported
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct CoverageManifest {
     pub venue: String,
@@ -111,6 +126,20 @@ pub struct CoverageEntry {
     pub id: String,
     pub implemented: bool,
     pub tested: bool,
+    #[serde(default)]
+    pub support: CoverageSupport,
+    #[serde(default)]
+    pub strict: Option<bool>,
+}
+
+impl CoverageEntry {
+    pub fn is_supported(&self) -> bool {
+        self.support == CoverageSupport::Supported
+    }
+
+    pub fn effective_strict(&self, manifest_strict: bool) -> bool {
+        self.strict.unwrap_or(manifest_strict)
+    }
 }
 
 pub fn load_coverage_manifest(path: &Path) -> Result<CoverageManifest, Box<dyn std::error::Error>> {
@@ -120,6 +149,11 @@ pub fn load_coverage_manifest(path: &Path) -> Result<CoverageManifest, Box<dyn s
 pub fn evaluate_coverage_gate(manifest: &CoverageManifest) -> HashMap<String, Vec<String>> {
     let mut missing: HashMap<String, Vec<String>> = HashMap::new();
     for entry in &manifest.entries {
+        // v2 policy: explicitly unsupported entries must not be treated as missing implementation/testing
+        if !entry.is_supported() {
+            continue;
+        }
+
         if !entry.implemented {
             missing
                 .entry("implemented".into())
@@ -167,6 +201,8 @@ mod tests {
                 id: "a".into(),
                 implemented: false,
                 tested: false,
+                support: CoverageSupport::Supported,
+                strict: None,
             }],
         };
         assert!(matches!(
@@ -184,6 +220,8 @@ mod tests {
                 id: "a".into(),
                 implemented: false,
                 tested: false,
+                support: CoverageSupport::Supported,
+                strict: None,
             }],
         };
         assert!(matches!(
@@ -192,3 +230,6 @@ mod tests {
         ));
     }
 }
+
+pub use ssot_integrity_gate::run_ssot_integrity_gate;
+pub use ssot_integrity_gate_types::{GateIssue, GateReport, GateSeverity};

@@ -81,3 +81,13 @@ pub fn run_ssot_gate(repo_root: &Path) -> Result<(), String> {
     }
     Ok(())
 }
+
+use crate::ssot_integrity_gate::run_ssot_integrity_gate;
+use crate::ssot_integrity_gate_types::GateReport;
+
+/// v2: SSOT Integrity Gate (Catalog ↔ Coverage ↔ Crate ↔ Rules ↔ Examples)
+/// NOTE: This is a new API; existing v1 gate behavior is intentionally unchanged in Task2.
+///       CI enabling is done in Task3 after SSOT data is fully prepared.
+pub fn run_ssot_integrity_gate_v2(repo_root: &Path) -> Result<GateReport, String> {
+    run_ssot_integrity_gate(repo_root)
+}
