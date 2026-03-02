@@ -4,6 +4,7 @@ pub mod ws;
 
 pub mod health;
 pub mod obs;
+pub mod security;
 
 pub mod diagnostics;
 
