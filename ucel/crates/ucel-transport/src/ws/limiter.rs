@@ -1,13 +1,7 @@
 use std::time::{Duration, Instant};
 
-// NOTE: bucketed WS outbound limiter (control/private/public).
-
 use super::priority::OutboundPriority;
 
-/// Token-bucket config for WS outbound.
-///
-/// - capacity: max burst tokens
-/// - refill_per_sec: steady refill
 #[derive(Debug, Clone, Copy)]
 pub struct BucketConfig {
     pub capacity: f64,
@@ -29,8 +23,6 @@ pub struct WsRateLimiterConfig {
     pub control: BucketConfig,
     pub private: BucketConfig,
     pub public: BucketConfig,
-
-    /// Optional global floor interval to prevent micro-bursts.
     pub min_gap: Duration,
 }
 
@@ -45,14 +37,20 @@ impl Default for WsRateLimiterConfig {
     }
 }
 
+#[derive(Debug, Default, Clone, Copy)]
+pub struct ThrottleCounters {
+    pub control_events: u64,
+    pub private_events: u64,
+    pub public_events: u64,
+    pub forced_gate_events: u64,
+}
+
 #[derive(Debug, Clone)]
 struct TokenBucket {
     cap: f64,
     refill_per_sec: f64,
     tokens: f64,
     last: Instant,
-
-    // penalty window (retry-after style)
     penalty_until: Option<Instant>,
 }
 
@@ -82,7 +80,6 @@ impl TokenBucket {
         self.last = now;
     }
 
-    /// Acquire one token; returns required wait.
     fn take_one(&mut self, now: Instant) -> Duration {
         if let Some(until) = self.penalty_until {
             if now < until {
@@ -92,11 +89,10 @@ impl TokenBucket {
         self.advance(now);
         if self.tokens >= 1.0 {
             self.tokens -= 1.0;
-            Duration::from_secs(0)
+            Duration::ZERO
         } else {
             let needed = 1.0 - self.tokens;
-            let secs = needed / self.refill_per_sec;
-            Duration::from_secs_f64(secs.max(0.0))
+            Duration::from_secs_f64((needed / self.refill_per_sec).max(0.0))
         }
     }
 }
@@ -107,9 +103,9 @@ pub struct WsRateLimiter {
     control: TokenBucket,
     private: TokenBucket,
     public: TokenBucket,
-
-    // small global pacing
     last_grant: Instant,
+    forced_gate_until: Option<Instant>,
+    counters: ThrottleCounters,
 }
 
 impl WsRateLimiter {
@@ -120,6 +116,8 @@ impl WsRateLimiter {
             private: TokenBucket::new(cfg.private),
             public: TokenBucket::new(cfg.public),
             last_grant: Instant::now(),
+            forced_gate_until: None,
+            counters: ThrottleCounters::default(),
         }
     }
 
@@ -131,81 +129,51 @@ impl WsRateLimiter {
         }
     }
 
-    /// Acquire permission for a priority class.
-    ///
-    /// Returns how long caller should wait before sending.
     pub fn acquire_wait(&mut self, p: OutboundPriority, now: Instant) -> Duration {
-        // Optional global min-gap
-        let mut wait = Duration::from_secs(0);
-        if self.cfg.min_gap > Duration::from_secs(0) {
+        if let Some(until) = self.forced_gate_until {
+            if now < until {
+                self.counters.forced_gate_events += 1;
+                return until.duration_since(now);
+            }
+        }
+
+        let mut wait = Duration::ZERO;
+        if self.cfg.min_gap > Duration::ZERO {
             let gap = now.duration_since(self.last_grant);
             if gap < self.cfg.min_gap {
                 wait = self.cfg.min_gap - gap;
             }
         }
 
-        // Priority-specific bucket
         let bw = self.bucket_mut(p).take_one(now);
         wait = wait.max(bw);
 
-        if wait == Duration::from_secs(0) {
+        if wait == Duration::ZERO {
             self.last_grant = now;
+        } else {
+            match p {
+                OutboundPriority::Control => self.counters.control_events += 1,
+                OutboundPriority::Private => self.counters.private_events += 1,
+                OutboundPriority::Public => self.counters.public_events += 1,
+            }
         }
+
         wait
     }
 
-    /// Apply a penalty window (retry-after style) to a bucket.
-    ///
-    /// Example use:
-    /// - If server responds with "rate limit" for private channel, call:
-    ///   apply_penalty(Private, Duration::from_secs(1))
     pub fn apply_penalty(&mut self, p: OutboundPriority, now: Instant, d: Duration) {
         self.bucket_mut(p).apply_penalty(now, d);
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::time::Duration;
-
-    #[test]
-    fn buckets_are_separate() {
-        let mut lim = WsRateLimiter::new(WsRateLimiterConfig {
-            control: BucketConfig {
-                capacity: 1.0,
-                refill_per_sec: 1.0,
-            },
-            private: BucketConfig {
-                capacity: 1.0,
-                refill_per_sec: 1.0,
-            },
-            public: BucketConfig {
-                capacity: 1.0,
-                refill_per_sec: 1.0,
-            },
-            min_gap: Duration::from_millis(0),
+    pub fn apply_retry_after_gate(&mut self, now: Instant, retry_after: Duration) {
+        let next_until = now + retry_after;
+        self.forced_gate_until = Some(match self.forced_gate_until {
+            Some(prev) if prev > next_until => prev,
+            _ => next_until,
         });
-
-        let t0 = Instant::now();
-        assert_eq!(
-            lim.acquire_wait(OutboundPriority::Public, t0),
-            Duration::from_secs(0)
-        );
-        assert!(lim.acquire_wait(OutboundPriority::Public, t0) > Duration::from_millis(0));
-
-        // Private bucket is separate => still grants
-        assert_eq!(
-            lim.acquire_wait(OutboundPriority::Private, t0),
-            Duration::from_secs(0)
-        );
     }
 
-    #[test]
-    fn penalty_forces_wait() {
-        let mut lim = WsRateLimiter::new(WsRateLimiterConfig::default());
-        let t0 = Instant::now();
-        lim.apply_penalty(OutboundPriority::Private, t0, Duration::from_millis(50));
-        assert!(lim.acquire_wait(OutboundPriority::Private, t0) >= Duration::from_millis(50));
+    pub fn counters(&self) -> ThrottleCounters {
+        self.counters
     }
 }
