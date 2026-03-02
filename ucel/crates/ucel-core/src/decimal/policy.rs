@@ -33,24 +33,27 @@ impl Default for DecimalPolicy {
 impl DecimalPolicy {
     // Value-class policies (SSOT)
     pub fn for_execution_strict() -> Self {
-        let mut p = Self::default();
-        p.max_abs = Some(Decimal::from_str("1000000000000000000").expect("valid decimal")); // 1e18
-        p
+        Self {
+            max_abs: Some(Decimal::from_str("1000000000000000000").expect("valid decimal")), // 1e18
+            ..Self::default()
+        }
     }
 
     pub fn for_balance() -> Self {
-        let mut p = Self::default();
-        p.allow_zero = true;
-        p.max_abs = Some(Decimal::from_str("1000000000000000000000000").expect("valid decimal")); // 1e24
-        p
+        Self {
+            allow_zero: true,
+            max_abs: Some(Decimal::from_str("1000000000000000000000000").expect("valid decimal")), // 1e24
+            ..Self::default()
+        }
     }
 
     pub fn for_observation_relaxed() -> Self {
-        let mut p = Self::default();
-        p.allow_zero = true;
-        p.allow_negative = true;
-        p.max_abs = Some(Decimal::from_str("1000000000000000000000000").expect("valid decimal")); // 1e24
-        p
+        Self {
+            allow_zero: true,
+            allow_negative: true,
+            max_abs: Some(Decimal::from_str("1000000000000000000000000").expect("valid decimal")), // 1e24
+            ..Self::default()
+        }
     }
 
     pub fn guard(&self) -> DecimalGuard {

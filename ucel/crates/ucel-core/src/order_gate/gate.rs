@@ -36,6 +36,7 @@ impl OrderGate {
         ))
     }
 
+    #[allow(clippy::too_many_arguments)] // API keeps explicit parameters for caller-side clarity and compatibility.
     pub fn quantize_limit(
         &self,
         side: Side,

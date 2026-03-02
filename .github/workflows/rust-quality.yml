@@ -1,0 +1,23 @@
+name: rust-quality
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  rust-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust quality (fmt/check/test/clippy/doc)
+        run: |
+          chmod +x ./scripts/rust_quality.sh
+          ./scripts/rust_quality.sh

@@ -38,18 +38,13 @@ impl MarketMetaId {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum TickStepRounding {
     Down,
     Up,
+    #[default]
     Nearest,
-}
-
-impl Default for TickStepRounding {
-    fn default() -> Self {
-        Self::Nearest
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -334,7 +329,11 @@ impl MarketMeta {
 impl From<&StandardizedInstrument> for MarketMeta {
     fn from(si: &StandardizedInstrument) -> Self {
         let mut mm = Self::new(
-            MarketMetaId::new(si.exchange.clone(), si.market_type.clone(), si.raw_symbol.clone()),
+            MarketMetaId::new(
+                si.exchange.clone(),
+                si.market_type.clone(),
+                si.raw_symbol.clone(),
+            ),
             si.tick_size,
             si.lot_size,
         );
@@ -556,5 +555,4 @@ mod tests {
         assert_eq!(mm.min_notional.unwrap().to_string(), "5");
         assert!(mm.validate_basic().is_ok());
     }
-
 }

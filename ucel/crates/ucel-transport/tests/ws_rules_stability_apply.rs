@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use ucel_transport::ws::circuit_breaker::CircuitBreakerConfig;
 use ucel_transport::ws::connection::{apply_stability_overrides_for_test, WsRunConfig};
 use ucel_ws_rules::ExchangeWsRules;
 
@@ -30,10 +29,7 @@ default_penalty_ms = 777
     )
     .unwrap();
 
-    let mut cfg = WsRunConfig::default();
-    cfg.breaker = CircuitBreakerConfig::default();
-
-    let cfg = apply_stability_overrides_for_test(cfg, &rules);
+    let cfg = apply_stability_overrides_for_test(WsRunConfig::default(), &rules);
 
     assert_eq!(cfg.breaker.failure_threshold, 7);
     assert_eq!(cfg.breaker.success_threshold, 2);

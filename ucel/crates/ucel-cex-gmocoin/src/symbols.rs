@@ -38,7 +38,9 @@ pub async fn fetch_symbols() -> Result<Vec<String>, String> {
     }
 
     let body: ApiResp<Vec<SymbolRow>> = resp.json().await.map_err(|e| e.to_string())?;
-    if body.status != 0 {}
+    if body.status != 0 {
+        return Err(format!("gmocoin api status={}", body.status));
+    }
 
     let mut out: Vec<String> = body.data.into_iter().map(|r| r.symbol).collect();
     out.sort();
@@ -64,7 +66,10 @@ pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String>
     for r in body.data {
         let tick = r.tick_size.parse::<Decimal>().map_err(|e| e.to_string())?;
         let step = r.size_step.parse::<Decimal>().map_err(|e| e.to_string())?;
-        let min_qty = r.min_order_size.parse::<Decimal>().map_err(|e| e.to_string())?;
+        let min_qty = r
+            .min_order_size
+            .parse::<Decimal>()
+            .map_err(|e| e.to_string())?;
 
         let canonical = format!("{}/JPY", r.symbol);
         let mm = MarketMeta {

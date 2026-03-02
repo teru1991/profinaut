@@ -23,11 +23,20 @@ fn execution_rejects_zero_by_default() {
 #[test]
 fn observation_allows_zero() {
     let j = r#"{"v":"0"}"#;
-    assert!(serde_json::from_str::<ObsWire>(j).is_ok());
+    let parsed = serde_json::from_str::<ObsWire>(j).expect("observation should accept zero");
+    assert_eq!(parsed.v, Decimal::ZERO);
 }
 
 #[test]
 fn execution_rejects_negative() {
     let j = r#"{"v":"-1"}"#;
     assert!(serde_json::from_str::<ExecWire>(j).is_err());
+}
+
+#[test]
+fn execution_accepts_positive_value() {
+    let j = r#"{"v":"1"}"#;
+    let parsed =
+        serde_json::from_str::<ExecWire>(j).expect("execution should accept positive value");
+    assert_eq!(parsed.v, Decimal::ONE);
 }

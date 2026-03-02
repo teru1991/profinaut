@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use std::collections::BTreeMap;
+use ucel_symbol_core::MarketMeta;
 
 #[derive(Debug, Deserialize)]
 struct AssetPairsResp {
@@ -41,4 +42,16 @@ pub async fn fetch_all_symbols() -> Result<Vec<String>, String> {
 /// NEW: MarketMeta を返す（tick/step/min_qty/min_notional）
 pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String> {
     Err("NotSupported: fetch_market_meta is not implemented for this connector yet".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::fetch_market_meta;
+
+    #[tokio::test]
+    async fn fetch_market_meta_returns_not_supported() {
+        let result = fetch_market_meta().await;
+        assert!(result.is_err());
+        assert!(result.err().unwrap_or_default().contains("NotSupported"));
+    }
 }

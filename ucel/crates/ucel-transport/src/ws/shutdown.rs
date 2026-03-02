@@ -64,6 +64,7 @@ fn now_unix_i64() -> i64 {
 /// - Waits for drain.
 /// - Requeues subscriptions.
 /// - Joins writer + wal tasks.
+#[allow(clippy::too_many_arguments)] // Signature is intentionally explicit for shutdown orchestration.
 pub async fn graceful_shutdown_ws(
     cfg: GracefulShutdownConfig,
     exchange_id: &str,

@@ -141,7 +141,8 @@ impl SymbolStore {
                 drop(existing);
                 if before.status != instrument.status {
                     self.instruments.insert(id.clone(), instrument.clone());
-                    self.market_meta.insert(id.clone(), MarketMeta::from(&instrument));
+                    self.market_meta
+                        .insert(id.clone(), MarketMeta::from(&instrument));
                     let version = self.bump_version();
                     events.push(SymbolEvent::StatusChanged {
                         id,
@@ -156,7 +157,8 @@ impl SymbolStore {
                 let changed_fields = changed_param_fields(&before, &instrument, meta_whitelist);
                 if !changed_fields.is_empty() {
                     self.instruments.insert(id.clone(), instrument.clone());
-                    self.market_meta.insert(id.clone(), MarketMeta::from(&instrument));
+                    self.market_meta
+                        .insert(id.clone(), MarketMeta::from(&instrument));
                     let version = self.bump_version();
                     events.push(SymbolEvent::ParamChanged {
                         id,
@@ -368,7 +370,12 @@ mod market_meta_store_tests {
     use rust_decimal::Decimal;
     use ucel_symbol_core::{Exchange, InstrumentMeta, MarketType, SnapshotOrigin, SnapshotSource};
 
-    fn mk_inst(symbol: &str, tick: &str, step: &str, min_qty: Option<&str>) -> StandardizedInstrument {
+    fn mk_inst(
+        symbol: &str,
+        tick: &str,
+        step: &str,
+        min_qty: Option<&str>,
+    ) -> StandardizedInstrument {
         StandardizedInstrument {
             id: InstrumentId {
                 exchange: Exchange::Gmocoin,

@@ -1027,7 +1027,7 @@ fn looks_like_rate_limited(reason: &str) -> bool {
 
 fn rl_cooldown_secs(attempts: i64, base: i64, max: i64) -> i64 {
     // exponential backoff: base * 2^(attempts-1)
-    let a = attempts.max(1).min(30) as u32;
+    let a = attempts.clamp(1, 30) as u32;
     let mut v = base.max(1);
     // compute v * 2^(a-1) safely
     for _ in 0..(a.saturating_sub(1)) {
@@ -1039,6 +1039,7 @@ fn rl_cooldown_secs(attempts: i64, base: i64, max: i64) -> i64 {
     v.min(max)
 }
 
+#[allow(clippy::too_many_arguments)] // Keeps call-site explicit for transport context and avoids broad refactor.
 async fn handle_inbound(
     adapter: &Arc<dyn WsVenueAdapter>,
     cfg: &WsRunConfig,

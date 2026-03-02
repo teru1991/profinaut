@@ -13,6 +13,7 @@ pub struct MarketMetaRegistrySnapshot {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[allow(clippy::large_enum_variant)] // Carries full before/after snapshots for deterministic auditability in event consumers.
 pub enum MarketMetaEvent {
     Added {
         id: MarketMetaId,
