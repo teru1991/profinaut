@@ -1,7 +1,11 @@
 use serde::Deserialize;
 use std::collections::BTreeMap;
+use std::time::SystemTime;
 use ucel_core::Decimal;
-use ucel_symbol_core::{Exchange, MarketMeta, MarketMetaId, MarketType};
+use ucel_symbol_core::{
+    Exchange, InstrumentId, MarketMeta, MarketMetaId, MarketType, Snapshot, StandardizedInstrument,
+    SymbolStatus, SYMBOL_SCHEMA_VERSION,
+};
 
 const PUBLIC_BASE: &str = "https://api.coin.z.com/public";
 
@@ -48,7 +52,9 @@ pub async fn fetch_symbols() -> Result<Vec<String>, String> {
     Ok(out)
 }
 
-pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String> {
+/// NEW: Symbol Snapshot（Spotのみ）
+/// - GMOの symbol は "BTC" のように base だけで返ることが多いので、quote=JPY として UCEL側で canonical 化（BASE/JPY）
+pub async fn fetch_symbol_snapshot() -> Result<Snapshot, String> {
     let url = format!("{PUBLIC_BASE}/v1/symbols");
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
@@ -61,8 +67,12 @@ pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String>
     }
 
     let body: ApiResp<Vec<SymbolRow>> = resp.json().await.map_err(|e| e.to_string())?;
+    if body.status != 0 {
+        return Err(format!("gmocoin api status={}", body.status));
+    }
 
-    let mut out: BTreeMap<String, MarketMeta> = BTreeMap::new();
+    let mut instruments = Vec::new();
+
     for r in body.data {
         let tick = r.tick_size.parse::<Decimal>().map_err(|e| e.to_string())?;
         let step = r.size_step.parse::<Decimal>().map_err(|e| e.to_string())?;
@@ -71,19 +81,67 @@ pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String>
             .parse::<Decimal>()
             .map_err(|e| e.to_string())?;
 
-        let canonical = format!("{}/JPY", r.symbol);
-        let mm = MarketMeta {
-            min_qty: Some(min_qty),
+        instruments.push(StandardizedInstrument {
+            id: InstrumentId {
+                exchange: Exchange::Gmocoin,
+                market_type: MarketType::Spot,
+                raw_symbol: r.symbol.clone(), // raw is "BTC" etc
+                expiry: None,
+                strike: None,
+                option_right: None,
+                contract_size: None,
+            },
+            exchange: Exchange::Gmocoin,
+            market_type: MarketType::Spot,
+            base: r.symbol.clone(),
+            quote: "JPY".to_string(),
+            raw_symbol: r.symbol,
+            status: SymbolStatus::Trading,
+            tick_size: tick,
+            lot_size: step,
+            min_order_qty: Some(min_qty),
+            max_order_qty: None,
             min_notional: None,
-            ..MarketMeta::new(
-                MarketMetaId::new(Exchange::Gmocoin, MarketType::Spot, r.symbol),
-                tick,
-                step,
-            )
-        };
+            price_precision: Some(tick.normalize().scale()),
+            qty_precision: Some(step.normalize().scale()),
+            contract_size: None,
+            meta: BTreeMap::new(),
+            ts_recv: SystemTime::now(),
+            ts_event: None,
+            schema_version: SYMBOL_SCHEMA_VERSION,
+        });
+    }
+
+    if instruments.is_empty() {
+        return Err("gmocoin: no instruments produced".into());
+    }
+
+    Ok(Snapshot::new_rest(instruments))
+}
+
+pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String> {
+    let snapshot = fetch_symbol_snapshot().await?;
+    let mut out: BTreeMap<String, MarketMeta> = BTreeMap::new();
+
+    for s in snapshot.instruments {
+        // canonical key: BASE/JPY
+        let canonical = format!("{}/{}", s.base, s.quote);
+
+        let mut mm = MarketMeta::new(
+            MarketMetaId::new(Exchange::Gmocoin, MarketType::Spot, s.raw_symbol.clone()),
+            s.tick_size,
+            s.lot_size,
+        );
+        mm.base = Some(s.base);
+        mm.quote = Some(s.quote);
+        mm.min_qty = s.min_order_qty;
+        mm.min_notional = s.min_notional;
+        mm.price_precision = s.price_precision;
+        mm.qty_precision = s.qty_precision;
         mm.validate_basic()
             .map_err(|e| format!("gmocoin invalid meta {canonical}: {e}"))?;
         out.insert(canonical, mm);
     }
+
     Ok(out)
 }
