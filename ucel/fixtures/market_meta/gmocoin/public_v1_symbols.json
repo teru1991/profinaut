@@ -1,0 +1,19 @@
+{
+  "status": 0,
+  "data": [
+    {
+      "symbol": "BTC",
+      "minOrderSize": "0.00001",
+      "maxOrderSize": "5",
+      "sizeStep": "0.00001",
+      "tickSize": "1"
+    },
+    {
+      "symbol": "ETH",
+      "minOrderSize": "0.0001",
+      "maxOrderSize": "100",
+      "sizeStep": "0.0001",
+      "tickSize": "1"
+    }
+  ]
+}

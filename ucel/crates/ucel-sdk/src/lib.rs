@@ -9,6 +9,7 @@
 pub mod config;
 pub mod error;
 pub mod market_meta;
+pub mod order_normalize;
 pub mod sdk;
 pub mod secrets;
 
@@ -31,6 +32,11 @@ pub mod prelude {
     pub use crate::market_meta::{
         MarketMetaService, MarketMetaServiceConfig, MarketMetaServiceError,
     };
+    pub use crate::order_normalize::{
+        normalize_limit_from_store, normalize_limit_with_meta, OrderNormalizeError,
+    };
+    pub use ucel_core::order_gate::OrderGate;
+
     pub use ucel_symbol_core::{
         MarketMeta, MarketMetaError, MarketMetaId, OrderSide, TickStepRounding,
     };

@@ -567,3 +567,5 @@ pub mod channels;
 pub mod symbols;
 pub mod ws;
 pub mod ws_manager;
+
+pub mod market_meta;

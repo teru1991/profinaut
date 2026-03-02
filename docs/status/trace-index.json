@@ -772,6 +772,43 @@
         "ucel/crates/ucel-sdk/Cargo.toml",
         "docs/verification/RUST-UCEL-MARKETMETA-001.md"
       ]
+    },
+    "RUST-UCEL-MARKETMETA-002": {
+      "branch": "feature/rust-ucel-marketmeta-002",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "ucel/crates/ucel-cex-gmocoin/src/market_meta.rs",
+        "ucel/crates/ucel-cex-gmocoin/src/lib.rs",
+        "ucel/crates/ucel-cex-gmocoin/Cargo.toml",
+        "ucel/crates/ucel-cex-gmocoin/tests/market_meta_parse_it.rs",
+        "ucel/crates/ucel-cex-binance/src/market_meta.rs",
+        "ucel/crates/ucel-cex-binance/src/lib.rs",
+        "ucel/crates/ucel-cex-binance/Cargo.toml",
+        "ucel/crates/ucel-cex-binance/tests/market_meta_parse_it.rs",
+        "ucel/fixtures/market_meta/gmocoin/public_v1_symbols.json",
+        "ucel/fixtures/market_meta/binance/spot_exchangeInfo.json",
+        "ucel/Cargo.lock",
+        "docs/verification/RUST-UCEL-MARKETMETA-002.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/RUST-UCEL-MARKETMETA-002.md"
+      ]
+    },
+    "RUST-UCEL-MARKETMETA-003": {
+      "branch": "feature/rust-ucel-marketmeta-003",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "ucel/crates/ucel-core/src/order_gate/gate.rs",
+        "ucel/crates/ucel-core/tests/order_gate_enforcement.rs",
+        "ucel/crates/ucel-sdk/src/order_normalize.rs",
+        "ucel/crates/ucel-sdk/src/lib.rs",
+        "docs/verification/RUST-UCEL-MARKETMETA-003.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/RUST-UCEL-MARKETMETA-003.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
