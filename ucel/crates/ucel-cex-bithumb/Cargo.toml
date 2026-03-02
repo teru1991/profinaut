@@ -1,0 +1,10 @@
+[package]
+name = "ucel-cex-bithumb"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bytes = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+ucel-core = { path = "../ucel-core" }
