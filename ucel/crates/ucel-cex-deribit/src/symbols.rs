@@ -161,4 +161,12 @@ mod tests {
             .unwrap_err()
             .contains("missing tick_size"));
     }
+
+    #[test]
+    fn errors_without_step() {
+        let body: DeribitResponse = serde_json::from_str(r#"{"result":[{"instrument_name":"BTC-PERPETUAL","base_currency":"BTC","quote_currency":"USD","kind":"future","tick_size":0.5}]}"#).unwrap();
+        assert!(parse_snapshot(vec![body])
+            .unwrap_err()
+            .contains("missing min_trade_amount"));
+    }
 }

@@ -56,7 +56,7 @@ fn parse_decimal(v: &str, field: &str, symbol: &str) -> Result<Decimal, String> 
 }
 
 fn decimal_from_scale(scale: u32) -> Result<Decimal, String> {
-    Decimal::from_str(&format!("1e-{scale}")).map_err(|e| e.to_string())
+    Ok(Decimal::new(1, scale))
 }
 
 fn parse_option_right(side: Option<&str>) -> Option<OptionRight> {
@@ -233,5 +233,20 @@ mod tests {
         assert!(parse_snapshot(body)
             .unwrap_err()
             .contains("missing tick_size"));
+    }
+
+    #[test]
+    fn uses_scale_fallback_when_filters_missing() {
+        let body: ExchangeInfo = serde_json::from_str(r#"{"optionSymbols":[{"symbol":"BTC-240628-50000-C","status":"TRADING","priceScale":2,"quantityScale":3,"filters":[]}]}"#).unwrap();
+        let instruments = parse_snapshot(body).unwrap();
+        assert_eq!(instruments[0].tick_size.to_string(), "0.01");
+        assert_eq!(instruments[0].lot_size.to_string(), "0.001");
+    }
+
+    #[test]
+    fn errors_when_no_filters_and_no_scales() {
+        let body: ExchangeInfo = serde_json::from_str(r#"{"optionSymbols":[{"symbol":"BTC-240628-50000-C","status":"TRADING","filters":[]}]}"#).unwrap();
+        let err = parse_snapshot(body).unwrap_err();
+        assert!(err.contains("missing tick_size"));
     }
 }

@@ -144,9 +144,21 @@ mod tests {
 
     #[test]
     fn errors_when_tick_missing() {
-        let body = serde_json::from_str::<Vec<InstrumentDto>>(
-            r#"[{"symbol":"XBTUSD","state":"Open","lotSize":"1"}]"#,
-        );
-        assert!(body.is_err());
+        let body: Vec<InstrumentDto> = serde_json::from_str(
+            r#"[{"symbol":"XBTUSD","state":"Open","tickSize":"","lotSize":"1"}]"#,
+        )
+        .unwrap();
+        let err = parse_snapshot(body).unwrap_err();
+        assert!(err.contains("tick_size"));
+    }
+
+    #[test]
+    fn errors_when_step_missing() {
+        let body: Vec<InstrumentDto> = serde_json::from_str(
+            r#"[{"symbol":"XBTUSD","state":"Open","tickSize":"0.5","lotSize":""}]"#,
+        )
+        .unwrap();
+        let err = parse_snapshot(body).unwrap_err();
+        assert!(err.contains("lot_size"));
     }
 }
