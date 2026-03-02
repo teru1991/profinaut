@@ -10,7 +10,6 @@ pub use ucel_symbol_store::SymbolEvent;
 
 pub type SymbolEventStream = Pin<Box<dyn Stream<Item = SymbolEvent> + Send>>;
 
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MarketMetaRow {
     pub canonical_symbol: String,
@@ -83,7 +82,6 @@ pub trait SymbolFetcher: Send + Sync {
     fn rate_limit_policy(&self) -> RateLimitPolicy;
     async fn fetch_snapshot(&self, ctx: &SymbolContext) -> Result<Snapshot, SymbolAdapterError>;
 }
-
 
 #[async_trait]
 pub trait MarketMetaFetcher: Send + Sync {

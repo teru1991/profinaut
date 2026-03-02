@@ -42,19 +42,10 @@ impl Default for VenueLimiterConfig {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct HttpRateLimiterConfig {
     pub default: VenueLimiterConfig,
     pub per_venue: HashMap<String, VenueLimiterConfig>,
-}
-
-impl Default for HttpRateLimiterConfig {
-    fn default() -> Self {
-        Self {
-            default: VenueLimiterConfig::default(),
-            per_venue: HashMap::new(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

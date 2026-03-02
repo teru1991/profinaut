@@ -64,7 +64,10 @@ pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String>
     for r in body.data {
         let tick = r.tick_size.parse::<Decimal>().map_err(|e| e.to_string())?;
         let step = r.size_step.parse::<Decimal>().map_err(|e| e.to_string())?;
-        let min_qty = r.min_order_size.parse::<Decimal>().map_err(|e| e.to_string())?;
+        let min_qty = r
+            .min_order_size
+            .parse::<Decimal>()
+            .map_err(|e| e.to_string())?;
 
         let canonical = format!("{}/JPY", r.symbol);
         let mm = MarketMeta {

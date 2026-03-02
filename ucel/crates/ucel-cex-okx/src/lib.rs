@@ -5,7 +5,9 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::info;
 use ucel_core::{ErrorCode, OpName, UcelError};
-use ucel_transport::{enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport, WsConnectRequest};
+use ucel_transport::{
+    enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport, WsConnectRequest,
+};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -63,7 +65,12 @@ impl OkxRestAdapter {
             .endpoints
             .iter()
             .find(|s| s.id == endpoint_id)
-            .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, format!("unknown endpoint: {endpoint_id}")))?;
+            .ok_or_else(|| {
+                UcelError::new(
+                    ErrorCode::NotSupported,
+                    format!("unknown endpoint: {endpoint_id}"),
+                )
+            })?;
 
         let ctx = RequestContext {
             trace_id: Uuid::new_v4().to_string(),
@@ -236,7 +243,10 @@ impl OkxWsAdapter {
             .find(|s| s.id == channel_id)
             .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown ws channel"))?;
         if spec.requires_auth && key_id.is_none() {
-            return Err(UcelError::new(ErrorCode::MissingAuth, "private websocket endpoint requires key_id"));
+            return Err(UcelError::new(
+                ErrorCode::MissingAuth,
+                "private websocket endpoint requires key_id",
+            ));
         }
         if spec.requires_auth {
             log_private_ws_preflight(key_id.unwrap_or(""));
@@ -261,10 +271,14 @@ impl OkxWsAdapter {
     }
 
     pub fn subscribe_once(&mut self, channel_id: &str, symbol: Option<&str>) -> bool {
-        self.subscriptions.insert(format!("{channel_id}:{}", symbol.unwrap_or("*")))
+        self.subscriptions
+            .insert(format!("{channel_id}:{}", symbol.unwrap_or("*")))
     }
 
-    pub async fn reconnect_and_resubscribe<T: Transport>(&mut self, transport: &T) -> Result<usize, UcelError> {
+    pub async fn reconnect_and_resubscribe<T: Transport>(
+        &mut self,
+        transport: &T,
+    ) -> Result<usize, UcelError> {
         let ctx = RequestContext {
             trace_id: Uuid::new_v4().to_string(),
             request_id: Uuid::new_v4().to_string(),
@@ -276,7 +290,12 @@ impl OkxWsAdapter {
             requires_auth: false,
         };
         transport
-            .connect_ws(WsConnectRequest { url: "wss://ws.okx.com:8443/ws/v5/public".into() }, ctx)
+            .connect_ws(
+                WsConnectRequest {
+                    url: "wss://ws.okx.com:8443/ws/v5/public".into(),
+                },
+                ctx,
+            )
             .await?;
         self.metrics.ws_reconnect_total += 1;
         self.metrics.ws_resubscribe_total += self.subscriptions.len() as u64;
@@ -597,12 +616,24 @@ mod tests {
     }
 
     impl Transport for SpyTransport {
-        async fn send_http(&self, _req: HttpRequest, _ctx: RequestContext) -> Result<HttpResponse, UcelError> {
+        async fn send_http(
+            &self,
+            _req: HttpRequest,
+            _ctx: RequestContext,
+        ) -> Result<HttpResponse, UcelError> {
             self.calls.fetch_add(1, Ordering::SeqCst);
-            self.response.lock().expect("lock").take().expect("response")
+            self.response
+                .lock()
+                .expect("lock")
+                .take()
+                .expect("response")
         }
 
-        async fn connect_ws(&self, _req: WsConnectRequest, _ctx: RequestContext) -> Result<WsStream, UcelError> {
+        async fn connect_ws(
+            &self,
+            _req: WsConnectRequest,
+            _ctx: RequestContext,
+        ) -> Result<WsStream, UcelError> {
             self.ws_connects.fetch_add(1, Ordering::SeqCst);
             Ok(WsStream { connected: true })
         }
@@ -652,7 +683,8 @@ mod tests {
 
     #[test]
     fn private_preflight_rejects_without_transport_hit() {
-        let err = OkxWsAdapter::build_subscribe("okx.ws.private", Some("BTC-USDT"), None).unwrap_err();
+        let err =
+            OkxWsAdapter::build_subscribe("okx.ws.private", Some("BTC-USDT"), None).unwrap_err();
         assert_eq!(err.code, ErrorCode::MissingAuth);
     }
 
@@ -683,15 +715,28 @@ mod tests {
         let mut metrics = OkxWsMetrics::default();
         let mut queue = WsBackpressureBuffer::with_capacity(1);
         queue.try_push(
-            NormalizedWsEvent { channel_id: "okx.ws.public".into(), channel: "books".into(), symbol: Some("BTC-USDT".into()), event_type: "update".into() },
+            NormalizedWsEvent {
+                channel_id: "okx.ws.public".into(),
+                channel: "books".into(),
+                symbol: Some("BTC-USDT".into()),
+                event_type: "update".into(),
+            },
             &mut metrics,
         );
         queue.try_push(
-            NormalizedWsEvent { channel_id: "okx.ws.public".into(), channel: "books".into(), symbol: Some("ETH-USDT".into()), event_type: "update".into() },
+            NormalizedWsEvent {
+                channel_id: "okx.ws.public".into(),
+                channel: "books".into(),
+                symbol: Some("ETH-USDT".into()),
+                event_type: "update".into(),
+            },
             &mut metrics,
         );
         assert_eq!(metrics.ws_backpressure_drops_total, 1);
-        assert_eq!(queue.recv().await.unwrap().symbol.as_deref(), Some("BTC-USDT"));
+        assert_eq!(
+            queue.recv().await.unwrap().symbol.as_deref(),
+            Some("BTC-USDT")
+        );
     }
 
     #[test]
@@ -740,7 +785,8 @@ mod tests {
             log_private_ws_preflight("kid-001");
         });
 
-        let output = String::from_utf8(captured.lock().expect("capture lock").clone()).expect("utf8");
+        let output =
+            String::from_utf8(captured.lock().expect("capture lock").clone()).expect("utf8");
         assert!(output.contains("kid-001"));
         assert!(!output.contains("api_key"));
         assert!(!output.contains("api_secret"));
@@ -748,7 +794,8 @@ mod tests {
 
     #[test]
     fn strict_coverage_gate_is_on_and_has_no_gaps() {
-        let manifest_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/okx.yaml");
+        let manifest_path =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/okx.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
         assert!(manifest.strict);
         let gaps = evaluate_coverage_gate(&manifest);
@@ -763,13 +810,15 @@ mod tests {
                 status: 200,
                 body: Bytes::from_static(br#"{"code":"0","msg":"","data":[]}"#),
             }));
-            let out = adapter.execute_rest(&transport, &spec.id, None, Some("k".into())).await;
+            let out = adapter
+                .execute_rest(&transport, &spec.id, None, Some("k".into()))
+                .await;
             assert!(out.is_ok(), "id={} should parse fixture", spec.id);
         }
     }
 }
 
+pub mod channels;
 pub mod symbols;
 pub mod ws;
 pub mod ws_manager;
-pub mod channels;

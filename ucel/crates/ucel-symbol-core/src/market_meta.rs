@@ -334,7 +334,11 @@ impl MarketMeta {
 impl From<&StandardizedInstrument> for MarketMeta {
     fn from(si: &StandardizedInstrument) -> Self {
         let mut mm = Self::new(
-            MarketMetaId::new(si.exchange.clone(), si.market_type.clone(), si.raw_symbol.clone()),
+            MarketMetaId::new(
+                si.exchange.clone(),
+                si.market_type.clone(),
+                si.raw_symbol.clone(),
+            ),
             si.tick_size,
             si.lot_size,
         );
@@ -556,5 +560,4 @@ mod tests {
         assert_eq!(mm.min_notional.unwrap().to_string(), "5");
         assert!(mm.validate_basic().is_ok());
     }
-
 }

@@ -179,9 +179,8 @@ pub fn normalize_decimal(x: Decimal) -> Decimal {
 }
 
 fn policy_relaxed() -> DecimalPolicy {
-    let p = DecimalPolicy::for_observation_relaxed();
     // symbol層は “丸め/量子化” の補助。execution gate には使わない。
-    p
+    DecimalPolicy::for_observation_relaxed()
 }
 
 pub fn round_price(value: Decimal, precision: u32) -> Decimal {

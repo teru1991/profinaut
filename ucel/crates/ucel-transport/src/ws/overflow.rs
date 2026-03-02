@@ -89,6 +89,7 @@ impl Spooler {
     /// Spill bytes to disk as a `RawRecord`.
     ///
     /// IMPORTANT: This is on the overflow path. It should be safe and simple.
+    #[allow(clippy::too_many_arguments)] // Explicit event fields avoid hidden coupling in overflow persistence.
     pub async fn spill_bytes(
         &self,
         exchange_id: &str,
