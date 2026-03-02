@@ -809,6 +809,19 @@
       "verification_evidence": [
         "docs/verification/RUST-UCEL-MARKETMETA-003.md"
       ]
+    },
+    "RUST-UCEL-MARKETMETA-004": {
+      "branch": "feature/rust-ucel-marketmeta-004",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "ucel/crates/ucel-sdk/tests/market_meta_e2e_it.rs",
+        "ucel/crates/ucel-sdk/Cargo.toml",
+        "docs/verification/RUST-UCEL-MARKETMETA-004.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/RUST-UCEL-MARKETMETA-004.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
