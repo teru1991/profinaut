@@ -1,4 +1,6 @@
 pub mod coverage;
+pub mod fuzz;
+pub mod fuzz_corpus;
 pub mod fixtures;
 pub mod golden;
 pub mod normalize;
