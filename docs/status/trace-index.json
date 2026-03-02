@@ -954,6 +954,77 @@
       "verification_evidence": [
         "docs/verification/ucel-marketmeta-exch-final-003.md"
       ]
+    },
+    "UCEL-SSOT-GATE-V2-001": {
+      "branch": "feature/ucel-ssot-gate-v2-001",
+      "artifacts": [
+        "docs/specs/ucel/ssot_integrity_gate_v2.md",
+        "ucel/docs/ws-full-coverage-design.md",
+        "ucel/crates/ucel-subscription-planner/src/lib.rs",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-registry/src/invoker/coverage.rs",
+        "docs/verification/UCEL-SSOT-GATE-V2-001.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-SSOT-GATE-V2-001.md"
+      ],
+      "notes": "Coverage v1 backward-compatible extension: support/not_supported + per-entry strict override; docs fixed; legacy gates ignore not_supported."
+    },
+    "UCEL-SSOT-GATE-V2-002": {
+      "branch": "feature/ucel-ssot-gate-v2-002",
+      "artifacts": [
+        "ucel/crates/ucel-testkit/src/ssot_integrity_gate_types.rs",
+        "ucel/crates/ucel-testkit/src/ssot_integrity_gate.rs",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/src/ssot_gate.rs",
+        "ucel/crates/ucel-testkit/tests/ssot_integrity_gate_test.rs",
+        "docs/verification/UCEL-SSOT-GATE-V2-002.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-SSOT-GATE-V2-002.md"
+      ],
+      "notes": "Added SSOT integrity gate v2 (new API) with synthetic SSOT tests; existing v1 gates remain unchanged to avoid breaking CI before SSOT data migration."
+    },
+    "UCEL-SSOT-GATE-V2-003": {
+      "branch": "feature/ucel-ssot-gate-v2-003",
+      "artifacts": [
+        "ucel/crates/ucel-testkit/tests/ssot_integrity_gate_repo_test.rs",
+        "ucel/coverage/bithumb.yaml",
+        "ucel/crates/ucel-cex-bithumb/README.md",
+        "ucel/crates/ucel-ws-rules/rules/bitbank.toml",
+        "ucel/crates/ucel-ws-rules/rules/bitflyer.toml",
+        "ucel/crates/ucel-ws-rules/rules/bitmex.toml",
+        "ucel/crates/ucel-ws-rules/rules/coinbase.toml",
+        "ucel/crates/ucel-ws-rules/rules/coincheck.toml",
+        "ucel/crates/ucel-ws-rules/rules/deribit.toml",
+        "ucel/crates/ucel-ws-rules/rules/sbivc.toml",
+        "ucel/crates/ucel-ws-rules/rules/upbit.toml",
+        "docs/runbooks/ucel_ssot_integrity_gate_v2.md",
+        "docs/verification/UCEL-SSOT-GATE-V2-003.md",
+        "ucel/examples/venue_smoke/binance-coinm.rs",
+        "ucel/examples/venue_smoke/binance-options.rs",
+        "ucel/examples/venue_smoke/binance-usdm.rs",
+        "ucel/examples/venue_smoke/binance.rs",
+        "ucel/examples/venue_smoke/bitbank.rs",
+        "ucel/examples/venue_smoke/bitflyer.rs",
+        "ucel/examples/venue_smoke/bitget.rs",
+        "ucel/examples/venue_smoke/bitmex.rs",
+        "ucel/examples/venue_smoke/bittrade.rs",
+        "ucel/examples/venue_smoke/bybit.rs",
+        "ucel/examples/venue_smoke/coinbase.rs",
+        "ucel/examples/venue_smoke/coincheck.rs",
+        "ucel/examples/venue_smoke/deribit.rs",
+        "ucel/examples/venue_smoke/gmocoin.rs",
+        "ucel/examples/venue_smoke/htx.rs",
+        "ucel/examples/venue_smoke/kraken.rs",
+        "ucel/examples/venue_smoke/okx.rs",
+        "ucel/examples/venue_smoke/sbivc.rs",
+        "ucel/examples/venue_smoke/upbit.rs"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-SSOT-GATE-V2-003.md"
+      ],
+      "notes": "Filled SSOT to make v2 integrity gate failures zero; added repo-level gate test and runbook."
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

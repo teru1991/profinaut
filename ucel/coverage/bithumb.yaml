@@ -1,3 +1,23 @@
 venue: bithumb
 strict: false
-entries: []
+entries:
+  - id: openapi.public.ws.ticker.snapshot
+    implemented: false
+    tested: false
+    support: not_supported
+    strict: false
+  - id: openapi.private.ws.myorder.update
+    implemented: false
+    tested: false
+    support: not_supported
+    strict: false
+  - id: openapi.private.ws.myasset.update
+    implemented: false
+    tested: false
+    support: not_supported
+    strict: false
+  - id: openapi.public.ws.trade.snapshot
+    implemented: false
+    tested: false
+    support: not_supported
+    strict: false

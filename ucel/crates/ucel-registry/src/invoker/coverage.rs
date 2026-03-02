@@ -3,6 +3,19 @@ use serde::Deserialize;
 use std::fs;
 use std::path::Path;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CoverageSupport {
+    Supported,
+    NotSupported,
+}
+
+impl Default for CoverageSupport {
+    fn default() -> Self {
+        Self::Supported
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct CoverageManifest {
     pub venue: String,
@@ -15,6 +28,20 @@ pub struct CoverageEntry {
     pub id: String,
     pub implemented: bool,
     pub tested: bool,
+    #[serde(default)]
+    pub support: CoverageSupport,
+    #[serde(default)]
+    pub strict: Option<bool>,
+}
+
+impl CoverageEntry {
+    pub fn is_supported(&self) -> bool {
+        self.support == CoverageSupport::Supported
+    }
+
+    pub fn effective_strict(&self, manifest_strict: bool) -> bool {
+        self.strict.unwrap_or(manifest_strict)
+    }
 }
 
 pub fn discover(root: &Path) -> Result<Vec<(VenueId, CoverageManifest)>, InvokerError> {
@@ -35,4 +62,13 @@ pub fn discover(root: &Path) -> Result<Vec<(VenueId, CoverageManifest)>, Invoker
 
 pub fn ids(manifest: &CoverageManifest) -> Result<Vec<OperationId>, InvokerError> {
     manifest.entries.iter().map(|e| e.id.parse()).collect()
+}
+
+pub fn ids_supported(manifest: &CoverageManifest) -> Result<Vec<OperationId>, InvokerError> {
+    manifest
+        .entries
+        .iter()
+        .filter(|e| e.is_supported())
+        .map(|e| e.id.parse())
+        .collect()
 }
