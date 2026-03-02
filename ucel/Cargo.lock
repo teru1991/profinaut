@@ -3489,6 +3489,7 @@ dependencies = [
  "ucel-subscription-planner",
  "ucel-subscription-store",
  "ucel-ws-rules",
+ "url",
 ]
 
 [[package]]

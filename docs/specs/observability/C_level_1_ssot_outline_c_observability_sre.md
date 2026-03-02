@@ -314,3 +314,10 @@
 - C-26, C-26-1, C-26-2, C-26-3  
 - C-27, C-27-1, C-27-2, C-27-3  
 - C-28, C-28-1, C-28-2, C-28-3
+
+
+## C-B-OBSSEC-003 Finalization (Fixed)
+- Transport required keys are fixed as `exchange_id/conn_id/op/symbol/run_id` and are enforced through `ucel-transport` helper APIs.
+- Transport standard metrics contract is fixed in `docs/specs/observability/ucel_transport_observability_contract.md`.
+- Security hardening baseline is fixed in `docs/specs/security/security_hardening_threat_incident_spec.md`.
+- Support bundle must carry transport observability artifacts (`metrics.prom` equivalent text + `events.json` equivalent payload).

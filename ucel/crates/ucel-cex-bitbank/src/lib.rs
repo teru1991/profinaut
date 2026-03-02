@@ -9,6 +9,7 @@ use ucel_core::{
     Decimal, ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side,
     TradeEvent, UcelError,
 };
+use ucel_transport::security::{EndpointAllowlist, SubdomainPolicy};
 use ucel_transport::{enforce_auth_boundary, RequestContext, Transport, WsConnectRequest};
 use uuid::Uuid;
 
@@ -155,7 +156,11 @@ impl BitbankWsAdapter {
         enforce_auth_boundary(&ctx)?;
         t.connect_ws(
             WsConnectRequest {
-                url: spec.ws_url.unwrap_or_else(|| "wss://private-stream".into()),
+                url: {
+                    let u = spec.ws_url.unwrap_or_else(|| "wss://private-stream".into());
+                    validate_ws_url(&u)?;
+                    u
+                },
             },
             ctx,
         )
@@ -470,3 +475,20 @@ mod tests {
 pub mod channels;
 pub mod symbols;
 pub mod ws_manager;
+
+fn validate_ws_url(url: &str) -> Result<(), UcelError> {
+    let al = EndpointAllowlist::new(
+        [
+            "stream.bitbank.cc",
+            "private-stream",
+            "localhost",
+            "127.0.0.1",
+        ],
+        SubdomainPolicy::AllowSubdomains,
+    )?;
+    if url == "wss://private-stream" {
+        return Ok(());
+    }
+    al.validate_https_wss(url)?;
+    Ok(())
+}

@@ -5,6 +5,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use tokio::sync::mpsc;
 use tracing::info;
 use ucel_core::{ErrorCode, OpName, UcelError};
+use ucel_transport::security::{EndpointAllowlist, SubdomainPolicy};
 use ucel_transport::{
     enforce_auth_boundary, HttpRequest, RequestContext, Transport, WsConnectRequest,
 };
@@ -324,7 +325,10 @@ impl CoincheckWsAdapter {
         transport
             .connect_ws(
                 WsConnectRequest {
-                    url: endpoint.ws_url,
+                    url: {
+                        validate_ws_url(&endpoint.ws_url)?;
+                        endpoint.ws_url
+                    },
                 },
                 ctx,
             )
@@ -821,4 +825,36 @@ fn op_for_rest(endpoint_id: &str) -> OpName {
         "coincheck.rest.public.order_books.get" => OpName::FetchOrderbookSnapshot,
         _ => OpName::FetchStatus,
     }
+}
+
+fn validate_ws_url(url: &str) -> Result<(), UcelError> {
+    let al = EndpointAllowlist::new(
+        ["ws-api.coincheck.com", "localhost", "127.0.0.1"],
+        SubdomainPolicy::Exact,
+    )?;
+    al.validate_https_wss(url)?;
+    Ok(())
+}
+
+fn validate_base_url(url: &str) -> Result<(), UcelError> {
+    if url.starts_with("http://localhost") || url.starts_with("http://127.0.0.1") {
+        return Ok(());
+    }
+    let al = EndpointAllowlist::new(
+        [
+            "coincheck.com",
+            "api.coincheck.com",
+            "localhost",
+            "127.0.0.1",
+        ],
+        SubdomainPolicy::AllowSubdomains,
+    )?;
+    let u = al.validate_https_wss(url)?;
+    if u.scheme() != "https" {
+        return Err(UcelError::new(
+            ErrorCode::CatalogInvalid,
+            "base_url_override must be https",
+        ));
+    }
+    Ok(())
 }

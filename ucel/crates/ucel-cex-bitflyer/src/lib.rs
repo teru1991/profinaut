@@ -7,6 +7,7 @@ use tracing::info;
 use ucel_core::{ErrorCode, OpName, UcelError};
 use ucel_transport::{enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport};
 use uuid::Uuid;
+use ucel_transport::security::{EndpointAllowlist, SubdomainPolicy};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EndpointSpec {
@@ -474,7 +475,15 @@ impl BitflyerWsAdapter {
         enforce_auth_boundary(&ctx)?;
         info!(venue = "bitflyer", ws_channel = %sub.channel_id, key_id = ?ctx.key_id, "ws subscribe requested");
         transport
-            .connect_ws(ucel_transport::WsConnectRequest { url: spec.ws_url }, ctx)
+            .connect_ws(
+                ucel_transport::WsConnectRequest {
+                    url: {
+                        validate_bitflyer_ws_url(&spec.ws_url)?;
+                        spec.ws_url
+                    },
+                },
+                ctx,
+            )
             .await?;
         self.subscriptions.insert(sub);
         Ok(())
@@ -1087,3 +1096,12 @@ mod tests {
 pub mod channels;
 pub mod symbols;
 pub mod ws_manager;
+
+fn validate_bitflyer_ws_url(url: &str) -> Result<(), UcelError> {
+    let al = EndpointAllowlist::new(
+        ["ws.lightstream.bitflyer.com", "localhost", "127.0.0.1"],
+        SubdomainPolicy::Exact,
+    )?;
+    al.validate_https_wss(url)?;
+    Ok(())
+}

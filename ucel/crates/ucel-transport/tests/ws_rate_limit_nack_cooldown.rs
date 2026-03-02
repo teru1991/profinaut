@@ -191,6 +191,8 @@ async fn ws_nack_rate_limit_sets_cooldown() {
 
     let until = store.rate_limit_until_of(key).unwrap();
     assert!(until.is_some());
+    let attempts = store.attempts_of(key).unwrap().unwrap_or(0);
+    assert!(attempts >= 1);
 
     let got = store
         .next_pending_batch("gmocoin", "gmocoin-conn-1", 10, 1)

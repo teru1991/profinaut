@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use flate2::read::GzDecoder;
 use serde_json::{json, Value};
 use std::io::Read;
-use ucel_transport::ws::adapter::{InboundClass, OutboundMsg, WsVenueAdapter};
+use ucel_transport::ws::adapter::{InboundClass, InboundJsonGuard, OutboundMsg, WsVenueAdapter};
 
 use crate::symbols::fetch_spot_symbols;
 
@@ -87,6 +87,9 @@ impl WsVenueAdapter for HtxSpotWsAdapter {
 
     fn classify_inbound(&self, raw: &[u8]) -> InboundClass {
         let bytes = gunzip_if_needed(raw);
+        if InboundJsonGuard::default().enforce(&bytes).is_err() {
+            return InboundClass::Unknown;
+        }
         let v: Value = match serde_json::from_slice(&bytes) {
             Ok(x) => x,
             Err(_) => return InboundClass::Unknown,

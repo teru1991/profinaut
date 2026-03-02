@@ -6,6 +6,7 @@ use tokio::sync::mpsc;
 use tracing::info;
 use ucel_core::decimal::serde::deserialize_decimal_observation;
 use ucel_core::{Decimal, ErrorCode, OpName, UcelError};
+use ucel_transport::security::{EndpointAllowlist, SubdomainPolicy};
 use ucel_transport::{
     enforce_auth_boundary, HttpRequest, RequestContext, Transport, WsConnectRequest,
 };
@@ -333,7 +334,11 @@ impl UpbitWsAdapter {
         transport
             .connect_ws(
                 WsConnectRequest {
-                    url: "wss://api.upbit.com/websocket/v1".into(),
+                    url: {
+                        let u = "wss://api.upbit.com/websocket/v1";
+                        validate_ws_url(u)?;
+                        u.into()
+                    },
                 },
                 ctx,
             )
@@ -864,3 +869,12 @@ mod tests {
 pub mod channels;
 pub mod symbols;
 pub mod ws_manager;
+
+fn validate_ws_url(url: &str) -> Result<(), UcelError> {
+    let al = EndpointAllowlist::new(
+        ["api.upbit.com", "localhost", "127.0.0.1"],
+        SubdomainPolicy::Exact,
+    )?;
+    al.validate_https_wss(url)?;
+    Ok(())
+}

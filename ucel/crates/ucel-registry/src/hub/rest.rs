@@ -8,6 +8,7 @@ use serde::de::DeserializeOwned;
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::time::{sleep, Duration};
+use ucel_transport::security::{EndpointAllowlist, SubdomainPolicy};
 use ucel_transport::{next_retry_delay_ms, RetryPolicy};
 
 #[derive(Clone)]
@@ -63,6 +64,7 @@ impl RestHub {
             spec.path.clone().unwrap_or_default()
         );
         let method = spec.method.clone().unwrap_or_else(|| "GET".to_string());
+        validate_https_endpoint(self.exchange, &spec.base_url.clone().unwrap_or_default())?;
 
         let retry_policy = RetryPolicy {
             base_delay_ms: self.config.base_backoff_ms,
@@ -128,4 +130,33 @@ mod tests {
         assert_eq!(bounded_retry_delay_ms(&p, 10, None), 500);
         assert_eq!(bounded_retry_delay_ms(&p, 0, Some(2000)), 500);
     }
+}
+
+fn rest_allowlist(exchange: ExchangeId) -> Result<EndpointAllowlist, HubError> {
+    let hosts: Vec<&str> = match exchange {
+        ExchangeId::Binance => vec!["api.binance.com", "fapi.binance.com", "dapi.binance.com"],
+        ExchangeId::Bybit => vec!["api.bybit.com", "api-testnet.bybit.com"],
+        ExchangeId::Coinbase => vec!["api.exchange.coinbase.com", "api.coinbase.com"],
+        ExchangeId::Coincheck => vec!["coincheck.com", "api.coincheck.com"],
+        ExchangeId::Deribit => vec!["www.deribit.com", "test.deribit.com"],
+        ExchangeId::Gmocoin => vec!["api.coin.z.com"],
+        ExchangeId::Kraken => vec!["api.kraken.com"],
+        ExchangeId::Okx => vec!["www.okx.com", "aws.okx.com"],
+        ExchangeId::Upbit => vec!["api.upbit.com"],
+    };
+    EndpointAllowlist::new(hosts, SubdomainPolicy::Exact)
+        .map_err(|e| HubError::RegistryValidation(e.message))
+}
+
+fn validate_https_endpoint(exchange: ExchangeId, base: &str) -> Result<(), HubError> {
+    let al = rest_allowlist(exchange)?;
+    let u = al
+        .validate_https_wss(base)
+        .map_err(|e| HubError::RegistryValidation(e.message))?;
+    if u.scheme() != "https" {
+        return Err(HubError::RegistryValidation(
+            "rest base_url must be https".to_string(),
+        ));
+    }
+    Ok(())
 }

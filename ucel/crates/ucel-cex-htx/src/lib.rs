@@ -9,6 +9,7 @@ use ucel_core::{
     Decimal, ErrorCode, OpName, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side,
     TradeEvent, UcelError,
 };
+use ucel_transport::security::{EndpointAllowlist, SubdomainPolicy};
 use ucel_transport::{
     enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport, WsConnectRequest,
 };
@@ -433,7 +434,11 @@ impl HtxWsAdapter {
         transport
             .connect_ws(
                 WsConnectRequest {
-                    url: spec.ws_url.clone(),
+                    url: {
+                        let u = spec.ws_url.clone();
+                        validate_htx_ws_url(&u)?;
+                        u
+                    },
                 },
                 ctx,
             )
@@ -474,7 +479,11 @@ impl HtxWsAdapter {
             transport
                 .connect_ws(
                     WsConnectRequest {
-                        url: spec.ws_url.clone(),
+                        url: {
+                            let u = spec.ws_url.clone();
+                            validate_htx_ws_url(&u)?;
+                            u
+                        },
                     },
                     ctx,
                 )
@@ -744,3 +753,19 @@ pub mod channels;
 pub mod symbols;
 pub mod ws;
 pub mod ws_manager;
+
+fn validate_htx_ws_url(url: &str) -> Result<(), UcelError> {
+    let al = EndpointAllowlist::new(
+        [
+            "api.hbdm.com",
+            "api.huobi.pro",
+            "api.htx.com",
+            "api-aws.huobi.pro",
+            "localhost",
+            "127.0.0.1",
+        ],
+        SubdomainPolicy::AllowSubdomains,
+    )?;
+    al.validate_https_wss(url)?;
+    Ok(())
+}

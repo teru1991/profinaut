@@ -149,6 +149,7 @@ impl<E: WsExecutor> SbivcWsClient<E> {
         if !self.active.insert(sub.clone()) {
             return Ok(());
         }
+        validate_sbivc_ws_url(&channel.ws_url)?;
         self.executor.connect(&channel.ws_url)?;
         let cmd = channel.subscribe.replace("{symbol}", &sub.symbol);
         self.executor.send(cmd)?;
@@ -176,6 +177,7 @@ impl<E: WsExecutor> SbivcWsClient<E> {
                 .channels
                 .get(&sub.channel_id)
                 .ok_or_else(|| UcelError::new(ErrorCode::NotSupported, "unknown ws channel"))?;
+            validate_sbivc_ws_url(&channel.ws_url)?;
             self.executor.connect(&channel.ws_url)?;
             let cmd = channel.subscribe.replace("{symbol}", &sub.symbol);
             self.executor.send(cmd)?;
@@ -323,7 +325,10 @@ impl<E: HttpExecutor> SbivcRestClient<E> {
 
         let response = self.executor.execute(RestRequest {
             method: endpoint.method.clone(),
-            url: format!("{}{}", endpoint.base_url, endpoint.path),
+            url: {
+                validate_sbivc_base_url(&endpoint.base_url)?;
+                format!("{}{}", endpoint.base_url, endpoint.path)
+            },
             auth,
         })?;
 
@@ -812,3 +817,30 @@ mod tests {
 pub mod channels;
 pub mod symbols;
 pub mod ws_manager;
+
+fn validate_sbivc_ws_url(url: &str) -> Result<(), UcelError> {
+    let al = EndpointAllowlist::new(
+        ["exchange.sbivc.co.jp", "localhost", "127.0.0.1"],
+        SubdomainPolicy::AllowSubdomains,
+    )?;
+    al.validate_https_wss(url)?;
+    Ok(())
+}
+
+fn validate_sbivc_base_url(url: &str) -> Result<(), UcelError> {
+    if url.starts_with("http://localhost") || url.starts_with("http://127.0.0.1") {
+        return Ok(());
+    }
+    let al = EndpointAllowlist::new(
+        ["exchange.sbivc.co.jp", "localhost", "127.0.0.1"],
+        SubdomainPolicy::AllowSubdomains,
+    )?;
+    let u = al.validate_https_wss(url)?;
+    if u.scheme() != "https" {
+        return Err(UcelError::new(
+            ErrorCode::CatalogInvalid,
+            "base_url must be https",
+        ));
+    }
+    Ok(())
+}

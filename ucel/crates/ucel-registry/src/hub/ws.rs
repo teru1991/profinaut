@@ -9,6 +9,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::Message;
+use ucel_transport::security::{EndpointAllowlist, SubdomainPolicy};
 
 #[derive(Debug, Clone)]
 pub struct WsMessage {
@@ -43,6 +44,8 @@ impl WsHub {
             .clone()
             .or_else(|| spec.ws.as_ref().map(|w| w.url.clone()))
             .ok_or_else(|| HubError::RegistryValidation(format!("missing ws url for {key}")))?;
+
+        validate_ws_endpoint(self.exchange, &url)?;
 
         let (tx, rx) = mpsc::channel(self.config.ws_buffer);
         let channel = spec.channel.clone().unwrap_or_else(|| key.clone());
@@ -118,4 +121,34 @@ impl WsHub {
 
         Ok(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx)))
     }
+}
+
+fn ws_allowlist(exchange: ExchangeId) -> Result<EndpointAllowlist, HubError> {
+    let hosts: Vec<&str> = match exchange {
+        ExchangeId::Binance => vec![
+            "stream.binance.com",
+            "ws-fapi.binance.com",
+            "ws-dapi.binance.com",
+        ],
+        ExchangeId::Bybit => vec!["stream.bybit.com", "stream-testnet.bybit.com"],
+        ExchangeId::Coinbase => vec![
+            "ws-feed.exchange.coinbase.com",
+            "advanced-trade-ws.coinbase.com",
+        ],
+        ExchangeId::Coincheck => vec!["ws-api.coincheck.com"],
+        ExchangeId::Deribit => vec!["www.deribit.com", "test.deribit.com"],
+        ExchangeId::Gmocoin => vec!["api.coin.z.com"],
+        ExchangeId::Kraken => vec!["ws.kraken.com", "ws-auth.kraken.com"],
+        ExchangeId::Okx => vec!["ws.okx.com", "wsaws.okx.com"],
+        ExchangeId::Upbit => vec!["api.upbit.com"],
+    };
+    EndpointAllowlist::new(hosts, SubdomainPolicy::Exact)
+        .map_err(|e| HubError::RegistryValidation(e.message))
+}
+
+fn validate_ws_endpoint(exchange: ExchangeId, url: &str) -> Result<(), HubError> {
+    let al = ws_allowlist(exchange)?;
+    al.validate_https_wss(url)
+        .map_err(|e| HubError::RegistryValidation(e.message))?;
+    Ok(())
 }

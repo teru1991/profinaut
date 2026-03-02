@@ -205,3 +205,9 @@ Support Bundle 生成時に、最低限：
 
 ---
 End of document
+
+
+## Transport diagnostics fixed references
+- `/metrics` should include UCEL transport minimum metric set defined by `ucel_transport_observability_contract.md`.
+- Support bundle must include transport observability payloads (`observability.metrics_prometheus_text`, `observability.events_json`) for first-response triage.
+- Decode-path failures must be traceable via `decode_error` telemetry with required correlation keys.
