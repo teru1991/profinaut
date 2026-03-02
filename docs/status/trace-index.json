@@ -874,30 +874,15 @@
     "RUST-WARN-ERR-ZERO-001": {
       "branch": "feature/rust-warn-err-zero-001",
       "artifacts": [
-        "ucel/Cargo.lock",
-        "ucel/Cargo.toml",
-        "ucel/crates/ucel-cex-binance/src/symbols.rs",
-        "ucel/crates/ucel-cex-bitget/src/channels/mod.rs",
-        "ucel/crates/ucel-cex-bitget/src/lib.rs",
+        "docs/verification/RUST-WARN-ERR-ZERO-001.md",
+        "ucel/crates/ucel-cex-binance/src/market_meta.rs",
+        "ucel/crates/ucel-cex-bitget/src/symbols.rs",
+        "ucel/crates/ucel-cex-bitget/src/ws.rs",
         "ucel/crates/ucel-cex-gmocoin/src/symbols.rs",
-        "ucel/crates/ucel-cex-kraken/src/symbols.rs",
-        "ucel/crates/ucel-cex-okx/src/channels/mod.rs",
-        "ucel/crates/ucel-cex-okx/src/lib.rs",
-        "ucel/crates/ucel-cex-okx/src/symbols.rs",
-        "ucel/crates/ucel-cex-okx/src/ws.rs",
-        "ucel/crates/ucel-cex-upbit/src/lib.rs",
-        "ucel/crates/ucel-core/src/decimal/policy.rs",
-        "ucel/crates/ucel-core/src/order_gate/gate.rs",
-        "ucel/crates/ucel-core/tests/value_class_serde.rs",
-        "ucel/crates/ucel-ir/tests/edinet_recorded.rs",
-        "ucel/crates/ucel-symbol-adapter/src/lib.rs",
-        "ucel/crates/ucel-symbol-core/src/lib.rs",
-        "ucel/crates/ucel-symbol-core/src/market_meta.rs",
-        "ucel/crates/ucel-symbol-store/src/lib.rs",
+        "ucel/crates/ucel-symbol-store/src/market_meta_store.rs",
         "ucel/crates/ucel-transport/src/http/limiter.rs",
-        "ucel/crates/ucel-transport/src/ws/connection.rs",
-        "ucel/crates/ucel-transport/src/ws/overflow.rs",
-        "ucel/crates/ucel-transport/src/ws/shutdown.rs"
+        "ucel/crates/ucel-transport/tests/limiter_retry_after.rs",
+        "ucel/crates/ucel-transport/tests/ws_rules_stability_apply.rs"
       ],
       "verification_evidence": "docs/verification/RUST-WARN-ERR-ZERO-001.md"
     }

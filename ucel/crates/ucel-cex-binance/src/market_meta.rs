@@ -29,6 +29,7 @@ struct SymbolInfo {
 
 #[derive(Debug, Deserialize)]
 #[serde(tag = "filterType")]
+#[allow(clippy::enum_variant_names)] // Mirrors Binance API filter names for lossless serde mapping.
 enum Filter {
     #[serde(rename = "PRICE_FILTER")]
     #[serde(rename_all = "camelCase")]

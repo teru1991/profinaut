@@ -70,3 +70,17 @@
 - 不足への追加実装:
   - `cargo` 実行が workspace 構成不整合で停止したため、`ucel/Cargo.toml` に不足 member を追加。
   - `-D warnings`/clippy で発見された問題に対して、局所的な修正と最小範囲の `#[allow]`（理由コメント付き）を追加。
+
+
+## Follow-up fix (addressing review feedback)
+- Resolved remaining Clippy warnings and rustdoc warnings that blocked strict gate completion.
+- Removed invalid rustdoc pseudo-links in Bitget docs comments.
+- Fixed GMOCoin status check to return explicit API error when status != 0.
+- Refactored test initializations to satisfy `field_reassign_with_default` lint.
+- Added scoped lint allow with rationale where event payload size is intentionally large for audit completeness.
+
+### Follow-up command results
+- `cd ucel && cargo test --workspace --all-targets`: **OK**
+- `cd ucel && cargo clippy --workspace --all-targets --all-features -- -D warnings`: **OK**
+- `cd ucel && RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps`: **OK**
+- `./scripts/rust_quality.sh`: **OK**

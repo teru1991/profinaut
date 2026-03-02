@@ -27,7 +27,7 @@ struct FuturesContractRow {
 }
 
 /// Fetch all SPOT symbols (instId list like "BTCUSDT").
-/// Endpoint: GET /api/v2/spot/public/symbols :contentReference[oaicite:3]{index=3}
+/// Endpoint: GET /api/v2/spot/public/symbols
 pub async fn fetch_spot_symbols() -> Result<Vec<String>, String> {
     let url = format!("{REST_BASE}/api/v2/spot/public/symbols");
     let client = reqwest::Client::builder()
@@ -50,7 +50,7 @@ pub async fn fetch_spot_symbols() -> Result<Vec<String>, String> {
 
     let mut out = Vec::new();
     for r in body.data {
-        // "online" is the normal tradable state. :contentReference[oaicite:4]{index=4}
+        // "online" is the normal tradable state.
         if r.status == "online" {
             out.push(r.symbol);
         }
@@ -62,7 +62,7 @@ pub async fn fetch_spot_symbols() -> Result<Vec<String>, String> {
 
 /// Fetch futures contracts (instId list like "BTCUSDT") for productType:
 /// "USDT-FUTURES" | "COIN-FUTURES" | "USDC-FUTURES"
-/// Endpoint: GET /api/v2/mix/market/contracts?productType=... :contentReference[oaicite:5]{index=5}
+/// Endpoint: GET /api/v2/mix/market/contracts?productType=...
 pub async fn fetch_futures_symbols(product_type: &str) -> Result<Vec<String>, String> {
     let url = format!(
         "{REST_BASE}/api/v2/mix/market/contracts?productType={}",
@@ -91,7 +91,7 @@ pub async fn fetch_futures_symbols(product_type: &str) -> Result<Vec<String>, St
 
     let mut out = Vec::new();
     for r in body.data {
-        // "normal" is tradable. :contentReference[oaicite:6]{index=6}
+        // "normal" is tradable.
         if r.symbol_status == "normal" {
             out.push(r.symbol);
         }

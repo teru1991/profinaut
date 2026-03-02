@@ -149,15 +149,16 @@ mod tests {
 
     #[tokio::test(flavor = "current_thread")]
     async fn token_bucket_waits_when_empty() {
-        let mut cfg = HttpRateLimiterConfig::default();
-        cfg.default = VenueLimiterConfig {
-            public: BucketConfig {
-                capacity: 1.0,
-                refill_per_sec: 1.0,
+        let lim = HttpRateLimiter::new(HttpRateLimiterConfig {
+            default: VenueLimiterConfig {
+                public: BucketConfig {
+                    capacity: 1.0,
+                    refill_per_sec: 1.0,
+                },
+                private: BucketConfig::per_second(1.0),
             },
-            private: BucketConfig::per_second(1.0),
-        };
-        let lim = HttpRateLimiter::new(cfg);
+            ..HttpRateLimiterConfig::default()
+        });
 
         let t0 = Instant::now();
         let w0 = lim.acquire_wait("x", false, t0).await;

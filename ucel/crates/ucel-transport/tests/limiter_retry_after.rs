@@ -80,19 +80,19 @@ fn retry_decision_does_not_retry_non_retryable() {
 #[tokio::test(flavor = "current_thread")]
 async fn http_rate_limiter_is_bucketed_by_venue_and_auth() {
     // Make public very tight and private separate.
-    let mut cfg = HttpRateLimiterConfig::default();
-    cfg.default = VenueLimiterConfig {
-        public: BucketConfig {
-            capacity: 1.0,
-            refill_per_sec: 1.0, // 1 rps
+    let lim = HttpRateLimiter::new(HttpRateLimiterConfig {
+        default: VenueLimiterConfig {
+            public: BucketConfig {
+                capacity: 1.0,
+                refill_per_sec: 1.0, // 1 rps
+            },
+            private: BucketConfig {
+                capacity: 1.0,
+                refill_per_sec: 10.0, // 10 rps (effectively no wait)
+            },
         },
-        private: BucketConfig {
-            capacity: 1.0,
-            refill_per_sec: 10.0, // 10 rps (effectively no wait)
-        },
-    };
-
-    let lim = HttpRateLimiter::new(cfg);
+        ..HttpRateLimiterConfig::default()
+    });
 
     let t0 = Instant::now();
 

@@ -170,7 +170,7 @@ impl WsVenueAdapter for BitgetWsAdapter {
     /// - expect string "pong"
     /// - server disconnects if no "ping" within 2 minutes
     /// - websocket forcibly disconnected every 24 hours
-    /// - accept up to 10 messages/sec :contentReference[oaicite:9]{index=9}
+    /// - accept up to 10 messages/sec
     fn ping_msg(&self) -> Option<OutboundMsg> {
         Some(OutboundMsg {
             text: "ping".to_string(),
