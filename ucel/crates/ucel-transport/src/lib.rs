@@ -176,6 +176,8 @@ pub struct HealthStatus {
     pub last_error_code: Option<ErrorCode>,
 }
 
+pub const TRANSPORT_RESILIENCE_SPEC_VERSION: &str = "transport_resilience_spec_v1";
+
 #[cfg(test)]
 mod tests {
     use super::*;

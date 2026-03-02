@@ -1142,6 +1142,29 @@
       "verification_evidence": [
         "docs/verification/UCEL-100P-STEP4-FUZZ-T-CRASHFREE-001.md"
       ]
+    },
+    "UCEL-100P-STEP5-TRANSPORT-RESILIENCE-001": {
+      "branch": "feature/ucel-100p-step5-transport-resilience-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "ucel/crates/ucel-transport/src/lib.rs",
+        "ucel/crates/ucel-transport/src/ws/backpressure.rs",
+        "ucel/crates/ucel-transport/src/ws/connection.rs",
+        "ucel/crates/ucel-transport/src/ws/heartbeat.rs",
+        "ucel/crates/ucel-transport/src/ws/limiter.rs",
+        "ucel/crates/ucel-transport/src/ws/mod.rs",
+        "ucel/crates/ucel-transport/src/ws/reconnect.rs",
+        "docs/specs/ucel/transport_resilience_spec_v1.md",
+        "docs/verification/UCEL-100P-STEP5-TRANSPORT-RESILIENCE-001.md",
+        "ucel/crates/ucel-testkit/src/chaos.rs",
+        "ucel/crates/ucel-testkit/tests/chaos_ws_disconnect.rs",
+        "ucel/crates/ucel-testkit/tests/chaos_ws_slow_consumer.rs",
+        "ucel/crates/ucel-testkit/tests/chaos_ws_throttle_429.rs"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-100P-STEP5-TRANSPORT-RESILIENCE-001.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
