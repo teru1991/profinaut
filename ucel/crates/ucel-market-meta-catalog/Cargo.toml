@@ -1,0 +1,13 @@
+[package]
+name = "ucel-market-meta-catalog"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+ucel-core = { path = "../ucel-core" }
+ucel-symbol-core = { path = "../ucel-symbol-core" }
+
+[build-dependencies]
+serde_json = { workspace = true }

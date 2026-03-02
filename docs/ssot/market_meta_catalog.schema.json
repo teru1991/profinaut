@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UCEL MarketMeta Catalog",
+  "type": "object",
+  "required": ["schema_version", "entries"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["exchange", "market_type", "raw_symbol", "tick_size", "step_size"],
+        "properties": {
+          "exchange": {
+            "type": "string",
+            "enum": ["bitbank", "bitflyer", "coincheck", "sbivc", "upbit"]
+          },
+          "market_type": {
+            "type": "string",
+            "enum": ["spot", "linear_perp", "inverse_perp", "delivery", "option"]
+          },
+          "raw_symbol": { "type": "string", "minLength": 1 },
+          "base": { "type": ["string", "null"] },
+          "quote": { "type": ["string", "null"] },
+          "tick_size": { "type": "string", "minLength": 1 },
+          "step_size": { "type": "string", "minLength": 1 },
+          "min_qty": { "type": ["string", "null"] },
+          "min_notional": { "type": ["string", "null"] },
+          "price_precision": { "type": ["integer", "null"], "minimum": 0 },
+          "qty_precision": { "type": ["integer", "null"], "minimum": 0 },
+          "note": { "type": ["string", "null"] }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
