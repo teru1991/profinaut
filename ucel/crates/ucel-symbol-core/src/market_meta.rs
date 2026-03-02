@@ -38,18 +38,13 @@ impl MarketMetaId {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum TickStepRounding {
     Down,
     Up,
+    #[default]
     Nearest,
-}
-
-impl Default for TickStepRounding {
-    fn default() -> Self {
-        Self::Nearest
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
