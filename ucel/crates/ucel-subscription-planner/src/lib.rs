@@ -9,6 +9,19 @@ use ucel_ws_rules::ExchangeWsRules;
 // Legacy coverage v1
 // --------------------
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CoverageSupport {
+    Supported,
+    NotSupported,
+}
+
+impl Default for CoverageSupport {
+    fn default() -> Self {
+        Self::Supported
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct CoverageManifest {
     pub venue: String,
@@ -21,12 +34,36 @@ pub struct CoverageEntry {
     pub id: String,
     pub implemented: bool,
     pub tested: bool,
+    #[serde(default)]
+    pub support: CoverageSupport,
+    #[serde(default)]
+    pub strict: Option<bool>,
+}
+
+impl CoverageEntry {
+    pub fn is_supported(&self) -> bool {
+        self.support == CoverageSupport::Supported
+    }
+
+    pub fn effective_strict(&self, manifest_strict: bool) -> bool {
+        self.strict.unwrap_or(manifest_strict)
+    }
 }
 
 pub fn extract_ws_ops(manifest: &CoverageManifest) -> Vec<String> {
     manifest
         .entries
         .iter()
+        .filter(|e| e.id.starts_with("crypto.public.ws.") || e.id.starts_with("crypto.private.ws."))
+        .map(|e| e.id.clone())
+        .collect()
+}
+
+pub fn extract_ws_ops_supported(manifest: &CoverageManifest) -> Vec<String> {
+    manifest
+        .entries
+        .iter()
+        .filter(|e| e.is_supported())
         .filter(|e| e.id.starts_with("crypto.public.ws.") || e.id.starts_with("crypto.private.ws."))
         .map(|e| e.id.clone())
         .collect()
@@ -552,4 +589,78 @@ pub fn generate_plan_v2(
     }
 
     Plan { conn_plans, seed }
+}
+
+#[cfg(test)]
+mod coverage_v1_tests {
+    use super::*;
+
+    #[test]
+    fn coverage_v1_defaults_support_and_strict() {
+        let yaml = r#"
+venue: okx
+strict: true
+entries:
+  - id: crypto.public.ws.ticker
+    implemented: true
+    tested: false
+"#;
+        let m: CoverageManifest = serde_yaml::from_str(yaml).expect("parse yaml");
+        assert_eq!(m.venue, "okx");
+        assert!(m.strict);
+        assert_eq!(m.entries.len(), 1);
+
+        let e = &m.entries[0];
+        assert_eq!(e.id, "crypto.public.ws.ticker");
+        assert!(e.implemented);
+        assert!(!e.tested);
+
+        assert_eq!(e.support, CoverageSupport::Supported);
+        assert_eq!(e.strict, None);
+        assert!(e.effective_strict(m.strict));
+        assert!(e.is_supported());
+    }
+
+    #[test]
+    fn coverage_v1_parses_not_supported() {
+        let yaml = r#"
+venue: okx
+strict: true
+entries:
+  - id: crypto.public.ws.future
+    implemented: false
+    tested: false
+    support: not_supported
+    strict: false
+"#;
+        let m: CoverageManifest = serde_yaml::from_str(yaml).expect("parse yaml");
+        let e = &m.entries[0];
+        assert_eq!(e.support, CoverageSupport::NotSupported);
+        assert_eq!(e.strict, Some(false));
+        assert!(!e.is_supported());
+        assert!(!e.effective_strict(m.strict));
+    }
+
+    #[test]
+    fn extract_ws_ops_supported_filters_not_supported() {
+        let yaml = r#"
+venue: okx
+strict: true
+entries:
+  - id: crypto.public.ws.ticker
+    implemented: true
+    tested: true
+    support: supported
+  - id: crypto.public.ws.future
+    implemented: false
+    tested: false
+    support: not_supported
+"#;
+        let m: CoverageManifest = serde_yaml::from_str(yaml).expect("parse yaml");
+        let all = extract_ws_ops(&m);
+        assert_eq!(all.len(), 2);
+
+        let sup = extract_ws_ops_supported(&m);
+        assert_eq!(sup, vec!["crypto.public.ws.ticker".to_string()]);
+    }
 }

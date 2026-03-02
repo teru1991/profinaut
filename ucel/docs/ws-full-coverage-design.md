@@ -52,6 +52,10 @@ Required transition rules:
 2. **Journal-first invariant:** receive loop appends raw record before heavy decode/normalize.
 3. **Resume invariant:** reconnect resumes from durable queue, not re-derived in memory.
 4. **Coverage invariant:** coverage is SSOT; missing ops are CI-detectable.
+
+v2 policy: “unsupported must be explicit” — if an op exists in catalog but is unsupported, coverage MUST include an entry with `support: not_supported`.
+
+Effective strictness is `entry.strict.unwrap_or(manifest.strict)`; strict venues can still mark known-unsupported ops with `support: not_supported` + `strict: false` to avoid false failures.
 5. **Conservative-default invariant:** unspecified exchange limits use conservative profile.
 
 ## Components and responsibilities
