@@ -3318,6 +3318,9 @@ dependencies = [
  "tracing",
  "ucel-core",
  "ucel-registry",
+ "ucel-symbol-adapter",
+ "ucel-symbol-core",
+ "ucel-symbol-store",
 ]
 
 [[package]]
@@ -3356,8 +3359,10 @@ dependencies = [
 name = "ucel-symbol-core"
 version = "0.1.0"
 dependencies = [
+ "rust_decimal",
  "serde",
  "serde_json",
+ "thiserror 1.0.69",
  "ucel-core",
  "uuid",
 ]

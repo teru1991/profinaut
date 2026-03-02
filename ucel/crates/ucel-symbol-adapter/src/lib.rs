@@ -1,3 +1,5 @@
+pub mod market_meta;
+
 use async_trait::async_trait;
 use futures_core::Stream;
 use serde::{Deserialize, Serialize};

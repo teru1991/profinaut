@@ -749,6 +749,29 @@
       "verification_evidence": [
         "docs/verification/UCEL-TRANSPORT-STABILITY-004.md"
       ]
+    },
+    "RUST-UCEL-MARKETMETA-001": {
+      "branch": "feature/rust-ucel-marketmeta-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "verification_evidence": [
+        "docs/verification/RUST-UCEL-MARKETMETA-001.md"
+      ],
+      "artifacts": [
+        "ucel/crates/ucel-symbol-core/src/market_meta.rs",
+        "ucel/crates/ucel-symbol-core/src/lib.rs",
+        "ucel/crates/ucel-symbol-core/Cargo.toml",
+        "ucel/crates/ucel-symbol-store/src/market_meta_store.rs",
+        "ucel/crates/ucel-symbol-store/src/lib.rs",
+        "ucel/crates/ucel-symbol-store/tests/market_meta_store_it.rs",
+        "ucel/crates/ucel-symbol-store/tests/fixtures/market_meta/bitbank_spot.json",
+        "ucel/crates/ucel-symbol-adapter/src/market_meta.rs",
+        "ucel/crates/ucel-symbol-adapter/src/lib.rs",
+        "ucel/crates/ucel-sdk/src/market_meta.rs",
+        "ucel/crates/ucel-sdk/src/lib.rs",
+        "ucel/crates/ucel-sdk/Cargo.toml",
+        "docs/verification/RUST-UCEL-MARKETMETA-001.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
