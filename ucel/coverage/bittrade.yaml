@@ -1,108 +1,181 @@
 venue: bittrade
-strict: true
+scope: public_private
+strict: false
+implemented: true
+tested: true
 entries:
 - id: public.rest.common.symbols.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.common.currencys.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.common.timestamp.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.market.kline.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.market.depth.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.market.detail.merged.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.market.trade.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.market.history.trade.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.market.tickers.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.account.accounts.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.account.balance.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.order.place.post
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.order.cancel.post
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.order.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.order.list.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.order.open.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.order.matchresults.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.order.matchresults.byorder.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.order.batchcancel.post
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.order.batchcancel.open.post
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.wallet.withdraw.create.post
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.wallet.withdraw.cancel.post
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.wallet.depositwithdraw.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.retail.maintain.time.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.retail.order.place.post
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: private.rest.retail.order.list.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: other.rest.host.info
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.ws.market.kline
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.market.depth
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.market.bbo
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.market.detail
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.market.trade.detail
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: private.ws.accounts.update
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: private.ws.trade.clearing
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: data.none.official.bulk
+  kind: rest
+  access: public
   implemented: true
   tested: true

@@ -1,3 +1,6 @@
 venue: sbivc
-strict: true
+scope: public_private
+strict: false
+implemented: false
+tested: false
 entries: []

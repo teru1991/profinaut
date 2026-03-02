@@ -1,381 +1,642 @@
 venue: bitmex
-strict: true
+scope: public_only
+strict: false
+implemented: false
+tested: false
 entries:
 - id: public.rest.address.address-new
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.address.address-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.announcement.announcement-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.announcement.announcement-geturgent
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.apikey.apikey-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.chat.chat-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.chat.chat-new
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.chat.chat-getchannels
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.chat.chat-getconnected
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.chat.chat-getpinnedmessage
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.execution.execution-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.execution.execution-gettradehistory
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.funding.funding-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.globalnotification.globalnotification-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.guild.guild-new
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.guild.guild-edit
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.guild.guild-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.guild.guild-archive
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.guild.guild-join
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.guild.guild-kick
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.guild.guild-leave
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.guild.guild-sharetrades
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.instrument.instrument-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.instrument.instrument-getactive
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.instrument.instrument-getactiveandindices
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.instrument.instrument-getactiveintervals
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.instrument.instrument-getcompositeindex
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.instrument.instrument-getindices
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.instrument.instrument-getusdvolume
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.insurance.insurance-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.leaderboard.leaderboard-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.leaderboard.leaderboard-getname
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.liquidation.liquidation-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.order.order-getorders
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.order.order-new
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.order.order-amend
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.order.order-cancel
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.order.order-cancelall
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.order.order-cancelallafter
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.order.order-closeposition
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.orderbook.orderbook-getl2
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.porl.porl-getnonce
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.porl.porl-getsnapshots
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.position.position-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.position.position-isolatemargin
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.position.position-updateleverage
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.position.position-updaterisklimit
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.position.position-transferisolatedmargin
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.quote.quote-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.quote.quote-getbucketed
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.schema.schema-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.schema.schema-websockethelp
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.settlement.settlement-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.stats.stats-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.stats.stats-history
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.stats.stats-historyusd
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.trade.trade-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.trade.trade-getbucketed
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-createsubaccount
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getaffiliatestatus
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-cancelwithdrawal
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-checkreferralcode
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getcommission
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-communicationtoken
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-confirm
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-confirmwithdrawal
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getcsa
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getdepositaddress
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getdepositaddressinformation
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getexecutionhistory
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getwallettransferaccounts
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-logout
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getmargin
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-savepreferences
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getquotefillratio
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getquotevalueratio
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-requestwithdrawal
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getstaking
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getstakinginstruments
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getstakingtiers
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-gettradingvolume
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getunstakingrequests
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-createunstakingrequests
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-deleteunstakingrequests
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-updatesubaccount
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getwallet
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getwallethistory
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-getwalletsummary
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-wallettransfer
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.user.user-cancelpendingwithdrawal
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.useraffiliates.useraffiliates-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.userevent.userevent-get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.wallet.wallet-getassetsconfig
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.rest.wallet.wallet-getnetworksconfig
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: public.ws.announcement.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.chat.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.connected.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.funding.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.instrument.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.insurance.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.liquidation.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.orderbook10.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.orderbookl2.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.orderbookl2_25.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.quote.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.quotebin1m.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.quotebin5m.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.quotebin1h.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.quotebin1d.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.settlement.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.trade.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.tradebin1m.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.tradebin5m.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.tradebin1h.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.tradebin1d.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: private.ws.execution.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: private.ws.margin.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: private.ws.order.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: private.ws.position.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: private.ws.transact.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: private.ws.wallet.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: private.ws.affiliate.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: public.ws.publicnotifications.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: private.ws.privatenotifications.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
+- id: public.fix.na
+  kind: rest
+  access: public
+  implemented: false
+  tested: false
+  notes: catalog exists; not implemented yet (Step2 target)
 - id: data.other.none.na
+  kind: rest
+  access: public
   implemented: true
   tested: true

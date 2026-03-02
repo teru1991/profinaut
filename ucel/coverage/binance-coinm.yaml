@@ -1,90 +1,151 @@
 venue: binance-coinm
-strict: true
+scope: public_only
+strict: false
+implemented: true
+tested: true
 entries:
-  - id: coinm.public.rest.general.ref
-    implemented: true
-    tested: true
-  - id: coinm.public.rest.errors.ref
-    implemented: true
-    tested: true
-  - id: coinm.public.rest.common.ref
-    implemented: true
-    tested: true
-  - id: coinm.public.rest.market.ref
-    implemented: true
-    tested: true
-  - id: coinm.private.rest.trade.ref
-    implemented: true
-    tested: true
-  - id: coinm.private.rest.account.ref
-    implemented: true
-    tested: true
-  - id: coinm.private.rest.listenkey.ref
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.market.root
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.market.aggtrade
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.market.markprice
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.market.kline
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.market.continuous-kline
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.market.index-kline
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.market.miniticker
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.market.miniticker.all
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.market.ticker
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.market.ticker.all
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.market.bookticker
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.market.liquidation
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.market.depth.partial
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.market.depth.diff
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.market.composite-index
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.market.contract-info
-    implemented: true
-    tested: true
-  - id: coinm.public.ws.wsapi.general
-    implemented: true
-    tested: true
-  - id: coinm.private.ws.userdata.events
-    implemented: true
-    tested: true
-  - id: coinm.data.market.realtime.streams
-    implemented: true
-    tested: true
-  - id: coinm.data.market.snapshot.rest.depth
-    implemented: true
-    tested: true
-  - id: coinm.data.account.realtime.userdata
-    implemented: true
-    tested: true
-  - id: coinm.data.rpc.realtime.wsapi
-    implemented: true
-    tested: true
+- id: coinm.public.rest.general.ref
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.rest.errors.ref
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.rest.common.ref
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.rest.market.ref
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.private.rest.trade.ref
+  kind: rest
+  access: private
+  implemented: true
+  tested: true
+- id: coinm.private.rest.account.ref
+  kind: rest
+  access: private
+  implemented: true
+  tested: true
+- id: coinm.private.rest.listenkey.ref
+  kind: rest
+  access: private
+  implemented: true
+  tested: true
+- id: coinm.public.ws.market.root
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.ws.market.aggtrade
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.ws.market.markprice
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.ws.market.kline
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.ws.market.continuous-kline
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.ws.market.index-kline
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.ws.market.miniticker
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.ws.market.miniticker.all
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.ws.market.ticker
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.ws.market.ticker.all
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.ws.market.bookticker
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.ws.market.liquidation
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.ws.market.depth.partial
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.ws.market.depth.diff
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.ws.market.composite-index
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.ws.market.contract-info
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.public.ws.wsapi.general
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.private.ws.userdata.events
+  kind: ws
+  access: private
+  implemented: true
+  tested: true
+- id: coinm.data.market.realtime.streams
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.data.market.snapshot.rest.depth
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.data.account.realtime.userdata
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: coinm.data.rpc.realtime.wsapi
+  kind: rest
+  access: public
+  implemented: true
+  tested: true

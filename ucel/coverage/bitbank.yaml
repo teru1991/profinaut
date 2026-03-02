@@ -1,135 +1,226 @@
 venue: bitbank
-strict: true
+scope: public_private
+strict: false
+implemented: true
+tested: true
 entries:
 - id: crypto.public.rest.market.ticker
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.market.tickers
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.market.tickers-jpy
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.market.depth
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.market.transactions
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.market.candlestick
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.market.circuit-break-info
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.spot.status
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.spot.pairs
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.private.rest.user.assets
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.order.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.order.create
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.order.cancel
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.order.cancel-multiple
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.order.fetch-multiple
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.order.active-orders
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.margin.status
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.margin.positions
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.trade.history
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.deposit.history
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.deposit.unconfirmed
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.deposit.originators
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.deposit.confirm
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.deposit.confirm-all
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.withdrawal.accounts
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.withdrawal.request
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.withdrawal.history
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.stream.subscribe
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.public.ws.market.ticker
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.ws.market.transactions
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.ws.market.depth-diff
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.ws.market.depth-whole
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.ws.market.circuit-break-info
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: crypto.private.ws.user.stream.asset-update
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.ws.user.stream.spot-order-new
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.ws.user.stream.spot-order
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.ws.user.stream.spot-order-invalidation
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.ws.user.stream.spot-trade
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.ws.user.stream.dealer-order-new
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.ws.user.stream.withdrawal
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.ws.user.stream.deposit
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.ws.user.stream.margin-position-update
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.ws.user.stream.margin-payable-update
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.ws.user.stream.margin-notice-update
+  kind: ws
+  access: private
   implemented: true
   tested: true

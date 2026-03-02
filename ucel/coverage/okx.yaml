@@ -1,30 +1,51 @@
 venue: okx
-strict: true
+scope: public_only
+strict: false
+implemented: true
+tested: true
 entries:
-  - id: okx.rest.overview
-    implemented: true
-    tested: true
-  - id: okx.rest.auth
-    implemented: true
-    tested: true
-  - id: okx.rest.public
-    implemented: true
-    tested: true
-  - id: okx.rest.private
-    implemented: true
-    tested: true
-  - id: okx.ws.overview
-    implemented: true
-    tested: true
-  - id: okx.ws.public
-    implemented: true
-    tested: true
-  - id: okx.ws.private
-    implemented: true
-    tested: true
-  - id: okx.data.public-rest
-    implemented: true
-    tested: true
-  - id: okx.data.public-ws
-    implemented: true
-    tested: true
+- id: okx.rest.overview
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: okx.rest.auth
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: okx.rest.public
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: okx.rest.private
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: okx.ws.overview
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: okx.ws.public
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: okx.ws.private
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: okx.data.public-rest
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: okx.data.public-ws
+  kind: rest
+  access: public
+  implemented: true
+  tested: true

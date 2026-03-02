@@ -1,93 +1,156 @@
 venue: coincheck
-strict: true
+scope: public_private
+strict: false
+implemented: true
+tested: true
 entries:
 - id: coincheck.rest.public.ticker.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: coincheck.rest.public.trades.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: coincheck.rest.public.order_books.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: coincheck.rest.public.exchange.orders.rate.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: coincheck.rest.public.rate.pair.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: coincheck.rest.public.exchange_status.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: coincheck.rest.private.exchange.orders.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.exchange.orders.id.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.exchange.orders.opens.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.exchange.orders.id.delete
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.exchange.orders.cancel_status.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.exchange.orders.transactions.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.exchange.orders.transactions_pagination.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.accounts.balance.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.send_money.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.send_money.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.deposit_money.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.accounts.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.bank_accounts.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.bank_accounts.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.bank_accounts.id.delete
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.withdraws.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.withdraws.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.private.withdraws.id.delete
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: coincheck.rest.other.auth.headers
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: coincheck.ws.public.trades
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: coincheck.ws.public.orderbook
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: coincheck.ws.private.order_events
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: coincheck.ws.private.execution_events
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: coincheck.data.none.official_bulk
+  kind: rest
+  access: public
   implemented: true
   tested: true

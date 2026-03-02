@@ -1,60 +1,101 @@
 venue: binance
-strict: true
+scope: public_only
+strict: false
+implemented: true
+tested: true
 entries:
-  - id: crypto.public.rest.ping.get
-    implemented: true
-    tested: true
-  - id: crypto.public.rest.time.get
-    implemented: true
-    tested: true
-  - id: crypto.public.rest.exchangeinfo.get
-    implemented: true
-    tested: true
-  - id: crypto.private.rest.order.post
-    implemented: true
-    tested: true
-  - id: crypto.private.rest.account.get
-    implemented: true
-    tested: true
-  - id: crypto.private.rest.listenkey.post
-    implemented: true
-    tested: true
-  - id: crypto.public.rest.docs.enums.ref
-    implemented: true
-    tested: true
-  - id: crypto.public.rest.docs.filters.ref
-    implemented: true
-    tested: true
-  - id: other.public.rest.changelog.ref
-    implemented: true
-    tested: true
-  - id: crypto.public.ws.trades.trade
-    implemented: true
-    tested: true
-  - id: crypto.private.ws.userdata.executionreport
-    implemented: true
-    tested: true
-  - id: crypto.public.ws.wsapi.time
-    implemented: true
-    tested: true
-  - id: crypto.private.ws.wsapi.order.place
-    implemented: true
-    tested: true
-  - id: other.public.ws.sbe.marketdata
-    implemented: true
-    tested: true
-  - id: data.market.realtime.json
-    implemented: true
-    tested: true
-  - id: data.account.realtime.json
-    implemented: true
-    tested: true
-  - id: data.market.realtime.sbe
-    implemented: true
-    tested: true
-  - id: data.tradeevents.session.fix
-    implemented: true
-    tested: true
-  - id: data.market.snapshot.json
-    implemented: true
-    tested: true
+- id: crypto.public.rest.ping.get
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: crypto.public.rest.time.get
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: crypto.public.rest.exchangeinfo.get
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: crypto.private.rest.order.post
+  kind: rest
+  access: private
+  implemented: true
+  tested: true
+- id: crypto.private.rest.account.get
+  kind: rest
+  access: private
+  implemented: true
+  tested: true
+- id: crypto.private.rest.listenkey.post
+  kind: rest
+  access: private
+  implemented: true
+  tested: true
+- id: crypto.public.rest.docs.enums.ref
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: crypto.public.rest.docs.filters.ref
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: other.public.rest.changelog.ref
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: crypto.public.ws.trades.trade
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: crypto.private.ws.userdata.executionreport
+  kind: ws
+  access: private
+  implemented: true
+  tested: true
+- id: crypto.public.ws.wsapi.time
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: crypto.private.ws.wsapi.order.place
+  kind: ws
+  access: private
+  implemented: true
+  tested: true
+- id: other.public.ws.sbe.marketdata
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: data.market.realtime.json
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: data.account.realtime.json
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: data.market.realtime.sbe
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: data.tradeevents.session.fix
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: data.market.snapshot.json
+  kind: rest
+  access: public
+  implemented: true
+  tested: true

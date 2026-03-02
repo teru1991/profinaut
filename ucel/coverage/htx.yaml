@@ -1,69 +1,128 @@
 venue: htx
-strict: true
+scope: public_only
+strict: false
+implemented: false
+tested: false
 entries:
 - id: spot.public.rest.spot.catalog.index
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: spot.private.rest.spot.catalog.index
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: margin.public.rest.margin.catalog.index
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: margin.private.rest.margin.catalog.index
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: futures.public.rest.futures.catalog.index
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: futures.private.rest.futures.catalog.index
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: swap.public.rest.swap.catalog.index
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: swap.private.rest.swap.catalog.index
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: options.public.rest.options.catalog.index
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: options.private.rest.options.catalog.index
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: earn.private.rest.earn.not_applicable
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: copy.private.rest.copy.not_applicable
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: broker.private.rest.broker.not_applicable
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: spot.public.ws.market.catalog.index
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: spot.private.ws.account.catalog.index
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: futures.public.ws.market.catalog.index
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: futures.private.ws.account.catalog.index
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: swap.public.ws.market.catalog.index
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: swap.private.ws.account.catalog.index
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: options.public.ws.market.catalog.index
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: other.public.ws.common.protocol
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: other.public.ws.other.not_applicable
+  kind: ws
+  access: public
   implemented: true
   tested: true
+- id: other.private.fix.not_applicable.no_official_listing
+  kind: rest
+  access: private
+  implemented: false
+  tested: false
+  notes: catalog exists; not implemented yet (Step2 target)
+- id: data.other.unknown.not_applicable
+  kind: rest
+  access: public
+  implemented: false
+  tested: false
+  notes: catalog exists; not implemented yet (Step2 target)

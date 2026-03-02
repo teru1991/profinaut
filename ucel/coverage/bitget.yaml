@@ -1,12 +1,27 @@
 venue: bitget
-strict: true
+scope: public_only
+strict: false
+implemented: false
+tested: false
 entries:
-  - id: other.public.rest.nav.blocked
-    implemented: true
-    tested: true
-  - id: other.public.ws.nav.blocked
-    implemented: true
-    tested: true
-  - id: data.other.unknown.unknown
-    implemented: true
-    tested: true
+- id: other.public.rest.nav.blocked
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: other.public.ws.nav.blocked
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: other.public.fix.not_applicable
+  kind: rest
+  access: public
+  implemented: false
+  tested: false
+  notes: catalog exists; not implemented yet (Step2 target)
+- id: data.other.unknown.unknown
+  kind: rest
+  access: public
+  implemented: true
+  tested: true

@@ -1,132 +1,221 @@
 venue: gmocoin
-strict: true
+scope: public_private
+strict: false
+implemented: true
+tested: true
 entries:
 - id: crypto.public.rest.status.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.ticker.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.orderbooks.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.trades.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.klines.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.private.rest.wsauth.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.wsauth.extend.put
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.assets.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.margin.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.activeorders.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.executions.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.latestexecutions.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.order.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.changeorder.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.cancelorder.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.openpositions.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.positionsummary.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.closeorder.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: fx.public.rest.status.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: fx.public.rest.ticker.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: fx.public.rest.orderbooks.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: fx.public.rest.trades.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: fx.public.rest.klines.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: fx.private.rest.wsauth.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: fx.private.rest.assets.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: fx.private.rest.activeorders.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: fx.private.rest.order.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: fx.private.rest.cancelorder.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: fx.private.rest.openpositions.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: fx.private.rest.closeorder.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.public.ws.ticker.update
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.ws.trades.update
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.ws.orderbooks.update
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: crypto.private.ws.executionevents.update
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.ws.orderevents.update
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.ws.positionevents.update
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: fx.public.ws.ticker.update
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: fx.public.ws.trades.update
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: fx.public.ws.orderbooks.update
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: fx.private.ws.executionevents.update
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: fx.private.ws.orderevents.update
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: fx.private.ws.positionevents.update
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: data.snapshots.daily.csv.gz
+  kind: rest
+  access: public
   implemented: true
   tested: true
