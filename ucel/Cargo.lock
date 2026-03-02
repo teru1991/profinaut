@@ -2987,6 +2987,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
 ]
@@ -3003,6 +3004,7 @@ dependencies = [
  "tokio",
  "tracing",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-testkit",
  "ucel-transport",
  "uuid",
@@ -3021,6 +3023,7 @@ dependencies = [
  "tokio",
  "tracing",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-testkit",
  "ucel-transport",
  "uuid",
@@ -3036,6 +3039,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-testkit",
  "ucel-transport",
  "uuid",
@@ -3054,6 +3058,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
 ]
@@ -3068,6 +3073,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
 ]
@@ -3087,6 +3093,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-testkit",
  "ucel-transport",
  "uuid",
@@ -3105,6 +3112,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
 ]
@@ -3122,6 +3130,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-testkit",
  "ucel-transport",
  "uuid",
@@ -3139,6 +3148,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
 ]
@@ -3153,6 +3163,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
 ]
@@ -3197,6 +3208,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
 ]
@@ -3215,6 +3227,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-testkit",
  "ucel-transport",
  "uuid",
@@ -3232,6 +3245,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ucel-core",
+ "ucel-symbol-core",
 ]
 
 [[package]]
@@ -3245,6 +3259,7 @@ dependencies = [
  "tokio",
  "tracing",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
 ]

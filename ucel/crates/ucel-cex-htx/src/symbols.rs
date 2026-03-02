@@ -1,4 +1,6 @@
 use serde::Deserialize;
+use std::collections::BTreeMap;
+use ucel_symbol_core::MarketMeta;
 
 #[derive(Debug, Deserialize)]
 struct Resp<T> {
@@ -34,4 +36,9 @@ pub async fn fetch_spot_symbols() -> Result<Vec<String>, String> {
     out.sort();
     out.dedup();
     Ok(out)
+}
+
+/// NEW: MarketMeta を返す（tick/step/min_qty/min_notional）
+pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String> {
+    Err("NotSupported: fetch_market_meta is not implemented for this connector yet".to_string())
 }

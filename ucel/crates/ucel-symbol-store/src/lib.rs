@@ -5,7 +5,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::SystemTime;
-use ucel_symbol_core::{cmp_decimal, InstrumentId, Snapshot, StandardizedInstrument, SymbolStatus};
+use ucel_symbol_core::{
+    cmp_decimal, InstrumentId, MarketMeta, Snapshot, StandardizedInstrument, SymbolStatus,
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RegistrySnapshot {
@@ -49,6 +51,7 @@ pub enum SymbolEvent {
 
 pub struct SymbolStore {
     instruments: DashMap<InstrumentId, StandardizedInstrument>,
+    market_meta: DashMap<InstrumentId, MarketMeta>,
     store_version: AtomicU64,
 }
 
@@ -62,12 +65,21 @@ impl SymbolStore {
     pub fn new() -> Self {
         Self {
             instruments: DashMap::new(),
+            market_meta: DashMap::new(),
             store_version: AtomicU64::new(0),
         }
     }
 
     pub fn version(&self) -> u64 {
         self.store_version.load(Ordering::SeqCst)
+    }
+
+    pub fn get_market_meta(&self, id: &InstrumentId) -> Option<MarketMeta> {
+        self.market_meta.get(id).map(|v| v.clone())
+    }
+
+    pub fn list_market_meta_ids(&self) -> Vec<InstrumentId> {
+        self.market_meta.iter().map(|e| e.key().clone()).collect()
     }
 
     pub fn snapshot(&self) -> RegistrySnapshot {
@@ -111,6 +123,7 @@ impl SymbolStore {
 
         for stale_id in stale_ids {
             if let Some((_, prev)) = self.instruments.remove(&stale_id) {
+                self.market_meta.remove(&stale_id);
                 let version = self.bump_version();
                 events.push(SymbolEvent::Removed {
                     id: prev.id.clone(),
@@ -128,6 +141,7 @@ impl SymbolStore {
                 drop(existing);
                 if before.status != instrument.status {
                     self.instruments.insert(id.clone(), instrument.clone());
+                    self.market_meta.insert(id.clone(), MarketMeta::from(&instrument));
                     let version = self.bump_version();
                     events.push(SymbolEvent::StatusChanged {
                         id,
@@ -142,6 +156,7 @@ impl SymbolStore {
                 let changed_fields = changed_param_fields(&before, &instrument, meta_whitelist);
                 if !changed_fields.is_empty() {
                     self.instruments.insert(id.clone(), instrument.clone());
+                    self.market_meta.insert(id.clone(), MarketMeta::from(&instrument));
                     let version = self.bump_version();
                     events.push(SymbolEvent::ParamChanged {
                         id,
@@ -153,7 +168,8 @@ impl SymbolStore {
                     });
                 }
             } else {
-                self.instruments.insert(id, instrument.clone());
+                self.instruments.insert(id.clone(), instrument.clone());
+                self.market_meta.insert(id, MarketMeta::from(&instrument));
                 let version = self.bump_version();
                 events.push(SymbolEvent::Added {
                     instrument: instrument.clone(),
@@ -345,3 +361,99 @@ mod tests {
 }
 
 pub use market_meta_store::{MarketMetaEvent, MarketMetaRegistrySnapshot, MarketMetaStore};
+
+#[cfg(test)]
+mod market_meta_store_tests {
+    use super::*;
+    use rust_decimal::Decimal;
+    use ucel_symbol_core::{Exchange, InstrumentMeta, MarketType, SnapshotOrigin, SnapshotSource};
+
+    fn mk_inst(symbol: &str, tick: &str, step: &str, min_qty: Option<&str>) -> StandardizedInstrument {
+        StandardizedInstrument {
+            id: InstrumentId {
+                exchange: Exchange::Gmocoin,
+                market_type: MarketType::Spot,
+                raw_symbol: symbol.to_string(),
+                expiry: None,
+                strike: None,
+                option_right: None,
+                contract_size: None,
+            },
+            exchange: Exchange::Gmocoin,
+            market_type: MarketType::Spot,
+            base: symbol.to_string(),
+            quote: "JPY".into(),
+            raw_symbol: symbol.to_string(),
+            status: SymbolStatus::Trading,
+            tick_size: tick.parse::<Decimal>().unwrap(),
+            lot_size: step.parse::<Decimal>().unwrap(),
+            min_order_qty: min_qty.map(|v| v.parse::<Decimal>().unwrap()),
+            max_order_qty: None,
+            min_notional: None,
+            price_precision: None,
+            qty_precision: None,
+            contract_size: None,
+            meta: InstrumentMeta::new(),
+            ts_recv: SystemTime::now(),
+            ts_event: None,
+            schema_version: ucel_symbol_core::SYMBOL_SCHEMA_VERSION,
+        }
+    }
+
+    #[test]
+    fn market_meta_is_synced_on_apply_snapshot() {
+        let store = SymbolStore::new();
+        let s1 = Snapshot {
+            snapshot_id: "s1".into(),
+            ts_recv: SystemTime::now(),
+            instruments: vec![mk_inst("BTC", "0.1", "0.001", Some("0.01"))],
+            origin: SnapshotOrigin {
+                source: SnapshotSource::Rest,
+                restored: false,
+            },
+        };
+        store.apply_snapshot(s1);
+        let id = InstrumentId {
+            exchange: Exchange::Gmocoin,
+            market_type: MarketType::Spot,
+            raw_symbol: "BTC".into(),
+            expiry: None,
+            strike: None,
+            option_right: None,
+            contract_size: None,
+        };
+        let mm = store.get_market_meta(&id).expect("market meta must exist");
+        assert_eq!(mm.tick_size.to_string(), "0.1");
+        assert_eq!(mm.step_size.to_string(), "0.001");
+        assert_eq!(mm.min_qty.unwrap().to_string(), "0.01");
+
+        let s2 = Snapshot {
+            snapshot_id: "s2".into(),
+            ts_recv: SystemTime::now(),
+            instruments: vec![mk_inst("BTC", "0.01", "0.0001", Some("0.001"))],
+            origin: SnapshotOrigin {
+                source: SnapshotSource::Rest,
+                restored: false,
+            },
+        };
+        let ev = store.apply_snapshot(s2);
+        assert!(!ev.is_empty());
+
+        let mm2 = store.get_market_meta(&id).expect("market meta must exist");
+        assert_eq!(mm2.tick_size.to_string(), "0.01");
+        assert_eq!(mm2.step_size.to_string(), "0.0001");
+        assert_eq!(mm2.min_qty.unwrap().to_string(), "0.001");
+
+        let s3 = Snapshot {
+            snapshot_id: "s3".into(),
+            ts_recv: SystemTime::now(),
+            instruments: vec![],
+            origin: SnapshotOrigin {
+                source: SnapshotSource::Rest,
+                restored: false,
+            },
+        };
+        store.apply_snapshot(s3);
+        assert!(store.get_market_meta(&id).is_none());
+    }
+}

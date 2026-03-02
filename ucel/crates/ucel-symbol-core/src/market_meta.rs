@@ -1,4 +1,7 @@
-use crate::{normalize_decimal, Exchange, InstrumentMeta, MarketType, SnapshotOrigin};
+use crate::{
+    normalize_decimal, validate_price_tick, validate_qty_step, Exchange, InstrumentMeta,
+    MarketType, SnapshotOrigin, StandardizedInstrument,
+};
 use rust_decimal::Decimal;
 use rust_decimal::RoundingStrategy;
 use serde::{Deserialize, Serialize};
@@ -94,6 +97,41 @@ pub struct MarketMeta {
 }
 
 impl MarketMeta {
+    /// Symbol層は観測層のため、形式チェックのみを提供する。
+    pub fn validate_basic(&self) -> Result<(), String> {
+        if self.tick_size <= Decimal::ZERO {
+            return Err(format!("invalid tick_size={}", self.tick_size));
+        }
+        if self.step_size <= Decimal::ZERO {
+            return Err(format!("invalid step_size={}", self.step_size));
+        }
+        if let Some(q) = self.min_qty {
+            if q <= Decimal::ZERO {
+                return Err(format!("invalid min_qty={}", q));
+            }
+        }
+        if let Some(n) = self.min_notional {
+            if n <= Decimal::ZERO {
+                return Err(format!("invalid min_notional={}", n));
+            }
+        }
+        Ok(())
+    }
+
+    pub fn validate_price_tick_relaxed(
+        &self,
+        price: Decimal,
+    ) -> Result<(), ucel_core::decimal::DecimalPolicyError> {
+        validate_price_tick(price, self.tick_size)
+    }
+
+    pub fn validate_qty_step_relaxed(
+        &self,
+        qty: Decimal,
+    ) -> Result<(), ucel_core::decimal::DecimalPolicyError> {
+        validate_qty_step(qty, self.step_size)
+    }
+
     pub fn new(id: MarketMetaId, tick_size: Decimal, step_size: Decimal) -> Self {
         Self {
             id,
@@ -293,6 +331,32 @@ impl MarketMeta {
     }
 }
 
+impl From<&StandardizedInstrument> for MarketMeta {
+    fn from(si: &StandardizedInstrument) -> Self {
+        let mut mm = Self::new(
+            MarketMetaId::new(si.exchange.clone(), si.market_type.clone(), si.raw_symbol.clone()),
+            si.tick_size,
+            si.lot_size,
+        );
+        mm.base = Some(si.base.clone());
+        mm.quote = Some(si.quote.clone());
+        mm.min_qty = si.min_order_qty;
+        mm.max_qty = si.max_order_qty;
+        mm.min_notional = si.min_notional;
+        mm.price_precision = si.price_precision;
+        mm.qty_precision = si.qty_precision;
+        mm.contract_size = si.contract_size;
+        mm.meta = si.meta.clone();
+        mm
+    }
+}
+
+impl From<StandardizedInstrument> for MarketMeta {
+    fn from(si: StandardizedInstrument) -> Self {
+        Self::from(&si)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MarketMetaSnapshot {
     #[serde(default = "default_snapshot_id")]
@@ -452,4 +516,45 @@ mod tests {
         );
         assert!(norm.is_err());
     }
+
+    #[test]
+    fn market_meta_is_derived_from_standardized_instrument() {
+        let si = StandardizedInstrument {
+            id: crate::InstrumentId {
+                exchange: Exchange::Other("dummy".into()),
+                market_type: MarketType::Spot,
+                raw_symbol: "AAA/BBB".into(),
+                expiry: None,
+                strike: None,
+                option_right: None,
+                contract_size: None,
+            },
+            exchange: Exchange::Other("dummy".into()),
+            market_type: MarketType::Spot,
+            base: "AAA".into(),
+            quote: "BBB".into(),
+            raw_symbol: "AAA/BBB".into(),
+            status: crate::SymbolStatus::Trading,
+            tick_size: Decimal::from_str("0.01").unwrap(),
+            lot_size: Decimal::from_str("0.001").unwrap(),
+            min_order_qty: Some(Decimal::from_str("0.01").unwrap()),
+            max_order_qty: None,
+            min_notional: Some(Decimal::from_str("5").unwrap()),
+            price_precision: None,
+            qty_precision: None,
+            contract_size: None,
+            meta: crate::InstrumentMeta::new(),
+            ts_recv: std::time::SystemTime::now(),
+            ts_event: None,
+            schema_version: crate::SYMBOL_SCHEMA_VERSION,
+        };
+
+        let mm = MarketMeta::from(&si);
+        assert_eq!(mm.tick_size.to_string(), "0.01");
+        assert_eq!(mm.step_size.to_string(), "0.001");
+        assert_eq!(mm.min_qty.unwrap().to_string(), "0.01");
+        assert_eq!(mm.min_notional.unwrap().to_string(), "5");
+        assert!(mm.validate_basic().is_ok());
+    }
+
 }

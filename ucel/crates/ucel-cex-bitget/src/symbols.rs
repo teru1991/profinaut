@@ -1,4 +1,6 @@
 use serde::Deserialize;
+use std::collections::BTreeMap;
+use ucel_symbol_core::MarketMeta;
 
 /// Bitget REST base (main)
 const REST_BASE: &str = "https://api.bitget.com";
@@ -108,4 +110,9 @@ pub async fn fetch_coin_futures_symbols() -> Result<Vec<String>, String> {
 }
 pub async fn fetch_usdc_futures_symbols() -> Result<Vec<String>, String> {
     fetch_futures_symbols("USDC-FUTURES").await
+}
+
+/// NEW: MarketMeta を返す（tick/step/min_qty/min_notional）
+pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String> {
+    Err("NotSupported: fetch_market_meta is not implemented for this connector yet".to_string())
 }
