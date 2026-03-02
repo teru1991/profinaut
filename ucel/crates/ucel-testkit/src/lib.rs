@@ -1,6 +1,8 @@
 pub mod coverage;
 pub mod okx;
 pub mod ssot_gate;
+pub mod ssot_integrity_gate;
+pub mod ssot_integrity_gate_types;
 pub mod ws_coverage_gate;
 
 use serde::{Deserialize, Serialize};
@@ -228,3 +230,6 @@ mod tests {
         ));
     }
 }
+
+pub use ssot_integrity_gate::run_ssot_integrity_gate;
+pub use ssot_integrity_gate_types::{GateIssue, GateReport, GateSeverity};
