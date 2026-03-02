@@ -59,8 +59,8 @@ impl OrderGate {
     pub fn recommended_modes(side: Side) -> (QuantizeMode, QuantizeMode) {
         let qty_mode = QuantizeMode::ToZero;
         let price_mode = match side {
-            Side::Buy => QuantizeMode::Ceil,
-            Side::Sell => QuantizeMode::Floor,
+            Side::Buy => QuantizeMode::Floor,
+            Side::Sell => QuantizeMode::Ceil,
             _ => QuantizeMode::Nearest,
         };
         (price_mode, qty_mode)
