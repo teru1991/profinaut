@@ -1,93 +1,162 @@
 venue: upbit
-strict: true
+scope: public_only
+strict: false
+implemented: false
+tested: false
 entries:
 - id: quotation.public.rest.markets.list
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: quotation.public.rest.ticker.pairs
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: quotation.public.rest.trades.recent
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: quotation.public.rest.orderbook.snapshot
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: quotation.public.rest.candles.minutes
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: quotation.public.rest.candles.days
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: quotation.public.rest.candles.weeks
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: quotation.public.rest.candles.months
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: quotation.public.rest.candles.years
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: exchange.private.rest.accounts.list
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: exchange.private.rest.orders.create
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: exchange.private.rest.orders.cancel
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: exchange.private.rest.orders.open
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: exchange.private.rest.orders.closed
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: exchange.private.rest.orders.chance
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: exchange.private.rest.withdraws.list
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: exchange.private.rest.withdraws.coin
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: exchange.private.rest.deposits.list
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: exchange.private.rest.deposits.address
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: exchange.private.rest.travelrule.vasps
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: exchange.private.rest.service.walletstatus
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: exchange.private.rest.keys.list
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: quotation.public.ws.ticker.stream
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: quotation.public.ws.trade.stream
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: quotation.public.ws.orderbook.stream
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: quotation.public.ws.candle.stream
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: other.public.ws.subscription.list
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: exchange.private.ws.myordertrade.stream
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: exchange.private.ws.myasset.stream
+  kind: ws
+  access: private
   implemented: true
   tested: true
+- id: other.public.fix.not_applicable
+  kind: rest
+  access: public
+  implemented: false
+  tested: false
+  notes: catalog exists; not implemented yet (Step2 target)
 - id: data.other.not_applicable.json
+  kind: rest
+  access: public
   implemented: true
   tested: true

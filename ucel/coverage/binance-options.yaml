@@ -1,51 +1,86 @@
 venue: binance-options
-strict: true
+scope: public_only
+strict: false
+implemented: true
+tested: true
 entries:
 - id: options.public.rest.general.ref
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: options.public.rest.errors.ref
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: options.public.rest.market.ref
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: options.private.rest.trade.ref
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: options.private.rest.account.ref
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: options.private.rest.listenkey.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: options.private.rest.listenkey.put
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: options.private.rest.listenkey.delete
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: options.public.ws.trade
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: options.public.ws.ticker
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: options.public.ws.kline
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: options.public.ws.depth
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: options.public.ws.markprice
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: options.public.ws.indexprice
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: options.data.ws.market
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: options.data.rest.market
+  kind: rest
+  access: public
   implemented: true
   tested: true

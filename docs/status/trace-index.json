@@ -1059,6 +1059,35 @@
       "verification_evidence": [
         "docs/verification/UCEL-SSOT-EXTENSION-001.md"
       ]
+    },
+    "UCEL-100P-STEP1-SSOT-MIGRATION-001": {
+      "branch": "feature/ucel-100p-step1-ssot-migration-001",
+      "artifacts": [
+        "docs/status/trace-index.json",
+        "ucel/coverage/binance-coinm.yaml",
+        "ucel/coverage/binance-options.yaml",
+        "ucel/coverage/binance-usdm.yaml",
+        "ucel/coverage/binance.yaml",
+        "ucel/coverage/bitbank.yaml",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/bitget.yaml",
+        "ucel/coverage/bithumb.yaml",
+        "ucel/coverage/bitmex.yaml",
+        "ucel/coverage/bittrade.yaml",
+        "ucel/coverage/bybit.yaml",
+        "ucel/coverage/coinbase.yaml",
+        "ucel/coverage/coincheck.yaml",
+        "ucel/coverage/deribit.yaml",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/htx.yaml",
+        "ucel/coverage/kraken.yaml",
+        "ucel/coverage/okx.yaml",
+        "ucel/coverage/sbivc.yaml",
+        "ucel/coverage/upbit.yaml"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-100P-STEP1-SSOT-MIGRATION-001.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

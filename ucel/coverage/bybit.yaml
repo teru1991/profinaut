@@ -1,300 +1,501 @@
 venue: bybit
-strict: true
+scope: public_only
+strict: false
+implemented: true
+tested: true
 entries:
 - id: bybit.private.rest.account.fee-rate
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.account.set-spot-hedge
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.account.transaction-log
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.asset-info
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.public.rest.market.instrument
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.rest.market.kline
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.rest.market.mark-kline
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.rest.market.orderbook
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.rest.market.recent-trade
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.rest.market.tickers
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bybit.private.rest.position.execution
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.trade.order-list
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.trade.open-order
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.trade.query-spot-quota
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.delivery
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.settlement
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.public.rest.market.long-short-ratio
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.rest.market.delivery-price
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.rest.market.history-fund-rate
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.rest.market.index-kline
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.rest.market.open-interest
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.rest.market.premium-index-kline
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.rest.market.risk-limit
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bybit.private.rest.position.close-pnl
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.position.position-info
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.public.rest.market.iv
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bybit.private.rest.account.borrow-history
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.account.coin-greeks
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.account.collateral-info
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.account.account-info
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.account.set-collateral
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.account.set-margin-mode
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.account.upgrade-unified-account
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.account.wallet
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.coin-info
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.set-deposit-acct
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.master-deposit-addr
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.deposit-coin-spec
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.internal-deposit-record
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.deposit-record
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.sub-deposit-addr
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.sub-deposit-record
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.exchange
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.create-inter-transfer
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.account-coin-balance
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.all-balance
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.inter-transfer-list
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.sub-uid-list
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.transferable-coin
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.unitransfer-list
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.unitransfer
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.asset.withdraw-record
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.public.rest.market.insurance
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.rest.market.time
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bybit.private.rest.position.manual-add-margin
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.position.auto-add-margin
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.position.leverage
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.position.set-risk-limit
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.position.tpsl-mode
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.position.cross-isolate
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.position.position-mode
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.position.trading-stop
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.spot-margin-uta.vip-margin
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.spot-margin-uta.set-leverage
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.spot-margin-uta.status
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.spot-margin-uta.switch-mode
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.trade.amend-order
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.trade.batch-amend
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.trade.cancel-order
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.trade.cancel-all
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.trade.batch-cancel
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.trade.create-order
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.trade.batch-place
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.user.affiliate-info
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.user.wallet-type
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.user.apikey-info
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.rest.user.list-sub-apikeys
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: bybit.public.ws.public.orderbook
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.ws.public.orderbook-rpi
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.ws.public.trade
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.ws.public.ticker
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.ws.public.kline
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.ws.public.liquidation
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.ws.public.adl-alert
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.ws.public.insurance-pool
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.ws.public.order-price-limit
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: bybit.private.ws.private.order
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.ws.private.execution
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.ws.private.fast-execution
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.ws.private.position
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.ws.private.wallet
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.ws.private.greek
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.ws.private.dcp
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: bybit.private.ws.trade.guideline
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: bybit.public.ws.system.status
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: bybit.public.ws.common.auth
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: bybit.data.market.ws.public
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: bybit.data.account.ws.private
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: bybit.data.trade.ws.trade
+  kind: ws
+  access: public
   implemented: true
   tested: true

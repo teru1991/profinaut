@@ -1,66 +1,129 @@
 venue: kraken
-strict: true
+scope: public_only
+strict: false
+implemented: false
+tested: false
 entries:
 - id: spot.public.rest.assets.list
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: spot.public.rest.asset-pairs.list
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: spot.public.rest.ticker.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: spot.private.rest.balance.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: spot.private.rest.order.add
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: spot.private.rest.token.ws.get
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: futures.public.rest.instruments.list
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: futures.public.rest.tickers.list
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: futures.private.rest.accounts.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: futures.private.rest.order.send
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: spot.public.ws.v1.market.book.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: spot.public.ws.v1.market.trade.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: spot.private.ws.v1.account.open_orders.subscribe
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: spot.private.ws.v1.trade.add_order.request
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: spot.public.ws.v2.market.book.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: spot.public.ws.v2.market.instrument.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: spot.private.ws.v2.trade.add_order
+  kind: ws
+  access: private
   implemented: true
   tested: true
 - id: futures.public.ws.other.market.ticker.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: futures.public.ws.other.market.book.subscribe
+  kind: ws
+  access: public
   implemented: true
   tested: true
 - id: futures.private.ws.other.account.open_positions.subscribe
+  kind: ws
+  access: private
   implemented: true
   tested: true
+- id: spot.private.fix.session.logon
+  kind: rest
+  access: private
+  implemented: false
+  tested: false
+  notes: catalog exists; not implemented yet (Step2 target)
+- id: spot.private.fix.order-entry.new-order
+  kind: rest
+  access: private
+  implemented: false
+  tested: false
+  notes: catalog exists; not implemented yet (Step2 target)
+- id: futures.private.fix.market-data.subscribe
+  kind: rest
+  access: private
+  implemented: false
+  tested: false
+  notes: catalog exists; not implemented yet (Step2 target)
 - id: data.market-candles.minute.json
+  kind: rest
+  access: public
   implemented: true
   tested: true

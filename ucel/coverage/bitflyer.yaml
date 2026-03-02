@@ -1,189 +1,316 @@
 venue: bitflyer
-strict: true
+scope: public_private
+strict: false
+implemented: true
+tested: true
 entries:
 - id: crypto.public.rest.markets.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.ticker.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.board.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.executions.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.boardstate.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.health.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.public.rest.chats.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: crypto.private.rest.permissions.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.balance.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.collateral.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.collateralaccounts.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.addresses.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.coinins.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.coinouts.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.coinout.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.bankaccounts.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.deposits.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.withdraw.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.withdrawals.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.childorder.send.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.childorder.cancel.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.parentorder.send.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.parentorder.cancel.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.childorders.cancelall.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.childorders.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.parentorders.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.parentorder.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.executions.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.positions.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.collateralhistory.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: crypto.private.rest.tradingcommission.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: fx.public.rest.markets.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: fx.public.rest.ticker.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: fx.public.rest.board.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: fx.public.rest.executions.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: fx.public.rest.boardstate.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: fx.public.rest.health.get
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: fx.private.rest.childorder.send.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: fx.private.rest.childorder.cancel.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: fx.private.rest.childorders.cancelall.post
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: fx.private.rest.childorders.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: fx.private.rest.executions.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: fx.private.rest.positions.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: fx.private.rest.collateral.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: fx.private.rest.collateralhistory.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: fx.private.rest.tradingcommission.get
+  kind: rest
+  access: private
   implemented: true
   tested: true
 - id: other.rest.auth.spec
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: other.rest.error.model
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: other.rest.rate_limit
-  implemented: true
-  tested: true
-- id: crypto.public.ws.ticker
-  implemented: true
-  tested: true
-- id: crypto.public.ws.executions
-  implemented: true
-  tested: true
-- id: crypto.public.ws.board
-  implemented: true
-  tested: true
-- id: crypto.public.ws.board_snapshot
-  implemented: true
-  tested: true
-- id: crypto.private.ws.child_order_events
-  implemented: true
-  tested: true
-- id: crypto.private.ws.parent_order_events
-  implemented: true
-  tested: true
-- id: fx.public.ws.ticker
-  implemented: true
-  tested: true
-- id: fx.public.ws.executions
-  implemented: true
-  tested: true
-- id: fx.public.ws.board
-  implemented: true
-  tested: true
-- id: fx.public.ws.board_snapshot
-  implemented: true
-  tested: true
-- id: fx.private.ws.child_order_events
-  implemented: true
-  tested: true
-- id: fx.private.ws.parent_order_events
+  kind: rest
+  access: public
   implemented: true
   tested: true
 - id: bitflyer.data.bulk.not_documented
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+- id: crypto.public.ws.ticker
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: crypto.public.ws.executions
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: crypto.public.ws.board
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: crypto.public.ws.board_snapshot
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: crypto.private.ws.child_order_events
+  kind: ws
+  access: private
+  implemented: true
+  tested: true
+- id: crypto.private.ws.parent_order_events
+  kind: ws
+  access: private
+  implemented: true
+  tested: true
+- id: fx.public.ws.ticker
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: fx.public.ws.executions
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: fx.public.ws.board
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: fx.public.ws.board_snapshot
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+- id: fx.private.ws.child_order_events
+  kind: ws
+  access: private
+  implemented: true
+  tested: true
+- id: fx.private.ws.parent_order_events
+  kind: ws
+  access: private
   implemented: true
   tested: true
