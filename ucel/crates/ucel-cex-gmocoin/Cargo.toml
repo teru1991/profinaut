@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+ucel-symbol-adapter = { path = "../ucel-symbol-adapter" }
+ucel-symbol-core = { path = "../ucel-symbol-core" }
+rust_decimal = { workspace = true }
 async-trait = "0.1"
 bytes = { version = "1", features = ["serde"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
