@@ -301,6 +301,7 @@ async fn e2e_reconnect_drip_wal() {
             // received at least one subscribe
             let r = received.lock().await.clone();
             assert!(!r.is_empty(), "server should receive subscribe");
+            assert!(r.iter().all(|m| !m.is_empty()));
 
             // WAL should have file
             let wal_files: Vec<_> = std::fs::read_dir(tmp.path().join("wal")).unwrap().collect();

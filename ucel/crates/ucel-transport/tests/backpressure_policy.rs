@@ -223,6 +223,7 @@ async fn overflow_spill_to_disk_spills_and_is_observable() {
         .unwrap();
 
     assert_eq!(out, PushOutcome::Spilled);
+    assert!(matches!(out, PushOutcome::Spilled));
 
     // A remains in queue, B is spilled
     let got = q.recv().await.unwrap();

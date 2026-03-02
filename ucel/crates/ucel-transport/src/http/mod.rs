@@ -20,6 +20,10 @@ use limiter::{HttpRateLimiter, HttpRateLimiterConfig};
 use retry::{decide_retry, RetryDecision};
 use ucel_core::UcelError;
 
+use crate::obs::{span_required, ObsRequiredKeys};
+use crate::security::{redact_kv_pairs, RedactionPolicy};
+use tracing::{info, warn};
+
 #[derive(Debug, Clone)]
 pub struct ReliableHttpConfig {
     pub limiter: HttpRateLimiterConfig,
@@ -72,6 +76,35 @@ where
     ) -> Result<HttpResponse, UcelError> {
         enforce_auth_boundary(&ctx)?;
 
+        let obs = ObsRequiredKeys::try_new(
+            ctx.venue.clone(),
+            ctx.request_id.clone(),
+            format!("{:?}", ctx.op),
+            "*",
+            ctx.run_id.clone(),
+        )
+        .map_err(|e| UcelError::new(e.code, e.message))?;
+        let _guard = span_required("ucel_http_request", &obs).entered();
+
+        let policy = RedactionPolicy::default();
+        let redacted_query: Vec<(String, String)> = req
+            .path
+            .split('?')
+            .nth(1)
+            .map(|q| {
+                q.split('&')
+                    .filter_map(|pair| {
+                        let mut it = pair.splitn(2, '=');
+                        let k = it.next()?;
+                        let v = it.next().unwrap_or("");
+                        Some((k.to_string(), v.to_string()))
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .map(|pairs| redact_kv_pairs(&policy, pairs))
+            .unwrap_or_default();
+        info!(method=%req.method, path=%req.path, query=?redacted_query, body_len=req.body.as_ref().map(|b| b.len()).unwrap_or(0), "http request");
+
         let mut attempt: u32 = 0;
         let mut last_err: Option<UcelError> = None;
 
@@ -91,6 +124,7 @@ where
                     match decide_retry(&self.cfg.retry, attempt, &err) {
                         RetryDecision::DoNotRetry => return Err(err),
                         RetryDecision::RetryAfter(d) => {
+                            warn!(attempt, wait_ms=d.as_millis() as u64, code=?err.code, "http retrying");
                             tokio::time::sleep(d).await;
                         }
                     }
