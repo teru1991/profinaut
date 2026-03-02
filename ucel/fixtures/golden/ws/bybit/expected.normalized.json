@@ -1,0 +1,6 @@
+{
+  "channel": "crypto.public.ws.orderbook.l2",
+  "topic": "orderbook.1.BTCUSDT",
+  "kind": "snapshot",
+  "symbol": "BTCUSDT"
+}

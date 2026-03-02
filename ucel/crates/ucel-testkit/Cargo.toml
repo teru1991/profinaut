@@ -12,3 +12,5 @@ serde_yaml = { workspace = true }
 ucel-registry = { path = "../ucel-registry" }
 ucel-cex-binance = { path = "../ucel-cex-binance" }
 ucel-subscription-planner = { path = "../ucel-subscription-planner" }
+
+ucel-cex-bybit = { path = "../ucel-cex-bybit" }
