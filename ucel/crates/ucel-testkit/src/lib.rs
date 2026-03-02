@@ -1,5 +1,7 @@
 pub mod coverage;
+pub mod fixtures;
 pub mod golden;
+pub mod normalize;
 pub mod okx;
 pub mod ssot_gate;
 pub mod ssot_integrity_gate;

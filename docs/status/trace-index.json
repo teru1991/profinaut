@@ -1088,6 +1088,45 @@
       "verification_evidence": [
         "docs/verification/UCEL-100P-STEP1-SSOT-MIGRATION-001.md"
       ]
+    },
+    "UCEL-100P-STEP2-STRICT-100P-BITHUMB-001": {
+      "branch": "feature/ucel-100p-step2-strict-100p-bithumb-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/exchanges/bithumb/catalog.json",
+        "ucel/coverage/bithumb.yaml",
+        "ucel/crates/ucel-cex-bithumb/Cargo.toml",
+        "ucel/crates/ucel-cex-bithumb/src/lib.rs",
+        "ucel/crates/ucel-testkit/Cargo.toml",
+        "ucel/crates/ucel-testkit/tests/contract_ws_bithumb.rs",
+        "ucel/fixtures/golden/ws/bithumb/raw.json",
+        "ucel/fixtures/golden/ws/bithumb/expected.normalized.json",
+        "docs/verification/UCEL-100P-STEP2-STRICT-100P-BITHUMB-001.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-100P-STEP2-STRICT-100P-BITHUMB-001.md"
+      ]
+    },
+    "UCEL-100P-STEP3-GOLDEN-H-MARKETDATA-001": {
+      "branch": "feature/ucel-100p-step3-golden-h-marketdata-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "ucel/crates/ucel-testkit/src/golden.rs",
+        "ucel/crates/ucel-testkit/src/fixtures.rs",
+        "ucel/crates/ucel-testkit/src/normalize.rs",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/tests/golden_ws.rs",
+        "ucel/fixtures/golden/ws/bithumb/trade_snapshot/raw.json",
+        "ucel/fixtures/golden/ws/bithumb/trade_snapshot/expected.normalized.json",
+        "ucel/fixtures/golden/ws/bithumb/ticker_snapshot/raw.json",
+        "ucel/fixtures/golden/ws/bithumb/ticker_snapshot/expected.normalized.json",
+        "docs/verification/UCEL-100P-STEP3-GOLDEN-H-MARKETDATA-001.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-100P-STEP3-GOLDEN-H-MARKETDATA-001.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

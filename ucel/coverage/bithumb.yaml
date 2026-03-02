@@ -1,80 +1,41 @@
 venue: bithumb
 scope: public_only
-strict: false
-implemented: false
-tested: false
+strict: true
+implemented: true
+tested: true
 entries:
 - id: openapi.public.rest.market.list
   kind: rest
   access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
+  implemented: true
+  tested: true
 - id: openapi.public.rest.ticker.list
   kind: rest
   access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
+  implemented: true
+  tested: true
 - id: openapi.public.rest.orderbook.snapshot
   kind: rest
   access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: openapi.private.rest.account.all
-  kind: rest
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: openapi.private.rest.order.create
-  kind: rest
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: openapi.private.rest.order.cancel
-  kind: rest
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: openapi.private.rest.algo.twap.create
-  kind: rest
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
+  implemented: true
+  tested: true
 - id: openapi.public.ws.ticker.snapshot
   kind: ws
   access: public
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: openapi.public.ws.trade.snapshot
   kind: ws
   access: public
-  implemented: false
-  tested: false
-- id: openapi.private.ws.myorder.update
-  kind: ws
-  access: private
-  implemented: false
-  tested: false
-- id: openapi.private.ws.myasset.update
-  kind: ws
-  access: private
-  implemented: false
-  tested: false
+  implemented: true
+  tested: true
 - id: openapi.other.fix.not_applicable
   kind: rest
   access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
+  implemented: true
+  tested: true
 - id: data.other.not_applicable.none
   kind: rest
   access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
+  implemented: true
+  tested: true
