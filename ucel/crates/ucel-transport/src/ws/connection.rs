@@ -11,7 +11,9 @@ use tracing::{info, warn};
 
 use ucel_journal::RawRecord;
 
-use crate::obs::{StabilityEvent, StabilityEventRing, TransportMetrics};
+use crate::obs::{
+    span_required, ObsRequiredKeys, StabilityEvent, StabilityEventRing, TransportMetrics,
+};
 use crate::stability::events::{
     ConnState, ReconnectReason, ShutdownPhase, TransportStabilityEvent,
 };
@@ -19,7 +21,7 @@ use crate::stability::{map_breaker_state, map_outcome, StabilityHub};
 use ucel_subscription_store::SubscriptionStore;
 use ucel_ws_rules::ExchangeWsRules;
 
-use super::adapter::{InboundClass, WsVenueAdapter};
+use super::adapter::{InboundClass, InboundJsonGuard, WsVenueAdapter};
 use super::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitDecision};
 use super::limiter::{BucketConfig, WsRateLimiter, WsRateLimiterConfig};
 use super::overflow::{DropMode, OverflowPolicy, Spooler, SpoolerConfig};
@@ -367,6 +369,14 @@ pub async fn run_ws_connection(
     let stability = Arc::new(StabilityHub::new());
     let obs_metrics = TransportMetrics::new();
     let obs_events = StabilityEventRing::new(512);
+    let obs_required = ObsRequiredKeys::try_new_wildcard_symbol(
+        cfg.exchange_id.clone(),
+        cfg.conn_id.clone(),
+        "ws_connection",
+        "ws-run",
+    )
+    .map_err(|e| e.message)?;
+    let _obs_guard = span_required("ucel_ws_connection", &obs_required).entered();
 
     let mut reconnect_attempt: u32 = 0;
     let mut reconnect_times: VecDeque<Instant> = VecDeque::new();
@@ -507,12 +517,14 @@ pub async fn run_ws_connection(
             let conn_id = cfg.conn_id.clone();
             let shutdown2 = shutdown.clone();
             let stability2 = stability.clone();
+            let obs_metrics2 = obs_metrics.clone();
             tokio::spawn(async move {
                 loop {
                     if shutdown2.is_triggered() && wal_rx.is_empty() {
                         break;
                     }
                     stability2.set_gauge("wal_queue_len", wal_rx.len() as i64);
+                    obs_metrics2.set_wal_queue_len(wal_rx.len() as i64);
                     let next =
                         tokio::time::timeout(Duration::from_millis(200), wal_rx.recv()).await;
                     let Some(rec) = next.ok().flatten() else {
@@ -520,8 +532,11 @@ pub async fn run_ws_connection(
                     };
 
                     let r = {
+                        let t0 = Instant::now();
                         let mut w = wal.lock().await;
-                        w.append(&rec)
+                        let r = w.append(&rec);
+                        obs_metrics2.observe_wal_latency_ms(t0.elapsed().as_millis() as i64);
+                        r
                     };
                     if let Err(e) = r {
                         warn!(exchange_id=%exchange_id, conn=%conn_id, err=%e, "WAL append failed");
@@ -539,12 +554,14 @@ pub async fn run_ws_connection(
             let outq2 = outq.clone();
             let ws_limiter2 = ws_limiter.clone();
             let stability2 = stability.clone();
+            let obs_metrics2 = obs_metrics.clone();
             tokio::spawn(async move {
                 loop {
                     if shutdown2.is_triggered() && outq2.is_empty().await {
                         break;
                     }
                     stability2.set_gauge("outq_len", outq2.len() as i64);
+                    obs_metrics2.set_outq_len(outq2.len() as i64);
                     let Some(item) = outq2.recv().await else {
                         break;
                     };
@@ -555,6 +572,7 @@ pub async fn run_ws_connection(
                         lim.acquire_wait(item.priority, Instant::now())
                     };
                     if w > Duration::from_secs(0) {
+                        obs_metrics2.observe_rl_wait_ms(w.as_millis() as u64);
                         tokio::time::sleep(w).await;
                     }
 
@@ -565,12 +583,14 @@ pub async fn run_ws_connection(
                             break;
                         }
                         WsOutboundFrame::Text(t) => {
+                            obs_metrics2.on_outbound(t.len());
                             if write.send(Message::Text(t)).await.is_err() {
                                 warn!(exchange_id=%exchange_id, conn=%conn_id, "write failed");
                                 break;
                             }
                         }
                         WsOutboundFrame::Pong(p) => {
+                            obs_metrics2.on_outbound(p.len());
                             if write.send(Message::Pong(p)).await.is_err() {
                                 warn!(exchange_id=%exchange_id, conn=%conn_id, "write failed");
                                 break;
@@ -683,6 +703,8 @@ pub async fn run_ws_connection(
                     }
                 }
             }
+
+            obs_metrics.refresh_last_inbound_age_ms(now_unix_i64().saturating_mul(1000));
 
             // Idle detection => reconnect
             if last_inbound.elapsed() >= hb_idle {
@@ -1052,11 +1074,16 @@ async fn handle_inbound(
     obs_events: &Arc<StabilityEventRing>,
     raw: Vec<u8>,
 ) -> Result<(), String> {
+    let guard = InboundJsonGuard::default();
     if raw.len() > cfg.max_frame_bytes {
         return Err("frame too large (DoS) -> stop".into());
     }
 
+    guard.enforce(&raw).map_err(|e| e.message)?;
+
     let classified = adapter.classify_inbound(&raw);
+
+    obs_metrics.on_inbound(raw.len(), now_unix_i64().saturating_mul(1000));
 
     let mut meta = serde_json::Map::new();
     match &classified {
@@ -1097,6 +1124,18 @@ async fn handle_inbound(
         }
         InboundClass::Respond { .. } => {
             meta.insert("kind".into(), serde_json::Value::String("respond".into()));
+        }
+        InboundClass::Unknown => {
+            obs_metrics.on_decode_error();
+            obs_events.push_required(
+                "decode_error",
+                serde_json::json!({"source": "classify_inbound"}),
+                &cfg.exchange_id,
+                &cfg.conn_id,
+                "ws-run",
+                "ws_connection",
+                "*",
+            );
         }
         _ => {}
     }
@@ -1214,7 +1253,7 @@ async fn handle_inbound(
                             store.apply_rate_limit_cooldown(&k, now, cooldown_secs)?;
                             let prio = classify_op_id_priority(&op);
                             TransportMetrics::inc(&obs_metrics.rl_cooldown_set);
-                            obs_events.push(StabilityEvent::now(&cfg.exchange_id, &cfg.conn_id, "rl_cooldown_set", serde_json::json!({"key": k, "cooldown_secs": cooldown_secs, "attempts": attempts})));
+                            obs_events.push_required("rl_cooldown_set", serde_json::json!({"key": k, "cooldown_secs": cooldown_secs, "attempts": attempts}), &cfg.exchange_id, &cfg.conn_id, "ws-run", "ws_connection", symbol.as_deref().unwrap_or("*"));
                             stability.emit(TransportStabilityEvent::RlCooldownSet {
                                 exchange_id: cfg.exchange_id.clone(),
                                 conn_id: cfg.conn_id.clone(),
@@ -1258,7 +1297,8 @@ async fn handle_inbound(
                         lim.apply_penalty(prio, Instant::now(), pen);
                     }
                     TransportMetrics::inc(&obs_metrics.rl_penalty_applied);
-                    obs_events.push(StabilityEvent::now(&cfg.exchange_id, &cfg.conn_id, "rl_penalty_applied", serde_json::json!({"penalty_ms": pen.as_millis() as u64, "priority": prio.as_str()})));
+                    obs_metrics.observe_rl_wait_ms(pen.as_millis() as u64);
+                    obs_events.push_required("rl_penalty_applied", serde_json::json!({"penalty_ms": pen.as_millis() as u64, "priority": prio.as_str()}), &cfg.exchange_id, &cfg.conn_id, "ws-run", "ws_connection", symbol.as_deref().unwrap_or("*"));
                     stability.emit(TransportStabilityEvent::RlPenaltyApplied {
                         exchange_id: cfg.exchange_id.clone(),
                         conn_id: cfg.conn_id.clone(),

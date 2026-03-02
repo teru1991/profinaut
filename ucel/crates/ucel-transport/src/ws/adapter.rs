@@ -53,3 +53,26 @@ pub trait WsVenueAdapter: Send + Sync + 'static {
         None
     }
 }
+
+use crate::security::{check_json_limits, JsonLimits};
+use ucel_core::{ErrorCode, UcelError};
+
+#[derive(Debug, Clone, Copy)]
+pub struct InboundJsonGuard {
+    pub limits: JsonLimits,
+}
+
+impl Default for InboundJsonGuard {
+    fn default() -> Self {
+        Self {
+            limits: JsonLimits::default(),
+        }
+    }
+}
+
+impl InboundJsonGuard {
+    pub fn enforce(&self, bytes: &[u8]) -> Result<(), UcelError> {
+        check_json_limits(bytes, self.limits)
+            .map_err(|e| UcelError::new(ErrorCode::WsProtocolViolation, e.message))
+    }
+}
