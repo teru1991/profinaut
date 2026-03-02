@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 use tokio::sync::mpsc;
 use ucel_core::{ErrorCode, OpName, UcelError};
+use ucel_transport::security::{EndpointAllowlist, SubdomainPolicy};
 use ucel_transport::{RequestContext, Transport, WsConnectRequest};
 use uuid::Uuid;
 
@@ -263,13 +264,10 @@ impl BybitWsAdapter {
             key_id: None,
             requires_auth: false,
         };
+        let ws_url = "wss://stream.bybit.com/v5/public/linear";
+        validate_ws_url(ws_url)?;
         transport
-            .connect_ws(
-                WsConnectRequest {
-                    url: "wss://stream.bybit.com/v5/public/linear".into(),
-                },
-                ctx,
-            )
+            .connect_ws(WsConnectRequest { url: ws_url.into() }, ctx)
             .await?;
         self.metrics.ws_reconnect_total += 1;
         self.metrics.ws_resubscribe_total += self.subscriptions.len() as u64;
@@ -542,3 +540,17 @@ pub mod channels;
 pub mod symbols;
 pub mod ws;
 pub mod ws_manager;
+
+fn validate_ws_url(url: &str) -> Result<(), UcelError> {
+    let al = EndpointAllowlist::new(
+        [
+            "stream.bybit.com",
+            "stream-testnet.bybit.com",
+            "localhost",
+            "127.0.0.1",
+        ],
+        SubdomainPolicy::Exact,
+    )?;
+    al.validate_https_wss(url)?;
+    Ok(())
+}

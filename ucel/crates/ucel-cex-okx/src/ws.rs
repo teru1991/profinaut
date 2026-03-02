@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use serde_json::{json, Value};
-use ucel_transport::ws::adapter::{InboundClass, OutboundMsg, WsVenueAdapter};
+use ucel_transport::ws::adapter::{InboundClass, InboundJsonGuard, OutboundMsg, WsVenueAdapter};
 
 use crate::symbols::{fetch_symbols_by_inst_type, to_exchange_symbol};
 
@@ -79,6 +79,9 @@ impl WsVenueAdapter for OkxWsAdapter {
     fn classify_inbound(&self, raw: &[u8]) -> InboundClass {
         if raw == b"pong" {
             return InboundClass::System;
+        }
+        if InboundJsonGuard::default().enforce(raw).is_err() {
+            return InboundClass::Unknown;
         }
         let v: Value = match serde_json::from_slice(raw) {
             Ok(x) => x,

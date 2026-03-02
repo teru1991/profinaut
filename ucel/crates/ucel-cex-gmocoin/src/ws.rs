@@ -3,7 +3,7 @@ use serde_json::{json, Value};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 use tokio::task::block_in_place;
-use ucel_transport::ws::adapter::{InboundClass, OutboundMsg, WsVenueAdapter};
+use ucel_transport::ws::adapter::{InboundClass, InboundJsonGuard, OutboundMsg, WsVenueAdapter};
 
 use crate::rest::{GmoCredentials, GmoRest};
 use crate::symbols::fetch_symbols;
@@ -168,6 +168,9 @@ impl WsVenueAdapter for GmoCoinPublicWsAdapter {
     }
 
     fn classify_inbound(&self, raw: &[u8]) -> InboundClass {
+        if InboundJsonGuard::default().enforce(raw).is_err() {
+            return InboundClass::Unknown;
+        }
         let v: Value = match serde_json::from_slice(raw) {
             Ok(x) => x,
             Err(_) => return InboundClass::Unknown,
@@ -319,6 +322,9 @@ impl WsVenueAdapter for GmoCoinPrivateWsAdapter {
     }
 
     fn classify_inbound(&self, raw: &[u8]) -> InboundClass {
+        if InboundJsonGuard::default().enforce(raw).is_err() {
+            return InboundClass::Unknown;
+        }
         let v: Value = match serde_json::from_slice(raw) {
             Ok(x) => x,
             Err(_) => return InboundClass::Unknown,

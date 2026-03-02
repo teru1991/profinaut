@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use serde_json::{json, Value};
-use ucel_transport::ws::adapter::{InboundClass, OutboundMsg, WsVenueAdapter};
+use ucel_transport::ws::adapter::{InboundClass, InboundJsonGuard, OutboundMsg, WsVenueAdapter};
 
 use crate::symbols::{
     fetch_coin_futures_symbols, fetch_spot_symbols, fetch_usdc_futures_symbols,
@@ -210,6 +210,9 @@ impl WsVenueAdapter for BitgetWsAdapter {
             return InboundClass::System;
         }
 
+        if InboundJsonGuard::default().enforce(raw).is_err() {
+            return InboundClass::Unknown;
+        }
         let v: Value = match serde_json::from_slice(raw) {
             Ok(x) => x,
             Err(_) => {

@@ -1,5 +1,8 @@
+use crate::obs::logging::ObsRequiredKeys;
+use crate::obs::{StabilityEventRing, TransportMetrics};
 use async_trait::async_trait;
 use serde_json::Value;
+use ucel_core::{ErrorCode, UcelError};
 
 #[derive(Debug, Clone)]
 pub struct OutboundMsg {
@@ -55,7 +58,6 @@ pub trait WsVenueAdapter: Send + Sync + 'static {
 }
 
 use crate::security::{check_json_limits, JsonLimits};
-use ucel_core::{ErrorCode, UcelError};
 
 #[derive(Debug, Clone, Copy)]
 pub struct InboundJsonGuard {
@@ -75,4 +77,28 @@ impl InboundJsonGuard {
         check_json_limits(bytes, self.limits)
             .map_err(|e| UcelError::new(ErrorCode::WsProtocolViolation, e.message))
     }
+}
+
+pub fn inbound_violation(msg: impl Into<String>) -> UcelError {
+    UcelError::new(ErrorCode::WsProtocolViolation, msg.into())
+}
+
+pub fn record_decode_error(
+    metrics: &TransportMetrics,
+    ring: &StabilityEventRing,
+    required: &ObsRequiredKeys,
+    venue: &'static str,
+    op: &str,
+    symbol: &str,
+) {
+    metrics.on_decode_error();
+    ring.push_required(
+        "decode_error",
+        serde_json::json!({"venue": venue, "op": op}),
+        &required.exchange_id,
+        &required.conn_id,
+        &required.run_id,
+        op,
+        symbol,
+    );
 }

@@ -135,3 +135,10 @@ This extension is additive and keeps the manifest-first contract unchanged.
 ## 11. Security / Redaction
 - API keys, secrets, tokens, PII must never be included.
 - If rules can contain secrets, caller must redact before embedding rules_snapshot.
+
+
+## C-B-OBSSEC-003 fixed transport bundle keys
+Transport support bundle payload must include (secret-free):
+- `observability.metrics_prometheus_text`
+- `observability.events_json`
+Optionally include endpoint-validation evidence when available as secret-free diagnostic metadata.

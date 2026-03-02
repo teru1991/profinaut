@@ -21,7 +21,9 @@ use crate::stability::{map_breaker_state, map_outcome, StabilityHub};
 use ucel_subscription_store::SubscriptionStore;
 use ucel_ws_rules::ExchangeWsRules;
 
-use super::adapter::{InboundClass, InboundJsonGuard, WsVenueAdapter};
+use super::adapter::{
+    inbound_violation, record_decode_error, InboundClass, InboundJsonGuard, WsVenueAdapter,
+};
 use super::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitDecision};
 use super::limiter::{BucketConfig, WsRateLimiter, WsRateLimiterConfig};
 use super::overflow::{DropMode, OverflowPolicy, Spooler, SpoolerConfig};
@@ -1076,7 +1078,27 @@ async fn handle_inbound(
 ) -> Result<(), String> {
     let guard = InboundJsonGuard::default();
     if raw.len() > cfg.max_frame_bytes {
-        return Err("frame too large (DoS) -> stop".into());
+        let req = ObsRequiredKeys::try_new_wildcard_symbol(
+            cfg.exchange_id.clone(),
+            cfg.conn_id.clone(),
+            "ws_connection",
+            "ws-run",
+        )
+        .map_err(|e| e.message)?;
+        record_decode_error(
+            obs_metrics,
+            obs_events,
+            &req,
+            "transport",
+            "max_frame_bytes",
+            "*",
+        );
+        return Err(inbound_violation(format!(
+            "WS_PROTOCOL_VIOLATION: frame too large: {} bytes (max {})",
+            raw.len(),
+            cfg.max_frame_bytes
+        ))
+        .message);
     }
 
     guard.enforce(&raw).map_err(|e| e.message)?;

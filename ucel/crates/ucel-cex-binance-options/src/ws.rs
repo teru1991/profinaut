@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use serde_json::{json, Value};
-use ucel_transport::ws::adapter::{InboundClass, OutboundMsg, WsVenueAdapter};
+use ucel_transport::ws::adapter::{InboundClass, InboundJsonGuard, OutboundMsg, WsVenueAdapter};
 
 use crate::symbols::fetch_all_symbols;
 
@@ -47,6 +47,9 @@ impl WsVenueAdapter for BinanceOptionsWsAdapter {
     }
 
     fn classify_inbound(&self, raw: &[u8]) -> InboundClass {
+        if InboundJsonGuard::default().enforce(raw).is_err() {
+            return InboundClass::Unknown;
+        }
         let v: Value = match serde_json::from_slice(raw) {
             Ok(x) => x,
             Err(_) => return InboundClass::Unknown,
