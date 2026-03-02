@@ -138,9 +138,21 @@ mod tests {
 
     #[test]
     fn fails_when_tick_missing() {
-        let bad = serde_json::from_str::<Vec<ProductDto>>(
-            r#"[{"id":"BTC-USD","base_currency":"BTC","quote_currency":"USD","status":"online","base_increment":"0.00000001"}]"#,
-        );
-        assert!(bad.is_err());
+        let bad: Vec<ProductDto> = serde_json::from_str(
+            r#"[{"id":"BTC-USD","base_currency":"BTC","quote_currency":"USD","status":"online","quote_increment":"","base_increment":"0.00000001"}]"#,
+        )
+        .unwrap();
+        let err = parse_snapshot(bad).unwrap_err();
+        assert!(err.contains("quote_increment"));
+    }
+
+    #[test]
+    fn fails_when_step_missing() {
+        let bad: Vec<ProductDto> = serde_json::from_str(
+            r#"[{"id":"BTC-USD","base_currency":"BTC","quote_currency":"USD","status":"online","quote_increment":"0.01","base_increment":""}]"#,
+        )
+        .unwrap();
+        let err = parse_snapshot(bad).unwrap_err();
+        assert!(err.contains("base_increment"));
     }
 }

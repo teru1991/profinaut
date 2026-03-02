@@ -250,4 +250,14 @@ mod tests {
         let err = parse_snapshot(body).unwrap_err();
         assert!(err.contains("missing tick_size"));
     }
+
+    #[test]
+    fn errors_when_step_missing() {
+        let body: ExchangeInfo = serde_json::from_str(
+            r#"{"symbols":[{"symbol":"BTCUSDT","status":"TRADING","baseAsset":"BTC","quoteAsset":"USDT","permissions":["SPOT"],"filters":[{"filterType":"PRICE_FILTER","tickSize":"0.01"}]}]}"#,
+        )
+        .unwrap();
+        let err = parse_snapshot(body).unwrap_err();
+        assert!(err.contains("missing step_size"));
+    }
 }

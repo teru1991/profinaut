@@ -297,3 +297,59 @@ pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String>
 
     Ok(out)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bybit_map_item_parses_tick_step_and_min() {
+        let it: Item = serde_json::from_str(
+            r#"{
+              "status":"Trading",
+              "symbol":"BTCUSDT",
+              "baseCoin":"BTC",
+              "quoteCoin":"USDT",
+              "priceFilter":{"tickSize":"0.01"},
+              "lotSizeFilter":{"qtyStep":"0.001","minOrderQty":"0.001","minNotionalValue":"10"}
+            }"#,
+        )
+        .unwrap();
+
+        let inst = map_item("linear", it).unwrap().unwrap();
+        assert_eq!(inst.tick_size.to_string(), "0.01");
+        assert_eq!(inst.lot_size.to_string(), "0.001");
+        assert_eq!(inst.min_order_qty.unwrap().to_string(), "0.001");
+        assert_eq!(inst.min_notional.unwrap().to_string(), "10");
+    }
+
+    #[test]
+    fn bybit_missing_tick_or_step_is_error() {
+        let it: Item = serde_json::from_str(
+            r#"{
+              "status":"Trading",
+              "symbol":"BTCUSDT",
+              "baseCoin":"BTC",
+              "quoteCoin":"USDT",
+              "lotSizeFilter":{"qtyStep":"0.001"}
+            }"#,
+        )
+        .unwrap();
+        let err = map_item("linear", it).unwrap_err();
+        assert!(err.contains("missing priceFilter"));
+
+        let it2: Item = serde_json::from_str(
+            r#"{
+              "status":"Trading",
+              "symbol":"BTCUSDT",
+              "baseCoin":"BTC",
+              "quoteCoin":"USDT",
+              "priceFilter":{"tickSize":"0.01"},
+              "lotSizeFilter":{}
+            }"#,
+        )
+        .unwrap();
+        let err2 = map_item("linear", it2).unwrap_err();
+        assert!(err2.contains("missing qtyStep/basePrecision"));
+    }
+}

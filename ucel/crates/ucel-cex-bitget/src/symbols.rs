@@ -19,7 +19,7 @@ struct ApiResp<T> {
     data: Vec<T>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SpotSymbolRow {
     symbol: String, // e.g. BTCUSDT
@@ -37,7 +37,7 @@ struct SpotSymbolRow {
     status: String, // online/gray/offline/halt
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct FuturesContractRow {
     symbol: String, // e.g. BTCUSDT
@@ -352,4 +352,104 @@ pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String>
     }
 
     Ok(out)
+}
+
+#[cfg(test)]
+fn map_spot_row_for_test(r: &SpotSymbolRow) -> Result<Option<StandardizedInstrument>, String> {
+    if r.status != "online" {
+        return Ok(None);
+    }
+    let pp: u32 = r
+        .price_precision
+        .parse()
+        .map_err(|_| format!("bitget invalid pricePrecision={}", r.price_precision))?;
+    let qp: u32 = r
+        .quantity_precision
+        .parse()
+        .map_err(|_| format!("bitget invalid quantityPrecision={}", r.quantity_precision))?;
+    let tick = step_from_precision(pp);
+    let step = step_from_precision(qp);
+    let min_qty = if r.min_trade_amount.is_empty() {
+        None
+    } else {
+        Some(parse_decimal("minTradeAmount", &r.min_trade_amount)?)
+    };
+    let min_notional = if r.min_trade_usdt.is_empty() {
+        None
+    } else {
+        Some(parse_decimal("minTradeUSDT", &r.min_trade_usdt)?)
+    };
+    Ok(Some(StandardizedInstrument {
+        id: InstrumentId {
+            exchange: Exchange::Bitget,
+            market_type: MarketType::Spot,
+            raw_symbol: r.symbol.clone(),
+            expiry: None,
+            strike: None,
+            option_right: None,
+            contract_size: None,
+        },
+        exchange: Exchange::Bitget,
+        market_type: MarketType::Spot,
+        base: r.base_coin.clone(),
+        quote: r.quote_coin.clone(),
+        raw_symbol: r.symbol.clone(),
+        status: SymbolStatus::Trading,
+        tick_size: tick,
+        lot_size: step,
+        min_order_qty: min_qty,
+        max_order_qty: None,
+        min_notional,
+        price_precision: Some(precision_from_step(tick)),
+        qty_precision: Some(precision_from_step(step)),
+        contract_size: None,
+        meta: BTreeMap::new(),
+        ts_recv: SystemTime::now(),
+        ts_event: None,
+        schema_version: SYMBOL_SCHEMA_VERSION,
+    }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bitget_spot_row_maps_precision_to_tick_step() {
+        let r: SpotSymbolRow = serde_json::from_str(
+            r#"{
+              "symbol":"BTCUSDT",
+              "baseCoin":"BTC",
+              "quoteCoin":"USDT",
+              "minTradeAmount":"0.001",
+              "minTradeUsdt":"10",
+              "pricePrecision":"2",
+              "quantityPrecision":"3",
+              "status":"online"
+            }"#,
+        )
+        .unwrap();
+        let inst = map_spot_row_for_test(&r).unwrap().unwrap();
+        assert_eq!(inst.tick_size.to_string(), "0.01");
+        assert_eq!(inst.lot_size.to_string(), "0.001");
+        assert_eq!(inst.min_order_qty.unwrap().to_string(), "0.001");
+        assert_eq!(inst.min_notional.unwrap().to_string(), "10");
+    }
+
+    #[test]
+    fn bitget_invalid_precision_is_error() {
+        let r: SpotSymbolRow = serde_json::from_str(
+            r#"{
+              "symbol":"BTCUSDT",
+              "baseCoin":"BTC",
+              "quoteCoin":"USDT",
+              "pricePrecision":"x",
+              "quantityPrecision":"3",
+              "status":"online"
+            }"#,
+        )
+        .unwrap();
+        let err = map_spot_row_for_test(&r).unwrap_err();
+        assert!(err.contains("invalid pricePrecision"));
+    }
 }

@@ -145,3 +145,67 @@ pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String>
 
     Ok(out)
 }
+
+fn map_row_for_test(r: SymbolRow) -> Result<StandardizedInstrument, String> {
+    let tick = r.tick_size.parse::<Decimal>().map_err(|e| e.to_string())?;
+    let step = r.size_step.parse::<Decimal>().map_err(|e| e.to_string())?;
+    let min_qty = r
+        .min_order_size
+        .parse::<Decimal>()
+        .map_err(|e| e.to_string())?;
+    Ok(StandardizedInstrument {
+        id: InstrumentId {
+            exchange: Exchange::Gmocoin,
+            market_type: MarketType::Spot,
+            raw_symbol: r.symbol.clone(),
+            expiry: None,
+            strike: None,
+            option_right: None,
+            contract_size: None,
+        },
+        exchange: Exchange::Gmocoin,
+        market_type: MarketType::Spot,
+        base: r.symbol.clone(),
+        quote: "JPY".to_string(),
+        raw_symbol: r.symbol,
+        status: SymbolStatus::Trading,
+        tick_size: tick,
+        lot_size: step,
+        min_order_qty: Some(min_qty),
+        max_order_qty: None,
+        min_notional: None,
+        price_precision: Some(tick.normalize().scale()),
+        qty_precision: Some(step.normalize().scale()),
+        contract_size: None,
+        meta: BTreeMap::new(),
+        ts_recv: SystemTime::now(),
+        ts_event: None,
+        schema_version: SYMBOL_SCHEMA_VERSION,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn gmocoin_row_maps_tick_step_min() {
+        let r: SymbolRow = serde_json::from_str(
+            r#"{"symbol":"BTC","minOrderSize":"0.01","maxOrderSize":"100","sizeStep":"0.001","tickSize":"0.01","takerFee":"0","makerFee":"0"}"#,
+        )
+        .unwrap();
+        let i = map_row_for_test(r).unwrap();
+        assert_eq!(i.tick_size.to_string(), "0.01");
+        assert_eq!(i.lot_size.to_string(), "0.001");
+        assert_eq!(i.min_order_qty.unwrap().to_string(), "0.01");
+    }
+
+    #[test]
+    fn gmocoin_invalid_tick_is_error() {
+        let r: SymbolRow = serde_json::from_str(
+            r#"{"symbol":"BTC","minOrderSize":"0.01","maxOrderSize":"100","sizeStep":"0.001","tickSize":"","takerFee":"0","makerFee":"0"}"#,
+        )
+        .unwrap();
+        assert!(map_row_for_test(r).is_err());
+    }
+}

@@ -204,4 +204,18 @@ mod tests {
         let err = parse_snapshot(body).unwrap_err();
         assert!(err.contains("missing step_size"));
     }
+
+    #[test]
+    fn parses_min_notional_aliases() {
+        let body: ExchangeInfo = serde_json::from_str(r#"{"symbols":[{"symbol":"BTCUSDT","baseAsset":"BTC","quoteAsset":"USDT","status":"TRADING","filters":[{"filterType":"PRICE_FILTER","tickSize":"0.1"},{"filterType":"LOT_SIZE","stepSize":"0.001","minQty":"0.001"},{"filterType":"MIN_NOTIONAL","minNotional":"7"}]}]}"#).unwrap();
+        let instruments = parse_snapshot(body).unwrap();
+        assert_eq!(instruments[0].min_notional.unwrap().to_string(), "7");
+    }
+
+    #[test]
+    fn errors_without_tick() {
+        let body: ExchangeInfo = serde_json::from_str(r#"{"symbols":[{"symbol":"BTCUSDT","baseAsset":"BTC","quoteAsset":"USDT","status":"TRADING","filters":[{"filterType":"LOT_SIZE","stepSize":"0.001"}]}]}"#).unwrap();
+        let err = parse_snapshot(body).unwrap_err();
+        assert!(err.contains("missing tick_size"));
+    }
 }

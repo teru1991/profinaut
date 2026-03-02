@@ -179,3 +179,108 @@ pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String>
 
     Ok(out)
 }
+
+fn map_item_for_test(
+    i: &Item,
+    expected_inst_type: &str,
+) -> Result<Option<StandardizedInstrument>, String> {
+    if i.inst_type != expected_inst_type {
+        return Ok(None);
+    }
+    if i.state != "live" {
+        return Ok(None);
+    }
+
+    let tick = parse_decimal("tickSz", &i.tick_sz)?;
+    let step = parse_decimal("lotSz", &i.lot_sz)?;
+    if tick <= Decimal::ZERO || step <= Decimal::ZERO {
+        return Err(format!(
+            "okx: non-positive tick/step instId={} tick={tick} step={step}",
+            i.inst_id
+        ));
+    }
+
+    let min_qty = if i.min_sz.is_empty() {
+        None
+    } else {
+        Some(parse_decimal("minSz", &i.min_sz)?)
+    };
+    let mt = market_type_from_inst_type(&i.inst_type);
+
+    Ok(Some(StandardizedInstrument {
+        id: InstrumentId {
+            exchange: Exchange::Okx,
+            market_type: mt.clone(),
+            raw_symbol: i.inst_id.clone(),
+            expiry: None,
+            strike: None,
+            option_right: None,
+            contract_size: None,
+        },
+        exchange: Exchange::Okx,
+        market_type: mt,
+        base: i.base_ccy.clone(),
+        quote: i.quote_ccy.clone(),
+        raw_symbol: i.inst_id.clone(),
+        status: SymbolStatus::Trading,
+        tick_size: tick,
+        lot_size: step,
+        min_order_qty: min_qty,
+        max_order_qty: None,
+        min_notional: None,
+        price_precision: Some(precision_from_step(tick)),
+        qty_precision: Some(precision_from_step(step)),
+        contract_size: None,
+        meta: BTreeMap::new(),
+        ts_recv: SystemTime::now(),
+        ts_event: None,
+        schema_version: SYMBOL_SCHEMA_VERSION,
+    }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn okx_item_maps_tick_lot_min() {
+        let i: Item = serde_json::from_str(
+            r#"{
+              "instId":"BTC-USDT",
+              "instType":"SPOT",
+              "state":"live",
+              "baseCcy":"BTC",
+              "quoteCcy":"USDT",
+              "tickSz":"0.1",
+              "lotSz":"0.001",
+              "minSz":"0.001"
+            }"#,
+        )
+        .unwrap();
+
+        let inst = map_item_for_test(&i, "SPOT").unwrap().unwrap();
+        assert_eq!(inst.tick_size.to_string(), "0.1");
+        assert_eq!(inst.lot_size.to_string(), "0.001");
+        assert_eq!(inst.min_order_qty.unwrap().to_string(), "0.001");
+    }
+
+    #[test]
+    fn okx_missing_tick_or_step_is_error() {
+        let i: Item = serde_json::from_str(
+            r#"{
+              "instId":"BTC-USDT",
+              "instType":"SPOT",
+              "state":"live",
+              "baseCcy":"BTC",
+              "quoteCcy":"USDT",
+              "tickSz":"",
+              "lotSz":"0.001",
+              "minSz":""
+            }"#,
+        )
+        .unwrap();
+
+        let err = map_item_for_test(&i, "SPOT").unwrap_err();
+        assert!(err.contains("invalid decimal"));
+    }
+}

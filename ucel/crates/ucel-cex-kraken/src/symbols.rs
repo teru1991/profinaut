@@ -221,4 +221,20 @@ mod tests {
         assert_eq!(instruments[0].tick_size.to_string(), "0.1");
         assert_eq!(instruments[0].lot_size.to_string(), "0.0001");
     }
+
+    #[test]
+    fn kraken_missing_decimals_still_maps_to_step_1_and_tick_1() {
+        let v: PairInfo = serde_json::from_str(
+            r#"{
+              "wsname":"XBT/USD",
+              "status":"online",
+              "base":"XXBT",
+              "quote":"ZUSD"
+            }"#,
+        )
+        .unwrap();
+        let inst = map_pair("XXBTZUSD".to_string(), v).unwrap().unwrap();
+        assert_eq!(inst.tick_size.to_string(), "1");
+        assert_eq!(inst.lot_size.to_string(), "1");
+    }
 }

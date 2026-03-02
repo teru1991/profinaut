@@ -902,6 +902,30 @@
       "verification_evidence": [
         "docs/verification/ucel-marketmeta-exch-public-001.md"
       ]
+    },
+    "UCEL-MARKETMETA-EXCH-TESTS-002": {
+      "branch": "feature/ucel-marketmeta-exch-tests-002",
+      "artifacts": [
+        "ucel/crates/ucel-cex-binance/src/symbols.rs",
+        "ucel/crates/ucel-cex-binance-usdm/src/symbols.rs",
+        "ucel/crates/ucel-cex-binance-coinm/src/symbols.rs",
+        "ucel/crates/ucel-cex-binance-options/src/symbols.rs",
+        "ucel/crates/ucel-cex-bybit/src/symbols.rs",
+        "ucel/crates/ucel-cex-bitget/src/symbols.rs",
+        "ucel/crates/ucel-cex-okx/src/symbols.rs",
+        "ucel/crates/ucel-cex-kraken/src/symbols.rs",
+        "ucel/crates/ucel-cex-htx/src/symbols.rs",
+        "ucel/crates/ucel-cex-bittrade/src/symbols.rs",
+        "ucel/crates/ucel-cex-gmocoin/src/symbols.rs",
+        "ucel/crates/ucel-cex-bitmex/src/symbols.rs",
+        "ucel/crates/ucel-cex-coinbase/src/symbols.rs",
+        "ucel/crates/ucel-cex-deribit/src/symbols.rs",
+        "docs/verification/ucel-marketmeta-exch-tests-002.md",
+        "docs/status/trace-index.json"
+      ],
+      "verification_evidence": [
+        "docs/verification/ucel-marketmeta-exch-tests-002.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

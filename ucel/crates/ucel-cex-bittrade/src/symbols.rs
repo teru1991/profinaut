@@ -144,3 +144,85 @@ pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String>
 
     Ok(out)
 }
+
+fn map_sym_for_test(s: &Sym) -> Result<Option<StandardizedInstrument>, String> {
+    if s.state != "online" && s.state != "ONLINE" {
+        return Ok(None);
+    }
+    let tick = step_from_precision(s.price_precision);
+    let step = step_from_precision(s.amount_precision);
+    let min_qty = s.min_order_amt.map(d_f64).transpose()?;
+    let min_notional = s.min_order_value.map(d_f64).transpose()?;
+    Ok(Some(StandardizedInstrument {
+        id: InstrumentId {
+            exchange: Exchange::Bittrade,
+            market_type: MarketType::Spot,
+            raw_symbol: s.symbol.clone(),
+            expiry: None,
+            strike: None,
+            option_right: None,
+            contract_size: None,
+        },
+        exchange: Exchange::Bittrade,
+        market_type: MarketType::Spot,
+        base: s.base_currency.to_uppercase(),
+        quote: s.quote_currency.to_uppercase(),
+        raw_symbol: s.symbol.clone(),
+        status: SymbolStatus::Trading,
+        tick_size: tick,
+        lot_size: step,
+        min_order_qty: min_qty,
+        max_order_qty: None,
+        min_notional,
+        price_precision: Some(s.price_precision),
+        qty_precision: Some(s.amount_precision),
+        contract_size: None,
+        meta: BTreeMap::new(),
+        ts_recv: SystemTime::now(),
+        ts_event: None,
+        schema_version: SYMBOL_SCHEMA_VERSION,
+    }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bittrade_maps_precision_to_tick_step_and_min() {
+        let s: Sym = serde_json::from_str(
+            r#"{
+              "symbol":"btcjpy",
+              "state":"online",
+              "base-currency":"btc",
+              "quote-currency":"jpy",
+              "price-precision":1,
+              "amount-precision":4,
+              "min-order-amt":0.001,
+              "min-order-value":500
+            }"#,
+        )
+        .unwrap();
+        let inst = map_sym_for_test(&s).unwrap().unwrap();
+        assert_eq!(inst.tick_size.to_string(), "0.1");
+        assert_eq!(inst.lot_size.to_string(), "0.0001");
+    }
+
+    #[test]
+    fn bittrade_zero_precision_is_allowed() {
+        let s: Sym = serde_json::from_str(
+            r#"{
+              "symbol":"btcjpy",
+              "state":"online",
+              "base-currency":"btc",
+              "quote-currency":"jpy",
+              "price-precision":0,
+              "amount-precision":0
+            }"#,
+        )
+        .unwrap();
+        let inst = map_sym_for_test(&s).unwrap().unwrap();
+        assert_eq!(inst.tick_size.to_string(), "1");
+        assert_eq!(inst.lot_size.to_string(), "1");
+    }
+}
