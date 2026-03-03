@@ -18,6 +18,8 @@ tracing = { workspace = true }
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "sync", "time", "macros"] }
 
 toml = "0.8"
+uuid = { version = "1", features = ["v4", "serde"] }
+blake3 = "1"
 
 [dev-dependencies]
 async-trait = "0.1"
