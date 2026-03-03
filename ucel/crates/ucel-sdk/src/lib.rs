@@ -24,6 +24,37 @@ pub mod ingest {
     pub use ucel_registry::ingest::*;
 }
 
+pub mod execution;
+
+pub use execution::{
+    AuditEvent,
+    AuditSink,
+    ExecutionClient,
+    ExecutionConnector,
+    ExecutionMode,
+    ExecutionOutcome,
+    IdempotencyKey,
+    OrderCancel,
+    OrderIntent,
+    OrderIntentId,
+    OrderOpenQuery,
+    OrderReceipt,
+    OrderRequest,
+    OrderSide,
+    OrderStatus,
+    OrderTimeInForce,
+    OrderType,
+    Price,
+    Quantity,
+    ReconcileReport,
+    ReconcileSource,
+    SdkExecutionError,
+    SdkExecutionErrorCode,
+    SdkExecutionResult,
+    Symbol,
+    VenueId,
+};
+
 pub mod prelude {
     pub use crate::config::{SdkConfig, SdkConfigFile};
     pub use crate::error::{SdkError, SdkResult};
