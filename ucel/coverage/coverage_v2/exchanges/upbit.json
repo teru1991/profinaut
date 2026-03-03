@@ -1,0 +1,20 @@
+{
+  "exchange": "upbit",
+  "public": {
+    "rest": true,
+    "ws": true
+  },
+  "private": {
+    "enabled": true
+  },
+  "ws_ops": [
+    "quotation.public.ws.ticker.stream",
+    "quotation.public.ws.trade.stream",
+    "quotation.public.ws.orderbook.stream",
+    "quotation.public.ws.candle.stream",
+    "other.public.ws.subscription.list",
+    "exchange.private.ws.myordertrade.stream",
+    "exchange.private.ws.myasset.stream"
+  ],
+  "source": "ucel/coverage/upbit.yaml"
+}

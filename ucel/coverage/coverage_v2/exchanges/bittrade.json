@@ -1,0 +1,20 @@
+{
+  "exchange": "bittrade",
+  "public": {
+    "rest": true,
+    "ws": true
+  },
+  "private": {
+    "enabled": false
+  },
+  "ws_ops": [
+    "public.ws.market.kline",
+    "public.ws.market.depth",
+    "public.ws.market.bbo",
+    "public.ws.market.detail",
+    "public.ws.market.trade.detail",
+    "private.ws.accounts.update",
+    "private.ws.trade.clearing"
+  ],
+  "source": "ucel/coverage/bittrade.yaml"
+}

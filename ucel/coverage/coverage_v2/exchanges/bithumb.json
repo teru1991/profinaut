@@ -1,0 +1,15 @@
+{
+  "exchange": "bithumb",
+  "public": {
+    "rest": true,
+    "ws": true
+  },
+  "private": {
+    "enabled": false
+  },
+  "ws_ops": [
+    "openapi.public.ws.ticker.snapshot",
+    "openapi.public.ws.trade.snapshot"
+  ],
+  "source": "ucel/coverage/bithumb.yaml"
+}

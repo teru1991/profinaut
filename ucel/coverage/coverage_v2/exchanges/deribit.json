@@ -1,0 +1,12 @@
+{
+  "exchange": "deribit",
+  "public": {
+    "rest": true,
+    "ws": false
+  },
+  "private": {
+    "enabled": false
+  },
+  "ws_ops": [],
+  "source": "ucel/coverage/deribit.yaml"
+}

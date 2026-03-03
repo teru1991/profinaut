@@ -1,5 +1,6 @@
 pub mod chaos;
 pub mod coverage;
+pub mod coverage_gate;
 pub mod fixtures;
 pub mod fuzz;
 pub mod fuzz_corpus;

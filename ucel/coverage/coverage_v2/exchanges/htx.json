@@ -1,0 +1,22 @@
+{
+  "exchange": "htx",
+  "public": {
+    "rest": true,
+    "ws": true
+  },
+  "private": {
+    "enabled": true
+  },
+  "ws_ops": [
+    "spot.public.ws.market.catalog.index",
+    "spot.private.ws.account.catalog.index",
+    "futures.public.ws.market.catalog.index",
+    "futures.private.ws.account.catalog.index",
+    "swap.public.ws.market.catalog.index",
+    "swap.private.ws.account.catalog.index",
+    "options.public.ws.market.catalog.index",
+    "other.public.ws.common.protocol",
+    "other.public.ws.other.not_applicable"
+  ],
+  "source": "ucel/coverage/htx.yaml"
+}

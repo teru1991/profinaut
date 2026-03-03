@@ -40,3 +40,6 @@ entries:
   implemented: true
   tested: true
   notes: market event parser supports orderbook snapshot stream
+notes:
+- 'TEMP EXCEPTION: public_only due to missing private API documentation (see ucel/docs/policies/coverage_policy.md).'
+- 'Exit criteria: implement private + signing tests, then switch coverage_v2 private.enabled=true.'

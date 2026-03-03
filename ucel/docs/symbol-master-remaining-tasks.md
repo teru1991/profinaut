@@ -9,11 +9,13 @@
   - [ ] `schema_version` の互換性チェック関数（upgrade path / reject path）が未実装。
 - [ ] `ucel-symbol-adapter`
   - [ ] `SymbolSubscriber` のイベント型がプレースホルダのため、`Added/Removed/StatusChanged/ParamChanged` を直接扱う契約へ寄せる必要あり。
-  - [ ] 再同期導線（lagged 検知時の snapshot 取り直し契約）を trait レベルで固定していない。
+  - [x] 再同期導線（lagged 検知時の snapshot 取り直し契約）を trait レベルで固定していない。
+  - 追加API: `ResyncHint` / `ResyncSignal` / `SymbolSubscriberExtResync` / `subscribe_with_optional_resync`。
 - [ ] `ucel-symbol-store`
   - [ ] `meta` 比較の whitelist（重要キーのみ比較）機能が未実装。
   - [ ] `apply_snapshot` の差分イベントに `ts_event` を統一して載せる運用規約が未固定。
-  - [ ] 取りこぼし復元向けに `store_version` を使った checkpoint API（from version で再生）が未実装。
+  - [x] 取りこぼし復元向けに `store_version` を使った checkpoint API（from version で再生）が未実装。
+  - 追加API: `ReplayState` / `StoreCheckpoint` / `export_since` / `import_events`。
 
 ## 2. 取引所アダプタ（ucel-cex-*）側の残タスク
 
@@ -24,14 +26,15 @@
 
 ## 3. services/symbol-master（常駐）側の残タスク
 
-- [ ] `main.rs` は現状 scaffold のみのため、設定読込・起動順序・graceful shutdown を実装。
+- [x] `main.rs` は現状 scaffold のみのため、設定読込・起動順序・graceful shutdown を実装。
 - [ ] exchange ごとの worker 起動（REST/WS 分離 bulkhead）と supervisor 再起動制御を実装。
 - [ ] REST polling ループ（interval/backoff/429・5xx 縮退）を実装。
 - [ ] WS manager（reconnect/ping-pong/lagged 検知）を実装。
-- [ ] lagged -> snapshot resync の本流導線を実装。
+- [x] lagged -> snapshot resync の本流導線を実装。
 - [ ] restore -> stale -> fresh snapshot で stale clear の起動時フローを実装。
 - [ ] internal event bus（broadcast lagged を前提に resync）を実装。
-- [ ] metrics/health HTTP 公開（healthy/degraded/down + reason）を実装。
+- [x] metrics/health HTTP 公開（healthy/degraded/down + reason）を実装。
+  - 実装根拠: `services/marketdata-rs/symbol-master/src/{main,app,http,resync_loop,config}.rs` と `tests/smoke_startup.rs`。
 
 ## 4. テストの残タスク
 
