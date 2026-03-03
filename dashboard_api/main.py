@@ -18,6 +18,8 @@ from contracts.schemas import (
 from dashboard_api.bot_registry import bot_registry
 from dashboard_api.logging_config import setup_logging
 from dashboard_api.market_data import market_data_provider
+from dashboard_api.safety_controller import router as safety_router
+from dashboard_api.safety_lease import router as safety_lease_router
 
 # Setup logging
 setup_logging("dashboard-api")
@@ -35,6 +37,9 @@ app = FastAPI(
 
 # Kill switch (no real trading)
 KILL_SWITCH = KillSwitch(enabled=True, message="Real trading disabled - demo mode only")
+
+app.include_router(safety_router)
+app.include_router(safety_lease_router)
 
 
 @app.get("/health", response_model=HealthStatus)
