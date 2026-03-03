@@ -2,7 +2,7 @@ use crate::checkpoint::{CheckpointError, SchemaVersion, StoreCheckpoint, StoreVe
 use crate::SymbolEvent;
 use sha2::{Digest, Sha256};
 
-#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct VersionedSymbolEvent {
     pub store_version: StoreVersion,
     pub event: SymbolEvent,

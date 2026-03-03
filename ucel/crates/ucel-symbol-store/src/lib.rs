@@ -270,7 +270,7 @@ impl SymbolStore {
             }
             SymbolEvent::StatusChanged { id, to, .. } => {
                 if let Some(mut existing) = self.instruments.get_mut(id) {
-                    existing.status = *to;
+                    existing.status = to.clone();
                     let updated = existing.clone();
                     drop(existing);
                     self.market_meta
