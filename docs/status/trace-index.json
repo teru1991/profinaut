@@ -1548,28 +1548,34 @@
         "docs/verification/E-PLAN-002.md"
       ]
     },
-    "E-PLAN-003": {
-      "branch": "feature/e-plan-003-001",
+    "E-PLAN-004": {
+      "branch": "feature/e-plan-004-001",
       "pr_urls": [],
       "commit_shas": [],
       "artifacts": [
-        "bots/simple_mm/main.py",
         "dashboard_api/main.py",
         "dashboard_api/safety_controller.py",
-        "dashboard_api/safety_lease.py",
-        "dashboard_api/safety_runtime.py",
         "docs/status/trace-index.json",
-        "docs/verification/E-PLAN-003.md",
         "libs/safety_core/__init__.py",
-        "libs/safety_core/gate.py",
-        "libs/safety_core/lease.py",
-        "libs/safety_core/lease_client.py",
-        "tests/test_safety_gate_failclose.py",
-        "tests/test_safety_lease_lifecycle.py",
-        "worker/safety_lease_renewer.py"
+        "dashboard_api/interlock_status.py",
+        "dashboard_api/safety_kill.py",
+        "docs/runbooks/safety_kill_runbook.md",
+        "docs/verification/E-PLAN-004.md",
+        "libs/safety_core/interlock_catalog.py",
+        "libs/safety_core/interlock_engine.py",
+        "libs/safety_core/kill.py",
+        "libs/safety_core/runtime.py",
+        "libs/safety_core/slo.py",
+        "libs/safety_core/support_bundle.py",
+        "tests/test_interlock_engine.py",
+        "tests/test_kill_dual_path.py",
+        "tests/test_slo_metrics.py",
+        "tools/local_kill_demo.sh",
+        "worker/interlock_daemon.py",
+        "worker/local_kill_runner.py"
       ],
       "verification_evidence": [
-        "docs/verification/E-PLAN-003.md"
+        "docs/verification/E-PLAN-004.md"
       ]
     }
   },

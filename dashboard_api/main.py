@@ -19,10 +19,9 @@ from dashboard_api.bot_registry import bot_registry
 from dashboard_api.logging_config import setup_logging
 from dashboard_api.market_data import market_data_provider
 from dashboard_api.safety_controller import router as safety_router
-<<<<<<< codex/implement-safety-core-for-e-plan-002-61ohl9
+from dashboard_api.safety_kill import router as safety_kill_router
+from dashboard_api.interlock_status import router as interlock_status_router
 from dashboard_api.safety_lease import router as safety_lease_router
-=======
->>>>>>> master
 
 # Setup logging
 setup_logging("dashboard-api")
@@ -42,11 +41,9 @@ app = FastAPI(
 KILL_SWITCH = KillSwitch(enabled=True, message="Real trading disabled - demo mode only")
 
 app.include_router(safety_router)
-<<<<<<< codex/implement-safety-core-for-e-plan-002-61ohl9
-app.include_router(safety_lease_router)
-=======
->>>>>>> master
-
+app.include_router(safety_kill_router)
+app.include_router(interlock_status_router)
+app.include_router(safety_lease_router
 
 @app.get("/health", response_model=HealthStatus)
 async def health_check():
