@@ -70,7 +70,13 @@ class Secrets:
             if ref.scheme == "env":
                 v = self._env.resolve(field=ref.field)
             elif ref.scheme == "fileenc":
-                v = self._fileenc.resolve(path=ref.path, field=ref.field)
+                v = self._fileenc.resolve(
+                    path=ref.path,
+                    field=ref.field,
+                    registry_id=ref.registry_id,
+                    scope=ref.scope,
+                    version_hint=ref.version_hint,
+                )
             elif ref.scheme == "vault":
                 v = self._vault.resolve(path=ref.path, field=ref.field, version_hint=ref.version_hint)
             else:

@@ -1611,6 +1611,30 @@
       "verification_evidence": [
         "docs/verification/B-STEP2.md"
       ]
+    },
+    "B-STEP3": {
+      "branch": "feature/b-step3-001",
+      "artifacts": [
+        "docs/specs/security/fileenc_crypto_contract.md",
+        "docs/status/trace-index.json",
+        "docs/verification/B-STEP3.md",
+        "libs/safety_core/crypto/__init__.py",
+        "libs/safety_core/crypto/aead.py",
+        "libs/safety_core/crypto/fileenc_format.py",
+        "libs/safety_core/crypto/kdf.py",
+        "libs/safety_core/crypto/rot.py",
+        "libs/safety_core/crypto/rot_macos_keychain.py",
+        "libs/safety_core/crypto/rot_passphrase.py",
+        "libs/safety_core/crypto/rot_windows_dpapi.py",
+        "libs/safety_core/secrets_provider.py",
+        "libs/safety_core/secrets_providers/fileenc.py",
+        "scripts/fileenc_tool.py",
+        "tests/test_fileenc_crypto_v1.py",
+        "pyproject.toml"
+      ],
+      "verification_evidence": [
+        "docs/verification/B-STEP3.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
