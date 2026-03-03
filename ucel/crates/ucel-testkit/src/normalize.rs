@@ -52,14 +52,8 @@ fn stable_event_cmp(a: &Value, b: &Value) -> Ordering {
 }
 
 fn compare_key(a: &Value, b: &Value, key: &str) -> Ordering {
-    let av = a
-        .get(key)
-        .map(|v| v.to_string())
-        .unwrap_or_default();
-    let bv = b
-        .get(key)
-        .map(|v| v.to_string())
-        .unwrap_or_default();
+    let av = a.get(key).map(|v| v.to_string()).unwrap_or_default();
+    let bv = b.get(key).map(|v| v.to_string()).unwrap_or_default();
     av.cmp(&bv)
 }
 

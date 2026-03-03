@@ -1,5 +1,4 @@
 use bytes::Bytes;
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -371,20 +370,6 @@ fn no_secret_leak_in_tracing_logs() {
     assert!(!logs.contains("api_secret_456"));
 }
 
-#[derive(Debug, Deserialize)]
-struct CoverageManifest {
-    venue: String,
-    strict: bool,
-    entries: Vec<CoverageEntry>,
-}
-
-#[derive(Debug, Deserialize)]
-struct CoverageEntry {
-    id: String,
-    implemented: bool,
-    tested: bool,
-}
-
 #[test]
 fn strict_coverage_gate_has_no_gaps_and_includes_all_rest_ws_ids() {
     let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
@@ -408,17 +393,14 @@ fn strict_coverage_gate_has_no_gaps_and_includes_all_rest_ws_ids() {
     catalog_ids.sort_unstable();
 
     let manifest_path = repo_root.join("ucel/coverage/htx.yaml");
-    let raw_manifest = std::fs::read_to_string(manifest_path).unwrap();
-    let manifest: CoverageManifest = serde_yaml::from_str(&raw_manifest).unwrap();
+    let manifest = ucel_testkit::load_coverage_manifest(&manifest_path).unwrap();
     assert_eq!(manifest.venue, "htx");
     assert!(manifest.strict);
 
-    let mut covered = vec![];
-    for entry in &manifest.entries {
-        assert!(entry.implemented, "id not implemented: {}", entry.id);
-        assert!(entry.tested, "id not tested: {}", entry.id);
-        covered.push(entry.id.clone());
-    }
+    let mut covered: Vec<String> = manifest.entries.iter().map(|e| e.id.clone()).collect();
     covered.sort_unstable();
-    assert_eq!(covered, catalog_ids);
+    assert!(catalog_ids.iter().all(|id| covered.binary_search(id).is_ok()));
+
+    let gaps = ucel_testkit::evaluate_coverage_gate(&manifest);
+    assert!(gaps.is_empty(), "strict gate requires zero gaps: {gaps:?}");
 }

@@ -309,21 +309,10 @@ mod tests {
     fn strict_coverage_has_no_gaps() {
         let manifest_path =
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/bitget.yaml");
-        #[derive(serde::Deserialize)]
-        struct CoverageEntry {
-            implemented: bool,
-            tested: bool,
-        }
-        #[derive(serde::Deserialize)]
-        struct CoverageManifest {
-            strict: bool,
-            entries: Vec<CoverageEntry>,
-        }
-
-        let raw = std::fs::read_to_string(manifest_path).unwrap();
-        let manifest: CoverageManifest = serde_yaml::from_str(&raw).unwrap();
+        let manifest = ucel_testkit::load_coverage_manifest(&manifest_path).unwrap();
         assert!(manifest.strict);
-        assert!(manifest.entries.iter().all(|e| e.implemented && e.tested));
+        let gaps = ucel_testkit::evaluate_coverage_gate(&manifest);
+        assert!(gaps.is_empty(), "strict gate requires zero gaps: {gaps:?}");
     }
 }
 

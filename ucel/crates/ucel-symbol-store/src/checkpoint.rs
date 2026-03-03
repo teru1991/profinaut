@@ -25,7 +25,7 @@ impl fmt::Debug for StoreCheckpoint {
         f.debug_struct("StoreCheckpoint")
             .field("schema_version", &self.schema_version)
             .field("store_version", &self.store_version)
-            .field("digest_head", &format_args!("{:02x?}", head))
+            .field("digest_head", &format_args!("{head:02x?}"))
             .finish()
     }
 }
