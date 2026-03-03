@@ -6,6 +6,7 @@ edition.workspace = true
 [dependencies]
 ucel-market-meta-catalog = { path = "../ucel-market-meta-catalog" }
 ucel-symbol-core = { path = "../ucel-symbol-core" }
+ucel-transport = { path = "../ucel-transport" }
 bytes.workspace = true
 tokio = { workspace = true, features = ["macros", "rt", "sync"] }
 tracing.workspace = true

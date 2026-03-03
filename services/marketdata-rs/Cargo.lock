@@ -56,6 +56,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f0e0fee31ef5ed1ba1316088939cea399010ed7731dba877ed44aeb407a75ea"
 
 [[package]]
+name = "arrayref"
+version = "0.3.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76a2e8124351fda1ef8aaaa3bbd7ebbcb486bbcd4225aca0aa0d84bb2db8fecb"
+
+[[package]]
 name = "arrayvec"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -161,6 +167,20 @@ dependencies = [
  "radium",
  "tap",
  "wyz",
+]
+
+[[package]]
+name = "blake3"
+version = "1.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2468ef7d57b3fb7e16b576e8377cdbde2320c60e1491e961d11da40fc4f02a2d"
+dependencies = [
+ "arrayref",
+ "arrayvec",
+ "cc",
+ "cfg-if",
+ "constant_time_eq",
+ "cpufeatures",
 ]
 
 [[package]]
@@ -294,6 +314,12 @@ name = "const-oid"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a6ef517f0926dd24a1582492c791b6a4818a4d94e789a334894aa15b0d12f55c"
+
+[[package]]
+name = "constant_time_eq"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d52eff69cd5e647efe296129160853a42795992097e8af39800e1060caeea9b"
 
 [[package]]
 name = "core-foundation"
@@ -2579,10 +2605,13 @@ dependencies = [
  "async-trait",
  "bytes",
  "reqwest",
+ "rust_decimal",
  "serde",
  "serde_json",
  "tokio",
  "ucel-core",
+ "ucel-symbol-adapter",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
 ]
@@ -2599,6 +2628,7 @@ dependencies = [
  "tokio",
  "tracing",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
 ]
@@ -2615,6 +2645,7 @@ dependencies = [
  "tokio",
  "tracing",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-testkit",
  "ucel-transport",
  "uuid",
@@ -2632,6 +2663,7 @@ dependencies = [
  "tokio",
  "tracing",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-testkit",
  "ucel-transport",
  "uuid",
@@ -2650,8 +2682,19 @@ dependencies = [
  "tokio",
  "tracing",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
+]
+
+[[package]]
+name = "ucel-cex-bithumb"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "serde",
+ "serde_json",
+ "ucel-core",
 ]
 
 [[package]]
@@ -2668,6 +2711,8 @@ dependencies = [
  "tokio",
  "tracing",
  "ucel-core",
+ "ucel-sdk",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
 ]
@@ -2684,6 +2729,7 @@ dependencies = [
  "tokio",
  "tracing",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
 ]
@@ -2698,11 +2744,14 @@ dependencies = [
  "hex",
  "hmac",
  "reqwest",
+ "rust_decimal",
  "serde",
  "serde_json",
  "sha2",
  "tokio",
  "ucel-core",
+ "ucel-symbol-adapter",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
 ]
@@ -2721,6 +2770,7 @@ dependencies = [
  "tokio",
  "tracing",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
 ]
@@ -2738,6 +2788,7 @@ dependencies = [
  "tokio",
  "tracing",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
 ]
@@ -2755,6 +2806,7 @@ dependencies = [
  "tokio",
  "tracing",
  "ucel-core",
+ "ucel-symbol-core",
  "ucel-transport",
  "uuid",
 ]
@@ -2800,6 +2852,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucel-sdk"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "toml",
+ "tracing",
+ "ucel-core",
+ "ucel-registry",
+ "ucel-symbol-adapter",
+ "ucel-symbol-core",
+ "ucel-symbol-store",
+ "uuid",
+]
+
+[[package]]
 name = "ucel-subscription-planner"
 version = "0.1.0"
 dependencies = [
@@ -2820,11 +2891,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucel-symbol-adapter"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "futures-core",
+ "serde",
+ "thiserror 1.0.69",
+ "ucel-symbol-core",
+ "ucel-symbol-store",
+]
+
+[[package]]
 name = "ucel-symbol-core"
 version = "0.1.0"
 dependencies = [
+ "rust_decimal",
  "serde",
  "serde_json",
+ "thiserror 1.0.69",
  "ucel-core",
  "uuid",
 ]
@@ -2846,8 +2931,11 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "ucel-cex-binance",
+ "ucel-cex-bithumb",
+ "ucel-cex-bybit",
  "ucel-core",
  "ucel-registry",
+ "ucel-sdk",
  "ucel-subscription-planner",
  "ucel-transport",
 ]
@@ -2872,6 +2960,7 @@ dependencies = [
  "ucel-journal",
  "ucel-subscription-store",
  "ucel-ws-rules",
+ "url",
 ]
 
 [[package]]

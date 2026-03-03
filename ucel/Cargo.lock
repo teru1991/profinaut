@@ -3325,6 +3325,7 @@ dependencies = [
  "ucel-core",
  "ucel-market-meta-catalog",
  "ucel-symbol-core",
+ "ucel-transport",
 ]
 
 [[package]]

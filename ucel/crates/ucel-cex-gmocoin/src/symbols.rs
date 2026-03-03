@@ -146,6 +146,7 @@ pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String>
     Ok(out)
 }
 
+#[allow(dead_code)]
 fn map_row_for_test(r: SymbolRow) -> Result<StandardizedInstrument, String> {
     let tick = r.tick_size.parse::<Decimal>().map_err(|e| e.to_string())?;
     let step = r.size_step.parse::<Decimal>().map_err(|e| e.to_string())?;

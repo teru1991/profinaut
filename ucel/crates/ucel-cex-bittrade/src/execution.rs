@@ -68,9 +68,7 @@ fn map_ucel_err(e: UcelError) -> SdkExecutionError {
 }
 
 fn parse_first_account_id(resp: BittradeRestResponse) -> SdkExecutionResult<String> {
-    let v = match resp {
-        BittradeRestResponse::Json(v) => v,
-    };
+    let BittradeRestResponse::Json(v) = resp;
     // Huobi 系の典型: { "status":"ok", "data":[{"id":12345, ...}, ...] }
     let data = v.get("data").ok_or_else(|| {
         SdkExecutionError::new(
@@ -84,7 +82,7 @@ fn parse_first_account_id(resp: BittradeRestResponse) -> SdkExecutionResult<Stri
             "accounts data not array",
         )
     })?;
-    let first = arr.get(0).ok_or_else(|| {
+    let first = arr.first().ok_or_else(|| {
         SdkExecutionError::new(SdkExecutionErrorCode::ConnectorError, "accounts empty")
     })?;
     let id = first.get("id").ok_or_else(|| {
@@ -115,7 +113,7 @@ fn map_side_type(req: &OrderRequest) -> SdkExecutionResult<String> {
         OrderType::Market => "market",
         OrderType::Limit | OrderType::PostOnly => "limit",
     };
-    Ok(format!("{}-{}", side, ty))
+    Ok(format!("{side}-{ty}"))
 }
 
 fn as_symbol(req: &OrderRequest) -> String {
@@ -158,7 +156,7 @@ impl<T: Transport + Send + Sync> ExecutionConnectorAsync for BittradeExecutionCo
         let body_bytes = serde_json::to_vec(&body).map_err(|e| {
             SdkExecutionError::new(
                 SdkExecutionErrorCode::ConnectorError,
-                format!("encode order body failed: {}", e),
+                format!("encode order body failed: {e}"),
             )
         })?;
 
@@ -260,9 +258,7 @@ impl<T: Transport + Send + Sync> ExecutionConnectorAsync for BittradeExecutionCo
             .await
             .map_err(map_ucel_err)?;
 
-        let v = match resp {
-            BittradeRestResponse::Json(v) => v,
-        };
+        let BittradeRestResponse::Json(v) = resp;
         let data = v
             .get("data")
             .and_then(|d| d.as_array())

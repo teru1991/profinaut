@@ -59,17 +59,9 @@ pub trait WsVenueAdapter: Send + Sync + 'static {
 
 use crate::security::{check_json_limits, JsonLimits};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct InboundJsonGuard {
     pub limits: JsonLimits,
-}
-
-impl Default for InboundJsonGuard {
-    fn default() -> Self {
-        Self {
-            limits: JsonLimits::default(),
-        }
-    }
 }
 
 impl InboundJsonGuard {

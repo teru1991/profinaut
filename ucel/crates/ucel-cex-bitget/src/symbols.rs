@@ -166,10 +166,7 @@ pub async fn fetch_futures_symbol_snapshot(
     product_type: &str,
     market_type: MarketType,
 ) -> Result<Snapshot, String> {
-    let url = format!(
-        "{REST_BASE}/api/v2/mix/market/contracts?productType={}",
-        product_type
-    );
+    let url = format!("{REST_BASE}/api/v2/mix/market/contracts?productType={product_type}");
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(20))
         .build()

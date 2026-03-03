@@ -492,7 +492,7 @@ pub fn map_okx_http_error(status: u16, body: &[u8]) -> UcelError {
     let message = envelope
         .and_then(|v| v.msg)
         .filter(|m| !m.is_empty())
-        .unwrap_or_else(|| format!("okx http error status={status} code={}", code));
+        .unwrap_or_else(|| format!("okx http error status={status} code={code}"));
     UcelError::new(mapped, message)
 }
 

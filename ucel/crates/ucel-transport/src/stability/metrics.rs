@@ -14,7 +14,7 @@ impl StabilityMetrics {
 
     pub fn inc_counter(&self, name: &str, label: &str, by: u64) {
         let mut g = self.counters.lock().expect("metrics counters poisoned");
-        let key = format!("{}{{{}}}", name, label);
+        let key = format!("{name}{{{label}}}");
         *g.entry(key).or_insert(0) += by;
     }
 

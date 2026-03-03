@@ -146,6 +146,7 @@ pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String>
     Ok(out)
 }
 
+#[allow(dead_code)]
 fn map_sym_for_test(s: &Sym) -> Result<Option<StandardizedInstrument>, String> {
     if s.state != "online" && s.state != "ONLINE" {
         return Ok(None);

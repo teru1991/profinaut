@@ -96,7 +96,7 @@ impl GateReport {
             ));
             if !issue.context.is_empty() {
                 for (k, v) in &issue.context {
-                    out.push_str(&format!("      - {}: {}\n", k, v));
+                    out.push_str(&format!("      - {k}: {v}\n"));
                 }
             }
         }

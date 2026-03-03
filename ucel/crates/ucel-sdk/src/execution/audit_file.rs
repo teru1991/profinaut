@@ -43,7 +43,7 @@ impl FileAuditSink {
             .map_err(|e| {
                 SdkExecutionError::new(
                     SdkExecutionErrorCode::AuditFailure,
-                    format!("open audit file failed: {}", e),
+                    format!("open audit file failed: {e}"),
                 )
             })
     }
@@ -52,7 +52,7 @@ impl FileAuditSink {
         File::open(&self.cfg.path).map_err(|e| {
             SdkExecutionError::new(
                 SdkExecutionErrorCode::ReplayFailure,
-                format!("open audit file for read failed: {}", e),
+                format!("open audit file for read failed: {e}"),
             )
         })
     }
@@ -61,7 +61,7 @@ impl FileAuditSink {
         serde_json::to_vec(event).map_err(|e| {
             SdkExecutionError::new(
                 SdkExecutionErrorCode::AuditFailure,
-                format!("audit encode failed: {}", e),
+                format!("audit encode failed: {e}"),
             )
         })
     }
@@ -109,20 +109,20 @@ impl AuditSink for FileAuditSink {
         f.write_all(&bytes).map_err(|e| {
             SdkExecutionError::new(
                 SdkExecutionErrorCode::AuditFailure,
-                format!("write failed: {}", e),
+                format!("write failed: {e}"),
             )
         })?;
         f.write_all(b"\n").map_err(|e| {
             SdkExecutionError::new(
                 SdkExecutionErrorCode::AuditFailure,
-                format!("write newline failed: {}", e),
+                format!("write newline failed: {e}"),
             )
         })?;
         if self.cfg.fsync_each_append {
             f.sync_data().map_err(|e| {
                 SdkExecutionError::new(
                     SdkExecutionErrorCode::AuditFailure,
-                    format!("fsync failed: {}", e),
+                    format!("fsync failed: {e}"),
                 )
             })?;
         }

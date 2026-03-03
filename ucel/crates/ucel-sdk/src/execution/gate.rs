@@ -15,7 +15,7 @@ impl OrderGate for BasicOrderGate {
         req.intent.validate_basic().map_err(|e| {
             SdkExecutionError::new(
                 SdkExecutionErrorCode::OrderGateRejected,
-                format!("order gate rejected: {}", e),
+                format!("order gate rejected: {e}"),
             )
         })?;
         Ok(())

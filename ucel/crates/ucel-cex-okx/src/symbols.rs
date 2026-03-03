@@ -180,6 +180,7 @@ pub async fn fetch_market_meta() -> Result<BTreeMap<String, MarketMeta>, String>
     Ok(out)
 }
 
+#[allow(dead_code)]
 fn map_item_for_test(
     i: &Item,
     expected_inst_type: &str,

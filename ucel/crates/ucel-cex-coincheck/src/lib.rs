@@ -836,6 +836,7 @@ fn validate_ws_url(url: &str) -> Result<(), UcelError> {
     Ok(())
 }
 
+#[allow(dead_code)]
 fn validate_base_url(url: &str) -> Result<(), UcelError> {
     if url.starts_with("http://localhost") || url.starts_with("http://127.0.0.1") {
         return Ok(());

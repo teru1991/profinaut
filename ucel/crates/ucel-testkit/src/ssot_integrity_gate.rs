@@ -104,7 +104,7 @@ pub fn run_ssot_integrity_gate(repo_root: &Path) -> Result<GateReport, String> {
                     "venue crate directory does not exist (expected ucel/crates/ucel-cex-<venue>)",
                 )
                 .with_ctx("venue", venue.clone())
-                .with_ctx("expected_path", format!("ucel/crates/ucel-cex-{}", venue)),
+                .with_ctx("expected_path", format!("ucel/crates/ucel-cex-{venue}")),
             );
         }
 
@@ -216,7 +216,7 @@ fn load_all_coverages(
     let mut out: HashMap<String, VenueCoverage> = HashMap::new();
 
     for venue in catalogs.keys() {
-        let path = base.join(format!("{}.yaml", venue));
+        let path = base.join(format!("{venue}.yaml"));
         if !path.exists() {
             report.push(
                 GateIssue::fail(
@@ -264,7 +264,7 @@ fn venue_crate_exists(repo_root: &Path, venue: &str) -> bool {
     let path = repo_root
         .join("ucel")
         .join("crates")
-        .join(format!("ucel-cex-{}", venue));
+        .join(format!("ucel-cex-{venue}"));
     path.is_dir()
 }
 
@@ -278,7 +278,7 @@ fn venue_rules_exist(repo_root: &Path, venue: &str) -> bool {
         return false;
     }
 
-    let exact = format!("{}.toml", venue);
+    let exact = format!("{venue}.toml");
 
     let mut ok = false;
     if let Ok(rd) = fs::read_dir(&rules_dir) {
@@ -296,7 +296,7 @@ fn venue_rules_exist(repo_root: &Path, venue: &str) -> bool {
                 ok = true;
                 break;
             }
-            if name.starts_with(&format!("{}-", venue)) && name.ends_with(".toml") {
+            if name.starts_with(&format!("{venue}-")) && name.ends_with(".toml") {
                 ok = true;
                 break;
             }
@@ -310,7 +310,7 @@ fn venue_example_exists(repo_root: &Path, venue: &str) -> bool {
         .join("ucel")
         .join("examples")
         .join("venue_smoke")
-        .join(format!("{}.rs", venue));
+        .join(format!("{venue}.rs"));
     p.is_file()
 }
 

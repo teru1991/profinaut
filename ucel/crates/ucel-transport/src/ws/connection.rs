@@ -1352,5 +1352,5 @@ async fn handle_inbound(
 
 /// Resilience transition utility for tests and callers.
 pub fn resilience_transition_label(from: ConnState, to: ConnState) -> String {
-    format!("{:?}->{:?}", from, to)
+    format!("{from:?}->{to:?}")
 }

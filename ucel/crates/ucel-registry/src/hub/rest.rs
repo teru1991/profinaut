@@ -115,23 +115,6 @@ impl RestHub {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn retry_delay_is_bounded() {
-        let p = RetryPolicy {
-            base_delay_ms: 100,
-            max_delay_ms: 500,
-            jitter_ms: 0,
-            respect_retry_after: true,
-        };
-        assert_eq!(bounded_retry_delay_ms(&p, 10, None), 500);
-        assert_eq!(bounded_retry_delay_ms(&p, 0, Some(2000)), 500);
-    }
-}
-
 fn rest_allowlist(exchange: ExchangeId) -> Result<EndpointAllowlist, HubError> {
     let hosts: Vec<&str> = match exchange {
         ExchangeId::Binance => vec!["api.binance.com", "fapi.binance.com", "dapi.binance.com"],
@@ -159,4 +142,21 @@ fn validate_https_endpoint(exchange: ExchangeId, base: &str) -> Result<(), HubEr
         ));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn retry_delay_is_bounded() {
+        let p = RetryPolicy {
+            base_delay_ms: 100,
+            max_delay_ms: 500,
+            jitter_ms: 0,
+            respect_retry_after: true,
+        };
+        assert_eq!(bounded_retry_delay_ms(&p, 10, None), 500);
+        assert_eq!(bounded_retry_delay_ms(&p, 0, Some(2000)), 500);
+    }
 }

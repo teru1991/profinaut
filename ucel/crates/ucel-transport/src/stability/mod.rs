@@ -39,7 +39,7 @@ impl StabilityHub {
                 info!(event_kind="ReconnectAttempt", exchange_id=%exchange_id, conn_id=%conn_id, reason=?reason, attempt=attempt);
                 self.metrics.inc_counter(
                     "reconnect_attempt_total",
-                    &format!("reason={:?}", reason),
+                    &format!("reason={reason:?}"),
                     1,
                 );
             }
@@ -51,7 +51,7 @@ impl StabilityHub {
                 info!(event_kind="CircuitBreakerState", exchange_id=%exchange_id, conn_id=%conn_id, state=?state);
                 self.metrics.inc_counter(
                     "breaker_state_change_total",
-                    &format!("state={:?}", state),
+                    &format!("state={state:?}"),
                     1,
                 );
             }
@@ -72,7 +72,7 @@ impl StabilityHub {
                 info!(event_kind="OutqOverflowOutcome", exchange_id=%exchange_id, conn_id=%conn_id, outcome=?outcome);
                 self.metrics.inc_counter(
                     "outq_overflow_total",
-                    &format!("outcome={:?}", outcome),
+                    &format!("outcome={outcome:?}"),
                     1,
                 );
             }

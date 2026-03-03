@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct ChaosCounters {
     pub reconnects: u32,
     pub online_events: u32,
@@ -9,13 +9,7 @@ pub struct ChaosCounters {
 
 impl ChaosCounters {
     pub fn new() -> Self {
-        Self {
-            reconnects: 0,
-            online_events: 0,
-            throttle_events: 0,
-            dropped_frames: 0,
-            panicked: false,
-        }
+        Self::default()
     }
 }
 

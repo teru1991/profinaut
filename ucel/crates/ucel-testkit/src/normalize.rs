@@ -55,11 +55,11 @@ fn compare_key(a: &Value, b: &Value, key: &str) -> Ordering {
     let av = a
         .get(key)
         .map(|v| v.to_string())
-        .unwrap_or_else(|| "".to_string());
+        .unwrap_or_default();
     let bv = b
         .get(key)
         .map(|v| v.to_string())
-        .unwrap_or_else(|| "".to_string());
+        .unwrap_or_default();
     av.cmp(&bv)
 }
 
@@ -83,10 +83,10 @@ pub fn first_diff_path(a: &Value, b: &Value) -> Option<String> {
                     let pa = ma.get(k);
                     let pb = mb.get(k);
                     if pa.is_none() || pb.is_none() {
-                        return Some(format!("{}.{k}", path));
+                        return Some(format!("{path}.{k}"));
                     }
                     if let (Some(va), Some(vb)) = (pa, pb) {
-                        if let Some(p) = walk(va, vb, &format!("{}.{k}", path)) {
+                        if let Some(p) = walk(va, vb, &format!("{path}.{k}")) {
                             return Some(p);
                         }
                     }
@@ -96,11 +96,11 @@ pub fn first_diff_path(a: &Value, b: &Value) -> Option<String> {
             (Value::Array(aa), Value::Array(ab)) => {
                 let n = aa.len().min(ab.len());
                 for i in 0..n {
-                    if let Some(p) = walk(&aa[i], &ab[i], &format!("{}[{}]", path, i)) {
+                    if let Some(p) = walk(&aa[i], &ab[i], &format!("{path}[{i}]")) {
                         return Some(p);
                     }
                 }
-                Some(format!("{}[len]", path))
+                Some(format!("{path}[len]"))
             }
             _ => Some(path.to_string()),
         }

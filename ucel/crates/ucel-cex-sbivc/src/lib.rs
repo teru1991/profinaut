@@ -11,6 +11,7 @@ use ucel_core::{
     Decimal, ErrorCode, OrderBookDelta, OrderBookLevel, OrderBookSnapshot, Side, TradeEvent,
     UcelError,
 };
+use ucel_transport::security::{EndpointAllowlist, SubdomainPolicy};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Catalog {

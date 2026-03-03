@@ -10,9 +10,6 @@ fn main() {
 
     let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR"));
     let out_path = out_dir.join("embedded_catalog.rs");
-    let rust = format!(
-        "pub const EMBEDDED_CATALOG_JSON: &str = r###\"{}\"###;",
-        content
-    );
+    let rust = format!("pub const EMBEDDED_CATALOG_JSON: &str = r###\"{content}\"###;");
     fs::write(out_path, rust).expect("failed to write embedded_catalog.rs");
 }

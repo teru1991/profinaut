@@ -194,6 +194,9 @@ pub fn run_coverage_gate(manifest: &CoverageManifest) -> CoverageGateResult {
     }
 }
 
+pub use ssot_integrity_gate::run_ssot_integrity_gate;
+pub use ssot_integrity_gate_types::{GateIssue, GateReport, GateSeverity};
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -236,6 +239,3 @@ mod tests {
         ));
     }
 }
-
-pub use ssot_integrity_gate::run_ssot_integrity_gate;
-pub use ssot_integrity_gate_types::{GateIssue, GateReport, GateSeverity};

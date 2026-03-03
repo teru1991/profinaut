@@ -165,7 +165,7 @@ async fn execution_async_e2e_with_file_audit() {
     // 各行が有効な JSON であることを確認（salvage 検証）
     for line in &lines {
         let v: serde_json::Value = serde_json::from_str(line)
-            .unwrap_or_else(|e| panic!("audit line is not valid JSON: {} | error: {}", line, e));
+            .unwrap_or_else(|e| panic!("audit line is not valid JSON: {line} | error: {e}"));
         assert!(v.is_object(), "audit line should be JSON object");
     }
 }

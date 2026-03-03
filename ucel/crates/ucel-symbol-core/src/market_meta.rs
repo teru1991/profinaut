@@ -102,12 +102,12 @@ impl MarketMeta {
         }
         if let Some(q) = self.min_qty {
             if q <= Decimal::ZERO {
-                return Err(format!("invalid min_qty={}", q));
+                return Err(format!("invalid min_qty={q}"));
             }
         }
         if let Some(n) = self.min_notional {
             if n <= Decimal::ZERO {
-                return Err(format!("invalid min_notional={}", n));
+                return Err(format!("invalid min_notional={n}"));
             }
         }
         Ok(())
