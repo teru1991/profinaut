@@ -3080,9 +3080,12 @@ name = "ucel-cex-bitbank"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "hex",
+ "hmac",
  "reqwest",
  "serde",
  "serde_json",
+ "sha2 0.11.0-rc.5",
  "tokio",
  "ucel-core",
  "ucel-market-meta-catalog",
@@ -3097,10 +3100,13 @@ name = "ucel-cex-bitflyer"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "hex",
+ "hmac",
  "reqwest",
  "serde",
  "serde_json",
  "serde_yaml",
+ "sha2 0.11.0-rc.5",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -3219,9 +3225,12 @@ name = "ucel-cex-coincheck"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "hex",
+ "hmac",
  "serde",
  "serde_json",
  "serde_yaml",
+ "sha2 0.11.0-rc.5",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -3381,6 +3390,13 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "ucel-execution-core"
+version = "0.1.0"
+dependencies = [
  "thiserror 1.0.69",
 ]
 
