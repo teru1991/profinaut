@@ -1,5 +1,9 @@
 # UCEL SSOT Integrity Gate v2 (Catalog ↔ Coverage ↔ Crate ↔ Rules ↔ Examples)
 
+> LEGACY NOTICE
+> This document references coverage v1 (`ucel/coverage/*.yaml`) and is **NOT USED** for CI gating.
+> Current SSOT is coverage_v2 under `ucel/coverage/coverage_v2/` and `ucel/docs/policies/coverage_policy.md`.
+
 - Task ID: `UCEL-SSOT-GATE-V2-001`
 - Status: Draft → Approved by merge
 - Scope: SSOT/Contracts/Gate (Crosscut)

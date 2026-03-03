@@ -6,6 +6,7 @@ pub mod fuzz;
 pub mod fuzz_corpus;
 pub mod golden;
 pub mod golden_manifest;
+pub mod http_mock;
 pub mod normalize;
 pub mod okx;
 pub mod ssot_gate;

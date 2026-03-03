@@ -1,14 +1,11 @@
-use hmac::{Hmac, KeyInit, Mac};
+use crate::private::signing::{make_payload, sign_hex};
 use reqwest::Method;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use sha2::Sha256;
 use std::collections::BTreeMap;
 
 const PUBLIC_BASE: &str = "https://api.coin.z.com/public";
 const PRIVATE_BASE: &str = "https://api.coin.z.com/private";
-
-type HmacSha256 = Hmac<Sha256>;
 
 #[derive(Debug, Deserialize)]
 struct WsAuthResp {
@@ -67,14 +64,8 @@ impl GmoRest {
             .as_ref()
             .ok_or_else(|| "missing credentials".to_string())?;
 
-        // sign payload: timestamp + method + path + body
-        let payload = format!("{}{}{}{}", timestamp, method.as_str(), path, body);
-
-        let mut mac = HmacSha256::new_from_slice(cred.api_secret.as_bytes())
-            .map_err(|e| format!("hmac init failed: {e}"))?;
-        mac.update(payload.as_bytes());
-        let sig = mac.finalize().into_bytes();
-        Ok(hex::encode(sig))
+        let payload = make_payload(timestamp, method.as_str(), path, body);
+        sign_hex(&cred.api_secret, &payload)
     }
 
     async fn request_public_any(

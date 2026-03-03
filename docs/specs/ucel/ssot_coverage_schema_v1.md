@@ -1,5 +1,9 @@
 # UCEL SSOT Coverage Schema v1
 
+> LEGACY NOTICE
+> This document references coverage v1 (`ucel/coverage/*.yaml`) and is **NOT USED** for CI gating.
+> Current SSOT is coverage_v2 under `ucel/coverage/coverage_v2/` and `ucel/docs/policies/coverage_policy.md`.
+
 ## Purpose
 This schema standardizes `ucel/coverage/<venue>.yaml` so CI can mechanically prove coverage progress and detect gaps before merge.
 

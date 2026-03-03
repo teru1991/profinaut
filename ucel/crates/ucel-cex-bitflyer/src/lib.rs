@@ -1,3 +1,4 @@
+pub mod private;
 use bytes::Bytes;
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashMap, HashSet};
