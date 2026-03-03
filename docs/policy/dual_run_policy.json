@@ -1,0 +1,8 @@
+{
+  "version": "1",
+  "lease_scopes": [
+    "bot:example:paper",
+    "bot:example:live",
+    "venue:example:trade"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "version": "1",
+  "items": [
+    {
+      "registry_id": "example.exchange.readonly",
+      "allowed_schemes": ["fileenc", "vault"],
+      "scopes": ["venue:example:readonly"],
+      "max_ttl_seconds": 30
+    },
+    {
+      "registry_id": "example.dev.env_only",
+      "allowed_schemes": ["env"],
+      "scopes": ["venue:example:dev"],
+      "max_ttl_seconds": 10
+    }
+  ]
+}
