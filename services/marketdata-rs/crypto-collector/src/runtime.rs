@@ -44,7 +44,7 @@ impl Default for ConnectionSnapshot {
 
 #[derive(Default)]
 pub struct StateRegistry {
-    inner: tokio::sync::Mutex<HashMap<String, ConnectionSnapshot>>,
+    inner: Mutex<HashMap<String, ConnectionSnapshot>>,
 }
 
 impl StateRegistry {
@@ -342,8 +342,11 @@ mod tests {
             Some("/id".into()),
             ["s1".to_string(), "s2".to_string()].into_iter().collect(),
         );
-        let mut msgs = vec![json!({"type":"subscribed","id":"s1"}), json!({"type":"subscribed","id":"s2"})].into_iter();
-        gate.wait_until(Duration::from_millis(50), || msgs.next()).await.unwrap();
+        let (tx, rx) = tokio::sync::mpsc::channel(4);
+        tx.send(json!({"type":"subscribed","id":"s1"})).await.unwrap();
+        tx.send(json!({"type":"subscribed","id":"s2"})).await.unwrap();
+        drop(tx);
+        gate.wait_until(Duration::from_millis(50), rx).await.unwrap();
         assert!(gate.is_complete());
     }
 
@@ -351,8 +354,10 @@ mod tests {
     async fn ack_gate_timeout() {
         let matcher = AckMatcher { field: "/type".into(), value: "subscribed".into(), correlation_pointer: None, timeout_ms: 5000 };
         let mut gate = AckGate::new(Some(matcher), Some("/id".into()), ["x".to_string()].into_iter().collect());
-        let mut msgs = vec![json!({"type":"noop"})].into_iter();
-        let err = gate.wait_until(Duration::from_millis(5), || msgs.next()).await.unwrap_err();
+        let (tx, rx) = tokio::sync::mpsc::channel(1);
+        tx.send(json!({"type":"noop"})).await.unwrap();
+        drop(tx);
+        let err = gate.wait_until(Duration::from_millis(5), rx).await.unwrap_err();
         matches!(err, AckError::Timeout);
     }
 
