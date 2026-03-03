@@ -9,7 +9,7 @@ fn mk_temp_root(name: &str) -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .expect("clock")
         .as_nanos();
-    let root = std::env::temp_dir().join(format!("ucel_ssot_gate_v2_{}_{}", name, ts));
+    let root = std::env::temp_dir().join(format!("ucel_ssot_gate_v2_{name}_{ts}"));
     fs::create_dir_all(&root).expect("create temp root");
     root
 }
@@ -57,8 +57,7 @@ entries:
     let s = report.format_human_readable();
     assert!(
         s.contains("COVERAGE_MISSING_ENTRY"),
-        "expected missing entry failure, got:\n{}",
-        s
+        "expected missing entry failure, got:\n{s}"
     );
 }
 
@@ -99,8 +98,7 @@ entries:
     let s = report.format_human_readable();
     assert!(
         s.contains("STRICT_NOT_SUPPORTED"),
-        "expected strict_not_supported failure, got:\n{}",
-        s
+        "expected strict_not_supported failure, got:\n{s}"
     );
 }
 

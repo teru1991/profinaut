@@ -168,7 +168,8 @@ mod tests {
 
     #[test]
     fn load_symbol_map_missing_file_errors() {
-        let err = load_symbol_map_file(Path::new("/tmp/nonexistent_map_12345.toml")).unwrap_err();
+        let missing = std::env::temp_dir().join("nonexistent_map_12345.toml");
+        let err = load_symbol_map_file(missing.as_path()).unwrap_err();
         let msg = err.to_string();
         assert!(msg.contains("failed to read"), "got: {}", msg);
     }
@@ -214,8 +215,17 @@ mod tests {
 
     /// Helper: create a temporary file and return (file, path_string).
     fn tempfile() -> Result<(std::fs::File, String), std::io::Error> {
-        let path = format!("/tmp/_crypto_collector_test_{}.toml", std::process::id());
+        let mut path = std::env::temp_dir();
+        let unique = format!(
+            "_crypto_collector_test_{}_{}.toml",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        );
+        path.push(unique);
         let file = std::fs::File::create(&path)?;
-        Ok((file, path))
+        Ok((file, path.to_string_lossy().to_string()))
     }
 }
