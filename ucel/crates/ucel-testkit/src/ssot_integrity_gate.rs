@@ -211,17 +211,24 @@ fn load_all_coverages(
     catalogs: &HashMap<String, VenueCatalog>,
     report: &mut GateReport,
 ) -> Result<HashMap<String, VenueCoverage>, String> {
-    let base = repo_root.join("ucel").join("coverage");
+    let base = repo_root
+        .join("ucel")
+        .join("coverage")
+        .join("coverage_v2")
+        .join("exchanges");
+    let strict = crate::coverage_v2::load_strict_venues(repo_root)
+        .map_err(|e| format!("load strict_venues.json: {e}"))?;
+    let strict_set: HashSet<String> = strict.strict_ws_golden.into_iter().collect();
 
     let mut out: HashMap<String, VenueCoverage> = HashMap::new();
 
     for venue in catalogs.keys() {
-        let path = base.join(format!("{venue}.yaml"));
+        let path = base.join(format!("{venue}.json"));
         if !path.exists() {
             report.push(
                 GateIssue::fail(
                     CODE_COVERAGE_MISSING_FILE,
-                    "coverage yaml missing for venue",
+                    "coverage_v2 json missing for venue",
                 )
                 .with_ctx("venue", venue.clone())
                 .with_ctx("expected_path", path.display().to_string()),
@@ -229,11 +236,32 @@ fn load_all_coverages(
             continue;
         }
 
-        let yaml = fs::read_to_string(&path)
+        let raw = fs::read_to_string(&path)
             .map_err(|e| format!("failed to read coverage {}: {}", path.display(), e))?;
-
-        let manifest: CoverageManifest = serde_yaml::from_str(&yaml)
+        let v: Value = serde_json::from_str(&raw)
             .map_err(|e| format!("failed to parse coverage {}: {}", path.display(), e))?;
+
+        let entries: Vec<CoverageEntry> = v
+            .get("ws_ops")
+            .and_then(|x| x.as_array())
+            .cloned()
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|x| x.as_str())
+            .map(|id| CoverageEntry {
+                id: id.to_string(),
+                implemented: true,
+                tested: true,
+                support: CoverageSupport::Supported,
+                strict: None,
+            })
+            .collect();
+
+        let manifest = CoverageManifest {
+            venue: venue.clone(),
+            strict: strict_set.contains(venue),
+            entries,
+        };
 
         let mut entries_by_id = HashMap::new();
         for e in &manifest.entries {

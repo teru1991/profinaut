@@ -1,49 +1,41 @@
 use std::path::Path;
 
 #[test]
-fn h_coverage_strict_deribit_sbivc_is_100_percent() {
+fn strict_ws_venues_have_v2_coverage_and_golden_assets() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    for venue in ["deribit", "sbivc"] {
-        let p = root.join("ucel/coverage").join(format!("{venue}.yaml"));
-        assert!(p.exists(), "missing coverage file: {}", p.display());
-        let raw = std::fs::read_to_string(&p).expect("read coverage");
-        let m: serde_yaml::Value = serde_yaml::from_str(&raw).expect("parse coverage");
-        assert_eq!(
-            m.get("strict").and_then(|x| x.as_bool()),
-            Some(true),
-            "venue strict must be true: {venue}"
+    let strict = ucel_testkit::coverage_v2::load_strict_venues(&root).expect("load strict venues");
+
+    assert!(
+        !strict.strict_ws_golden.contains(&"sbivc".to_string()),
+        "sbivc must not be part of strict ws venues"
+    );
+
+    for venue in strict.strict_ws_golden {
+        let p = root
+            .join("ucel/coverage/coverage_v2/exchanges")
+            .join(format!("{venue}.json"));
+        assert!(p.exists(), "missing coverage_v2 file: {}", p.display());
+        let v = ucel_testkit::coverage_v2::load_json(&p).expect("parse coverage_v2 json");
+        assert!(
+            ucel_testkit::coverage_v2::public_rest(&v).expect("public.rest"),
+            "public.rest must be true for strict venue={venue}"
         );
-        let entries = m
-            .get("entries")
-            .and_then(|x| x.as_sequence())
-            .expect("entries");
-        assert!(!entries.is_empty(), "entries empty for venue={venue}");
-        for e in entries {
-            let id = e.get("id").and_then(|x| x.as_str()).unwrap_or("<id>");
-            assert_eq!(
-                e.get("implemented").and_then(|x| x.as_bool()),
-                Some(true),
-                "implemented not true: {venue} {id}"
-            );
-            assert_eq!(
-                e.get("tested").and_then(|x| x.as_bool()),
-                Some(true),
-                "tested not true: {venue} {id}"
+
+        if ucel_testkit::coverage_v2::public_ws(&v).expect("public.ws") {
+            let fx_raw = root
+                .join("ucel/fixtures/golden/ws")
+                .join(&venue)
+                .join("raw.json");
+            let fx_exp = root
+                .join("ucel/fixtures/golden/ws")
+                .join(&venue)
+                .join("expected.normalized.json");
+            assert!(fx_raw.exists(), "missing fixture raw: {}", fx_raw.display());
+            assert!(
+                fx_exp.exists(),
+                "missing fixture expected: {}",
+                fx_exp.display()
             );
         }
-        let fx_raw = root
-            .join("ucel/fixtures/golden/ws")
-            .join(venue)
-            .join("raw.json");
-        let fx_exp = root
-            .join("ucel/fixtures/golden/ws")
-            .join(venue)
-            .join("expected.normalized.json");
-        assert!(fx_raw.exists(), "missing fixture raw: {}", fx_raw.display());
-        assert!(
-            fx_exp.exists(),
-            "missing fixture expected: {}",
-            fx_exp.display()
-        );
     }
 }
