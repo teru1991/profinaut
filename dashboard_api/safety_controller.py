@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from dataclasses import asdict
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from libs.safety_core import (
-    InMemorySafetyStore,
-    JsonlAuditWriter,
     ScopeKind,
     SafetyDirective,
     SafetyMode,
@@ -15,10 +14,11 @@ from libs.safety_core import (
     compute_decision,
 )
 
+from dashboard_api.safety_runtime import audit as _audit
+from dashboard_api.safety_runtime import seen_idempotency_keys as _idempotency_keys
+from dashboard_api.safety_runtime import store as _store
+
 router = APIRouter(prefix="/safety", tags=["safety"])
-_store = InMemorySafetyStore()
-_audit = JsonlAuditWriter()
-_idempotency_keys: set[str] = set()
 
 
 class SafetyDirectiveRequest(BaseModel):
@@ -38,11 +38,11 @@ def post_safety_directive(req: SafetyDirectiveRequest) -> dict:
         state = _store.get_current_state()
         decision = compute_decision(_store.get_directives(), datetime.now(UTC))
         return {
-            "state": state.__dict__ if state else None,
+            "state": asdict(state) if state else None,
             "decision": {
                 "mode": decision.mode.value,
                 "latched": decision.latched,
-                "sources": [d.__dict__ for d in decision.sources],
+                "sources": [asdict(d) for d in decision.sources],
             },
             "idempotent_replay": True,
         }
@@ -75,11 +75,11 @@ def post_safety_directive(req: SafetyDirectiveRequest) -> dict:
     _idempotency_keys.add(req.idempotency_key)
     decision = compute_decision(_store.get_directives(), datetime.now(UTC))
     return {
-        "state": state.__dict__,
+        "state": asdict(state),
         "decision": {
             "mode": decision.mode.value,
             "latched": decision.latched,
-            "sources": [d.__dict__ for d in decision.sources],
+            "sources": [asdict(d) for d in decision.sources],
         },
         "idempotent_replay": False,
     }
@@ -93,7 +93,7 @@ def get_safety_state() -> dict:
     directives = _store.get_directives()
     decision = compute_decision(directives, now)
     return {
-        "state": state.__dict__ if state else None,
-        "active_directives": [d.__dict__ for d in directives],
+        "state": asdict(state) if state else None,
+        "active_directives": [asdict(d) for d in directives],
         "decision": {"mode": decision.mode.value, "latched": decision.latched},
     }

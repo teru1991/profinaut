@@ -1547,6 +1547,30 @@
       "verification_evidence": [
         "docs/verification/E-PLAN-002.md"
       ]
+    },
+    "E-PLAN-003": {
+      "branch": "feature/e-plan-003-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "bots/simple_mm/main.py",
+        "dashboard_api/main.py",
+        "dashboard_api/safety_controller.py",
+        "dashboard_api/safety_lease.py",
+        "dashboard_api/safety_runtime.py",
+        "docs/status/trace-index.json",
+        "docs/verification/E-PLAN-003.md",
+        "libs/safety_core/__init__.py",
+        "libs/safety_core/gate.py",
+        "libs/safety_core/lease.py",
+        "libs/safety_core/lease_client.py",
+        "tests/test_safety_gate_failclose.py",
+        "tests/test_safety_lease_lifecycle.py",
+        "worker/safety_lease_renewer.py"
+      ],
+      "verification_evidence": [
+        "docs/verification/E-PLAN-003.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
