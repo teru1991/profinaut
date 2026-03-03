@@ -1,5 +1,37 @@
 {
   "tasks": {
+    "UCEL-H-STRICT-001": {
+      "branch": "claude/strict-ucel-coverage-dwcoj",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "ucel/coverage/binance.yaml",
+        "ucel/coverage/binance-coinm.yaml",
+        "ucel/coverage/binance-options.yaml",
+        "ucel/coverage/binance-usdm.yaml",
+        "ucel/coverage/bitbank.yaml",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/bitget.yaml",
+        "ucel/coverage/bitmex.yaml",
+        "ucel/coverage/bittrade.yaml",
+        "ucel/coverage/bybit.yaml",
+        "ucel/coverage/coinbase.yaml",
+        "ucel/coverage/coincheck.yaml",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/htx.yaml",
+        "ucel/coverage/kraken.yaml",
+        "ucel/coverage/okx.yaml",
+        "ucel/coverage/upbit.yaml",
+        "ucel/crates/ucel-testkit/src/ssot_gate.rs",
+        "ucel/crates/ucel-testkit/tests/golden_ws.rs",
+        "ucel/crates/ucel-testkit/tests/strict_golden_gate.rs",
+        "docs/specs/ucel/coverage_strict_policy_v1.md",
+        "scripts/ucel/set_strict_true_market_data.py"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-H-STRICT-001.md"
+      ]
+    },
     "DOC-FIX-001": {
       "branch": "",
       "pr_urls": [],

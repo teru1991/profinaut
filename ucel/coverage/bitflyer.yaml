@@ -1,6 +1,6 @@
 venue: bitflyer
 scope: public_private
-strict: false
+strict: true
 implemented: true
 tested: true
 entries:

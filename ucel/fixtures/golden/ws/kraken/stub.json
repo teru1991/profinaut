@@ -1,0 +1,5 @@
+{
+  "_stub": true,
+  "venue": "kraken",
+  "note": "Existence fixture for strict coverage gate (UCEL-H-STRICT-001). Full golden normalization fixtures are tracked separately."
+}

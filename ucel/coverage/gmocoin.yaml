@@ -1,6 +1,6 @@
 venue: gmocoin
 scope: public_private
-strict: false
+strict: true
 implemented: true
 tested: true
 entries:

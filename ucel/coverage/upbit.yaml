@@ -1,8 +1,8 @@
 venue: upbit
 scope: public_only
-strict: false
-implemented: false
-tested: false
+strict: true
+implemented: true
+tested: true
 entries:
 - id: quotation.public.rest.markets.list
   kind: rest
@@ -154,6 +154,7 @@ entries:
   access: public
   implemented: false
   tested: false
+  support: not_supported
   notes: catalog exists; not implemented yet (Step2 target)
 - id: data.other.not_applicable.json
   kind: rest

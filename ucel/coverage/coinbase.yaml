@@ -1,8 +1,8 @@
 venue: coinbase
 scope: public_only
-strict: false
-implemented: false
-tested: false
+strict: true
+implemented: true
+tested: true
 entries:
 - id: advanced.crypto.public.rest.reference.introduction
   kind: rest
@@ -84,24 +84,28 @@ entries:
   access: private
   implemented: false
   tested: false
+  support: not_supported
   notes: catalog exists; not implemented yet (Step2 target)
 - id: exchange.crypto.public.fix.market_data.discoverability
   kind: rest
   access: public
   implemented: false
   tested: false
+  support: not_supported
   notes: catalog exists; not implemented yet (Step2 target)
 - id: intx.crypto.private.fix.discoverability
   kind: rest
   access: private
   implemented: false
   tested: false
+  support: not_supported
   notes: catalog exists; not implemented yet (Step2 target)
 - id: advanced.crypto.private.fix.not_applicable.current_scope
   kind: rest
   access: private
   implemented: false
   tested: false
+  support: not_supported
   notes: catalog exists; not implemented yet (Step2 target)
 - id: data.other.unknown.other
   kind: rest

@@ -1,6 +1,6 @@
 venue: bybit
 scope: public_only
-strict: false
+strict: true
 implemented: true
 tested: true
 entries:

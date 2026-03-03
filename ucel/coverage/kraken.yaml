@@ -1,8 +1,8 @@
 venue: kraken
 scope: public_only
-strict: false
-implemented: false
-tested: false
+strict: true
+implemented: true
+tested: true
 entries:
 - id: spot.public.rest.assets.list
   kind: rest
@@ -109,18 +109,21 @@ entries:
   access: private
   implemented: false
   tested: false
+  support: not_supported
   notes: catalog exists; not implemented yet (Step2 target)
 - id: spot.private.fix.order-entry.new-order
   kind: rest
   access: private
   implemented: false
   tested: false
+  support: not_supported
   notes: catalog exists; not implemented yet (Step2 target)
 - id: futures.private.fix.market-data.subscribe
   kind: rest
   access: private
   implemented: false
   tested: false
+  support: not_supported
   notes: catalog exists; not implemented yet (Step2 target)
 - id: data.market-candles.minute.json
   kind: rest

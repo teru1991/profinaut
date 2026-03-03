@@ -1,0 +1,5 @@
+{
+  "_stub": true,
+  "venue": "bitmex",
+  "note": "Existence fixture for strict coverage gate (UCEL-H-STRICT-001). Full golden normalization fixtures are tracked separately."
+}
