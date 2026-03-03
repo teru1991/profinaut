@@ -12,6 +12,8 @@ use ucel_transport::{
 };
 use uuid::Uuid;
 
+// ─── カタログ読み込み ──────────────────────────────────────────────────────────
+
 #[derive(Debug, Deserialize)]
 struct Catalog {
     ws_channels: Vec<CatalogWsEntry>,
@@ -48,6 +50,8 @@ pub fn ws_channel_specs() -> Vec<WsChannelSpec> {
         .collect()
 }
 
+// ─── セキュリティ：アローリスト検証 ────────────────────────────────────────────
+
 fn upbit_allowlist() -> Result<EndpointAllowlist, UcelError> {
     EndpointAllowlist::new(["upbit.com"], SubdomainPolicy::AllowSubdomains)
 }
@@ -59,6 +63,8 @@ fn validate_ws_url(raw: &str) -> Result<(), UcelError> {
 fn validate_http_base_url(raw: &str) -> Result<(), UcelError> {
     upbit_allowlist()?.validate_https_wss(raw).map(|_| ())
 }
+
+// ─── パスレンダリング ──────────────────────────────────────────────────────────
 
 fn render_path_and_body(
     method: &str,
@@ -72,6 +78,8 @@ fn render_path_and_body(
         Ok((rendered, body))
     }
 }
+
+// ─── WebSocket：メトリクス・フレーム・メッセージ ──────────────────────────────
 
 #[derive(Debug, Default, Clone)]
 pub struct WsAdapterMetrics {
@@ -223,19 +231,26 @@ pub fn normalize_ws_message(raw: &str) -> Result<MarketEvent, UcelError> {
     })
 }
 
+// ─── オーダーブック同期 ────────────────────────────────────────────────────────
+
 #[derive(Debug, Default, Clone)]
 pub struct OrderbookSync {
     pub last_ts: Option<u64>,
     pub degraded: bool,
     pub book: BTreeMap<String, f64>,
 }
+
 impl OrderbookSync {
     pub fn apply_snapshot(&mut self, ts: u64) {
         self.last_ts = Some(ts);
         self.degraded = false;
     }
 
-    pub fn apply_delta(&mut self, ts: u64, metrics: &mut WsAdapterMetrics) -> Result<(), UcelError> {
+    pub fn apply_delta(
+        &mut self,
+        ts: u64,
+        metrics: &mut WsAdapterMetrics,
+    ) -> Result<(), UcelError> {
         match self.last_ts {
             Some(prev) if ts <= prev => {
                 self.degraded = true;
@@ -275,10 +290,13 @@ impl OrderbookSync {
     }
 }
 
+// ─── バックプレッシャーキュー ──────────────────────────────────────────────────
+
 pub struct BackpressureQueue {
     tx: mpsc::Sender<MarketEvent>,
     rx: mpsc::Receiver<MarketEvent>,
 }
+
 impl BackpressureQueue {
     pub fn with_capacity(cap: usize) -> Self {
         let (tx, rx) = mpsc::channel(cap);
@@ -296,11 +314,14 @@ impl BackpressureQueue {
     }
 }
 
+// ─── WS アダプタ ───────────────────────────────────────────────────────────────
+
 #[derive(Debug, Default, Clone)]
 pub struct UpbitWsAdapter {
     subscriptions: HashSet<String>,
     pub metrics: WsAdapterMetrics,
 }
+
 impl UpbitWsAdapter {
     pub fn build_subscribe(
         endpoint_id: &str,
@@ -318,7 +339,11 @@ impl UpbitWsAdapter {
             ));
         }
         if spec.requires_auth {
-            info!(target: "upbit.auth", key_id = %key_id.unwrap_or(""), "private ws subscribe preflight passed");
+            info!(
+                target: "upbit.auth",
+                key_id = %key_id.unwrap_or(""),
+                "private ws subscribe preflight passed"
+            );
         }
         Ok(UpbitSubscribeFrame {
             ticket: "ucel-upbit".into(),
@@ -327,7 +352,10 @@ impl UpbitWsAdapter {
         })
     }
 
-    pub fn build_unsubscribe(endpoint_id: &str, code: &str) -> Result<UpbitSubscribeFrame, UcelError> {
+    pub fn build_unsubscribe(
+        endpoint_id: &str,
+        code: &str,
+    ) -> Result<UpbitSubscribeFrame, UcelError> {
         Self::build_subscribe(endpoint_id, code, Some("dummy"))
     }
 
@@ -335,7 +363,10 @@ impl UpbitWsAdapter {
         self.subscriptions.insert(format!("{endpoint_id}:{code}"))
     }
 
-    pub async fn reconnect_and_resubscribe<T: Transport>(&mut self, transport: &T) -> Result<usize, UcelError> {
+    pub async fn reconnect_and_resubscribe<T: Transport>(
+        &mut self,
+        transport: &T,
+    ) -> Result<usize, UcelError> {
         let ctx = RequestContext {
             trace_id: Uuid::new_v4().to_string(),
             request_id: Uuid::new_v4().to_string(),
@@ -364,6 +395,8 @@ impl UpbitWsAdapter {
     }
 }
 
+// ─── シークレットスクラブ ──────────────────────────────────────────────────────
+
 pub fn scrub_secrets(line: &str) -> String {
     line.split_whitespace()
         .map(|x| {
@@ -380,6 +413,8 @@ pub fn scrub_secrets(line: &str) -> String {
         .collect::<Vec<_>>()
         .join(" ")
 }
+
+// ─── REST アダプタ ─────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EndpointSpec {
@@ -460,6 +495,8 @@ impl UpbitRestAdapter {
         parse_upbit_response(endpoint_id, &response.body)
     }
 }
+
+// ─── レスポンス型 ──────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum UpbitRestResponse {
@@ -593,11 +630,19 @@ pub struct UpbitApiKey {
     pub expire_at: String,
 }
 
+// ─── レスポンスパーサ ──────────────────────────────────────────────────────────
+
 fn parse_upbit_response(endpoint_id: &str, body: &[u8]) -> Result<UpbitRestResponse, UcelError> {
     match endpoint_id {
-        "quotation.public.rest.markets.list" => Ok(UpbitRestResponse::Markets(parse_json(body)?)),
-        "quotation.public.rest.ticker.pairs" => Ok(UpbitRestResponse::Tickers(parse_json(body)?)),
-        "quotation.public.rest.trades.recent" => Ok(UpbitRestResponse::Trades(parse_json(body)?)),
+        "quotation.public.rest.markets.list" => {
+            Ok(UpbitRestResponse::Markets(parse_json(body)?))
+        }
+        "quotation.public.rest.ticker.pairs" => {
+            Ok(UpbitRestResponse::Tickers(parse_json(body)?))
+        }
+        "quotation.public.rest.trades.recent" => {
+            Ok(UpbitRestResponse::Trades(parse_json(body)?))
+        }
         "quotation.public.rest.orderbook.snapshot" => {
             Ok(UpbitRestResponse::Orderbook(parse_json(body)?))
         }
@@ -608,37 +653,45 @@ fn parse_upbit_response(endpoint_id: &str, body: &[u8]) -> Result<UpbitRestRespo
         | "quotation.public.rest.candles.years" => {
             Ok(UpbitRestResponse::Candles(parse_json(body)?))
         }
-        "exchange.private.rest.accounts.list" => Ok(UpbitRestResponse::Accounts(parse_json(body?))),
+        "exchange.private.rest.accounts.list" => {
+            Ok(UpbitRestResponse::Accounts(parse_json(body)?))
+        }
         "exchange.private.rest.orders.create" => {
-            Ok(UpbitRestResponse::CreateOrder(parse_json(body?)))
+            Ok(UpbitRestResponse::CreateOrder(parse_json(body)?))
         }
         "exchange.private.rest.orders.cancel" => {
-            Ok(UpbitRestResponse::CancelOrder(parse_json(body?)))
+            Ok(UpbitRestResponse::CancelOrder(parse_json(body)?))
         }
-        "exchange.private.rest.orders.open" => Ok(UpbitRestResponse::OpenOrders(parse_json(body?))),
+        "exchange.private.rest.orders.open" => {
+            Ok(UpbitRestResponse::OpenOrders(parse_json(body)?))
+        }
         "exchange.private.rest.orders.closed" => {
-            Ok(UpbitRestResponse::ClosedOrders(parse_json(body?)))
+            Ok(UpbitRestResponse::ClosedOrders(parse_json(body)?))
         }
         "exchange.private.rest.orders.chance" => {
-            Ok(UpbitRestResponse::OrderChance(parse_json(body?)))
+            Ok(UpbitRestResponse::OrderChance(parse_json(body)?))
         }
         "exchange.private.rest.withdraws.list" => {
-            Ok(UpbitRestResponse::Withdraws(parse_json(body?)))
+            Ok(UpbitRestResponse::Withdraws(parse_json(body)?))
         }
         "exchange.private.rest.withdraws.coin" => {
-            Ok(UpbitRestResponse::WithdrawCoin(parse_json(body?)))
+            Ok(UpbitRestResponse::WithdrawCoin(parse_json(body)?))
         }
-        "exchange.private.rest.deposits.list" => Ok(UpbitRestResponse::Deposits(parse_json(body?))),
+        "exchange.private.rest.deposits.list" => {
+            Ok(UpbitRestResponse::Deposits(parse_json(body)?))
+        }
         "exchange.private.rest.deposits.coin_address" => {
-            Ok(UpbitRestResponse::DepositAddress(parse_json(body?)))
+            Ok(UpbitRestResponse::DepositAddress(parse_json(body)?))
         }
         "exchange.private.rest.travel_rule.vasps" => {
-            Ok(UpbitRestResponse::TravelRuleVasps(parse_json(body?)))
+            Ok(UpbitRestResponse::TravelRuleVasps(parse_json(body)?))
         }
         "exchange.private.rest.status.wallet" => {
-            Ok(UpbitRestResponse::WalletStatus(parse_json(body?)))
+            Ok(UpbitRestResponse::WalletStatus(parse_json(body)?))
         }
-        "exchange.private.rest.api_keys.list" => Ok(UpbitRestResponse::ApiKeys(parse_json(body?))),
+        "exchange.private.rest.api_keys.list" => {
+            Ok(UpbitRestResponse::ApiKeys(parse_json(body)?))
+        }
         other => Err(UcelError::new(
             ErrorCode::NotSupported,
             format!("unmapped response parser for endpoint: {other}"),
@@ -650,6 +703,8 @@ fn parse_json<T: DeserializeOwned>(body: &[u8]) -> Result<T, UcelError> {
     serde_json::from_slice(body)
         .map_err(|e| UcelError::new(ErrorCode::Internal, format!("json parse error: {e}")))
 }
+
+// ─── HTTP エラーマッピング ─────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize)]
 struct UpbitErrorEnvelope {
@@ -692,9 +747,7 @@ fn map_upbit_http_error(status: u16, body: &[u8]) -> UcelError {
         })
         .unwrap_or_else(|| ("unknown".to_string(), "unknown".to_string()));
 
-    let msg = format!(
-        "upbit http error: status={status} name={name} message={message}"
-    );
+    let msg = format!("upbit http error: status={status} name={name} message={message}");
 
     match status {
         401 | 403 => UcelError::new(ErrorCode::MissingAuth, msg),
@@ -702,6 +755,8 @@ fn map_upbit_http_error(status: u16, body: &[u8]) -> UcelError {
         _ => UcelError::new(ErrorCode::Internal, msg),
     }
 }
+
+// ─── カタログ駆動のエンドポイント読み込み ─────────────────────────────────────
 
 #[derive(Debug, Deserialize)]
 struct RestCatalog {
@@ -727,7 +782,6 @@ struct RestCatalogAuth {
 fn load_endpoint_specs() -> Vec<EndpointSpec> {
     let raw = include_str!("../../../../docs/exchanges/upbit/catalog.json");
     let catalog: RestCatalog = serde_json::from_str(raw).expect("valid upbit catalog");
-
     catalog
         .rest_endpoints
         .into_iter()
@@ -759,6 +813,8 @@ fn op_for_rest(endpoint_id: &str) -> OpName {
         _ => OpName::FetchStatus,
     }
 }
+
+// ─── テスト ────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
@@ -797,11 +853,7 @@ mod tests {
     #[test]
     fn all_ws_catalog_rows_build_subscribe_unsubscribe() {
         for spec in ws_channel_specs() {
-            let key = if spec.requires_auth {
-                Some("kid")
-            } else {
-                None
-            };
+            let key = if spec.requires_auth { Some("kid") } else { None };
             assert_eq!(
                 UpbitWsAdapter::build_subscribe(&spec.id, "KRW-BTC", key)
                     .unwrap()
@@ -839,8 +891,9 @@ mod tests {
 
     #[test]
     fn typed_deserialize_and_normalize() {
-        let t = normalize_ws_message(r#"{"type":"ticker","code":"KRW-BTC","trade_price":1.0}"#)
-            .unwrap();
+        let t =
+            normalize_ws_message(r#"{"type":"ticker","code":"KRW-BTC","trade_price":1.0}"#)
+                .unwrap();
         assert!(matches!(t, MarketEvent::Ticker { .. }));
     }
 
@@ -900,6 +953,9 @@ mod tests {
         assert!(!scrubbed.contains("world"));
     }
 
+    // NOTE: このテストを有効にするには Cargo.toml の [dev-dependencies] に
+    //   ucel_testkit = { path = "..." }  （または workspace = true）
+    // を追加してください。
     #[test]
     fn strict_gate_enabled_and_zero_gaps() {
         let manifest_path =
