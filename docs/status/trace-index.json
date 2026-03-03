@@ -1590,6 +1590,27 @@
       "verification_evidence": [
         "docs/verification/B-STEP1.md"
       ]
+    },
+    "B-STEP2": {
+      "branch": "feature/b-step2-001",
+      "artifacts": [
+        "docs/policy/asset_registry.json",
+        "docs/specs/security/secretref_and_providers.md",
+        "docs/verification/B-STEP2.md",
+        "docs/status/trace-index.json",
+        "libs/safety_core/errors.py",
+        "libs/safety_core/secrets_ref.py",
+        "libs/safety_core/secrets_registry.py",
+        "libs/safety_core/secrets_provider.py",
+        "libs/safety_core/secrets_providers/__init__.py",
+        "libs/safety_core/secrets_providers/env.py",
+        "libs/safety_core/secrets_providers/fileenc.py",
+        "libs/safety_core/secrets_providers/vault.py",
+        "tests/test_secretref_and_provider.py"
+      ],
+      "verification_evidence": [
+        "docs/verification/B-STEP2.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
