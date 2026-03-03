@@ -1,5 +1,9 @@
 # UCEL T/Y 100% Definition Spec v1
 
+> LEGACY NOTICE
+> This document references coverage v1 (`ucel/coverage/*.yaml`) and is **NOT USED** for CI gating.
+> Current SSOT is coverage_v2 under `ucel/coverage/coverage_v2/` and `ucel/docs/policies/coverage_policy.md`.
+
 ## Scope
 - **T**: Testing/Chaos (`golden` / compat / determinism / fuzz / chaos / ssot-gate).
 - **Y**: Supportability (`support_bundle` + redaction + reproducibility).

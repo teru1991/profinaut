@@ -80,3 +80,7 @@ pub fn ws_ops(v: &Value) -> Vec<String> {
         })
         .unwrap_or_default()
 }
+
+pub fn public_ws_enabled(v: &Value) -> Result<bool, CoverageGateError> {
+    bool_at(v, &["public", "ws"]).ok_or(CoverageGateError::Missing("public.ws"))
+}

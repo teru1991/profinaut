@@ -1,5 +1,9 @@
 # UCEL Coverage Strict Policy v1
 
+> LEGACY NOTICE
+> This document references coverage v1 (`ucel/coverage/*.yaml`) and is **NOT USED** for CI gating.
+> Current SSOT is coverage_v2 under `ucel/coverage/coverage_v2/` and `ucel/docs/policies/coverage_policy.md`.
+
 **Task**: UCEL-H-STRICT-001
 **Status**: Active
 **Scope**: Market Data (H) — `ucel/coverage/` (v1 schema, all CEX venues)

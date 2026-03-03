@@ -1,5 +1,9 @@
 # UCEL SSOT Gate Spec v1
 
+> LEGACY NOTICE
+> This document references coverage v1 (`ucel/coverage/*.yaml`) and is **NOT USED** for CI gating.
+> Current SSOT is coverage_v2 under `ucel/coverage/coverage_v2/` and `ucel/docs/policies/coverage_policy.md`.
+
 ## Gate checks
 1. Catalog venue must have corresponding `ucel/coverage/<venue>.yaml`.
 2. Coverage `venue` (when present) must match file stem.

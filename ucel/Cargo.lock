@@ -3614,6 +3614,7 @@ dependencies = [
  "ucel-cex-bithumb",
  "ucel-cex-bybit",
  "ucel-cex-coincheck",
+ "ucel-cex-deribit",
  "ucel-cex-gmocoin",
  "ucel-core",
  "ucel-registry",

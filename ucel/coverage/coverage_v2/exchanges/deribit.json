@@ -2,11 +2,15 @@
   "exchange": "deribit",
   "public": {
     "rest": true,
-    "ws": false
+    "ws": true
   },
   "private": {
     "enabled": false
   },
-  "ws_ops": [],
+  "ws_ops": [
+    "ws.public.sub.book.instrument.raw",
+    "ws.public.sub.ticker.instrument.interval",
+    "ws.public.sub.trades.instrument.interval"
+  ],
   "source": "ucel/coverage/deribit.yaml"
 }
