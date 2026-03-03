@@ -109,9 +109,47 @@ trait AuditSink: Send + Sync {
 
 ---
 
-## Next（UCEL-I-EXEC-002）
+---
 
-- `ExecutionConnector` の venue 実装（1〜2 venue から本実装）
-- 監査の永続化（WAL/ファイル）と E2E 証明（再送・クラッシュ復元・replay）
+## 100% Definition (Execution)（UCEL-I-EXEC-002 で達成）
+
+Execution が "100%" と宣言できる条件:
+
+1. **Single Public Surface**: `ucel-sdk::execution` が唯一の発注入口である
+2. **Live 接続の証明**:
+   - 少なくとも 1 venue（Bittrade）で `place/cancel/open/reconcile` が実装され、
+   - `ucel-cex-bittrade/tests/execution_connector_contract.rs` により MockTransport を使った契約テストで機械的に証明される
+   - `ucel-sdk/tests/execution_e2e_bittrade_mock.rs` により `ExecutionClientAsync + FileAuditSink + replay` の end-to-end flow が証明される
+3. **Idempotency**:
+   - Live のとき `client_order_id` が必ず付与される（未指定なら idempotency から自動注入）
+   - sync (`ExecutionClient`) / async (`ExecutionClientAsync`) 両方で保証
+4. **Persistent Audit**:
+   - `FileAuditSink` により ndjson/WAL で永続化される
+   - `replay(run_id)` でイベントを再現できる（salvage: 壊れた行はスキップして継続）
+
+---
+
+## Async API（UCEL-I-EXEC-002 で追加）
+
+本番用途の推奨入口:
+
+```rust
+// 本番推奨（async）
+pub trait ExecutionConnectorAsync: Send + Sync { ... }
+pub struct ExecutionClientAsync<C: ExecutionConnectorAsync> { ... }
+
+// 永続監査
+pub struct FileAuditSink { ... }
+pub struct FileAuditSinkConfig { path, fsync_each_append, max_line_bytes }
+```
+
+既存の sync `ExecutionClient` / `ExecutionConnector` は互換維持（削除しない）。
+async 実装との整合上、新規 venue 実装は `ExecutionConnectorAsync` を推奨する。
+
+---
+
+## Next（UCEL-I-EXEC-003 以降）
+
 - `MarketMeta` と `OrderGate` の統合強化（tick/step/min_notional を入口で必ず enforce）
 - `Shadow` モードで quote/validate/constraints を実接続して照合強化
+- reconcile の詳細照合（FileAuditSink と venue の照合、mismatches の精緻化）

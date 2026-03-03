@@ -1,18 +1,25 @@
 use crate::execution::{
     AuditEvent, AuditReplayFilter, AuditSink, BasicOrderGate, ExecutionMode, ExecutionOutcome,
     OrderCancel, OrderGate, OrderOpenQuery, OrderReceipt, OrderRequest, OrderStatus,
-    ReconcileReport, SdkExecutionError, SdkExecutionErrorCode, SdkExecutionResult,
+    ReconcileReport, SdkExecutionError, SdkExecutionErrorCode, SdkExecutionResult, VenueId,
 };
 
-/// ExecutionConnector は venue 実装が満たすべき契約。
-/// - このタスクでは "全venue実装" までやらない（次タスク）
-/// - ただし trait を固定し、ucel-sdk 入口が唯一の発注出口であることを保証する
-pub trait ExecutionConnector: Send + Sync {
-    fn place_order(&self, req: &OrderRequest) -> SdkExecutionResult<OrderReceipt>;
-    fn cancel_order(&self, cancel: &OrderCancel) -> SdkExecutionResult<bool>;
-    fn list_open_orders(&self, q: &OrderOpenQuery) -> SdkExecutionResult<Vec<OrderReceipt>>;
-    /// reconcile は best-effort。未対応なら NotSupported を返す。
-    fn reconcile(&self, _venue: &crate::execution::VenueId) -> SdkExecutionResult<ReconcileReport> {
+pub fn unix_ms_now() -> u64 {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
+}
+
+/// 本番向け async 実行 trait。venue 実装が満たすべき契約（非同期版）。
+/// sync の ExecutionConnector と並立し、互換を壊さない。
+#[allow(async_fn_in_trait)]
+pub trait ExecutionConnectorAsync: Send + Sync {
+    async fn place_order(&self, req: &OrderRequest) -> SdkExecutionResult<OrderReceipt>;
+    async fn cancel_order(&self, cancel: &OrderCancel) -> SdkExecutionResult<bool>;
+    async fn list_open_orders(&self, q: &OrderOpenQuery) -> SdkExecutionResult<Vec<OrderReceipt>>;
+    async fn reconcile(&self, _venue: &VenueId) -> SdkExecutionResult<ReconcileReport> {
         Err(SdkExecutionError::new(
             SdkExecutionErrorCode::NotSupported,
             "reconcile not supported",
@@ -20,15 +27,16 @@ pub trait ExecutionConnector: Send + Sync {
     }
 }
 
-/// ucel-sdk の "唯一の発注出口"
-/// - mode / gate / audit を一箇所に集約し、各呼び出しが必ず監査に残る
-pub struct ExecutionClient<C: ExecutionConnector> {
+/// ucel-sdk の "唯一の async 発注出口"。
+/// - sync の ExecutionClient は互換維持し残す（非推奨へ）
+/// - 本番用途はこの ExecutionClientAsync を推奨
+pub struct ExecutionClientAsync<C: ExecutionConnectorAsync> {
     connector: C,
     gate: Box<dyn OrderGate>,
     audit: Option<Box<dyn AuditSink>>,
 }
 
-impl<C: ExecutionConnector> ExecutionClient<C> {
+impl<C: ExecutionConnectorAsync> ExecutionClientAsync<C> {
     pub fn new(connector: C) -> Self {
         Self {
             connector,
@@ -47,8 +55,8 @@ impl<C: ExecutionConnector> ExecutionClient<C> {
         self
     }
 
-    pub fn place(&self, mut req: OrderRequest) -> SdkExecutionResult<ExecutionOutcome> {
-        // 入口の共通検証（事故防止）
+    pub async fn place(&self, mut req: OrderRequest) -> SdkExecutionResult<ExecutionOutcome> {
+        // Gate（入口の共通検証）
         self.gate.validate(&req)?;
 
         // Live で client_order_id が未指定なら idempotency から注入（事故防止）
@@ -75,37 +83,17 @@ impl<C: ExecutionConnector> ExecutionClient<C> {
             None
         };
 
-        // mode に応じて挙動を固定
         let receipt = match req.mode {
-            ExecutionMode::Paper => {
-                // 純シミュレーション：Accepted を返す（venue_order_id なし）
-                OrderReceipt {
-                    venue: req.intent.venue.clone(),
-                    symbol: req.intent.symbol.clone(),
-                    status: OrderStatus::Accepted,
-                    venue_order_id: None,
-                    client_order_id: req.intent.tags.get("client_order_id").cloned(),
-                    intent_id: req.intent.intent_id.clone(),
-                    idempotency: req.idempotency.clone(),
-                }
-            }
-            ExecutionMode::Shadow => {
-                // 現状は "place_order を呼ばず" 監査だけ残す。
-                // 次タスクで quote/validate に接続して照合を強化する。
-                OrderReceipt {
-                    venue: req.intent.venue.clone(),
-                    symbol: req.intent.symbol.clone(),
-                    status: OrderStatus::Accepted,
-                    venue_order_id: None,
-                    client_order_id: req.intent.tags.get("client_order_id").cloned(),
-                    intent_id: req.intent.intent_id.clone(),
-                    idempotency: req.idempotency.clone(),
-                }
-            }
-            ExecutionMode::Live => {
-                // 実発注：connector に委譲
-                self.connector.place_order(&req)?
-            }
+            ExecutionMode::Paper | ExecutionMode::Shadow => OrderReceipt {
+                venue: req.intent.venue.clone(),
+                symbol: req.intent.symbol.clone(),
+                status: OrderStatus::Accepted,
+                venue_order_id: None,
+                client_order_id: req.intent.tags.get("client_order_id").cloned(),
+                intent_id: req.intent.intent_id.clone(),
+                idempotency: req.idempotency.clone(),
+            },
+            ExecutionMode::Live => self.connector.place_order(&req).await?,
         };
 
         // 監査：結果
@@ -127,7 +115,7 @@ impl<C: ExecutionConnector> ExecutionClient<C> {
         })
     }
 
-    pub fn cancel(&self, cancel: OrderCancel) -> SdkExecutionResult<bool> {
+    pub async fn cancel(&self, cancel: OrderCancel) -> SdkExecutionResult<bool> {
         let now = unix_ms_now();
         if let Some(a) = self.audit.as_ref() {
             a.append(AuditEvent::CancelRequested {
@@ -139,8 +127,7 @@ impl<C: ExecutionConnector> ExecutionClient<C> {
                 unix_ms: now,
             })?;
         }
-        // 実行（このタスクでは mode は cancel に入れず "live cancel" を想定）
-        let ok = self.connector.cancel_order(&cancel)?;
+        let ok = self.connector.cancel_order(&cancel).await?;
         if let Some(a) = self.audit.as_ref() {
             a.append(AuditEvent::CancelResult {
                 run_id: cancel.run_id.clone(),
@@ -153,17 +140,12 @@ impl<C: ExecutionConnector> ExecutionClient<C> {
         Ok(ok)
     }
 
-    pub fn open_orders(&self, q: OrderOpenQuery) -> SdkExecutionResult<Vec<OrderReceipt>> {
-        self.connector.list_open_orders(&q)
+    pub async fn open_orders(&self, q: OrderOpenQuery) -> SdkExecutionResult<Vec<OrderReceipt>> {
+        self.connector.list_open_orders(&q).await
     }
 
-    /// reconcile（照合）
-    pub fn reconcile(
-        &self,
-        venue: &crate::execution::VenueId,
-    ) -> SdkExecutionResult<ReconcileReport> {
-        let mut r = self.connector.reconcile(venue)?;
-        // source は venue が返したものを尊重しつつ、最低限埋める
+    pub async fn reconcile(&self, venue: &VenueId) -> SdkExecutionResult<ReconcileReport> {
+        let mut r = self.connector.reconcile(venue).await?;
         if r.generated_at_unix_ms == 0 {
             r.generated_at_unix_ms = unix_ms_now();
         }
@@ -176,7 +158,6 @@ impl<C: ExecutionConnector> ExecutionClient<C> {
         Ok(r)
     }
 
-    /// replay（監査ログの再生）
     pub fn replay(&self, filter: AuditReplayFilter) -> SdkExecutionResult<Vec<AuditEvent>> {
         let a = self.audit.as_ref().ok_or_else(|| {
             SdkExecutionError::new(
@@ -186,12 +167,4 @@ impl<C: ExecutionConnector> ExecutionClient<C> {
         })?;
         a.replay(filter)
     }
-}
-
-fn unix_ms_now() -> u64 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let d = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default();
-    d.as_millis() as u64
 }

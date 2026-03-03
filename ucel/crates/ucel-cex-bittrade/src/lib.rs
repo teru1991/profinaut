@@ -449,6 +449,7 @@ fn map_op(id: &str) -> OpName {
 }
 
 pub mod channels;
+pub mod execution;
 pub mod symbols;
 pub mod ws;
 pub mod ws_manager;
