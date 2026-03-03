@@ -1577,6 +1577,40 @@
       "verification_evidence": [
         "docs/verification/E-PLAN-004.md"
       ]
+    },
+    "B-STEP1": {
+      "branch": "feature/b-step1-001",
+      "artifacts": [
+        "libs/safety_core/redaction.py",
+        "libs/safety_core/audit.py",
+        "tests/test_redaction_no_leak.py",
+        "docs/specs/security/redaction_and_no_leak.md",
+        "docs/verification/B-STEP1.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/B-STEP1.md"
+      ]
+    },
+    "B-STEP2": {
+      "branch": "feature/b-step2-001",
+      "artifacts": [
+        "docs/policy/asset_registry.json",
+        "docs/specs/security/secretref_and_providers.md",
+        "docs/verification/B-STEP2.md",
+        "docs/status/trace-index.json",
+        "libs/safety_core/errors.py",
+        "libs/safety_core/secrets_ref.py",
+        "libs/safety_core/secrets_registry.py",
+        "libs/safety_core/secrets_provider.py",
+        "libs/safety_core/secrets_providers/__init__.py",
+        "libs/safety_core/secrets_providers/env.py",
+        "libs/safety_core/secrets_providers/fileenc.py",
+        "libs/safety_core/secrets_providers/vault.py",
+        "tests/test_secretref_and_provider.py"
+      ],
+      "verification_evidence": [
+        "docs/verification/B-STEP2.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
