@@ -1,3 +1,4 @@
+pub mod private;
 use bytes::Bytes;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};

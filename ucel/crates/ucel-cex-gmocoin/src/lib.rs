@@ -5,3 +5,4 @@ pub mod ws;
 pub mod ws_manager;
 
 pub mod market_meta;
+pub mod private;
