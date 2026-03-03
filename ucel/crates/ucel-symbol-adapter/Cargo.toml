@@ -8,5 +8,9 @@ async-trait = "0.1"
 futures-core = "0.3"
 serde.workspace = true
 thiserror.workspace = true
+tokio.workspace = true
 ucel-symbol-core = { path = "../ucel-symbol-core" }
 ucel-symbol-store = { path = "../ucel-symbol-store" }
+
+[dev-dependencies]
+futures-util = "0.3"

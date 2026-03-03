@@ -1,9 +1,12 @@
+pub mod checkpoint;
 pub mod market_meta_store;
+pub mod replay;
 
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Mutex;
 use std::time::SystemTime;
 use ucel_symbol_core::{
     cmp_decimal, InstrumentId, MarketMeta, Snapshot, StandardizedInstrument, SymbolStatus,
@@ -53,6 +56,7 @@ pub struct SymbolStore {
     instruments: DashMap<InstrumentId, StandardizedInstrument>,
     market_meta: DashMap<InstrumentId, MarketMeta>,
     store_version: AtomicU64,
+    event_log: Mutex<Vec<replay::VersionedSymbolEvent>>,
 }
 
 impl Default for SymbolStore {
@@ -67,11 +71,16 @@ impl SymbolStore {
             instruments: DashMap::new(),
             market_meta: DashMap::new(),
             store_version: AtomicU64::new(0),
+            event_log: Mutex::new(Vec::new()),
         }
     }
 
     pub fn version(&self) -> u64 {
         self.store_version.load(Ordering::SeqCst)
+    }
+
+    pub fn store_version(&self) -> checkpoint::StoreVersion {
+        self.version()
     }
 
     pub fn get_market_meta(&self, id: &InstrumentId) -> Option<MarketMeta> {
@@ -125,13 +134,15 @@ impl SymbolStore {
             if let Some((_, prev)) = self.instruments.remove(&stale_id) {
                 self.market_meta.remove(&stale_id);
                 let version = self.bump_version();
-                events.push(SymbolEvent::Removed {
+                let event = SymbolEvent::Removed {
                     id: prev.id.clone(),
                     last_known: Some(prev),
                     reason: Some("snapshot_missing".into()),
                     ts_recv: SystemTime::now(),
                     store_version: version,
-                });
+                };
+                self.record_event(&event);
+                events.push(event);
             }
         }
 
@@ -144,13 +155,15 @@ impl SymbolStore {
                     self.market_meta
                         .insert(id.clone(), MarketMeta::from(&instrument));
                     let version = self.bump_version();
-                    events.push(SymbolEvent::StatusChanged {
+                    let event = SymbolEvent::StatusChanged {
                         id,
                         from: before.status,
                         to: instrument.status,
                         ts_recv: SystemTime::now(),
                         store_version: version,
-                    });
+                    };
+                    self.record_event(&event);
+                    events.push(event);
                     continue;
                 }
 
@@ -160,26 +173,30 @@ impl SymbolStore {
                     self.market_meta
                         .insert(id.clone(), MarketMeta::from(&instrument));
                     let version = self.bump_version();
-                    events.push(SymbolEvent::ParamChanged {
+                    let event = SymbolEvent::ParamChanged {
                         id,
                         changed_fields,
                         before,
                         after: Box::new(instrument),
                         ts_recv: SystemTime::now(),
                         store_version: version,
-                    });
+                    };
+                    self.record_event(&event);
+                    events.push(event);
                 }
             } else {
                 self.instruments.insert(id.clone(), instrument.clone());
                 self.market_meta.insert(id, MarketMeta::from(&instrument));
                 let version = self.bump_version();
-                events.push(SymbolEvent::Added {
+                let event = SymbolEvent::Added {
                     instrument: instrument.clone(),
                     ts_recv: instrument.ts_recv,
                     ts_event: instrument.ts_event,
                     schema_version: instrument.schema_version,
                     store_version: version,
-                });
+                };
+                self.record_event(&event);
+                events.push(event);
             }
         }
 
@@ -188,6 +205,93 @@ impl SymbolStore {
 
     fn bump_version(&self) -> u64 {
         self.store_version.fetch_add(1, Ordering::SeqCst) + 1
+    }
+
+    fn record_event(&self, event: &SymbolEvent) {
+        let mut event_log = self.event_log.lock().expect("event_log lock");
+        event_log.push(replay::VersionedSymbolEvent {
+            store_version: event_store_version(event),
+            event: event.clone(),
+        });
+    }
+
+    pub fn checkpoint(&self) -> checkpoint::StoreCheckpoint {
+        let mut rs = replay::ReplayState::new(checkpoint::SchemaVersion(1));
+        let event_log = self.event_log.lock().expect("event_log lock");
+        for ev in event_log.iter() {
+            rs.apply(ev).expect("internal event log must be contiguous");
+        }
+        rs.checkpoint()
+    }
+
+    pub fn export_since(
+        &self,
+        from_version: checkpoint::StoreVersion,
+    ) -> Vec<replay::VersionedSymbolEvent> {
+        let event_log = self.event_log.lock().expect("event_log lock");
+        event_log
+            .iter()
+            .filter(|e| e.store_version > from_version)
+            .cloned()
+            .collect()
+    }
+
+    pub fn import_events(
+        &self,
+        schema_version: checkpoint::SchemaVersion,
+        events: &[replay::VersionedSymbolEvent],
+    ) -> Result<checkpoint::StoreCheckpoint, checkpoint::CheckpointError> {
+        let mut rs = replay::ReplayState::new(schema_version);
+        for ev in events {
+            rs.apply(ev)?;
+            self.apply_symbol_event(&ev.event);
+            self.store_version.store(ev.store_version, Ordering::SeqCst);
+        }
+
+        {
+            let mut event_log = self.event_log.lock().expect("event_log lock");
+            *event_log = events.to_vec();
+        }
+
+        Ok(rs.checkpoint())
+    }
+
+    fn apply_symbol_event(&self, event: &SymbolEvent) {
+        match event {
+            SymbolEvent::Added { instrument, .. } => {
+                self.instruments
+                    .insert(instrument.id.clone(), instrument.clone());
+                self.market_meta
+                    .insert(instrument.id.clone(), MarketMeta::from(instrument));
+            }
+            SymbolEvent::Removed { id, .. } => {
+                self.instruments.remove(id);
+                self.market_meta.remove(id);
+            }
+            SymbolEvent::StatusChanged { id, to, .. } => {
+                if let Some(mut existing) = self.instruments.get_mut(id) {
+                    existing.status = *to;
+                    let updated = existing.clone();
+                    drop(existing);
+                    self.market_meta
+                        .insert(id.clone(), MarketMeta::from(&updated));
+                }
+            }
+            SymbolEvent::ParamChanged { id, after, .. } => {
+                self.instruments.insert(id.clone(), (**after).clone());
+                self.market_meta
+                    .insert(id.clone(), MarketMeta::from(&**after));
+            }
+        }
+    }
+}
+
+fn event_store_version(event: &SymbolEvent) -> u64 {
+    match event {
+        SymbolEvent::Added { store_version, .. }
+        | SymbolEvent::Removed { store_version, .. }
+        | SymbolEvent::StatusChanged { store_version, .. }
+        | SymbolEvent::ParamChanged { store_version, .. } => *store_version,
     }
 }
 
@@ -362,7 +466,9 @@ mod tests {
     }
 }
 
+pub use checkpoint::{CheckpointError, SchemaVersion, StoreCheckpoint, StoreVersion};
 pub use market_meta_store::{MarketMetaEvent, MarketMetaRegistrySnapshot, MarketMetaStore};
+pub use replay::{ReplayState, VersionedSymbolEvent};
 
 #[cfg(test)]
 mod market_meta_store_tests {
