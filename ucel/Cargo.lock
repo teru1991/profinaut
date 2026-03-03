@@ -3220,6 +3220,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "serde_yaml",
  "tokio",
  "ucel-core",
  "ucel-symbol-core",
@@ -3325,6 +3326,7 @@ dependencies = [
  "ucel-core",
  "ucel-market-meta-catalog",
  "ucel-symbol-core",
+ "ucel-transport",
 ]
 
 [[package]]

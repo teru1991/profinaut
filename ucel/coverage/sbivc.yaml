@@ -1,6 +1,42 @@
 venue: sbivc
-scope: public_private
-strict: false
-implemented: false
-tested: false
-entries: []
+scope: public_only
+strict: true
+implemented: true
+tested: true
+entries:
+- id: crypto.public.rest.market_data.symbols
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+  notes: catalog-backed REST symbols endpoint (sbivc)
+- id: crypto.public.rest.market_data.ticker
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+  notes: catalog-backed REST ticker snapshot endpoint (sbivc)
+- id: crypto.public.rest.market_data.orderbook
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+  notes: catalog-backed REST orderbook snapshot endpoint (sbivc)
+- id: crypto.public.ws.market_data.ticker
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+  notes: market event parser supports ticker stream
+- id: crypto.public.ws.market_data.trades
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+  notes: market event parser supports trades stream
+- id: crypto.public.ws.market_data.orderbook
+  kind: ws
+  access: public
+  implemented: true
+  tested: true
+  notes: market event parser supports orderbook snapshot stream

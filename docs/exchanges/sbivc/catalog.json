@@ -2,10 +2,54 @@
   "exchange": "sbivc",
   "generated_from": {
     "sources_md": "docs/exchanges/sbivc/sources.md",
-    "last_checked_at": "2026-02-19",
-    "notes": "Official docs only. Developer-facing REST/WS/data specs are not documented in the enumerated official pages; arrays intentionally empty."
+    "last_checked_at": "2026-03-03",
+    "notes": "UCEL Market Data (H) catalog for implemented public REST/WS connectors."
   },
-  "rest_endpoints": [],
-  "ws_channels": [],
+  "rest_endpoints": [
+    {
+      "id": "crypto.public.rest.market_data.symbols",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.sbivc.example",
+      "path": "/v1/public/symbols"
+    },
+    {
+      "id": "crypto.public.rest.market_data.ticker",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.sbivc.example",
+      "path": "/v1/public/ticker"
+    },
+    {
+      "id": "crypto.public.rest.market_data.orderbook",
+      "visibility": "public",
+      "method": "GET",
+      "base_url": "https://api.sbivc.example",
+      "path": "/v1/public/orderbook"
+    }
+  ],
+  "ws_channels": [
+    {
+      "id": "crypto.public.ws.market_data.ticker",
+      "visibility": "public",
+      "ws_url": "wss://stream.sbivc.example/public",
+      "subscribe": "{\"op\":\"subscribe\",\"channel\":\"ticker\",\"symbol\":\"{symbol}\"}",
+      "unsubscribe": "{\"op\":\"unsubscribe\",\"channel\":\"ticker\",\"symbol\":\"{symbol}\"}"
+    },
+    {
+      "id": "crypto.public.ws.market_data.trades",
+      "visibility": "public",
+      "ws_url": "wss://stream.sbivc.example/public",
+      "subscribe": "{\"op\":\"subscribe\",\"channel\":\"trades\",\"symbol\":\"{symbol}\"}",
+      "unsubscribe": "{\"op\":\"unsubscribe\",\"channel\":\"trades\",\"symbol\":\"{symbol}\"}"
+    },
+    {
+      "id": "crypto.public.ws.market_data.orderbook",
+      "visibility": "public",
+      "ws_url": "wss://stream.sbivc.example/public",
+      "subscribe": "{\"op\":\"subscribe\",\"channel\":\"orderbook\",\"symbol\":\"{symbol}\"}",
+      "unsubscribe": "{\"op\":\"unsubscribe\",\"channel\":\"orderbook\",\"symbol\":\"{symbol}\"}"
+    }
+  ],
   "data_feeds": []
 }

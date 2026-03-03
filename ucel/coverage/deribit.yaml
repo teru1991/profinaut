@@ -1,209 +1,30 @@
 venue: deribit
 scope: public_only
-strict: false
-implemented: false
-tested: false
+strict: true
+implemented: true
+tested: true
 entries:
 - id: jsonrpc.http.public.market_data.public_get_instruments
   kind: rest
   access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
+  implemented: true
+  tested: true
+  notes: implemented in ucel-cex-deribit DeribitRestAdapter/DeribitRestRequest::PublicGetInstruments
 - id: jsonrpc.http.public.market_data.public_ticker
-  kind: rest
-  access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.http.public.market_data.public_get_order_book
-  kind: rest
-  access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.http.public.market_data.public_get_tradingview_chart_data
-  kind: rest
-  access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.http.private.auth.public_auth
-  kind: rest
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.http.private.account.private_get_account_summary
-  kind: rest
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.http.private.trading.private_buy
-  kind: rest
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.http.private.trading.private_sell
-  kind: rest
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.http.private.trading.private_cancel
-  kind: rest
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.ws.public.auth.public_auth
-  kind: ws
-  access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.ws.public.market_data.public_get_instruments
-  kind: ws
-  access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.ws.public.market_data.public_ticker
-  kind: ws
-  access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.ws.public.market_data.public_get_order_book
-  kind: ws
-  access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.ws.public.market_data.public_get_tradingview_chart_data
-  kind: ws
-  access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.ws.private.account.private_get_account_summary
-  kind: ws
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.ws.private.trading.private_buy
-  kind: ws
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.ws.private.trading.private_sell
-  kind: ws
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.ws.private.trading.private_cancel
-  kind: ws
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: jsonrpc.ws.public.system.public_set_heartbeat
-  kind: ws
-  access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: ws.public.sub.book.instrument.raw
-  kind: rest
-  access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: ws.public.sub.ticker.instrument.interval
-  kind: rest
-  access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: ws.public.sub.trades.instrument.interval
-  kind: rest
-  access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: ws.public.sub.deribit_price_index.index
-  kind: rest
-  access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: ws.public.sub.chart.instrument.resolution
-  kind: rest
-  access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: ws.private.sub.user.orders.instrument.raw
-  kind: rest
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: ws.private.sub.user.trades.instrument.interval
-  kind: rest
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: ws.private.sub.user.portfolio.currency
-  kind: rest
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: ws.private.sub.user.changes.instrument.raw
-  kind: rest
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: fix.private.session.logon
-  kind: rest
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: fix.public.market_data.security_list
-  kind: rest
-  access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: fix.public.market_data.md_subscribe
-  kind: rest
-  access: public
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: fix.private.trading.new_order
-  kind: rest
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: fix.private.trading.position_mass_status
-  kind: rest
-  access: private
-  implemented: false
-  tested: false
-  notes: catalog exists; not implemented yet (Step2 target)
-- id: data.other.unknown.other
   kind: rest
   access: public
   implemented: true
   tested: true
+  notes: implemented in ucel-cex-deribit DeribitRestAdapter/DeribitRestRequest::PublicTicker
+- id: jsonrpc.http.public.market_data.public_get_order_book
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+  notes: implemented in ucel-cex-deribit DeribitRestAdapter/DeribitRestRequest::PublicGetOrderBook
+- id: jsonrpc.http.public.market_data.public_get_tradingview_chart_data
+  kind: rest
+  access: public
+  implemented: true
+  tested: true
+  notes: implemented in ucel-cex-deribit DeribitRestAdapter/DeribitRestRequest::PublicGetTradingViewChartData
