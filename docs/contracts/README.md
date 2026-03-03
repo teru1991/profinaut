@@ -17,3 +17,8 @@
 
 ## 互換性
 互換性ルールは `docs/specs/system/versioning_policy.md` に従う。
+
+## SafetyState mode の語彙境界
+- `safety_state.schema.json` の `mode` は `NORMAL` / `SAFE` / `EMERGENCY_STOP` の3値のみが正。
+- `contracts/schemas/safe_mode.schema.json` は legacy 定義であり、契約の正本ではない。
+- `SAFE_MODE` / `HALTED` / `DEGRADED` 等の legacy 語彙は bridge で正規化し、`mode` へは直接出力しない。
