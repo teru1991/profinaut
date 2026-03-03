@@ -47,7 +47,11 @@ pub fn mutate_bytes(input: &[u8], rng: &mut XorShift64, max_len: usize) -> Vec<u
         }
         1 => {
             if out.len() < max_len {
-                let idx = if out.is_empty() { 0 } else { rng.next_usize(out.len() + 1) };
+                let idx = if out.is_empty() {
+                    0
+                } else {
+                    rng.next_usize(out.len() + 1)
+                };
                 out.insert(idx, rng.next_u8());
             }
         }
@@ -82,7 +86,12 @@ pub fn mutate_bytes(input: &[u8], rng: &mut XorShift64, max_len: usize) -> Vec<u
 }
 
 pub fn json_depth(value: &Value, max_depth: usize) -> Result<usize, UcelError> {
-    fn walk(v: &Value, depth: usize, max_depth: usize, max_seen: &mut usize) -> Result<(), UcelError> {
+    fn walk(
+        v: &Value,
+        depth: usize,
+        max_depth: usize,
+        max_seen: &mut usize,
+    ) -> Result<(), UcelError> {
         *max_seen = (*max_seen).max(depth);
         if depth > max_depth {
             return Err(UcelError::new(

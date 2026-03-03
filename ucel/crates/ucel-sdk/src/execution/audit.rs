@@ -95,9 +95,7 @@ impl AuditSink for InMemoryAuditSink {
                 let ok = match ev {
                     AuditEvent::OrderRequested { run_id: r, .. } => r.as_deref() == Some(run_id),
                     AuditEvent::OrderResult { run_id: r, .. } => r.as_deref() == Some(run_id),
-                    AuditEvent::CancelRequested { run_id: r, .. } => {
-                        r.as_deref() == Some(run_id)
-                    }
+                    AuditEvent::CancelRequested { run_id: r, .. } => r.as_deref() == Some(run_id),
                     AuditEvent::CancelResult { run_id: r, .. } => r.as_deref() == Some(run_id),
                     AuditEvent::ReconcileResult { .. } => false,
                 };

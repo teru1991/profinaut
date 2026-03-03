@@ -28,6 +28,7 @@ fn fuzz_json_depth_limit_returns_err_without_panicking() {
     let over_depth = deeply_nested_json(MAX_DEPTH + 8);
     assert!(ws_guard_entry(&over_depth).is_err());
 
-    let parsed_over: Value = serde_json::from_slice(&over_depth).expect("generated deep json parses");
+    let parsed_over: Value =
+        serde_json::from_slice(&over_depth).expect("generated deep json parses");
     assert!(json_depth(&parsed_over, MAX_DEPTH).is_err());
 }

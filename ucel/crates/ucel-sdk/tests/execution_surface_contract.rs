@@ -1,5 +1,5 @@
-use ucel_sdk::execution::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use ucel_sdk::execution::*;
 
 struct SpyConnector {
     place_calls: AtomicUsize,
@@ -132,8 +132,8 @@ fn idempotency_derive_is_stable_for_same_intent() {
 #[test]
 fn audit_replay_filters_by_run_id() {
     let sink = InMemoryAuditSink::new();
-    let client = ExecutionClient::new(SpyConnector::new())
-        .with_audit(Box::new(InMemoryAuditSink::new()));
+    let client =
+        ExecutionClient::new(SpyConnector::new()).with_audit(Box::new(InMemoryAuditSink::new()));
 
     let req = OrderRequest {
         mode: ExecutionMode::Paper,

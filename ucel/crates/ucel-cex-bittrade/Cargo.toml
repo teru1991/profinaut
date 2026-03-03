@@ -20,6 +20,7 @@ uuid = { version = "1", features = ["v4"] }
 
 ucel-core = { path = "../ucel-core" }
 ucel-transport = { path = "../ucel-transport" }
+ucel-sdk = { path = "../ucel-sdk" }
 
 [dev-dependencies]
 ucel-testkit = { path = "../ucel-testkit" }

@@ -5,9 +5,9 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::info;
 use ucel_core::{ErrorCode, OpName, UcelError};
+use ucel_transport::security::{EndpointAllowlist, SubdomainPolicy};
 use ucel_transport::{enforce_auth_boundary, HttpRequest, RequestContext, RetryPolicy, Transport};
 use uuid::Uuid;
-use ucel_transport::security::{EndpointAllowlist, SubdomainPolicy};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EndpointSpec {

@@ -16,7 +16,11 @@ fn fuzz_ws_frames_crash_free_and_bounded() {
 
         if i % 50 == 0 {
             // generate oversized payload from a small seed without storing large fixture files
-            let grow = if base.is_empty() { b"x".as_slice() } else { base.as_slice() };
+            let grow = if base.is_empty() {
+                b"x".as_slice()
+            } else {
+                base.as_slice()
+            };
             while input.len() <= MAX_GENERATED_LEN {
                 input.extend_from_slice(grow);
                 if grow.is_empty() {

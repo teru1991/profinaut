@@ -1240,6 +1240,29 @@
       "verification_evidence": [
         "docs/verification/UCEL-I-EXEC-001.md"
       ]
+    },
+    "UCEL-I-EXEC-002": {
+      "branch": "claude/ucel-live-execution-YLtqr",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "ucel/crates/ucel-sdk/Cargo.toml",
+        "ucel/crates/ucel-sdk/src/execution/mod.rs",
+        "ucel/crates/ucel-sdk/src/execution/async_client.rs",
+        "ucel/crates/ucel-sdk/src/execution/audit_file.rs",
+        "ucel/crates/ucel-sdk/src/execution/client.rs",
+        "ucel/crates/ucel-sdk/tests/execution_e2e_bittrade_mock.rs",
+        "ucel/crates/ucel-cex-bittrade/Cargo.toml",
+        "ucel/crates/ucel-cex-bittrade/src/execution.rs",
+        "ucel/crates/ucel-cex-bittrade/src/lib.rs",
+        "ucel/crates/ucel-cex-bittrade/tests/execution_connector_contract.rs",
+        "docs/specs/ucel/execution_public_surface_spec_v1.md",
+        "docs/specs/ucel/execution_bittrade_connector_spec_v1.md",
+        "docs/verification/UCEL-I-EXEC-002.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-I-EXEC-002.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
