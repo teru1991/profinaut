@@ -31,3 +31,4 @@ This policy defines UCEL's **SSOT** for private authentication to prevent accide
 ## 6) Coverage policy linkage
 - coverage v1 is legacy/informational only.
 - CI gating MUST use coverage_v2 and policy gates outside v1 references.
+- Domestic venues MUST have mock request-shape gates (wiremock/httpmock) validating method/path/query/body/required headers without real keys.

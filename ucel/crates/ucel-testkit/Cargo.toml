@@ -18,3 +18,11 @@ ucel-sdk = { path = "../ucel-sdk" }
 ucel-cex-bybit = { path = "../ucel-cex-bybit" }
 ucel-cex-bithumb = { path = "../ucel-cex-bithumb" }
 sha2 = "0.10"
+wiremock = "0.6"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }
+ucel-cex-gmocoin = { path = "../ucel-cex-gmocoin" }
+ucel-cex-bitbank = { path = "../ucel-cex-bitbank" }
+ucel-cex-bitflyer = { path = "../ucel-cex-bitflyer" }
+ucel-cex-coincheck = { path = "../ucel-cex-coincheck" }

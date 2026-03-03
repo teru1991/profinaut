@@ -57,3 +57,12 @@ impl AppConfig {
         Ok(cfg)
     }
 }
+
+impl ExchangeConfig {
+    pub fn snapshot_url(&self) -> Option<String> {
+        self.params
+            .get("snapshot_url")?
+            .as_str()
+            .map(ToString::to_string)
+    }
+}

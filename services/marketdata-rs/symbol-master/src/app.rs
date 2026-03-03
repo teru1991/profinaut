@@ -1,8 +1,11 @@
 use crate::config::AppConfig;
 use crate::resync_loop::{ResyncCoordinator, ResyncCoordinatorState};
+use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::{watch, Mutex};
 use tokio::task::JoinHandle;
+use ucel_symbol_adapter::ResyncSignal;
+use ucel_symbol_store::SymbolStore;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum HealthStatus {
@@ -32,7 +35,10 @@ impl AppState {
             cfg,
             health_tx,
             health_rx,
-            resync: Arc::new(ResyncCoordinator::new()),
+            resync: Arc::new(ResyncCoordinator::new(
+                Arc::new(SymbolStore::new()),
+                PathBuf::from("services/marketdata-rs/symbol-master/checkpoints.jsonl"),
+            )),
         }
     }
 
@@ -75,6 +81,13 @@ impl Supervisor {
             return;
         }
         st.set_ok();
+
+        for ex in &st.cfg.exchanges {
+            let signal = ResyncSignal::new();
+            st.resync
+                .register_exchange(ex.exchange_id.clone(), signal.receiver(), ex.snapshot_url())
+                .await;
+        }
 
         let mut stop_rx = self.stop_tx.subscribe();
         let resync = st.resync.clone();
