@@ -62,7 +62,9 @@ fn load_with_ext(
     Ok(out)
 }
 
-pub fn load_ws_frame_corpus(cfg: CorpusConfig) -> Result<Vec<SeedCase>, Box<dyn std::error::Error>> {
+pub fn load_ws_frame_corpus(
+    cfg: CorpusConfig,
+) -> Result<Vec<SeedCase>, Box<dyn std::error::Error>> {
     load_with_ext("ws_frames", "txt", cfg)
 }
 

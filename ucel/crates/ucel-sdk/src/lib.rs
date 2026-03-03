@@ -11,8 +11,8 @@ pub mod error;
 pub mod market_meta;
 pub mod order_normalize;
 pub mod sdk;
-pub mod support_bundle;
 pub mod secrets;
+pub mod support_bundle;
 
 pub use ucel_core;
 
@@ -27,32 +27,11 @@ pub mod ingest {
 pub mod execution;
 
 pub use execution::{
-    AuditEvent,
-    AuditSink,
-    ExecutionClient,
-    ExecutionConnector,
-    ExecutionMode,
-    ExecutionOutcome,
-    IdempotencyKey,
-    OrderCancel,
-    OrderIntent,
-    OrderIntentId,
-    OrderOpenQuery,
-    OrderReceipt,
-    OrderRequest,
-    OrderSide,
-    OrderStatus,
-    OrderTimeInForce,
-    OrderType,
-    Price,
-    Quantity,
-    ReconcileReport,
-    ReconcileSource,
-    SdkExecutionError,
-    SdkExecutionErrorCode,
-    SdkExecutionResult,
-    Symbol,
-    VenueId,
+    AuditEvent, AuditSink, ExecutionClient, ExecutionConnector, ExecutionMode, ExecutionOutcome,
+    IdempotencyKey, OrderCancel, OrderIntent, OrderIntentId, OrderOpenQuery, OrderReceipt,
+    OrderRequest, OrderSide, OrderStatus, OrderTimeInForce, OrderType, Price, Quantity,
+    ReconcileReport, ReconcileSource, SdkExecutionError, SdkExecutionErrorCode, SdkExecutionResult,
+    Symbol, VenueId,
 };
 
 pub mod prelude {

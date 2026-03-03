@@ -7,8 +7,8 @@ fn golden_ws_bybit_normalize_orderbook_snapshot() {
     let repo_root = repo_root_from_manifest_dir();
 
     // fixture load
-    let fx =
-        GoldenWsFixture::load(&repo_root, "bybit", "orderbook_snapshot").expect("load golden fixture");
+    let fx = GoldenWsFixture::load(&repo_root, "bybit", "orderbook_snapshot")
+        .expect("load golden fixture");
 
     // normalize (Bybit already has normalize_ws_event)
     let endpoint_id = "crypto.public.ws.orderbook.l2";
