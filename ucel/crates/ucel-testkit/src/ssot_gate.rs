@@ -28,6 +28,10 @@ struct CoverageEntry {
     access: Option<String>,
     implemented: Option<bool>,
     tested: Option<bool>,
+    /// "not_supported" means the entry is explicitly out of scope (e.g., FIX protocol stubs).
+    /// These entries are excluded from strict=true enforcement, matching the lib.rs policy.
+    #[serde(default)]
+    support: Option<String>,
 }
 
 fn collect_catalog_exchange_ids(repo_root: &Path) -> Result<BTreeMap<String, CatalogMeta>, String> {
@@ -219,6 +223,10 @@ pub fn run_ssot_gate(repo_root: &Path) -> Result<(), String> {
                 let Some(id) = entry.id.as_deref() else {
                     continue;
                 };
+                // Skip entries explicitly marked as out-of-scope (e.g., FIX protocol stubs).
+                if entry.support.as_deref() == Some("not_supported") {
+                    continue;
+                }
                 if !entry.implemented.unwrap_or(false) {
                     failures.push(format!(
                         "venue={venue} id={id}: strict=true requires implemented=true"

@@ -1,6 +1,6 @@
 venue: binance-coinm
 scope: public_only
-strict: false
+strict: true
 implemented: true
 tested: true
 entries:
