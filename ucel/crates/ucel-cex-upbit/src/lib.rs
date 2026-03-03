@@ -48,6 +48,31 @@ pub fn ws_channel_specs() -> Vec<WsChannelSpec> {
         .collect()
 }
 
+fn upbit_allowlist() -> Result<EndpointAllowlist, UcelError> {
+    EndpointAllowlist::new(["upbit.com"], SubdomainPolicy::AllowSubdomains)
+}
+
+fn validate_ws_url(raw: &str) -> Result<(), UcelError> {
+    upbit_allowlist()?.validate_https_wss(raw).map(|_| ())
+}
+
+fn validate_http_base_url(raw: &str) -> Result<(), UcelError> {
+    upbit_allowlist()?.validate_https_wss(raw).map(|_| ())
+}
+
+fn render_path_and_body(
+    method: &str,
+    path: &str,
+    body: Option<Bytes>,
+) -> Result<(String, Option<Bytes>), UcelError> {
+    let rendered = path.replace("{unit}", "1");
+    if method.eq_ignore_ascii_case("GET") {
+        Ok((rendered, None))
+    } else {
+        Ok((rendered, body))
+    }
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct WsAdapterMetrics {
     pub ws_reconnect_total: u64,
@@ -210,11 +235,7 @@ impl OrderbookSync {
         self.degraded = false;
     }
 
-    pub fn apply_delta(
-        &mut self,
-        ts: u64,
-        metrics: &mut WsAdapterMetrics,
-    ) -> Result<(), UcelError> {
+    pub fn apply_delta(&mut self, ts: u64, metrics: &mut WsAdapterMetrics) -> Result<(), UcelError> {
         match self.last_ts {
             Some(prev) if ts <= prev => {
                 self.degraded = true;
@@ -306,10 +327,7 @@ impl UpbitWsAdapter {
         })
     }
 
-    pub fn build_unsubscribe(
-        endpoint_id: &str,
-        code: &str,
-    ) -> Result<UpbitSubscribeFrame, UcelError> {
+    pub fn build_unsubscribe(endpoint_id: &str, code: &str) -> Result<UpbitSubscribeFrame, UcelError> {
         Self::build_subscribe(endpoint_id, code, Some("dummy"))
     }
 
@@ -317,10 +335,7 @@ impl UpbitWsAdapter {
         self.subscriptions.insert(format!("{endpoint_id}:{code}"))
     }
 
-    pub async fn reconnect_and_resubscribe<T: Transport>(
-        &mut self,
-        transport: &T,
-    ) -> Result<usize, UcelError> {
+    pub async fn reconnect_and_resubscribe<T: Transport>(&mut self, transport: &T) -> Result<usize, UcelError> {
         let ctx = RequestContext {
             trace_id: Uuid::new_v4().to_string(),
             request_id: Uuid::new_v4().to_string(),
@@ -352,10 +367,12 @@ impl UpbitWsAdapter {
 pub fn scrub_secrets(line: &str) -> String {
     line.split_whitespace()
         .map(|x| {
-            if x.starts_with("api_key=") {
+            if x.starts_with("api_key=") || x.starts_with("access_key=") {
                 "api_key=***".to_string()
-            } else if x.starts_with("api_secret=") {
+            } else if x.starts_with("api_secret=") || x.starts_with("secret_key=") {
                 "api_secret=***".to_string()
+            } else if x.starts_with("authorization=") || x.starts_with("Authorization=") {
+                "authorization=***".to_string()
             } else {
                 x.to_string()
             }
@@ -413,6 +430,8 @@ impl UpbitRestAdapter {
                 )
             })?;
 
+        validate_http_base_url(&spec.base_url)?;
+
         let ctx = RequestContext {
             trace_id: Uuid::new_v4().to_string(),
             request_id: Uuid::new_v4().to_string(),
@@ -425,11 +444,12 @@ impl UpbitRestAdapter {
         };
         enforce_auth_boundary(&ctx)?;
 
-        let path = spec.path.replace("{unit}", "1");
+        let (rendered_path, send_body) = render_path_and_body(&spec.method, &spec.path, body)?;
+
         let req = HttpRequest {
             method: spec.method.clone(),
-            path: format!("{}{}", spec.base_url, path),
-            body,
+            path: format!("{}{}", spec.base_url, rendered_path),
+            body: send_body,
         };
 
         let response = transport.send_http(req, ctx).await?;
@@ -579,4 +599,318 @@ fn parse_upbit_response(endpoint_id: &str, body: &[u8]) -> Result<UpbitRestRespo
         "quotation.public.rest.ticker.pairs" => Ok(UpbitRestResponse::Tickers(parse_json(body)?)),
         "quotation.public.rest.trades.recent" => Ok(UpbitRestResponse::Trades(parse_json(body)?)),
         "quotation.public.rest.orderbook.snapshot" => {
+            Ok(UpbitRestResponse::Orderbook(parse_json(body)?))
+        }
+        "quotation.public.rest.candles.minutes"
+        | "quotation.public.rest.candles.days"
+        | "quotation.public.rest.candles.weeks"
+        | "quotation.public.rest.candles.months"
+        | "quotation.public.rest.candles.years" => {
             Ok(UpbitRestResponse::Candles(parse_json(body)?))
+        }
+        "exchange.private.rest.accounts.list" => Ok(UpbitRestResponse::Accounts(parse_json(body?))),
+        "exchange.private.rest.orders.create" => {
+            Ok(UpbitRestResponse::CreateOrder(parse_json(body?)))
+        }
+        "exchange.private.rest.orders.cancel" => {
+            Ok(UpbitRestResponse::CancelOrder(parse_json(body?)))
+        }
+        "exchange.private.rest.orders.open" => Ok(UpbitRestResponse::OpenOrders(parse_json(body?))),
+        "exchange.private.rest.orders.closed" => {
+            Ok(UpbitRestResponse::ClosedOrders(parse_json(body?)))
+        }
+        "exchange.private.rest.orders.chance" => {
+            Ok(UpbitRestResponse::OrderChance(parse_json(body?)))
+        }
+        "exchange.private.rest.withdraws.list" => {
+            Ok(UpbitRestResponse::Withdraws(parse_json(body?)))
+        }
+        "exchange.private.rest.withdraws.coin" => {
+            Ok(UpbitRestResponse::WithdrawCoin(parse_json(body?)))
+        }
+        "exchange.private.rest.deposits.list" => Ok(UpbitRestResponse::Deposits(parse_json(body?))),
+        "exchange.private.rest.deposits.coin_address" => {
+            Ok(UpbitRestResponse::DepositAddress(parse_json(body?)))
+        }
+        "exchange.private.rest.travel_rule.vasps" => {
+            Ok(UpbitRestResponse::TravelRuleVasps(parse_json(body?)))
+        }
+        "exchange.private.rest.status.wallet" => {
+            Ok(UpbitRestResponse::WalletStatus(parse_json(body?)))
+        }
+        "exchange.private.rest.api_keys.list" => Ok(UpbitRestResponse::ApiKeys(parse_json(body?))),
+        other => Err(UcelError::new(
+            ErrorCode::NotSupported,
+            format!("unmapped response parser for endpoint: {other}"),
+        )),
+    }
+}
+
+fn parse_json<T: DeserializeOwned>(body: &[u8]) -> Result<T, UcelError> {
+    serde_json::from_slice(body)
+        .map_err(|e| UcelError::new(ErrorCode::Internal, format!("json parse error: {e}")))
+}
+
+#[derive(Debug, Deserialize)]
+struct UpbitErrorEnvelope {
+    #[serde(default)]
+    error: Option<UpbitErrorBody>,
+    #[serde(default)]
+    retry_after_ms: Option<u64>,
+}
+
+#[derive(Debug, Deserialize)]
+struct UpbitErrorBody {
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    message: Option<String>,
+}
+
+fn map_upbit_http_error(status: u16, body: &[u8]) -> UcelError {
+    if status == 429 {
+        let retry_after_ms = serde_json::from_slice::<UpbitErrorEnvelope>(body)
+            .ok()
+            .and_then(|env| env.retry_after_ms);
+        let mut err = UcelError::new(ErrorCode::RateLimited, "rate limited");
+        err.retry_after_ms = retry_after_ms;
+        return err;
+    }
+
+    if status >= 500 {
+        return UcelError::new(ErrorCode::Upstream5xx, "upstream error");
+    }
+
+    let parsed = serde_json::from_slice::<UpbitErrorEnvelope>(body).ok();
+    let (name, message) = parsed
+        .and_then(|x| x.error)
+        .map(|e| {
+            (
+                e.name.unwrap_or_else(|| "unknown".to_string()),
+                e.message.unwrap_or_else(|| "unknown".to_string()),
+            )
+        })
+        .unwrap_or_else(|| ("unknown".to_string(), "unknown".to_string()));
+
+    let msg = format!(
+        "upbit http error: status={status} name={name} message={message}"
+    );
+
+    match status {
+        401 | 403 => UcelError::new(ErrorCode::MissingAuth, msg),
+        404 => UcelError::new(ErrorCode::NotSupported, msg),
+        _ => UcelError::new(ErrorCode::Internal, msg),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct RestCatalog {
+    rest_endpoints: Vec<RestCatalogEntry>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RestCatalogEntry {
+    id: String,
+    method: String,
+    base_url: String,
+    path: String,
+    visibility: String,
+    auth: RestCatalogAuth,
+}
+
+#[derive(Debug, Deserialize)]
+struct RestCatalogAuth {
+    #[serde(rename = "type")]
+    auth_type: String,
+}
+
+fn load_endpoint_specs() -> Vec<EndpointSpec> {
+    let raw = include_str!("../../../../docs/exchanges/upbit/catalog.json");
+    let catalog: RestCatalog = serde_json::from_str(raw).expect("valid upbit catalog");
+
+    catalog
+        .rest_endpoints
+        .into_iter()
+        .map(|entry| EndpointSpec {
+            id: entry.id,
+            method: entry.method,
+            base_url: entry.base_url,
+            path: entry.path,
+            requires_auth: entry.auth.auth_type != "none"
+                || entry.visibility.eq_ignore_ascii_case("private"),
+        })
+        .collect()
+}
+
+fn op_for_rest(endpoint_id: &str) -> OpName {
+    match endpoint_id {
+        "quotation.public.rest.ticker.pairs" => OpName::FetchTicker,
+        "quotation.public.rest.trades.recent" => OpName::FetchTrades,
+        "quotation.public.rest.orderbook.snapshot" => OpName::FetchOrderbookSnapshot,
+        "quotation.public.rest.candles.minutes"
+        | "quotation.public.rest.candles.days"
+        | "quotation.public.rest.candles.weeks"
+        | "quotation.public.rest.candles.months"
+        | "quotation.public.rest.candles.years" => OpName::FetchKlines,
+        "exchange.private.rest.orders.create" => OpName::PlaceOrder,
+        "exchange.private.rest.orders.cancel" => OpName::CancelOrder,
+        "exchange.private.rest.orders.open" => OpName::FetchOpenOrders,
+        "exchange.private.rest.accounts.list" => OpName::FetchBalances,
+        _ => OpName::FetchStatus,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use ucel_transport::{HttpRequest, HttpResponse, WsConnectRequest, WsStream};
+
+    struct SpyTransport {
+        ws_connects: AtomicUsize,
+    }
+    impl SpyTransport {
+        fn new() -> Self {
+            Self {
+                ws_connects: AtomicUsize::new(0),
+            }
+        }
+    }
+    impl Transport for SpyTransport {
+        async fn send_http(
+            &self,
+            _req: HttpRequest,
+            _ctx: RequestContext,
+        ) -> Result<HttpResponse, UcelError> {
+            Err(UcelError::new(ErrorCode::NotSupported, "unused"))
+        }
+        async fn connect_ws(
+            &self,
+            _req: WsConnectRequest,
+            _ctx: RequestContext,
+        ) -> Result<WsStream, UcelError> {
+            self.ws_connects.fetch_add(1, Ordering::Relaxed);
+            Ok(WsStream { connected: true })
+        }
+    }
+
+    #[test]
+    fn all_ws_catalog_rows_build_subscribe_unsubscribe() {
+        for spec in ws_channel_specs() {
+            let key = if spec.requires_auth {
+                Some("kid")
+            } else {
+                None
+            };
+            assert_eq!(
+                UpbitWsAdapter::build_subscribe(&spec.id, "KRW-BTC", key)
+                    .unwrap()
+                    .channel_type,
+                spec.channel
+            );
+            assert_eq!(
+                UpbitWsAdapter::build_unsubscribe(&spec.id, "KRW-BTC")
+                    .unwrap()
+                    .channel_type,
+                spec.channel
+            );
+        }
+    }
+
+    #[test]
+    fn private_preflight_reject_no_connect() {
+        let err =
+            UpbitWsAdapter::build_subscribe("exchange.private.ws.myasset.stream", "KRW-BTC", None)
+                .unwrap_err();
+        assert_eq!(err.code, ErrorCode::MissingAuth);
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn reconnect_resubscribe_idempotent() {
+        let spy = SpyTransport::new();
+        let mut ws = UpbitWsAdapter::default();
+        assert!(ws.subscribe_once("quotation.public.ws.trade.stream", "KRW-BTC"));
+        assert!(!ws.subscribe_once("quotation.public.ws.trade.stream", "KRW-BTC"));
+        let restored = ws.reconnect_and_resubscribe(&spy).await.unwrap();
+        assert_eq!(restored, 1);
+        assert_eq!(ws.metrics.ws_resubscribe_total, 1);
+        assert_eq!(spy.ws_connects.load(Ordering::Relaxed), 1);
+    }
+
+    #[test]
+    fn typed_deserialize_and_normalize() {
+        let t = normalize_ws_message(r#"{"type":"ticker","code":"KRW-BTC","trade_price":1.0}"#)
+            .unwrap();
+        assert!(matches!(t, MarketEvent::Ticker { .. }));
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn bounded_backpressure_and_metrics() {
+        let mut q = BackpressureQueue::with_capacity(1);
+        let mut m = WsAdapterMetrics::default();
+        q.try_push(
+            MarketEvent::Candle {
+                code: "KRW-BTC".into(),
+                trade_price: "1.0".parse::<Decimal>().unwrap(),
+            },
+            &mut m,
+        );
+        q.try_push(
+            MarketEvent::Candle {
+                code: "KRW-ETH".into(),
+                trade_price: "2.0".parse::<Decimal>().unwrap(),
+            },
+            &mut m,
+        );
+        assert_eq!(m.ws_backpressure_drops_total, 1);
+        assert!(
+            matches!(q.recv().await.unwrap(), MarketEvent::Candle { code, .. } if code == "KRW-BTC")
+        );
+    }
+
+    #[test]
+    fn orderbook_gap_resync_recovered() {
+        let mut sync = OrderbookSync::default();
+        let mut m = WsAdapterMetrics::default();
+        sync.apply_snapshot(100);
+        assert!(sync.apply_delta(100, &mut m).is_err());
+        assert!(sync.degraded);
+        sync.resync(101, &mut m);
+        assert!(!sync.degraded);
+        assert_eq!(m.ws_orderbook_gap_total, 1);
+        assert_eq!(m.ws_orderbook_resync_total, 1);
+        assert_eq!(m.ws_orderbook_recovered_total, 1);
+    }
+
+    #[test]
+    fn duplicate_and_out_of_order_policy_forces_resync() {
+        let mut sync = OrderbookSync::default();
+        let mut m = WsAdapterMetrics::default();
+        sync.apply_snapshot(10);
+        assert!(sync.apply_delta(9, &mut m).is_err());
+        assert!(sync.degraded);
+    }
+
+    #[test]
+    fn no_secret_leak() {
+        let line = "key_id=alpha api_key=hello api_secret=world";
+        let scrubbed = scrub_secrets(line);
+        assert!(scrubbed.contains("key_id=alpha"));
+        assert!(!scrubbed.contains("hello"));
+        assert!(!scrubbed.contains("world"));
+    }
+
+    #[test]
+    fn strict_gate_enabled_and_zero_gaps() {
+        let manifest_path =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../coverage/upbit.yaml");
+        let manifest = ucel_testkit::load_coverage_manifest(&manifest_path).unwrap();
+        assert!(manifest.strict);
+        let gaps = ucel_testkit::evaluate_coverage_gate(&manifest);
+        assert!(gaps.is_empty(), "strict gate requires zero gaps: {gaps:?}");
+    }
+}
+
+pub mod channels;
+pub mod symbols;
+pub mod ws_manager;
