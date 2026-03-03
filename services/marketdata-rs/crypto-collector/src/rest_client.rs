@@ -1,39 +1,8 @@
-use std::sync::Arc;
-use std::time::Duration;
-
-use governor::{clock::DefaultClock, state::InMemoryState, Quota, RateLimiter};
-use reqwest::{Method, RequestBuilder, StatusCode};
-use thiserror::Error;
-
-use crate::runtime::ConnectionState;
-
-#[derive(Debug, Clone)]
-pub struct RestRuntimeConfig {
-    pub base_urls: Vec<String>,
-    pub requests_per_second: u32,
-    pub max_retries: u32,
-    pub secret_env: Option<String>,
-}
-
-#[derive(Debug, Error)]
-pub enum RestError {
-    #[error("no base urls configured")]
-    NoBaseUrls,
-    #[error("missing required secret env var: {0}")]
-    MissingSecret(String),
-    #[error("all urls failed: {0}")]
-    Exhausted(String),
-}
-
-#[derive(Clone)]
-pub struct RestClient {
-    http: reqwest::Client,
-    cfg: RestRuntimeConfig,
-    limiter: Arc<RateLimiter<governor::state::NotKeyed, InMemoryState, DefaultClock>>,
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use governor::{clock::DefaultClock, state::InMemoryState, Quota, RateLimiter};
+use rand::Rng;
 use reqwest::{Method, RequestBuilder, StatusCode};
 use thiserror::Error;
 
@@ -64,7 +33,6 @@ pub struct RestClient {
     limiter: Arc<RateLimiter<governor::state::NotKeyed, InMemoryState, DefaultClock>>,
     pub state: Arc<Mutex<ConnectionState>>,
 }
-}
 
 impl RestClient {
     pub fn new(cfg: RestRuntimeConfig) -> Result<Self, RestError> {
@@ -76,7 +44,7 @@ impl RestClient {
             http: reqwest::Client::new(),
             cfg,
             limiter: Arc::new(RateLimiter::direct(q)),
-            state: ConnectionState::Disconnected,
+            state: Arc::new(Mutex::new(ConnectionState::Disconnected)),
         })
     }
 

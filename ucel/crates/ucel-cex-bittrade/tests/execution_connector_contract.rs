@@ -114,13 +114,11 @@ async fn bittrade_connector_places_with_account_id_and_client_order_id() {
     let body_str = String::from_utf8(calls[1].body.clone().unwrap_or_default().to_vec()).unwrap();
     assert!(
         body_str.contains("12345"),
-        "expected account-id 12345 in body: {}",
-        body_str
+        "expected account-id 12345 in body: {body_str}"
     );
     assert!(
         body_str.contains("idem-1234567890abcdef"),
-        "expected client-order-id in body: {}",
-        body_str
+        "expected client-order-id in body: {body_str}"
     );
 }
 
@@ -294,7 +292,6 @@ async fn execution_client_async_injects_client_order_id_for_live() {
     .unwrap();
     assert!(
         body_str.contains("idem-inject-test-123456789"),
-        "expected injected client-order-id in body: {}",
-        body_str
+        "expected injected client-order-id in body: {body_str}"
     );
 }
