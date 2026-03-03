@@ -82,6 +82,8 @@ where
             format!("{:?}", ctx.op),
             "*",
             ctx.run_id.clone(),
+            ctx.trace_id.clone(),
+            ctx.request_id.clone(),
         )
         .map_err(|e| UcelError::new(e.code, e.message))?;
         let _guard = span_required("ucel_http_request", &obs).entered();

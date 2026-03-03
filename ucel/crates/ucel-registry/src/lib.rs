@@ -1,3 +1,4 @@
+pub mod support_bundle;
 pub mod deribit;
 pub mod hub;
 pub mod ingest;
