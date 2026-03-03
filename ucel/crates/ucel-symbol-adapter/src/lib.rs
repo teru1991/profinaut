@@ -1,4 +1,5 @@
 pub mod market_meta;
+pub mod resync;
 
 use async_trait::async_trait;
 use futures_core::Stream;
@@ -103,3 +104,8 @@ pub trait SymbolSubscriber: Send + Sync {
         ctx: &SymbolContext,
     ) -> Result<SymbolEventStream, SymbolAdapterError>;
 }
+
+pub use resync::{
+    subscribe_with_optional_resync, ResyncHint, ResyncSignal, SnapshotProvider,
+    SymbolSubscriberExtResync,
+};

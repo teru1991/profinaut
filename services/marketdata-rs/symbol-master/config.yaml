@@ -1,0 +1,6 @@
+http:
+  listen: "127.0.0.1:8087"
+exchanges:
+  - exchange_id: "gmo"
+    mode: public_only
+    params: {}

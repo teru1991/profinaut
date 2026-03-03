@@ -4,10 +4,16 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+axum = { version = "0.7" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+serde_yaml = "0.9"
 thiserror = "1"
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time", "signal"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time", "signal", "net"] }
 tracing = "0.1"
+ucel-symbol-adapter = { path = "../../../ucel/crates/ucel-symbol-adapter" }
 ucel-symbol-core = { path = "../../../ucel/crates/ucel-symbol-core" }
 ucel-symbol-store = { path = "../../../ucel/crates/ucel-symbol-store" }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }

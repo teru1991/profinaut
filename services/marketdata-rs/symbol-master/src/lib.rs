@@ -1,8 +1,11 @@
+pub mod app;
 pub mod config;
 pub mod health;
+pub mod http;
 pub mod metrics;
 pub mod persistence;
 pub mod rest_worker;
 pub mod resync;
+pub mod resync_loop;
 pub mod supervisor;
 pub mod ws_worker;
