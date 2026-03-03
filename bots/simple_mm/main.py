@@ -5,13 +5,45 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from uuid import uuid4
+
+from libs.safety_core.gate import SafetyGate, SafetyGateError
+from libs.safety_core.lease import ExecutionLease
+from libs.safety_core.models import SafetyMode
 
 
 class BotError(Exception):
     pass
 
+
+
+
+class _SimpleMmGateProvider:
+    def __init__(self, safety_base_url: str) -> None:
+        self._safety_base_url = safety_base_url.rstrip("/")
+
+    def current_mode(self) -> SafetyMode:
+        raw = os.getenv("SAFETY_MODE_STATE", "NORMAL").strip().upper() or "NORMAL"
+        try:
+            return SafetyMode(raw)
+        except ValueError as exc:
+            raise BotError("unknown safety mode") from exc
+
+    def current_lease(self, subject_kind: str, subject_id: str) -> ExecutionLease | None:
+        query = urllib.parse.urlencode({"subject_kind": subject_kind, "subject_id": subject_id})
+        status, payload = http_json("GET", f"{self._safety_base_url}/safety/lease/status?{query}")
+        if status != 200:
+            raise BotError("lease status unavailable")
+        lease = payload.get("lease") if isinstance(payload, dict) else None
+        if not isinstance(lease, dict):
+            return None
+        return ExecutionLease(**lease)
+
+
+def _build_safety_gate() -> SafetyGate:
+    safety_base_url = os.getenv("SAFETY_BASE_URL") or os.getenv("CONTROL_PLANE_BASE_URL") or os.getenv("CONTROLPLANE_BASE_URL", "http://127.0.0.1:8000")
+    return SafetyGate(provider=_SimpleMmGateProvider(safety_base_url=safety_base_url))
 
 class DeadmanSwitch:
     """Dead man's switch that latches SAFE_MODE after prolonged control-plane failures.
@@ -140,6 +172,24 @@ def fetch_controlplane_capabilities(controlplane_base_url: str) -> dict:
 
 
 def submit_order_intent(execution_base_url: str, intent: dict) -> dict:
+    gate = _build_safety_gate()
+    try:
+        gate.check_before_send(
+            op="create_order",
+            subject_kind="BOT",
+            subject_id=os.getenv("BOT_ID", "simple-mm"),
+            venue=str(intent.get("exchange", "")),
+            symbol=str(intent.get("symbol", "")),
+            side=str(intent.get("side", "")),
+            qty=float(intent.get("qty", 0)),
+            price=float(intent.get("price")) if intent.get("price") is not None else None,
+            is_reduce_only=bool(intent.get("reduce_only", False)),
+            now=datetime.now(UTC),
+        )
+    except (SafetyGateError, ValueError, TypeError) as exc:
+        reason = getattr(exc, "reason_code", "SAFETY_BLOCKED")
+        raise BotError(f"SAFETY_BLOCKED:{reason}") from exc
+
     status, payload = http_json("POST", f"{execution_base_url}/execution/order-intents", body=intent)
     if status != 201:
         raise BotError(f"unexpected order-intents status: {status}")
