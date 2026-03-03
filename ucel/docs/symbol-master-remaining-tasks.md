@@ -9,11 +9,13 @@
   - [ ] `schema_version` の互換性チェック関数（upgrade path / reject path）が未実装。
 - [ ] `ucel-symbol-adapter`
   - [ ] `SymbolSubscriber` のイベント型がプレースホルダのため、`Added/Removed/StatusChanged/ParamChanged` を直接扱う契約へ寄せる必要あり。
-  - [ ] 再同期導線（lagged 検知時の snapshot 取り直し契約）を trait レベルで固定していない。
+  - [x] 再同期導線（lagged 検知時の snapshot 取り直し契約）を trait レベルで固定していない。
+  - 追加API: `ResyncHint` / `ResyncSignal` / `SymbolSubscriberExtResync` / `subscribe_with_optional_resync`。
 - [ ] `ucel-symbol-store`
   - [ ] `meta` 比較の whitelist（重要キーのみ比較）機能が未実装。
   - [ ] `apply_snapshot` の差分イベントに `ts_event` を統一して載せる運用規約が未固定。
-  - [ ] 取りこぼし復元向けに `store_version` を使った checkpoint API（from version で再生）が未実装。
+  - [x] 取りこぼし復元向けに `store_version` を使った checkpoint API（from version で再生）が未実装。
+  - 追加API: `ReplayState` / `StoreCheckpoint` / `export_since` / `import_events`。
 
 ## 2. 取引所アダプタ（ucel-cex-*）側の残タスク
 
