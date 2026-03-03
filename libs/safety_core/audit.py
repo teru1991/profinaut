@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Protocol
 
+from libs.safety_core.audit_health import AuditHealth
 from libs.safety_core.redaction import redact, safe_str, scan_obj
 
 
@@ -38,10 +39,11 @@ class AuditLeakError(RuntimeError):
 
 
 class JsonlAuditWriter:
-    def __init__(self, log_dir: Path | None = None) -> None:
+    def __init__(self, log_dir: Path | None = None, audit_health: AuditHealth | None = None) -> None:
         self._log_dir = log_dir or Path("libs/safety_core/_audit_log")
         self._log_dir.mkdir(parents=True, exist_ok=True)
         self._log_file = self._log_dir / "audit.jsonl"
+        self._audit_health = audit_health
 
     def _prepare_payload(self, event: AuditEvent) -> dict:
         payload = asdict(event)
@@ -66,12 +68,16 @@ class JsonlAuditWriter:
             payload = self._prepare_payload(event)
             line = json.dumps(payload, ensure_ascii=False) + "\n"
         except AuditLeakError:
-            # propagate as-is; caller will decide fail-closed behavior.
+            if self._audit_health:
+                self._audit_health.mark_err("E_AUDIT_LEAK")
             raise
         except Exception as e:
-            # Do not leak exception internals
+            if self._audit_health:
+                self._audit_health.mark_err("E_AUDIT_WRITE")
             raise AuditLeakError(f"audit payload serialization failed: {safe_str(str(e))}") from None
 
         with self._log_file.open("a", encoding="utf-8") as f:
             f.write(line)
             f.flush()
+        if self._audit_health:
+            self._audit_health.mark_ok()
