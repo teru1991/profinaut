@@ -37,3 +37,7 @@ Each CEX crate must provide capability discoverability (e.g. `supported_ws_ops()
 ## Discoverability gate
 - If `public.ws=true` in coverage_v2 for a venue, `supported_ws_ops()` MUST NOT be empty for that venue implementation.
 - CI enforces this via `discoverability_coverage_v2_gate` and alignment checks in `coverage_gate`.
+## Strict SSOT
+- Strict CI gates use `ucel/coverage/coverage_v2/strict_venues.json` as the only strict venue source.
+- `ucel/coverage/*.yaml` (v1) is legacy/informational and MUST NOT be used for CI gating.
+

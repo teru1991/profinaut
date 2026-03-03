@@ -21,6 +21,17 @@ fn write_file(path: &Path, content: &str) {
     fs::write(path, content).expect("write file");
 }
 
+fn write_strict_venues(root: &Path, venues: &[&str]) {
+    let body = format!(
+        "{{\n  \"strict_ws_golden\": {},\n  \"strict_symbol_master\": []\n}}",
+        serde_json::to_string(venues).expect("to json")
+    );
+    write_file(
+        &root.join("ucel/coverage/coverage_v2/strict_venues.json"),
+        &body,
+    );
+}
+
 #[test]
 fn v2_gate_fails_when_catalog_op_missing_in_coverage() {
     let root = mk_temp_root("missing_entry");
@@ -29,18 +40,11 @@ fn v2_gate_fails_when_catalog_op_missing_in_coverage() {
         &root.join("docs/exchanges/foo/catalog.json"),
         r#"{ "ws_channels": [ { "id": "crypto.public.ws.ticker" } ] }"#,
     );
-
     write_file(
-        &root.join("ucel/coverage/foo.yaml"),
-        r#"
-venue: foo
-strict: true
-entries:
-  - id: crypto.public.ws.other
-    implemented: true
-    tested: true
-"#,
+        &root.join("ucel/coverage/coverage_v2/exchanges/foo.json"),
+        r#"{ "exchange": "foo", "public": {"rest": true, "ws": true}, "private": {"enabled": false}, "ws_ops": ["crypto.public.ws.other"] }"#,
     );
+    write_strict_venues(&root, &["foo"]);
 
     fs::create_dir_all(root.join("ucel/crates/ucel-cex-foo")).expect("mkdir crate");
     write_file(
@@ -62,43 +66,21 @@ entries:
 }
 
 #[test]
-fn v2_gate_fails_when_strict_entry_is_not_supported() {
-    let root = mk_temp_root("strict_not_supported");
+fn v2_gate_fails_when_coverage_file_missing_for_catalog_venue() {
+    let root = mk_temp_root("missing_file");
 
     write_file(
         &root.join("docs/exchanges/foo/catalog.json"),
         r#"{ "ws_channels": [ { "id": "crypto.public.ws.ticker" } ] }"#,
     );
-
-    write_file(
-        &root.join("ucel/coverage/foo.yaml"),
-        r#"
-venue: foo
-strict: true
-entries:
-  - id: crypto.public.ws.ticker
-    implemented: false
-    tested: false
-    support: not_supported
-"#,
-    );
-
-    fs::create_dir_all(root.join("ucel/crates/ucel-cex-foo")).expect("mkdir crate");
-    write_file(
-        &root.join("ucel/crates/ucel-ws-rules/rules/foo.toml"),
-        r#"name = "foo""#,
-    );
-    write_file(
-        &root.join("ucel/examples/venue_smoke/foo.rs"),
-        r#"fn main() {}"#,
-    );
+    write_strict_venues(&root, &["foo"]);
 
     let report = run_ssot_integrity_gate(&root).expect("run gate");
     assert!(report.has_failures(), "should fail");
     let s = report.format_human_readable();
     assert!(
-        s.contains("STRICT_NOT_SUPPORTED"),
-        "expected strict_not_supported failure, got:\n{s}"
+        s.contains("COVERAGE_MISSING_FILE"),
+        "expected missing file failure, got:\n{s}"
     );
 }
 
@@ -110,18 +92,11 @@ fn v2_gate_warns_missing_rules_and_examples_when_non_strict() {
         &root.join("docs/exchanges/foo/catalog.json"),
         r#"{ "ws_channels": [ { "id": "crypto.public.ws.ticker" } ] }"#,
     );
-
     write_file(
-        &root.join("ucel/coverage/foo.yaml"),
-        r#"
-venue: foo
-strict: false
-entries:
-  - id: crypto.public.ws.ticker
-    implemented: true
-    tested: true
-"#,
+        &root.join("ucel/coverage/coverage_v2/exchanges/foo.json"),
+        r#"{ "exchange": "foo", "public": {"rest": true, "ws": true}, "private": {"enabled": false}, "ws_ops": ["crypto.public.ws.ticker"] }"#,
     );
+    write_strict_venues(&root, &[]);
 
     fs::create_dir_all(root.join("ucel/crates/ucel-cex-foo")).expect("mkdir crate");
 

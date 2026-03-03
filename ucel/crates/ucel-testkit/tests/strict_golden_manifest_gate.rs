@@ -1,34 +1,21 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-fn ucel_root() -> PathBuf {
+fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../..")
         .canonicalize()
-        .expect("ucel root")
+        .expect("repo root")
 }
 
-fn strict_venues_from_coverage(root: &std::path::Path) -> Vec<String> {
-    let mut venues = Vec::new();
-    let coverage_dir = root.join("coverage");
-    let rd = std::fs::read_dir(&coverage_dir).expect("read coverage");
+fn ucel_root() -> PathBuf {
+    repo_root().join("ucel")
+}
 
-    for entry in rd.flatten() {
-        let path = entry.path();
-        if path.extension().and_then(|x| x.to_str()) != Some("yaml") {
-            continue;
-        }
-        let raw = std::fs::read_to_string(&path).expect("read coverage yaml");
-        let value: serde_yaml::Value = serde_yaml::from_str(&raw).expect("parse coverage yaml");
-        if value.get("strict").and_then(|x| x.as_bool()) == Some(true) {
-            let venue = value
-                .get("venue")
-                .and_then(|x| x.as_str())
-                .unwrap_or_else(|| panic!("missing venue in {}", path.display()));
-            venues.push(venue.to_string());
-        }
-    }
-
+fn strict_venues_from_coverage_v2(repo_root: &std::path::Path) -> Vec<String> {
+    let mut venues = ucel_testkit::coverage_v2::load_strict_venues(repo_root)
+        .expect("load strict_venues.json")
+        .strict_ws_golden;
     venues.sort();
     venues
 }
@@ -42,8 +29,8 @@ fn required_ws_files(venue: &str) -> [String; 2] {
 
 #[test]
 fn strict_venues_must_have_required_golden_files_in_manifest() {
-    let root = ucel_root();
-    let manifest = ucel_testkit::golden_manifest::load_golden_manifest(&root);
+    let ucel_root = ucel_root();
+    let manifest = ucel_testkit::golden_manifest::load_golden_manifest(&ucel_root);
     assert_eq!(manifest.version, 1, "manifest version mismatch");
 
     let files: BTreeMap<_, _> = manifest
@@ -52,10 +39,10 @@ fn strict_venues_must_have_required_golden_files_in_manifest() {
         .map(|f| (f.path.clone(), (&f.sha256, f.bytes)))
         .collect();
 
-    let venues = strict_venues_from_coverage(&root);
+    let venues = strict_venues_from_coverage_v2(&repo_root());
     assert!(
         !venues.is_empty(),
-        "no strict venues found in ucel/coverage"
+        "no strict venues found in strict_venues.json"
     );
 
     let mut missing = Vec::new();
@@ -74,11 +61,11 @@ fn strict_venues_must_have_required_golden_files_in_manifest() {
 
 #[test]
 fn golden_manifest_sha_size_and_redaction_checks() {
-    let root = ucel_root();
-    let manifest = ucel_testkit::golden_manifest::load_golden_manifest(&root);
+    let ucel_root = ucel_root();
+    let manifest = ucel_testkit::golden_manifest::load_golden_manifest(&ucel_root);
 
     for f in manifest.files {
-        let full_path = ucel_testkit::golden_manifest::golden_root(&root).join(&f.path);
+        let full_path = ucel_testkit::golden_manifest::golden_root(&ucel_root).join(&f.path);
         let bytes = ucel_testkit::golden_manifest::read_file_bytes(&full_path);
         ucel_testkit::golden_manifest::assert_no_denied_patterns(&f.path, &bytes);
 

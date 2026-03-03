@@ -1,0 +1,23 @@
+{
+  "strict_ws_golden": [
+    "gmocoin",
+    "bitbank",
+    "bitflyer",
+    "coincheck",
+    "bybit",
+    "okx",
+    "coinbase",
+    "kraken",
+    "deribit"
+  ],
+  "strict_symbol_master": [
+    "gmocoin",
+    "bitbank",
+    "bitflyer",
+    "coincheck"
+  ],
+  "notes": [
+    "SSOT for strict gates. coverage v1 is legacy and MUST NOT be used for CI gating.",
+    "sbivc is excluded (temporary public_only exception)."
+  ]
+}

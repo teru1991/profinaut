@@ -1,6 +1,4 @@
-use crate::load_coverage_manifest;
-use std::collections::{BTreeMap, BTreeSet};
-use std::fs;
+use std::collections::BTreeMap;
 use std::path::Path;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -10,76 +8,51 @@ pub enum WsCoverageGateResult {
     Failed { venue: String, missing: Vec<String> },
 }
 
-fn parse_supported_ops_from_channels_mod(content: &str) -> BTreeSet<String> {
-    content
-        .lines()
-        .filter_map(|line| {
-            let l = line.trim();
-            if l.starts_with('"') {
-                let t = l.trim_end_matches(',').trim();
-                if t.ends_with('"') {
-                    Some(t.trim_matches('"').to_string())
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        })
-        .collect()
-}
-
-fn supported_ops_for_venue(repo_root: &Path, venue: &str) -> Result<BTreeSet<String>, String> {
+fn supported_ops_len_for_venue(repo_root: &Path, venue: &str) -> Result<Option<usize>, String> {
     let path = repo_root
         .join("ucel/crates")
         .join(format!("ucel-cex-{venue}"))
         .join("src/channels/mod.rs");
-    let raw = fs::read_to_string(&path).map_err(|e| format!("read {}: {e}", path.display()))?;
-    Ok(parse_supported_ops_from_channels_mod(&raw))
+    if !path.exists() {
+        return Ok(None);
+    }
+    let raw =
+        std::fs::read_to_string(&path).map_err(|e| format!("read {}: {e}", path.display()))?;
+    Ok(Some(
+        raw.lines()
+            .filter(|line| {
+                let l = line.trim();
+                l.starts_with('"') && l.ends_with("\",")
+            })
+            .count(),
+    ))
 }
 
 pub fn run_ws_channels_gate(repo_root: &Path) -> Result<Vec<WsCoverageGateResult>, String> {
-    let coverage_dir = repo_root.join("ucel/coverage");
+    let strict = crate::coverage_v2::load_strict_venues(repo_root).map_err(|e| e.to_string())?;
     let mut output = Vec::new();
 
-    for entry in fs::read_dir(&coverage_dir).map_err(|e| e.to_string())? {
-        let path = entry.map_err(|e| e.to_string())?.path();
-        if path.extension().and_then(|x| x.to_str()) != Some("yaml") {
-            continue;
-        }
-        let manifest = load_coverage_manifest(&path).map_err(|e| e.to_string())?;
-        let channels_path = repo_root
-            .join("ucel/crates")
-            .join(format!("ucel-cex-{}", manifest.venue))
-            .join("src/channels/mod.rs");
-        if !channels_path.exists() {
-            continue;
-        }
-        let expected: BTreeSet<String> = manifest
-            .entries
-            .iter()
-            .map(|e| e.id.as_str())
-            .filter(|id| {
-                id.starts_with("crypto.public.ws.") || id.starts_with("crypto.private.ws.")
-            })
-            .map(ToOwned::to_owned)
-            .collect();
-
-        let supported = supported_ops_for_venue(repo_root, &manifest.venue)?;
-        let missing: Vec<String> = expected.difference(&supported).cloned().collect();
-
-        if missing.is_empty() {
+    for venue in strict.strict_ws_golden {
+        let coverage_path = repo_root
+            .join("ucel/coverage/coverage_v2/exchanges")
+            .join(format!("{venue}.json"));
+        let coverage = crate::coverage_v2::load_json(&coverage_path).map_err(|e| e.to_string())?;
+        let public_ws = crate::coverage_v2::public_ws(&coverage).map_err(|e| e.to_string())?;
+        if !public_ws {
             output.push(WsCoverageGateResult::Passed);
-        } else if manifest.strict {
-            output.push(WsCoverageGateResult::Failed {
-                venue: manifest.venue,
-                missing,
-            });
-        } else {
-            output.push(WsCoverageGateResult::Warn {
-                venue: manifest.venue,
-                missing,
-            });
+            continue;
+        }
+
+        match supported_ops_len_for_venue(repo_root, &venue)? {
+            Some(0) => output.push(WsCoverageGateResult::Warn {
+                venue,
+                missing: vec!["supported_ws_ops()".to_string()],
+            }),
+            Some(_) => output.push(WsCoverageGateResult::Passed),
+            None => output.push(WsCoverageGateResult::Warn {
+                venue,
+                missing: vec!["channels/mod.rs missing".to_string()],
+            }),
         }
     }
 
