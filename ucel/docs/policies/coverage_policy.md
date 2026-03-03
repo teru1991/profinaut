@@ -30,3 +30,6 @@ Domestic exchanges in scope:
 Each CEX crate must provide capability discoverability (e.g. `supported_ws_ops()`), and:
 - If `public.ws=true` in coverage_v2, the supported WS ops list must be non-empty unless the venue explicitly has no public ws ops.
 - Any mismatch must fail in CI.
+
+## Legacy note
+- coverage v1 is legacy and not used for CI gating.

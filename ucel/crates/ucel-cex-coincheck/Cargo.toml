@@ -16,5 +16,9 @@ ucel-core = { path = "../ucel-core" }
 ucel-transport = { path = "../ucel-transport" }
 uuid = { version = "1", features = ["v4"] }
 
+hmac = "0.13.0-rc.5"
+sha2 = "0.11.0-rc.5"
+hex = "0.4.3"
+
 [dev-dependencies]
 tracing-subscriber = { version = "0.3", features = ["fmt"] }

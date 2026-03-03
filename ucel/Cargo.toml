@@ -33,6 +33,7 @@ members = [
   "crates/ucel-subscription-store",
   "crates/ucel-journal",
   "crates/ucel-sdk",
+  "crates/ucel-execution-core",
   "crates/ucel-market-meta-catalog",
 ]
 resolver = "2"

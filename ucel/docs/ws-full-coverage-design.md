@@ -6,7 +6,7 @@
 
 ## Goal
 
-Using `ucel/coverage/*.yaml` as source of truth, subscribe to all `Public WS op_id × symbol` for all `ucel-cex-*` venues with:
+Using `ucel/coverage/coverage_v2/exchanges/*.json` as source of truth, subscribe to all `Public WS op_id × symbol` for all `ucel-cex-*` venues with:
 
 1. Durable subscription queue
 2. Raw WAL persistence
@@ -66,7 +66,7 @@ Effective strictness is `entry.strict.unwrap_or(manifest.strict)`; strict venues
 - Missing rule file -> `SupportLevel::Unknown` + `SafetyProfile::Conservative`.
 
 ### `ucel-subscription-planner`
-- Reads `coverage/*.yaml`.
+- Reads `coverage/coverage_v2/exchanges/*.json`.
 - Extracts WS op ids.
 - Builds `SubscriptionKey { exchange_id, op_id, symbol, params }`.
 - Produces shard plan and prioritized startup seed.

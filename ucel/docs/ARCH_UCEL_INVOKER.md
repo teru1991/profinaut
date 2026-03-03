@@ -3,7 +3,7 @@
 ## Audit summary
 - Invoker placement: `ucel-registry::invoker` to reuse catalog loading/validation and avoid cyclic deps.
 - Catalog SSOT: `docs/exchanges/<venue>/catalog.json` parsed via `ucel_registry::ExchangeCatalog`/`CatalogEntry`.
-- Coverage SSOT: `ucel/coverage/*.yaml` auto-discovered at runtime/tests.
+- Coverage SSOT: `ucel/coverage/coverage_v2/exchanges/*.json` auto-discovered at runtime/tests.
 
 ## Decision
 - **Registry strategy:** Provider-less dynamic discovery from coverage + catalog files (build-time fixed tableなし).

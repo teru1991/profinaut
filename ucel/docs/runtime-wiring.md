@@ -16,7 +16,7 @@
 
 ## SSOT map
 
-- Operation coverage: `ucel/coverage/*.yaml`
+- Operation coverage: `ucel/coverage/coverage_v2/exchanges/*.json`
 - Exchange catalogs: `docs/exchanges/*/catalog.json`
 - WS rules model: `ucel/crates/ucel-ws-rules`
 

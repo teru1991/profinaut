@@ -7,5 +7,7 @@ pub mod persistence;
 pub mod rest_worker;
 pub mod resync;
 pub mod resync_loop;
+pub mod snapshot;
+pub mod store_bridge;
 pub mod supervisor;
 pub mod ws_worker;

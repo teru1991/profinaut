@@ -1,11 +1,15 @@
-use std::{collections::HashMap, sync::Arc};
+use crate::snapshot::{fetch_snapshot, SnapshotError};
+use crate::store_bridge::{apply_snapshot_to_store, record_checkpoint_jsonl};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 use tokio::sync::{watch, Mutex};
 use ucel_symbol_adapter::ResyncHint;
+use ucel_symbol_store::SymbolStore;
 
 #[derive(Clone, Debug, Default)]
 pub struct ResyncCoordinatorState {
     pub last_error: Option<&'static str>,
     pub last_hint: Option<&'static str>,
+    pub last_store_version: Option<u64>,
 }
 
 type ExchangeId = String;
@@ -14,34 +18,53 @@ pub struct ResyncCoordinator {
     inner: Mutex<Inner>,
 }
 
+struct ExchangeResyncInput {
+    receiver: watch::Receiver<Option<ResyncHint>>,
+    snapshot_url: Option<String>,
+}
+
 struct Inner {
-    receivers: HashMap<ExchangeId, watch::Receiver<Option<ResyncHint>>>,
+    exchanges: HashMap<ExchangeId, ExchangeResyncInput>,
     state: ResyncCoordinatorState,
+    checkpoint_path: PathBuf,
+    store: Arc<SymbolStore>,
 }
 
 impl Default for ResyncCoordinator {
     fn default() -> Self {
-        Self::new()
+        Self::new(
+            Arc::new(SymbolStore::new()),
+            PathBuf::from("services/marketdata-rs/symbol-master/checkpoints.jsonl"),
+        )
     }
 }
 
 impl ResyncCoordinator {
-    pub fn new() -> Self {
+    pub fn new(store: Arc<SymbolStore>, checkpoint_path: PathBuf) -> Self {
         Self {
             inner: Mutex::new(Inner {
-                receivers: HashMap::new(),
+                exchanges: HashMap::new(),
                 state: ResyncCoordinatorState::default(),
+                checkpoint_path,
+                store,
             }),
         }
     }
 
-    pub async fn register_resync_receiver(
+    pub async fn register_exchange(
         &self,
         exchange_id: impl Into<String>,
         rx: watch::Receiver<Option<ResyncHint>>,
+        snapshot_url: Option<String>,
     ) {
         let mut g = self.inner.lock().await;
-        g.receivers.insert(exchange_id.into(), rx);
+        g.exchanges.insert(
+            exchange_id.into(),
+            ExchangeResyncInput {
+                receiver: rx,
+                snapshot_url,
+            },
+        );
     }
 
     pub async fn snapshot(&self) -> ResyncCoordinatorState {
@@ -50,23 +73,69 @@ impl ResyncCoordinator {
 
     pub async fn run(self: Arc<Self>) {
         loop {
+            let mut to_resync: Vec<(String, &'static str, Option<String>)> = Vec::new();
             {
                 let mut g = self.inner.lock().await;
-                let mut computed_hint: Option<&'static str> = None;
-                for rx in g.receivers.values_mut() {
-                    if rx.has_changed().unwrap_or(false) {
-                        let hint = rx.borrow_and_update().clone();
-                        computed_hint = match hint {
-                            Some(ResyncHint::Lagged { .. }) => Some("lagged"),
-                            Some(ResyncHint::Reset { .. }) => Some("reset"),
-                            None => computed_hint,
-                        };
+                let mut latest_hint: Option<&'static str> = None;
+                for (exchange_id, entry) in &mut g.exchanges {
+                    if entry.receiver.has_changed().unwrap_or(false) {
+                        let hint = entry.receiver.borrow_and_update().clone();
+                        if let Some(h) = hint {
+                            let hint_label = match h {
+                                ResyncHint::Lagged { .. } => "lagged",
+                                ResyncHint::Reset { .. } => "reset",
+                            };
+                            latest_hint = Some(hint_label);
+                            to_resync.push((
+                                exchange_id.clone(),
+                                hint_label,
+                                entry.snapshot_url.clone(),
+                            ));
+                        }
                     }
                 }
-                if computed_hint.is_some() {
-                    g.state.last_hint = computed_hint;
+                if latest_hint.is_some() {
+                    g.state.last_hint = latest_hint;
                 }
             }
+
+            for (exchange_id, _hint, snapshot_url) in to_resync {
+                let Some(url) = snapshot_url else {
+                    self.set_error("snapshot_url_missing").await;
+                    continue;
+                };
+
+                match fetch_snapshot(&exchange_id, &url).await {
+                    Ok(raw) => {
+                        let (store, checkpoint_path) = {
+                            let g = self.inner.lock().await;
+                            (g.store.clone(), g.checkpoint_path.clone())
+                        };
+                        match apply_snapshot_to_store(&store, &raw.exchange_id, &raw.body) {
+                            Ok(cp) => {
+                                if record_checkpoint_jsonl(&checkpoint_path, &raw.exchange_id, &cp)
+                                    .is_err()
+                                {
+                                    self.set_error("checkpoint_write_failed").await;
+                                } else {
+                                    {
+                                        let mut g = self.inner.lock().await;
+                                        g.state.last_store_version = Some(cp.store_version);
+                                    }
+                                    self.clear_error().await;
+                                }
+                            }
+                            Err(_) => self.set_error("store_apply_failed").await,
+                        }
+                    }
+                    Err(err) => match err {
+                        SnapshotError::MissingUrl => self.set_error("snapshot_url_missing").await,
+                        SnapshotError::Http(_) => self.set_error("snapshot_http_failed").await,
+                        SnapshotError::Json(_) => self.set_error("snapshot_json_failed").await,
+                    },
+                }
+            }
+
             tokio::time::sleep(std::time::Duration::from_millis(200)).await;
         }
     }
