@@ -3191,6 +3191,7 @@ dependencies = [
  "tracing-subscriber",
  "ucel-core",
  "ucel-symbol-core",
+ "ucel-testkit",
  "ucel-transport",
  "uuid",
 ]
@@ -3357,6 +3358,7 @@ dependencies = [
  "tracing-subscriber",
  "ucel-core",
  "ucel-symbol-core",
+ "ucel-testkit",
  "ucel-transport",
  "uuid",
 ]
@@ -3430,6 +3432,7 @@ dependencies = [
  "ucel-core",
  "ucel-market-meta-catalog",
  "ucel-symbol-core",
+ "ucel-testkit",
  "ucel-transport",
  "uuid",
 ]

@@ -15,3 +15,6 @@ tracing = { workspace = true }
 uuid = { version = "1", features = ["v4"] }
 ucel-core = { path = "../ucel-core" }
 ucel-transport = { path = "../ucel-transport" }
+
+[dev-dependencies]
+ucel-testkit = { path = "../ucel-testkit" }

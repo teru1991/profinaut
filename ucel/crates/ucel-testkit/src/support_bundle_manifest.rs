@@ -23,9 +23,7 @@ pub fn assert_no_denied_patterns(path: &str, bytes: &[u8], deny_patterns: &[Stri
     for pat in deny_patterns {
         assert!(
             !text.contains(pat),
-            "denied pattern found in {}: {}",
-            path,
-            pat
+            "denied pattern found in {path}: {pat}"
         );
     }
 }

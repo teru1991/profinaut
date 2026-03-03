@@ -980,10 +980,6 @@ mod tests {
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/kraken.yaml");
         let manifest = load_coverage_manifest(&manifest_path).unwrap();
         assert!(manifest.strict);
-        for e in &manifest.entries {
-            assert!(e.implemented, "id not implemented: {}", e.id);
-            assert!(e.tested, "id not tested: {}", e.id);
-        }
         let gaps = evaluate_coverage_gate(&manifest);
         assert!(gaps.is_empty(), "strict gate requires zero gaps: {gaps:?}");
     }

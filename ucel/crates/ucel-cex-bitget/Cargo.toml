@@ -21,3 +21,4 @@ ucel-transport = { path = "../ucel-transport" }
 
 [dev-dependencies]
 tracing-subscriber = { version = "0.3", features = ["fmt"] }
+ucel-testkit = { path = "../ucel-testkit" }

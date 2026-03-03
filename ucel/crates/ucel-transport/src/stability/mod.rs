@@ -70,11 +70,8 @@ impl StabilityHub {
                 outcome,
             } => {
                 info!(event_kind="OutqOverflowOutcome", exchange_id=%exchange_id, conn_id=%conn_id, outcome=?outcome);
-                self.metrics.inc_counter(
-                    "outq_overflow_total",
-                    &format!("outcome={outcome:?}"),
-                    1,
-                );
+                self.metrics
+                    .inc_counter("outq_overflow_total", &format!("outcome={outcome:?}"), 1);
             }
             TransportStabilityEvent::RlPenaltyApplied {
                 exchange_id,

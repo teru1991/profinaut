@@ -14,8 +14,8 @@ fn get_path<'a>(root: &'a serde_json::Value, path: &str) -> Option<&'a serde_jso
 
 #[test]
 fn generated_support_bundle_matches_manifest_requirements() {
-    let metrics = std::sync::Arc::new(TransportMetrics::new());
-    let events = std::sync::Arc::new(StabilityEventRing::new(16));
+    let metrics = TransportMetrics::new();
+    let events = StabilityEventRing::new(16);
     metrics.reconnect_attempts.fetch_add(1, Ordering::Relaxed);
 
     let bundle = build_support_bundle(SupportBundleInput {
