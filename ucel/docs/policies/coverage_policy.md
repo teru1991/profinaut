@@ -33,3 +33,7 @@ Each CEX crate must provide capability discoverability (e.g. `supported_ws_ops()
 
 ## Legacy note
 - coverage v1 is legacy and not used for CI gating.
+
+## Discoverability gate
+- If `public.ws=true` in coverage_v2 for a venue, `supported_ws_ops()` MUST NOT be empty for that venue implementation.
+- CI enforces this via `discoverability_coverage_v2_gate` and alignment checks in `coverage_gate`.

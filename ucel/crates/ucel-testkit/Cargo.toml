@@ -26,3 +26,4 @@ ucel-cex-gmocoin = { path = "../ucel-cex-gmocoin" }
 ucel-cex-bitbank = { path = "../ucel-cex-bitbank" }
 ucel-cex-bitflyer = { path = "../ucel-cex-bitflyer" }
 ucel-cex-coincheck = { path = "../ucel-cex-coincheck" }
+ucel-cex-deribit = { path = "../ucel-cex-deribit" }
