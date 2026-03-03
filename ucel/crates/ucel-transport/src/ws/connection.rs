@@ -12,7 +12,8 @@ use tracing::{info, warn};
 use ucel_journal::RawRecord;
 
 use crate::obs::{
-    span_required, ObsRequiredKeys, StabilityEvent, StabilityEventRing, TransportMetrics,
+    connection_span, info_with_ctx, warn_with_ctx, ObsRequiredKeys, StabilityEvent,
+    StabilityEventRing, TransportMetrics,
 };
 use crate::stability::events::{
     ConnState, ReconnectReason, ShutdownPhase, TransportStabilityEvent,
@@ -378,7 +379,11 @@ pub async fn run_ws_connection(
         "ws-run",
     )
     .map_err(|e| e.message)?;
-    let _obs_guard = span_required("ucel_ws_connection", &obs_required).entered();
+    let _obs_guard = connection_span(&obs_required).entered();
+    info_with_ctx(
+        &obs_required,
+        "ws connection observability context initialized",
+    );
 
     let mut reconnect_attempt: u32 = 0;
     let mut reconnect_times: VecDeque<Instant> = VecDeque::new();
@@ -739,6 +744,7 @@ pub async fn run_ws_connection(
                     }
                 }
                 warn!(exchange_id=%cfg.exchange_id, conn=%cfg.conn_id, "idle timeout -> reconnect");
+                warn_with_ctx(&obs_required, "idle_timeout", "idle timeout -> reconnect");
                 stability.emit(TransportStabilityEvent::ReconnectAttempt {
                     exchange_id: cfg.exchange_id.clone(),
                     conn_id: cfg.conn_id.clone(),

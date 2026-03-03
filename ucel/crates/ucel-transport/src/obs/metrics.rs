@@ -137,3 +137,32 @@ impl TransportMetrics {
         }
     }
 }
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct ObsSnapshot {
+    pub ucel_ws_reconnect_total: u64,
+    pub ucel_ws_frames_total: u64,
+    pub ucel_ws_decode_errors_total: u64,
+    pub ucel_ws_queue_depth: i64,
+    pub ucel_ws_wal_write_latency_ms: i64,
+    pub ucel_ws_throttle_events_total: u64,
+    pub ucel_ws_circuit_open_total: u64,
+    pub ucel_ws_dropped_frames_total: u64,
+}
+
+impl TransportMetrics {
+    pub fn snapshot(&self) -> ObsSnapshot {
+        use std::sync::atomic::Ordering;
+        ObsSnapshot {
+            ucel_ws_reconnect_total: self.reconnect_attempts.load(Ordering::Relaxed),
+            ucel_ws_frames_total: self.inbound_frames.load(Ordering::Relaxed)
+                + self.outbound_frames.load(Ordering::Relaxed),
+            ucel_ws_decode_errors_total: self.decode_error.load(Ordering::Relaxed),
+            ucel_ws_queue_depth: self.outq_len.load(Ordering::Relaxed),
+            ucel_ws_wal_write_latency_ms: self.wal_write_latency_ms_last.load(Ordering::Relaxed),
+            ucel_ws_throttle_events_total: self.rl_penalty_applied.load(Ordering::Relaxed),
+            ucel_ws_circuit_open_total: self.breaker_open.load(Ordering::Relaxed),
+            ucel_ws_dropped_frames_total: self.outq_dropped.load(Ordering::Relaxed),
+        }
+    }
+}

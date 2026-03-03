@@ -7,6 +7,7 @@ pub mod obs;
 pub mod security;
 
 pub mod diagnostics;
+pub mod support_bundle;
 
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};

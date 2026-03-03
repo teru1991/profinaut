@@ -1165,6 +1165,27 @@
       "verification_evidence": [
         "docs/verification/UCEL-100P-STEP5-TRANSPORT-RESILIENCE-001.md"
       ]
+    },
+    "UCEL-100P-STEP6-SUPPORTABILITY-Y-OBS-001": {
+      "branch": "feature/ucel-100p-step6-supportability-y-obs-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/specs/ucel/observability_spec_v1.md",
+        "docs/specs/ucel/support_bundle_spec_v1.md",
+        "ucel/crates/ucel-transport/src/obs/mod.rs",
+        "ucel/crates/ucel-transport/src/obs/logging.rs",
+        "ucel/crates/ucel-transport/src/obs/metrics.rs",
+        "ucel/crates/ucel-transport/src/obs/trace.rs",
+        "ucel/crates/ucel-transport/src/support_bundle.rs",
+        "ucel/crates/ucel-registry/src/support_bundle.rs",
+        "ucel/crates/ucel-sdk/src/support_bundle.rs",
+        "ucel/crates/ucel-testkit/tests/support_bundle_redaction.rs",
+        "docs/verification/UCEL-100P-STEP6-SUPPORTABILITY-Y-OBS-001.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-100P-STEP6-SUPPORTABILITY-Y-OBS-001.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

@@ -11,6 +11,7 @@ pub mod error;
 pub mod market_meta;
 pub mod order_normalize;
 pub mod sdk;
+pub mod support_bundle;
 pub mod secrets;
 
 pub use ucel_core;
