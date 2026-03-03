@@ -1,0 +1,20 @@
+{
+  "exchange": "binance-options",
+  "public": {
+    "rest": true,
+    "ws": true
+  },
+  "private": {
+    "enabled": true
+  },
+  "ws_ops": [
+    "options.public.ws.trade",
+    "options.public.ws.ticker",
+    "options.public.ws.kline",
+    "options.public.ws.depth",
+    "options.public.ws.markprice",
+    "options.public.ws.indexprice",
+    "options.data.ws.market"
+  ],
+  "source": "ucel/coverage/binance-options.yaml"
+}

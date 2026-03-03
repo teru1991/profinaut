@@ -1,0 +1,17 @@
+{
+  "exchange": "coincheck",
+  "public": {
+    "rest": true,
+    "ws": true
+  },
+  "private": {
+    "enabled": true
+  },
+  "ws_ops": [
+    "coincheck.ws.public.trades",
+    "coincheck.ws.public.orderbook",
+    "coincheck.ws.private.order_events",
+    "coincheck.ws.private.execution_events"
+  ],
+  "source": "ucel/coverage/coincheck.yaml"
+}

@@ -9,6 +9,7 @@ ucel-transport = { path = "../ucel-transport" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
+thiserror.workspace = true
 ucel-registry = { path = "../ucel-registry" }
 ucel-cex-binance = { path = "../ucel-cex-binance" }
 ucel-subscription-planner = { path = "../ucel-subscription-planner" }

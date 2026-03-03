@@ -1,0 +1,16 @@
+{
+  "exchange": "sbivc",
+  "public": {
+    "rest": true,
+    "ws": true
+  },
+  "private": {
+    "enabled": false
+  },
+  "ws_ops": [
+    "crypto.public.ws.market_data.ticker",
+    "crypto.public.ws.market_data.trades",
+    "crypto.public.ws.market_data.orderbook"
+  ],
+  "source": "ucel/coverage/sbivc.yaml"
+}

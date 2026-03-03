@@ -1,0 +1,14 @@
+{
+  "exchange": "bitget",
+  "public": {
+    "rest": true,
+    "ws": true
+  },
+  "private": {
+    "enabled": false
+  },
+  "ws_ops": [
+    "other.public.ws.nav.blocked"
+  ],
+  "source": "ucel/coverage/bitget.yaml"
+}

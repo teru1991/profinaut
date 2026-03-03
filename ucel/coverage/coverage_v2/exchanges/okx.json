@@ -1,0 +1,16 @@
+{
+  "exchange": "okx",
+  "public": {
+    "rest": true,
+    "ws": true
+  },
+  "private": {
+    "enabled": false
+  },
+  "ws_ops": [
+    "okx.ws.overview",
+    "okx.ws.public",
+    "okx.ws.private"
+  ],
+  "source": "ucel/coverage/okx.yaml"
+}
