@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "required_paths": [
+    "version",
+    "exchange_id",
+    "conn_id",
+    "health",
+    "metrics",
+    "events_tail",
+    "rules_snapshot",
+    "observability.metrics_prometheus_text",
+    "observability.events_json",
+    "manifest"
+  ],
+  "deny_patterns": [
+    "AKIA",
+    "BEGIN PRIVATE KEY",
+    "Authorization: Bearer ",
+    "X-Api-Key",
+    "SECRET",
+    "TOKEN",
+    "API_KEY",
+    "api_key",
+    "api_secret"
+  ]
+}

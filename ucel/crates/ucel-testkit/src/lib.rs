@@ -4,11 +4,13 @@ pub mod fixtures;
 pub mod fuzz;
 pub mod fuzz_corpus;
 pub mod golden;
+pub mod golden_manifest;
 pub mod normalize;
 pub mod okx;
 pub mod ssot_gate;
 pub mod ssot_integrity_gate;
 pub mod ssot_integrity_gate_types;
+pub mod support_bundle_manifest;
 pub mod ws_coverage_gate;
 
 use serde::{Deserialize, Serialize};

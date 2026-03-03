@@ -1,0 +1,7 @@
+{
+  "endpoint_id": "stub.ws.trade",
+  "payload": {
+    "venue": "bittrade",
+    "note": "golden stub"
+  }
+}

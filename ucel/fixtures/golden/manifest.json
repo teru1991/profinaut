@@ -1,0 +1,316 @@
+{
+  "version": 1,
+  "generated_at": "2026-03-03T06:05:38.080362+00:00",
+  "files": [
+    {
+      "path": "ws/binance/expected.normalized.json",
+      "sha256": "09b6138ca59891dfd5826a4f26b950cd2ee07936e226df3ab6edae705ebd6f33",
+      "bytes": 43
+    },
+    {
+      "path": "ws/binance/raw.json",
+      "sha256": "788b05d06d3856366c9b7df81050c00e6a927b7a59361f38792f5adcfc5e7cf0",
+      "bytes": 107
+    },
+    {
+      "path": "ws/binance/stub.json",
+      "sha256": "897c1ca57fde254b88e6276ea6b440724fe66ffe1130da321c3c0604891f5573",
+      "bytes": 178
+    },
+    {
+      "path": "ws/binance-coinm/expected.normalized.json",
+      "sha256": "4a8a4ab36d13c3b15f317411ae63d01729c4b009c5c3447eab79e6bf1ef02f86",
+      "bytes": 49
+    },
+    {
+      "path": "ws/binance-coinm/raw.json",
+      "sha256": "e9aaa0b696eba862cafa227af314b011e6ea4394436f87c4b89a3d5de4b5c33f",
+      "bytes": 113
+    },
+    {
+      "path": "ws/binance-coinm/stub.json",
+      "sha256": "f84dfbe49be61cbe464af340129303449a8e84ebfdc113e8a40f82413c649fdd",
+      "bytes": 184
+    },
+    {
+      "path": "ws/binance-options/expected.normalized.json",
+      "sha256": "3107a5c5015ce9404d95981d16063c64bf1e17a79e2b4c4c9437efc9752500a7",
+      "bytes": 51
+    },
+    {
+      "path": "ws/binance-options/raw.json",
+      "sha256": "7829385cffab993cb2b6de2a8ced03f211d577ae97157c3384dee7273b24c395",
+      "bytes": 115
+    },
+    {
+      "path": "ws/binance-options/stub.json",
+      "sha256": "71e3141f0eddd8bf1c8464924fd94b6925b38e2ab7094d37135d69683cea666b",
+      "bytes": 186
+    },
+    {
+      "path": "ws/binance-usdm/expected.normalized.json",
+      "sha256": "941383d2ff9086c00cc9a05518ffa35908e999251f2f992666d08a3e25f9374a",
+      "bytes": 48
+    },
+    {
+      "path": "ws/binance-usdm/raw.json",
+      "sha256": "9f35ccfbbcd3846c7748ad206eadb0d4379a5b43a2502385d6e46b1c25b30a1e",
+      "bytes": 112
+    },
+    {
+      "path": "ws/binance-usdm/stub.json",
+      "sha256": "0a9419fe6a683d1a11ea9b0fc3cf9250385e49f96e8c7eaf8faf181571b117b3",
+      "bytes": 183
+    },
+    {
+      "path": "ws/bitbank/expected.normalized.json",
+      "sha256": "26130aa0ab1b9d2f0543ba323b2d128dae13ea646503c6ef24b04ebf2138d9f3",
+      "bytes": 43
+    },
+    {
+      "path": "ws/bitbank/raw.json",
+      "sha256": "e078f77b667d03d77b05e8004fdea0637175539cf98f6d6bc07fa9f948757110",
+      "bytes": 107
+    },
+    {
+      "path": "ws/bitbank/stub.json",
+      "sha256": "b1fc2dde53ebeebdf28b568ed23e845ab790c590eea22a01226a991fe2378758",
+      "bytes": 178
+    },
+    {
+      "path": "ws/bitflyer/expected.normalized.json",
+      "sha256": "cf93ce88ff3cf86103368c4b600a51e6c2f196fcd461f6051ea4af7724cc4d5f",
+      "bytes": 44
+    },
+    {
+      "path": "ws/bitflyer/raw.json",
+      "sha256": "1a665837330d3556d248c39ee89d184a41ae1e68a840aaa1f54811fa55661306",
+      "bytes": 108
+    },
+    {
+      "path": "ws/bitflyer/stub.json",
+      "sha256": "5314be590f356a630fc28853bc3b4a989ad6f8eb3b1ccde58ca690429962ef0e",
+      "bytes": 179
+    },
+    {
+      "path": "ws/bitget/expected.normalized.json",
+      "sha256": "5af044f6204c4626c1feb960c8bcc81eaa041ea9486ee76bae5e9c693c21252f",
+      "bytes": 42
+    },
+    {
+      "path": "ws/bitget/raw.json",
+      "sha256": "4310dca8a84b799e361fff461424be1b8423e643555355216f5272a69e383838",
+      "bytes": 106
+    },
+    {
+      "path": "ws/bitget/stub.json",
+      "sha256": "de75643c22702679d13155499dcbc4a9e1e2d31f99a67d508cd57ed294d8f6fe",
+      "bytes": 177
+    },
+    {
+      "path": "ws/bithumb/expected.normalized.json",
+      "sha256": "aed8603a692f1250e79c989512ac874aa1b156923ac0b2abf7e9701d259a69ad",
+      "bytes": 112
+    },
+    {
+      "path": "ws/bithumb/raw.json",
+      "sha256": "cbcba60e2a6f2d5a67d6b916612b111c5378bd98fc19aa1f4f9e15b946dde317",
+      "bytes": 125
+    },
+    {
+      "path": "ws/bithumb/ticker_snapshot/expected.normalized.json",
+      "sha256": "bfca494edd54a4e641b39eccc4ecbdf8a98871eaaa7e8a03370e0c29096f8b61",
+      "bytes": 91
+    },
+    {
+      "path": "ws/bithumb/ticker_snapshot/raw.json",
+      "sha256": "da2e58c2b382d6d9f559bfac655f39f925e5d7db671e871125b079e38c2e5ffe",
+      "bytes": 240
+    },
+    {
+      "path": "ws/bithumb/trade_snapshot/expected.normalized.json",
+      "sha256": "aed8603a692f1250e79c989512ac874aa1b156923ac0b2abf7e9701d259a69ad",
+      "bytes": 112
+    },
+    {
+      "path": "ws/bithumb/trade_snapshot/raw.json",
+      "sha256": "0597e3d69055b440654703330d2c1ed746803048933a30826654b630906116f2",
+      "bytes": 255
+    },
+    {
+      "path": "ws/bitmex/expected.normalized.json",
+      "sha256": "5835c0d3fdac4720d31b0c09ddc5ff6e4e6b11dbdced2f9430d370579635fcaa",
+      "bytes": 42
+    },
+    {
+      "path": "ws/bitmex/raw.json",
+      "sha256": "d14b7b8770f09733a5d548365e0441f7484f47b86524dd65ab71f2d1b3480d9d",
+      "bytes": 106
+    },
+    {
+      "path": "ws/bitmex/stub.json",
+      "sha256": "f377f20416f26c09a856005349bcc6509682c04f21405454a31d2ad6997ff10b",
+      "bytes": 177
+    },
+    {
+      "path": "ws/bittrade/expected.normalized.json",
+      "sha256": "8f30fb1c4bc4a1df506a10d0b584f172568136a919c1efd41a10d2dfe228cfb8",
+      "bytes": 44
+    },
+    {
+      "path": "ws/bittrade/raw.json",
+      "sha256": "c5e15c91ce08cae4ca67d7f0cfae6991f8b2dd56c5ce59d1b376908df0da8d20",
+      "bytes": 108
+    },
+    {
+      "path": "ws/bittrade/stub.json",
+      "sha256": "6c37d677ab857e143a3de152a693c15e1dbdbc84f93acd65760a6bd7652e15bf",
+      "bytes": 179
+    },
+    {
+      "path": "ws/bybit/expected.normalized.json",
+      "sha256": "e687356e3d4e81739ed3ff61e8cce23ea185fe3a7bf2ec087104adb49e8a7f46",
+      "bytes": 128
+    },
+    {
+      "path": "ws/bybit/raw.json",
+      "sha256": "8946d67e51586eb423e5aede4aecc453df36681dc6c2f138746fe6d6d7434509",
+      "bytes": 121
+    },
+    {
+      "path": "ws/coinbase/expected.normalized.json",
+      "sha256": "6d3bc303d46cf9ca924cdd5d9a5c4dffd9153743435d5adc0c0848f66ef30d8f",
+      "bytes": 44
+    },
+    {
+      "path": "ws/coinbase/raw.json",
+      "sha256": "e6a7f2ce2f44244f7b239cce8e350c5af1ba6efa0e4c33a1b8414a8d0cdfabc7",
+      "bytes": 108
+    },
+    {
+      "path": "ws/coinbase/stub.json",
+      "sha256": "196b67eef1f43a1eaa0015983adfc80cef0fe8badc43f67256b8a8d09a17652c",
+      "bytes": 179
+    },
+    {
+      "path": "ws/coincheck/expected.normalized.json",
+      "sha256": "ce0f55190d3ab5253f0089ab323ec0de207d3280c9443319236b0f149c465205",
+      "bytes": 45
+    },
+    {
+      "path": "ws/coincheck/raw.json",
+      "sha256": "bfa497c5989a5d14db417053b79ef1e6300d253a454eafd86e8a33d986674096",
+      "bytes": 109
+    },
+    {
+      "path": "ws/coincheck/stub.json",
+      "sha256": "1d5ef2d2d667cac58afb53f740b98d9eeb74b6724188eaa540622bceb6ca0530",
+      "bytes": 180
+    },
+    {
+      "path": "ws/deribit/expected.normalized.json",
+      "sha256": "38e1fe791229c24316bda8806998bfc4f664e9543dfae724a3defe32fc7d6e5d",
+      "bytes": 117
+    },
+    {
+      "path": "ws/deribit/raw.json",
+      "sha256": "36af3c1410fb03c079988e799e3569b2ffe6f8cf7eac430012bb2520d69a0fed",
+      "bytes": 112
+    },
+    {
+      "path": "ws/deribit/stub.json",
+      "sha256": "4e5223fa3909b963e36fe14e9d1142d673faf8af2abdf2b77a9fc205aa051b4f",
+      "bytes": 178
+    },
+    {
+      "path": "ws/gmocoin/expected.normalized.json",
+      "sha256": "2885dc071d1975ba97b33c1d0d268d5414acd1765bfc7ec38c9e19a13f71b874",
+      "bytes": 43
+    },
+    {
+      "path": "ws/gmocoin/raw.json",
+      "sha256": "90990d899ad14dd143f4c9a3997bc792733cdf0b4a52109c9920c216c7f4feef",
+      "bytes": 107
+    },
+    {
+      "path": "ws/gmocoin/stub.json",
+      "sha256": "ba42a1775d2f7f75723221766d5b0fdea6a392ef613158dc41951c9d96c65a18",
+      "bytes": 178
+    },
+    {
+      "path": "ws/htx/expected.normalized.json",
+      "sha256": "8797d8ec37154580d8c2151e14f015b520ff04cb2d87957c35bdf7be9d154b03",
+      "bytes": 39
+    },
+    {
+      "path": "ws/htx/raw.json",
+      "sha256": "863b009952c6326cb4863f8e332b8e91b50739fb44c25b99a3cea72142c372d0",
+      "bytes": 103
+    },
+    {
+      "path": "ws/htx/stub.json",
+      "sha256": "684f374e496e25b75a3351b23ac1d68911bca8bf7d4644a9ab5c295ffefb1700",
+      "bytes": 174
+    },
+    {
+      "path": "ws/kraken/expected.normalized.json",
+      "sha256": "8f2729ca005112aef996c75ccc92dd3f891df55996ec051565d1535ada69c9c4",
+      "bytes": 42
+    },
+    {
+      "path": "ws/kraken/raw.json",
+      "sha256": "c522372808b2ee2fe5754c773f9259314481706daa2eb3993f301d8a8c72b5f7",
+      "bytes": 106
+    },
+    {
+      "path": "ws/kraken/stub.json",
+      "sha256": "8453cc6d191b6d1818357ef4035ca9440fdbb630e3d3e90e4ff447fbef45cdc9",
+      "bytes": 177
+    },
+    {
+      "path": "ws/okx/expected.normalized.json",
+      "sha256": "5ecc6a15f988a1f6ac5b8e7b1b28aa36d46db23271fe28b02c14276d76cec988",
+      "bytes": 39
+    },
+    {
+      "path": "ws/okx/raw.json",
+      "sha256": "27de440cf02395e2164b643ca8dd835c1098b2459734a591fe4b51ed202063a0",
+      "bytes": 103
+    },
+    {
+      "path": "ws/okx/stub.json",
+      "sha256": "455158e61be9675af148371a23e48ba1de31f0ebea0e3da6bf4e06c3413694d5",
+      "bytes": 174
+    },
+    {
+      "path": "ws/sbivc/expected.normalized.json",
+      "sha256": "7d76579c1965903a2ac499ee857dc4779193d5759a63722bd61dc6c258d6d09f",
+      "bytes": 115
+    },
+    {
+      "path": "ws/sbivc/raw.json",
+      "sha256": "4fa5844e364d5133a5a8d4dbaa3bb7a9d5162770964ad495a839b66022e12f45",
+      "bytes": 110
+    },
+    {
+      "path": "ws/sbivc/stub.json",
+      "sha256": "1f35fdd933baef1c1ea901546e6e92011a3b1367ecb03b6842f22d8c9def8b32",
+      "bytes": 176
+    },
+    {
+      "path": "ws/upbit/expected.normalized.json",
+      "sha256": "0cd1329ecc4fe31ae6c8a1fe22fd5d1e123c835b35519ffe50fa0c2772e0193c",
+      "bytes": 41
+    },
+    {
+      "path": "ws/upbit/raw.json",
+      "sha256": "fe55b95dff1d9bf5e741423bd205273589fa4ede31752198473904ecf341bef6",
+      "bytes": 105
+    },
+    {
+      "path": "ws/upbit/stub.json",
+      "sha256": "a38ebb3c36039c013f9f5a9471837ac38f803b34bb9be22fb9125bc86a2f0b1c",
+      "bytes": 176
+    }
+  ]
+}

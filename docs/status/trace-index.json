@@ -1285,6 +1285,29 @@
       "verification_evidence": [
         "docs/verification/UCEL-H-100-001.md"
       ]
+    },
+    "UCEL-TY-100-001": {
+      "branch": "feature/ucel-ty-100-001",
+      "artifacts": [
+        "ucel/crates/ucel-testkit/Cargo.toml",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/src/golden_manifest.rs",
+        "ucel/crates/ucel-testkit/src/support_bundle_manifest.rs",
+        "ucel/crates/ucel-testkit/tests/strict_golden_manifest_gate.rs",
+        "ucel/crates/ucel-testkit/tests/support_bundle_manifest_gate.rs",
+        "ucel/crates/ucel-transport/src/diagnostics/support_bundle.rs",
+        "ucel/crates/ucel-transport/tests/support_bundle_manifest.rs",
+        "ucel/fixtures/golden/manifest.json",
+        "ucel/fixtures/support_bundle/manifest.json",
+        "scripts/ucel/update_golden_manifest.py",
+        "scripts/ucel/update_support_bundle_manifest.py",
+        "docs/specs/ucel/ty_100_definition_spec_v1.md",
+        "docs/verification/UCEL-TY-100-001.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-TY-100-001.md"
+      ],
+      "notes": "Adds golden/support-bundle manifests and strict PR gates for structural, redaction, and reproducibility checks."
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

@@ -1,0 +1,7 @@
+{
+  "endpoint_id": "stub.ws.trade",
+  "payload": {
+    "venue": "binance-options",
+    "note": "golden stub"
+  }
+}
