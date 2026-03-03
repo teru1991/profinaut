@@ -11,6 +11,13 @@ pub struct SupportBundleInput {
     pub rules_snapshot: serde_json::Value,
 }
 
+fn support_bundle_manifest() -> serde_json::Value {
+    serde_json::from_str(include_str!(
+        "../../../../fixtures/support_bundle/manifest.json"
+    ))
+    .expect("parse support bundle fixture manifest")
+}
+
 pub fn build_support_bundle(input: SupportBundleInput) -> serde_json::Value {
     let events_tail = input.events.snapshot();
     let events_text = serde_json::to_string(&events_tail).unwrap_or_else(|_| "[]".to_string());
@@ -49,6 +56,7 @@ pub fn build_support_bundle(input: SupportBundleInput) -> serde_json::Value {
         "observability": {
             "metrics_prometheus_text": metrics_prom,
             "events_json": events_text
-        }
+        },
+        "manifest": support_bundle_manifest()
     })
 }

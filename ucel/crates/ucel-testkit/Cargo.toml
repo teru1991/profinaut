@@ -16,3 +16,4 @@ ucel-sdk = { path = "../ucel-sdk" }
 
 ucel-cex-bybit = { path = "../ucel-cex-bybit" }
 ucel-cex-bithumb = { path = "../ucel-cex-bithumb" }
+sha2 = "0.10"
