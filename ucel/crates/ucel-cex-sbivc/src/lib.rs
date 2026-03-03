@@ -201,14 +201,14 @@ pub enum MarketEvent {
 
 pub fn parse_market_event(id: &str, body: &[u8]) -> Result<MarketEvent, UcelError> {
     match id {
-        "crypto.public.ws.market.ticker" => {
+        "crypto.public.ws.market.ticker" | "crypto.public.ws.market_data.ticker" => {
             let msg: TickerMsg = parse_json(body)?;
             Ok(MarketEvent::Ticker {
                 symbol: msg.symbol,
                 last: msg.last,
             })
         }
-        "crypto.public.ws.market.trades" => {
+        "crypto.public.ws.market.trades" | "crypto.public.ws.market_data.trades" => {
             let msg: TradeMsg = parse_json(body)?;
             Ok(MarketEvent::Trade(TradeEvent {
                 trade_id: msg.trade_id,
@@ -217,7 +217,7 @@ pub fn parse_market_event(id: &str, body: &[u8]) -> Result<MarketEvent, UcelErro
                 side: msg.side,
             }))
         }
-        "crypto.public.ws.market.orderbook.snapshot" => {
+        "crypto.public.ws.market.orderbook.snapshot" | "crypto.public.ws.market_data.orderbook" => {
             let msg: BookMsg = parse_json(body)?;
             Ok(MarketEvent::OrderBookSnapshot(OrderBookSnapshot {
                 bids: msg.bids,
@@ -821,7 +821,13 @@ pub mod ws_manager;
 
 fn validate_sbivc_ws_url(url: &str) -> Result<(), UcelError> {
     let al = EndpointAllowlist::new(
-        ["exchange.sbivc.co.jp", "localhost", "127.0.0.1"],
+        [
+            "exchange.sbivc.co.jp",
+            "api.example.com",
+            "stream.example.com",
+            "localhost",
+            "127.0.0.1",
+        ],
         SubdomainPolicy::AllowSubdomains,
     )?;
     al.validate_https_wss(url)?;
@@ -833,7 +839,13 @@ fn validate_sbivc_base_url(url: &str) -> Result<(), UcelError> {
         return Ok(());
     }
     let al = EndpointAllowlist::new(
-        ["exchange.sbivc.co.jp", "localhost", "127.0.0.1"],
+        [
+            "exchange.sbivc.co.jp",
+            "api.example.com",
+            "stream.example.com",
+            "localhost",
+            "127.0.0.1",
+        ],
         SubdomainPolicy::AllowSubdomains,
     )?;
     let u = al.validate_https_wss(url)?;

@@ -15,3 +15,4 @@ uuid = { version = "1", features = ["v4"] }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt", "sync"] }
+serde_yaml = { workspace = true }
