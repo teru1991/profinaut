@@ -1,0 +1,9 @@
+version=obs.metrics_catalog.v1
+profinaut_build_info|gauge|info|service,version,git_sha|Build and version information (constant 1).
+profinaut_uptime_seconds|gauge|seconds|service|Process uptime in seconds.
+profinaut_health_status|gauge|state|service,status|Health state one-hot gauge by status label.
+profinaut_capabilities_present|gauge|bool|service|Capabilities endpoint present and contract-valid (1=yes).
+profinaut_http_requests_total|counter|total|service,op,method,status_class|Total HTTP requests.
+profinaut_http_request_duration_seconds|histogram|seconds|service,op,method|HTTP request duration in seconds.
+profinaut_execution_orders_total|counter|total|service,result|Execution orders observed/processed (result fixed set).
+profinaut_marketdata_frames_total|counter|total|service,venue,result|Marketdata frames processed (venue fixed set; symbol forbidden).

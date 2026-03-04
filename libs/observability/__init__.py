@@ -3,6 +3,7 @@ from .core import (
     error_envelope,
     extract_request_id,
     request_id_middleware,
+    obs_emit,
 )
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "error_envelope",
     "extract_request_id",
     "request_id_middleware",
+    "obs_emit",
 ]
