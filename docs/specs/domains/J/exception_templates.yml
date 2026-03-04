@@ -1,0 +1,13 @@
+schema_version: 1
+
+break_glass:
+  max_ttl_sec: 600
+  require_actor: true
+  require_reason: true
+  require_evidence: true
+
+suppress:
+  max_ttl_sec: 300
+  require_actor: true
+  require_reason: true
+  require_evidence: true

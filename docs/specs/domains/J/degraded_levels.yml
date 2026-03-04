@@ -1,0 +1,27 @@
+schema_version: 1
+
+levels:
+  - name: "HALT"
+    triggers_all:
+      - "audit.chain_broken"
+    reason_code: "J_POLICY_HALT_AUDIT_CHAIN_BROKEN"
+
+  - name: "CANCEL_ONLY"
+    triggers_all:
+      - "deps.slo_breach"
+    reason_code: "J_POLICY_CANCEL_ONLY_DEGRADED"
+
+  - name: "CANCEL_ONLY"
+    triggers_all:
+      - "metrics.missing_required"
+    reason_code: "J_POLICY_CANCEL_ONLY_DEGRADED"
+
+  - name: "HALT"
+    triggers_all:
+      - "inputs.unknown"
+    reason_code: "J_POLICY_DENY_UNKNOWN_INPUT"
+
+  - name: "HALT"
+    triggers_all:
+      - "inputs.missing_required"
+    reason_code: "J_POLICY_DENY_MISSING_REQUIRED_INPUT"

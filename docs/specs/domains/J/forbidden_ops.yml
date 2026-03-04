@@ -1,0 +1,14 @@
+schema_version: 1
+
+forbidden:
+  - op: "live_send_new_order"
+    reason_code: "J_POLICY_DENY_FORBIDDEN_OP"
+    note: "By default, new live orders are forbidden unless explicitly allowed via mode/exception workflow."
+
+  - op: "set_mode"
+    reason_code: "J_POLICY_DENY_FORBIDDEN_OP"
+    note: "Mode changes must be mediated by safety controller; direct mode set is restricted."
+
+  - op: "treasury_transfer_approve"
+    reason_code: "J_POLICY_DENY_FORBIDDEN_OP"
+    note: "Treasury approvals require dedicated Treasury workflow; direct approve may be forbidden unless admin in non-quiet hours."
