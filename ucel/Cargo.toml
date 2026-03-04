@@ -36,6 +36,8 @@ members = [
   "crates/ucel-execution-core",
   "crates/ucel-market-meta-catalog",
   "crates/ucel-diagnostics-core",
+  "crates/ucel-diagnostics-analyzer",
+  "crates/ucel-diagnostics-cli",
 ]
 resolver = "2"
 default-members = ["crates/ucel-registry"]
@@ -53,3 +55,12 @@ tokio = { version = "1", features = ["sync", "rt"] }
 bytes = { version = "1", features = ["serde"] }
 rust_decimal = { version = "1", features = ["serde-with-float"] }
 semver = { version = "1", features = ["serde"] }
+clap = { version = "4", features = ["derive"] }
+time = { version = "0.3", features = ["formatting", "serde"] }
+sha2 = "0.10"
+hex = "0.4"
+base64 = "0.22"
+rand = "0.8"
+uuid = { version = "1", features = ["v4", "serde"] }
+chacha20poly1305 = { version = "0.10", features = ["alloc"] }
+tempfile = "3"

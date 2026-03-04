@@ -1,0 +1,13 @@
+{
+  "diag_semver": "1.0.0",
+  "file_count": 3,
+  "top_paths": [
+    "logs/tail.txt",
+    "meta/diag_semver.txt",
+    "meta/info.json"
+  ],
+  "extracted_signals": {
+    "diag_semver_txt": "1.0.0",
+    "meta_info_k": "v"
+  }
+}
