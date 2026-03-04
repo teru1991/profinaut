@@ -7,6 +7,7 @@ This directory defines the contract entrypoint for C-domain observability respon
 - `docs/contracts/observability/correlation.schema.json`
 - `docs/contracts/observability/healthz.schema.json`
 - `docs/contracts/observability/capabilities.schema.json`
+- `docs/contracts/observability/log_event.schema.json`
 
 ## Versioning rules
 
@@ -23,3 +24,10 @@ This directory defines the contract entrypoint for C-domain observability respon
 ## Policy linkage
 
 - Capability/health payloads should avoid sensitive keys and align with `docs/policy/forbidden_keys.toml`.
+
+## Structured logging contract (C-2)
+
+- Structured logs MUST conform to `docs/contracts/observability/log_event.schema.json`.
+- Required keys: `schema_version`, `ts`, `level`, `msg`, `logger`, `service`, `op`, `run_id`, `instance_id`.
+- In STRICT mode (`PROFINAUT_OBS_LOG_STRICT=1`), missing required keys are treated as errors in tests/CI.
+- Forbidden keys from `docs/policy/forbidden_keys.toml` are masked in log `fields` payloads.

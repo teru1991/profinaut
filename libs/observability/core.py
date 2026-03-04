@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-import json
 import logging
 import uuid
 import contextvars
-from datetime import UTC, datetime
 from typing import Any, Callable
 
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
+
+from libs.observability.logging import build_log_event, emit_json
 
 LOGGER = logging.getLogger("observability")
 SENSITIVE_KEYS = {"api_key", "apikey", "secret", "token", "password", "passphrase"}
@@ -74,12 +74,48 @@ def _inject_correlation_fields(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def audit_event(*, service: str, event: str, request_id: str | None = None, **fields: Any) -> None:
-    payload = {
-        "ts_utc": datetime.now(UTC).isoformat(),
-        "service": service,
-        "event": event,
-        "request_id": request_id,
-        **_redact(fields),
-    }
-    payload = _inject_correlation_fields(payload)
-    LOGGER.info(json.dumps(payload, ensure_ascii=False))
+    correlation = get_request_correlation_context() or {}
+    if request_id and "run_id" not in correlation:
+        correlation = {**correlation, "run_id": request_id}
+
+    payload_fields = {"request_id": request_id, **_redact(fields)}
+    payload_fields = _inject_correlation_fields(payload_fields)
+    payload_fields.pop("run_id", None)
+    payload_fields.pop("instance_id", None)
+    payload_fields.pop("trace_id", None)
+    payload_fields.pop("op", None)
+    payload_fields.pop("schema_version", None)
+
+    log_event = build_log_event(
+        level="INFO",
+        msg=event,
+        logger="observability.audit",
+        service=service,
+        op=(correlation.get("op") if isinstance(correlation, dict) else None) or event,
+        corr=correlation,
+        fields=payload_fields,
+    )
+    emit_json(log_event)
+
+
+def obs_emit(
+    level: str,
+    msg: str,
+    logger: str,
+    service: str,
+    op: str,
+    fields: dict[str, Any] | None = None,
+    reason_code: str | None = None,
+) -> None:
+    corr = get_request_correlation_context()
+    evt = build_log_event(
+        level=level,
+        msg=msg,
+        logger=logger,
+        service=service,
+        op=op,
+        corr=corr,
+        fields=fields,
+        reason_code=reason_code,
+    )
+    emit_json(evt)

@@ -3,6 +3,7 @@ import base64
 import hashlib
 import hmac
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -86,6 +87,19 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.append(str(_REPO_ROOT))
 
 from libs.observability import audit_event, error_envelope, request_id_middleware
+from libs.observability.middleware import ObservabilityMiddleware
+
+from libs.observability.contracts import (
+    CapabilityFeature,
+    CapabilityReason,
+    FeatureState,
+    HealthCheck,
+    HealthStatus,
+)
+from libs.observability.core import set_request_correlation_context
+from libs.observability.correlation import now_utc_iso
+from libs.observability.http_contracts import build_capabilities_response, build_healthz_response
+
 
 from libs.observability.contracts import (
     CapabilityFeature,
@@ -101,6 +115,8 @@ from libs.observability.http_contracts import build_capabilities_response, build
 
 app = FastAPI(title="Profinaut Dashboard API", version="0.4.0")
 app.add_middleware(request_id_middleware())
+_obs_service_name = os.getenv("PROFINAUT_SERVICE_NAME") or "dashboard-api"
+app.add_middleware(ObservabilityMiddleware, service_name=_obs_service_name)
 STALE_SECONDS = 120
 STRONG_COMMAND_TYPES = frozenset({"HALT", "FLATTEN", "CLOSE_ALL", "KILL_SWITCH"})
 
