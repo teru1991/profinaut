@@ -22,6 +22,8 @@ Every bundle MUST include a manifest conforming to:
 
 A bundle without a valid manifest is invalid.
 
+- `diag_semver` field MUST exist at support bundle root and conform to `docs/contracts/diag_semver.schema.json`.
+
 ---
 
 ## 2. Invariants (Fixed)
