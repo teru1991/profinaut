@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/contracts/observability/log_event.schema.json",
+  "title": "Structured Log Event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ts",
+    "level",
+    "msg",
+    "logger",
+    "service",
+    "op",
+    "run_id",
+    "instance_id"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "obs.log_event.v1" },
+    "ts": { "type": "string", "format": "date-time" },
+    "level": { "type": "string", "enum": ["DEBUG", "INFO", "WARN", "ERROR"] },
+    "msg": { "type": "string", "minLength": 1, "maxLength": 2048 },
+    "logger": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "service": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "op": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "run_id": { "type": "string", "format": "uuid" },
+    "instance_id": { "type": "string", "format": "uuid" },
+    "trace_id": { "type": ["string", "null"], "minLength": 16, "maxLength": 64 },
+    "event_uid": { "type": ["string", "null"], "format": "uuid" },
+    "reason_code": { "type": ["string", "null"], "minLength": 1, "maxLength": 64 },
+    "fields": { "type": "object" }
+  }
+}
