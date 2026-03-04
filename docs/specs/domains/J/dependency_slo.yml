@@ -1,0 +1,32 @@
+schema_version: 1
+
+dependencies:
+  - name: "exchange_rest"
+    kind: "exchange_api"
+    slo:
+      max_error_rate: 0.05
+      max_p95_ms: 1500
+      max_consecutive_failures: 3
+    on_breach:
+      action: "CANCEL_ONLY"
+      reason_code: "J_POLICY_CANCEL_ONLY_DEGRADED"
+
+  - name: "primary_db"
+    kind: "db"
+    slo:
+      max_error_rate: 0.01
+      max_p95_ms: 200
+      max_consecutive_failures: 2
+    on_breach:
+      action: "HALT"
+      reason_code: "J_POLICY_CANCEL_ONLY_DEGRADED"
+
+  - name: "time_source"
+    kind: "time_source"
+    slo:
+      max_error_rate: 0.01
+      max_p95_ms: 200
+      max_consecutive_failures: 2
+    on_breach:
+      action: "DEGRADED"
+      reason_code: "J_POLICY_CANCEL_ONLY_DEGRADED"

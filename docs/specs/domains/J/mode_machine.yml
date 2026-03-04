@@ -1,0 +1,61 @@
+schema_version: 1
+
+states:
+  - SAFE
+  - WARN
+  - DEGRADED
+  - CANCEL_ONLY
+  - HALT
+
+# when_all の condition keys（固定語彙）
+# - inputs.unknown
+# - inputs.missing_required
+# - audit.chain_broken
+# - lease.missing
+# - deps.slo_breach
+# - metrics.missing_required
+# - clock.drifted
+# - reconcile.critical_mismatch
+# - manual.halt_requested
+transitions:
+  - from: SAFE
+    to: HALT
+    when_all: ["inputs.unknown"]
+    latch: true
+    reason_code: J_POLICY_DENY_UNKNOWN_INPUT
+
+  - from: SAFE
+    to: HALT
+    when_all: ["inputs.missing_required"]
+    latch: true
+    reason_code: J_POLICY_DENY_MISSING_REQUIRED_INPUT
+
+  - from: SAFE
+    to: HALT
+    when_all: ["audit.chain_broken"]
+    latch: true
+    reason_code: J_POLICY_HALT_AUDIT_CHAIN_BROKEN
+
+  - from: SAFE
+    to: CANCEL_ONLY
+    when_all: ["deps.slo_breach"]
+    latch: false
+    reason_code: J_POLICY_CANCEL_ONLY_DEGRADED
+
+  - from: SAFE
+    to: CANCEL_ONLY
+    when_all: ["metrics.missing_required"]
+    latch: false
+    reason_code: J_POLICY_CANCEL_ONLY_DEGRADED
+
+  - from: SAFE
+    to: WARN
+    when_all: ["clock.drifted"]
+    latch: false
+    reason_code: J_POLICY_CANCEL_ONLY_DEGRADED
+
+  - from: CANCEL_ONLY
+    to: HALT
+    when_all: ["manual.halt_requested"]
+    latch: true
+    reason_code: J_POLICY_HALT_AUDIT_CHAIN_BROKEN
