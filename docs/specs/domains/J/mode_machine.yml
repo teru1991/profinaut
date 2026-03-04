@@ -59,3 +59,9 @@ transitions:
     when_all: ["manual.halt_requested"]
     latch: true
     reason_code: J_POLICY_HALT_AUDIT_CHAIN_BROKEN
+
+  - from: SAFE
+    to: HALT
+    when_all: ["safety.safe_mode"]
+    latch: true
+    reason_code: J_POLICY_HALT_SAFE_MODE

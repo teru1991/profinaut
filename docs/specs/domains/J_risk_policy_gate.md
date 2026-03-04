@@ -14,6 +14,7 @@ J は「安全側へ確実に倒す」ための意思決定ルールを SSOT と
   - clock_health (skew/drift)
   - current_mode (SAFE/WARN/DEGRADED/CANCEL_ONLY/HALT)
   - actor/op/scope (RBAC/forbidden/quiet hours)
+  - safety.safe_mode (kill-switch condition key)
 - Outputs:
   - ALLOW / DENY / CANCEL_ONLY / HALT
 - Latch:

@@ -45,3 +45,8 @@ reasons:
     severity: ERROR
     default_action: DENY
     description: "Operation denied by RBAC matrix."
+
+  - code: J_POLICY_HALT_SAFE_MODE
+    severity: CRITICAL
+    default_action: HALT
+    description: "System is in SAFE_MODE/HALTED; halt live operations (latch)."
