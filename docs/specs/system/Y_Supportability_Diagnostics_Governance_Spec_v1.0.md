@@ -72,6 +72,8 @@ TODO:
 
 TODO:
 - `diag_semver` のスキーマ（どこに埋めるか、bundle内フィールド名など）を contract として固定する。
+- Contract: docs/contracts/diag_semver.schema.json
+- Contract: docs/contracts/diagnostics_provider.schema.json
 
 ---
 
