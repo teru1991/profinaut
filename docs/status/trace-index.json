@@ -1799,6 +1799,27 @@
       "verification_evidence": [
         "docs/verification/Y-BUNDLE-002.md"
       ]
+    },
+    "Y-REDACT-003": {
+      "branch": "feature/y-redact-003",
+      "artifacts": [
+        "docs/contracts/redaction_rules.schema.json",
+        "docs/specs/crosscut/support_bundle_spec.md",
+        "docs/specs/system/Y_Supportability_Diagnostics_Governance_Spec_v1.0.md",
+        "docs/status/trace-index.json",
+        "docs/verification/Y-REDACT-003.md",
+        "ucel/Cargo.lock",
+        "ucel/crates/ucel-transport/Cargo.toml",
+        "ucel/crates/ucel-transport/src/diagnostics/bundle.rs",
+        "ucel/crates/ucel-transport/src/diagnostics/limits.rs",
+        "ucel/crates/ucel-transport/src/diagnostics/mod.rs",
+        "ucel/crates/ucel-transport/src/diagnostics/redaction.rs",
+        "ucel/crates/ucel-transport/src/diagnostics/scan.rs",
+        "ucel/crates/ucel-transport/tests/support_bundle_redaction.rs"
+      ],
+      "verification_evidence": [
+        "docs/verification/Y-REDACT-003.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

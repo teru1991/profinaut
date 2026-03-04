@@ -46,6 +46,8 @@ pub enum BundleBuildError {
     Serde(#[from] serde_json::Error),
     #[error("bundle build failed: time limit exceeded")]
     TimeLimitExceeded,
+    #[error("bundle build rejected: redaction failed (fail-closed): {0}")]
+    RedactionFailed(String),
 }
 
 pub struct BuildGuard;

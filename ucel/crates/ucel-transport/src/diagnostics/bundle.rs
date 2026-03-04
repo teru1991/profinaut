@@ -1,6 +1,7 @@
 use crate::diagnostics::limits::{BuildGuard, BundleBuildError, BundleLimits};
 use crate::diagnostics::manifest::{BundleManifest, BundleManifestFile, BundlePolicySummary};
 use crate::diagnostics::path::normalize_and_validate;
+use crate::diagnostics::redaction::{RedactionError, RedactionRules, Redactor};
 use sha2::{Digest, Sha256};
 use std::io::{Read, Write};
 use std::time::Instant;
@@ -18,6 +19,15 @@ fn sha256_hex(bytes: &[u8]) -> String {
     let mut h = Sha256::new();
     h.update(bytes);
     hex::encode(h.finalize())
+}
+
+fn map_redaction_error(e: RedactionError) -> BundleBuildError {
+    match e {
+        RedactionError::ResidualDetected { .. } => {
+            BundleBuildError::RedactionFailed("residual detected".into())
+        }
+        _ => BundleBuildError::RedactionFailed(format!("{e}")),
+    }
 }
 
 fn deterministic_bundle_id(files: &[(String, Vec<u8>)], semver: &str) -> uuid::Uuid {
@@ -40,6 +50,7 @@ pub fn build_support_bundle_tar_zst(
     let _guard = BuildGuard::try_acquire(limits)?;
     let start = Instant::now();
     let semver = diag_semver().to_string();
+    let redactor = Redactor::new(&RedactionRules::default()).map_err(map_redaction_error)?;
 
     let contributions = registry
         .collect(req)
@@ -54,6 +65,9 @@ pub fn build_support_bundle_tar_zst(
 
     let semver_path = normalize_and_validate("meta/diag_semver.txt", limits)?;
     let semver_bytes = format!("{semver}\n").into_bytes();
+    redactor
+        .fail_closed_scan(&semver_bytes)
+        .map_err(map_redaction_error)?;
     total += semver_bytes.len() as u64;
     files.push((semver_path, semver_bytes));
 
@@ -61,12 +75,30 @@ pub fn build_support_bundle_tar_zst(
         if start.elapsed() > limits.max_build_time {
             return Err(BundleBuildError::TimeLimitExceeded);
         }
+
         let p = normalize_and_validate(&c.path, limits)?;
         let bytes: Vec<u8> = match c.content {
-            ucel_diagnostics_core::ContributionContent::Json(v) => serde_json::to_vec(&v)?,
-            ucel_diagnostics_core::ContributionContent::Text(s) => s.into_bytes(),
-            ucel_diagnostics_core::ContributionContent::Base64(s) => s.into_bytes(),
+            ucel_diagnostics_core::ContributionContent::Json(mut v) => {
+                redactor.redact_json_value(&mut v);
+                serde_json::to_vec(&v)?
+            }
+            ucel_diagnostics_core::ContributionContent::Text(s) => {
+                if redactor.has_deny_pattern(s.as_bytes()) {
+                    return Err(BundleBuildError::RedactionFailed("source contained deny pattern".into()));
+                }
+                redactor.redact_text(&s).into_bytes()
+            }
+            ucel_diagnostics_core::ContributionContent::Base64(s) => {
+                if redactor.has_deny_pattern(s.as_bytes()) {
+                    return Err(BundleBuildError::RedactionFailed("source contained deny pattern".into()));
+                }
+                redactor.redact_text(&s).into_bytes()
+            },
         };
+
+        redactor
+            .fail_closed_scan(&bytes)
+            .map_err(map_redaction_error)?;
 
         let sz = bytes.len() as u64;
         if sz > limits.max_single_file_bytes || sz > c.size_limit_bytes {
@@ -105,11 +137,14 @@ pub fn build_support_bundle_tar_zst(
             max_path_len: limits.max_path_len,
         },
         notes: vec![
-            "Redaction is enforced by upper layers (Task3).".to_string(),
+            "Redaction is enforced centrally with fail-closed residual scan.".to_string(),
             "archive build is deterministic for identical inputs and limits.".to_string(),
         ],
     };
     let manifest_json = serde_json::to_vec_pretty(&manifest)?;
+    redactor
+        .fail_closed_scan(&manifest_json)
+        .map_err(map_redaction_error)?;
 
     let mut tar_bytes: Vec<u8> = Vec::new();
     {
@@ -142,10 +177,7 @@ pub fn read_tar_zst_entries(archive_bytes: &[u8]) -> Result<Vec<(String, Vec<u8>
     let mut out = Vec::new();
     for e in archive.entries()? {
         let mut entry = e?;
-        let path = entry
-            .path()?
-            .to_string_lossy()
-            .to_string();
+        let path = entry.path()?.to_string_lossy().to_string();
         let mut bytes = Vec::new();
         entry.read_to_end(&mut bytes)?;
         out.push((path, bytes));

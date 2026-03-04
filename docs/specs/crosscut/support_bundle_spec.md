@@ -32,6 +32,7 @@ A bundle without a valid manifest is invalid.
 
 1) **Secret-free**: bundle MUST NOT contain secrets (keys/tokens/headers/cookies/private keys).
 2) **Central redaction**: same redaction rules as logs/audit apply.
+- Central redaction MUST be applied before packaging, and bundle generation MUST fail-closed if residual deny patterns are detected after redaction.
 3) **Integrity-checkable**: manifest contains file paths + sizes; sha256 is strongly recommended.
 4) **Evidence-linked**: bundle must reference run identity + evidence artifact refs.
 5) **Fail closed**: if forbidden content is detected, generation must:

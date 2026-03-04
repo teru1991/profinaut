@@ -82,6 +82,8 @@ TODO:
 ### 1.3.1 最小権限（Least Privilege）
 - 診断コンポーネントは読み取り専用が原則 :contentReference[oaicite:17]{index=17}
 - Secretsは「存在確認」等の最小操作を除きアクセスしない :contentReference[oaicite:18]{index=18}
+- Contract: docs/contracts/redaction_rules.schema.json
+- Policy: redaction is fail-closed (bundle generation MUST fail if any deny pattern remains after redaction).
 - ネットワーク到達先は allowlist 制御（Permissions Reportで可視化） :contentReference[oaicite:19]{index=19}
 
 TODO:

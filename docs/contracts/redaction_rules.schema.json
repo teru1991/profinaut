@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/contracts/redaction_rules.schema.json",
+  "title": "RedactionRules",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "deny_header_keys", "deny_json_keys", "deny_value_patterns", "replacement"],
+  "properties": {
+    "version": { "type": "string", "minLength": 1, "maxLength": 32, "examples": ["1"] },
+    "deny_header_keys": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 64 },
+      "minItems": 1,
+      "description": "Case-insensitive header/cookie keys that must never appear unredacted."
+    },
+    "deny_json_keys": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 64 },
+      "minItems": 1,
+      "description": "Case-insensitive JSON object keys that must be redacted if present."
+    },
+    "deny_value_patterns": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 256 },
+      "minItems": 1,
+      "description": "Regex patterns for values that indicate secrets (JWT-like, PEM blocks, long tokens)."
+    },
+    "replacement": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Replacement marker used by redaction."
+    }
+  }
+}
