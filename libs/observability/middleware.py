@@ -29,10 +29,9 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
             duration_ms = int((time.perf_counter() - started) * 1000)
             observe_http_request(
                 service=self.service_name,
-                op="http_request",
+                path=request.url.path,
                 method=request.method,
-                status_code=int(response.status_code),
-                duration_ms=duration_ms,
+                status=str(int(response.status_code)),
             )
 
             event = build_log_event(

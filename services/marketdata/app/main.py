@@ -36,7 +36,6 @@ from libs.observability.contracts import CapabilityFeature, CapabilityReason, Fe
 from libs.observability.core import set_request_correlation_context
 from libs.observability.correlation import now_utc_iso
 from libs.observability.http_contracts import build_capabilities_response, build_healthz_response
-from libs.observability.metrics import ensure_metrics_initialized, expose_metrics_text
 from services.marketdata.app.bronze_store import BronzeStore, RawMetaRepository
 from services.marketdata.app.object_store import build_object_store_from_env
 from services.marketdata.app.gmo_ws_connector import GmoPublicWsConnector, GmoWsConfig
@@ -395,8 +394,7 @@ def _is_valid_rfc3339(ts: str) -> bool:
 app = FastAPI(title="profinaut-marketdata", version="0.1.0")
 app.add_middleware(request_id_middleware())
 _obs_service_name = os.getenv("PROFINAUT_SERVICE_NAME") or "marketdata"
-app.add_mid morningdleware(ObservabilityMiddleware, service_name=_obs_service_name)
-ensure_metrics_initialized(_obs_service_name)
+app.add_middleware(ObservabilityMiddleware, service_name=_obs_service_name)
 app.include_router(raw_ingest_router)
 _poller = MarketDataPoller(PollerConfig())
 _object_store, _object_store_status = build_object_store_from_env()

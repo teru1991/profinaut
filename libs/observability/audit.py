@@ -1,21 +1,17 @@
 from __future__ import annotations
 
-from typing import Any
+import time
 
-from libs.observability.core import get_request_correlation_context
-from libs.observability.logging import build_log_event, emit_json
+_LAST_EVENT_AT: dict[str, float] = {}
 
 
-def emit_audit_event(event_type: str, fields: dict[str, Any], *, service: str = "unknown") -> None:
-    corr = get_request_correlation_context() or {}
-    event = build_log_event(
-        level="WARN",
-        msg=f"audit:{event_type}",
-        logger="obs.audit",
-        service=service,
-        op="audit",
-        corr=corr,
-        fields=fields,
-        reason_code="AUDIT",
-    )
-    emit_json(event)
+def emit_audit_event(event_name: str, *, service: str, details: dict[str, object] | None = None, min_interval_s: int = 60) -> None:
+    now = time.time()
+    last = _LAST_EVENT_AT.get(event_name, 0.0)
+    if now - last < min_interval_s:
+        return
+    _LAST_EVENT_AT[event_name] = now
+
+    from libs.observability.core import audit_event
+
+    audit_event(service=service, event=event_name, details=details or {})

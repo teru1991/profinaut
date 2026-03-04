@@ -99,14 +99,12 @@ from libs.observability.contracts import (
 from libs.observability.core import set_request_correlation_context
 from libs.observability.correlation import now_utc_iso
 from libs.observability.http_contracts import build_capabilities_response, build_healthz_response
-from libs.observability.metrics import ensure_metrics_initialized, expose_metrics_text
 
 
 app = FastAPI(title="Profinaut Dashboard API", version="0.4.0")
 app.add_middleware(request_id_middleware())
 _obs_service_name = os.getenv("PROFINAUT_SERVICE_NAME") or "dashboard-api"
 app.add_middleware(ObservabilityMiddleware, service_name=_obs_service_name)
-ensure_metrics_initialized(_obs_service_name)
 STALE_SECONDS = 120
 STRONG_COMMAND_TYPES = frozenset({"HALT", "FLATTEN", "CLOSE_ALL", "KILL_SWITCH"})
 
@@ -308,11 +306,6 @@ def get_capabilities(request: Request) -> JSONResponse:
     body, headers = build_capabilities_response(request, features)
     set_request_correlation_context(body["correlation"])
     return JSONResponse(content=body, headers=headers)
-
-
-@app.get("/metrics")
-def metrics() -> Response:
-    return Response(content=expose_metrics_text(_obs_service_name), media_type="text/plain; version=0.0.4")
 
 
 def _probe_status_component(*, name: str, url: str, timeout_seconds: float) -> StatusComponent:
