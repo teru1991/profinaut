@@ -22,12 +22,17 @@ Every bundle MUST include a manifest conforming to:
 
 A bundle without a valid manifest is invalid.
 
+- `manifest.json` MUST include `bundle_id`, `created_at`, `diag_semver`, `files[path,size_bytes,sha256]`, and `policy_summary` (see contract).
+
+- `diag_semver` field MUST exist at support bundle root and conform to `docs/contracts/diag_semver.schema.json`.
+
 ---
 
 ## 2. Invariants (Fixed)
 
 1) **Secret-free**: bundle MUST NOT contain secrets (keys/tokens/headers/cookies/private keys).
 2) **Central redaction**: same redaction rules as logs/audit apply.
+- Central redaction MUST be applied before packaging, and bundle generation MUST fail-closed if residual deny patterns are detected after redaction.
 3) **Integrity-checkable**: manifest contains file paths + sizes; sha256 is strongly recommended.
 4) **Evidence-linked**: bundle must reference run identity + evidence artifact refs.
 5) **Fail closed**: if forbidden content is detected, generation must:
@@ -95,6 +100,7 @@ When a bundle is generated:
 
 ## 7. Storage / Transport (Policy-bound)
 Archive format and storage location are Policy.
+- Standard archive format is `tar.zst` unless a stricter policy mandates `zip` for a specific environment.
 However:
 - internal paths must be stable,
 - manifest must list all included files with sizes,

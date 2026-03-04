@@ -60,3 +60,12 @@ pub fn build_support_bundle(input: SupportBundleInput) -> serde_json::Value {
         "manifest": support_bundle_manifest()
     })
 }
+
+
+pub fn build_support_bundle_archive(
+    registry: &ucel_diagnostics_core::DiagnosticsRegistry,
+    req: &ucel_diagnostics_core::DiagnosticsRequest,
+    limits: &crate::diagnostics::limits::BundleLimits,
+) -> Result<crate::diagnostics::bundle::BuiltBundle, crate::diagnostics::limits::BundleBuildError> {
+    crate::diagnostics::bundle::build_support_bundle_tar_zst(registry, req, limits)
+}

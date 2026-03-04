@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/contracts/diag_semver.schema.json",
+  "title": "DiagSemver",
+  "type": "string",
+  "description": "Diagnostic interface compatibility version for the entire Y diagnostics surface. SemVer-compatible string.",
+  "minLength": 1,
+  "maxLength": 64,
+  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
+  "examples": ["1.0.0", "1.2.3-alpha.1", "2.0.0+build.42"]
+}

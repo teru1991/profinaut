@@ -46,7 +46,11 @@ fn generated_support_bundle_matches_manifest_requirements() {
         .get("deny_patterns")
         .and_then(|v| v.as_array())
         .expect("deny_patterns array");
-    let rendered = serde_json::to_string(&bundle).expect("bundle json string");
+    let mut sanitized = bundle.clone();
+    if let Some(manifest_obj) = sanitized.get_mut("manifest").and_then(|v| v.as_object_mut()) {
+        manifest_obj.insert("deny_patterns".to_string(), serde_json::Value::Array(vec![]));
+    }
+    let rendered = serde_json::to_string(&sanitized).expect("bundle json string");
     for pat in deny {
         let pat = pat.as_str().expect("pattern str");
         assert!(!rendered.contains(pat), "denied pattern leaked: {pat}");
