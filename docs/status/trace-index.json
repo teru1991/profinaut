@@ -1577,6 +1577,114 @@
       "verification_evidence": [
         "docs/verification/E-PLAN-004.md"
       ]
+    },
+    "B-STEP1": {
+      "branch": "feature/b-step1-001",
+      "artifacts": [
+        "libs/safety_core/redaction.py",
+        "libs/safety_core/audit.py",
+        "tests/test_redaction_no_leak.py",
+        "docs/specs/security/redaction_and_no_leak.md",
+        "docs/verification/B-STEP1.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/B-STEP1.md"
+      ]
+    },
+    "B-STEP2": {
+      "branch": "feature/b-step2-001",
+      "artifacts": [
+        "docs/policy/asset_registry.json",
+        "docs/specs/security/secretref_and_providers.md",
+        "docs/verification/B-STEP2.md",
+        "docs/status/trace-index.json",
+        "libs/safety_core/errors.py",
+        "libs/safety_core/secrets_ref.py",
+        "libs/safety_core/secrets_registry.py",
+        "libs/safety_core/secrets_provider.py",
+        "libs/safety_core/secrets_providers/__init__.py",
+        "libs/safety_core/secrets_providers/env.py",
+        "libs/safety_core/secrets_providers/fileenc.py",
+        "libs/safety_core/secrets_providers/vault.py",
+        "tests/test_secretref_and_provider.py"
+      ],
+      "verification_evidence": [
+        "docs/verification/B-STEP2.md"
+      ]
+    },
+    "B-STEP3": {
+      "branch": "feature/b-step3-001",
+      "artifacts": [
+        "docs/specs/security/fileenc_crypto_contract.md",
+        "docs/status/trace-index.json",
+        "docs/verification/B-STEP3.md",
+        "libs/safety_core/crypto/__init__.py",
+        "libs/safety_core/crypto/aead.py",
+        "libs/safety_core/crypto/fileenc_format.py",
+        "libs/safety_core/crypto/kdf.py",
+        "libs/safety_core/crypto/rot.py",
+        "libs/safety_core/crypto/rot_macos_keychain.py",
+        "libs/safety_core/crypto/rot_passphrase.py",
+        "libs/safety_core/crypto/rot_windows_dpapi.py",
+        "libs/safety_core/secrets_provider.py",
+        "libs/safety_core/secrets_providers/fileenc.py",
+        "scripts/fileenc_tool.py",
+        "tests/test_fileenc_crypto_v1.py",
+        "pyproject.toml"
+      ],
+      "verification_evidence": [
+        "docs/verification/B-STEP3.md"
+      ]
+    },
+    "B-STEP4": {
+      "branch": "feature/b-step4-001",
+      "artifacts": [
+        "dashboard_api/app.py",
+        "dashboard_api/security_mw.py",
+        "docs/policy/danger_ops_policy.json",
+        "docs/policy/dual_run_policy.json",
+        "docs/specs/security/danger_ops_and_authz.md",
+        "docs/status/trace-index.json",
+        "docs/verification/B-STEP4.md",
+        "libs/safety_core/audit.py",
+        "libs/safety_core/audit_health.py",
+        "libs/safety_core/authz.py",
+        "libs/safety_core/danger_ops.py",
+        "libs/safety_core/lease_guard.py",
+        "libs/safety_core/session.py",
+        "tests/test_danger_ops_gate.py",
+        "tests/test_dual_run_lease_guard.py"
+      ],
+      "verification_evidence": [
+        "docs/verification/B-STEP4.md"
+      ]
+    },
+    "B-STEP5": {
+      "branch": "feature/b-step5-001",
+      "artifacts": [
+        "dashboard_api/models.py",
+        "docs/policy/change_mgmt_policy.json",
+        "docs/policy/llm_egress_policy.json",
+        "docs/reports/access_review_latest.md",
+        "docs/runbooks/security/rotation_and_revocation.md",
+        "docs/specs/security/egress_and_governance.md",
+        "docs/status/trace-index.json",
+        "docs/verification/B-STEP5.md",
+        "libs/safety_core/access_review.py",
+        "libs/safety_core/authz.py",
+        "libs/safety_core/change_mgmt.py",
+        "libs/safety_core/egress_guard.py",
+        "libs/safety_core/egress_policy.py",
+        "libs/safety_core/secret_access.py",
+        "scripts/access_review_report.py",
+        "scripts/policy_tool.py",
+        "tests/test_access_review_report.py",
+        "tests/test_egress_guard.py",
+        "tests/test_no_plaintext_secrets_in_prod.py"
+      ],
+      "verification_evidence": [
+        "docs/verification/B-STEP5.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

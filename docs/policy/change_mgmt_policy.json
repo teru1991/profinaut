@@ -1,0 +1,11 @@
+{
+  "version": "1",
+  "controlled_changes": [
+    "policy_update",
+    "failover_primary",
+    "rotate_secret",
+    "withdraw_enable",
+    "cloudflare_access_change",
+    "ca_rotation"
+  ]
+}

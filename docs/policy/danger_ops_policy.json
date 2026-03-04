@@ -1,0 +1,24 @@
+{
+  "version": "1",
+  "allow": [
+    {
+      "op": "read_status",
+      "actor": "human",
+      "modes": ["dev", "staging", "prod"],
+      "scopes": ["*"]
+    },
+    {
+      "op": "start_live",
+      "actor": "human",
+      "modes": ["dev", "staging"],
+      "scopes": ["bot:example:paper"]
+    },
+    {
+      "op": "rotate_secret",
+      "actor": "human",
+      "modes": ["dev", "staging"],
+      "scopes": ["*"]
+    }
+  ],
+  "danger_ops": ["start_live", "rotate_secret", "policy_update", "withdraw_enable", "failover_primary"]
+}
