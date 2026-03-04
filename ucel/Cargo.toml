@@ -35,6 +35,7 @@ members = [
   "crates/ucel-sdk",
   "crates/ucel-execution-core",
   "crates/ucel-market-meta-catalog",
+  "crates/ucel-diagnostics-core",
 ]
 resolver = "2"
 default-members = ["crates/ucel-registry"]

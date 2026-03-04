@@ -22,6 +22,14 @@ tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
 
 ucel-journal = { path = "../ucel-journal" }
 ucel-subscription-store = { path = "../ucel-subscription-store" }
+thiserror = { workspace = true }
+zstd = "0.13"
+tar = "0.4"
+time = { version = "0.3", features = ["formatting", "serde"] }
+uuid = { version = "1", features = ["v4", "v5", "serde"] }
+hex = "0.4"
+sha2 = "0.10"
+ucel-diagnostics-core = { path = "../ucel-diagnostics-core" }
 ucel-ws-rules = { path = "../ucel-ws-rules" }
 tempfile = "3.26.0"
 url = "2"

@@ -4,7 +4,7 @@
   "title": "SupportBundleManifest",
   "description": "Index of files included in a support bundle archive.",
   "type": "object",
-  "required": ["bundle_id", "created_at", "files"],
+  "required": ["bundle_id", "created_at", "diag_semver", "files", "policy_summary"],
   "properties": {
     "schema_version": {
       "type": "integer",
@@ -14,6 +14,9 @@
       "type": "string",
       "format": "uuid"
     },
+    "diag_semver": {
+      "$ref": "./diag_semver.schema.json"
+    },
     "description": {
       "type": "string"
     },
@@ -22,11 +25,14 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["path", "size_bytes"],
+        "required": ["path", "size_bytes", "sha256"],
         "properties": {
           "path": { "type": "string", "minLength": 1 },
           "size_bytes": { "type": "integer", "minimum": 0 },
-          "sha256": { "type": "string" }
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
         },
         "additionalProperties": false
       }
@@ -34,6 +40,22 @@
     "created_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "policy_summary": {
+      "type": "object",
+      "required": ["archive_format", "max_total_bytes", "max_files", "max_single_file_bytes", "max_path_len"],
+      "properties": {
+        "archive_format": { "type": "string", "enum": ["tar.zst", "zip"] },
+        "max_total_bytes": { "type": "integer", "minimum": 0 },
+        "max_files": { "type": "integer", "minimum": 1 },
+        "max_single_file_bytes": { "type": "integer", "minimum": 0 },
+        "max_path_len": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
     }
   },
   "additionalProperties": false

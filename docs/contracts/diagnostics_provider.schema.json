@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/schemas/contracts/diagnostics_provider.schema.json",
+  "title": "DiagnosticsProviderContribution",
+  "description": "Contract for diagnostics contributions emitted by DiagnosticsProvider. This is the stable boundary between domain providers and Y bundling/analyzer layers.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["provider_id", "kind", "path", "content"],
+  "properties": {
+    "provider_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z][a-z0-9_\\-\\.]*$",
+      "description": "Stable provider identifier, unique across registry."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["json", "text", "binary", "meta"],
+      "description": "Contribution content kind. 'binary' is allowed but may be rejected by policy unless explicitly permitted."
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[a-zA-Z0-9_\\-./]+$",
+      "description": "Relative path inside the support bundle root. Must be normalized, no absolute paths, no '..'."
+    },
+    "mime": {
+      "type": "string",
+      "minLength": 0,
+      "maxLength": 128,
+      "default": "",
+      "description": "Optional MIME type hint."
+    },
+    "size_limit_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 104857600,
+      "default": 1048576,
+      "description": "Per-contribution size limit hint; enforced by bundler/registry."
+    },
+    "content": {
+      "description": "Payload. For json/text/meta: UTF-8 string or JSON object. For binary: base64 string (policy may forbid).",
+      "oneOf": [
+        { "type": "object" },
+        { "type": "string" }
+      ]
+    }
+  }
+}

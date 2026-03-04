@@ -22,6 +22,10 @@ Every bundle MUST include a manifest conforming to:
 
 A bundle without a valid manifest is invalid.
 
+- `manifest.json` MUST include `bundle_id`, `created_at`, `diag_semver`, `files[path,size_bytes,sha256]`, and `policy_summary` (see contract).
+
+- `diag_semver` field MUST exist at support bundle root and conform to `docs/contracts/diag_semver.schema.json`.
+
 ---
 
 ## 2. Invariants (Fixed)
@@ -95,6 +99,7 @@ When a bundle is generated:
 
 ## 7. Storage / Transport (Policy-bound)
 Archive format and storage location are Policy.
+- Standard archive format is `tar.zst` unless a stricter policy mandates `zip` for a specific environment.
 However:
 - internal paths must be stable,
 - manifest must list all included files with sizes,
