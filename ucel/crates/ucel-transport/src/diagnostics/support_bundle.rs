@@ -62,10 +62,22 @@ pub fn build_support_bundle(input: SupportBundleInput) -> serde_json::Value {
 }
 
 
+
+fn emit_support_bundle_audit_hook(req: &ucel_diagnostics_core::DiagnosticsRequest) {
+    tracing::info!(
+        target: "ucel.transport.support_bundle",
+        action = "build_support_bundle_archive",
+        allow_deep = req.allow_deep,
+        has_approval_id = req.approval_id.is_some(),
+        "support bundle build requested"
+    );
+}
+
 pub fn build_support_bundle_archive(
     registry: &ucel_diagnostics_core::DiagnosticsRegistry,
     req: &ucel_diagnostics_core::DiagnosticsRequest,
     limits: &crate::diagnostics::limits::BundleLimits,
-) -> Result<crate::diagnostics::bundle::BuiltBundle, crate::diagnostics::limits::BundleBuildError> {
+ ) -> Result<crate::diagnostics::bundle::BuiltBundle, crate::diagnostics::limits::BundleBuildError> {
+    emit_support_bundle_audit_hook(req);
     crate::diagnostics::bundle::build_support_bundle_tar_zst(registry, req, limits)
 }
