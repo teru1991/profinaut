@@ -7,6 +7,8 @@ from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, create_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+from libs.safety_core.secret_access import get_secret_from_env_ref
+
 Base = declarative_base()
 
 
@@ -39,12 +41,12 @@ class MarketDataDB(Base):
 
 
 def get_database_url() -> str:
-    """Get database URL from environment or default."""
+    """Get database URL via SecretRef env binding, fallback for local dev."""
     import os
 
-    return os.getenv(
-        "DATABASE_URL", "postgresql://profinaut:profinaut@localhost:5432/profinaut"
-    )
+    if os.environ.get("SECRETREF_DATABASE_URL"):
+        return get_secret_from_env_ref("SECRETREF_DATABASE_URL")
+    return "postgresql://profinaut:profinaut@localhost:5432/profinaut"
 
 
 def get_engine():

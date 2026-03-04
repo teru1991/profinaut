@@ -1,0 +1,7 @@
+{
+  "version": "1",
+  "allow_targets": ["stdout", "local_file", "internal_api"],
+  "deny_targets": ["llm", "public_http"],
+  "allow_if_redacted": true,
+  "max_payload_bytes": 200000
+}

@@ -1658,6 +1658,33 @@
       "verification_evidence": [
         "docs/verification/B-STEP4.md"
       ]
+    },
+    "B-STEP5": {
+      "branch": "feature/b-step5-001",
+      "artifacts": [
+        "dashboard_api/models.py",
+        "docs/policy/change_mgmt_policy.json",
+        "docs/policy/llm_egress_policy.json",
+        "docs/reports/access_review_latest.md",
+        "docs/runbooks/security/rotation_and_revocation.md",
+        "docs/specs/security/egress_and_governance.md",
+        "docs/status/trace-index.json",
+        "docs/verification/B-STEP5.md",
+        "libs/safety_core/access_review.py",
+        "libs/safety_core/authz.py",
+        "libs/safety_core/change_mgmt.py",
+        "libs/safety_core/egress_guard.py",
+        "libs/safety_core/egress_policy.py",
+        "libs/safety_core/secret_access.py",
+        "scripts/access_review_report.py",
+        "scripts/policy_tool.py",
+        "tests/test_access_review_report.py",
+        "tests/test_egress_guard.py",
+        "tests/test_no_plaintext_secrets_in_prod.py"
+      ],
+      "verification_evidence": [
+        "docs/verification/B-STEP5.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

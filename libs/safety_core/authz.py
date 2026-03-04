@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from libs.safety_core.change_mgmt import ChangeMgmtPolicy
 from libs.safety_core.errors import err
 
 E_AUTHZ_DENY = "E_AUTHZ_DENY"
@@ -21,6 +22,7 @@ class Authz:
     def __init__(self, *, policy_path: Path | None = None) -> None:
         self._path = policy_path or Path("docs/policy/danger_ops_policy.json")
         self._policy = self._load()
+        self._change_mgmt = ChangeMgmtPolicy.load()
 
     def _load(self) -> dict[str, Any]:
         if not self._path.exists():
@@ -35,7 +37,7 @@ class Authz:
 
     def is_dangerous(self, op: str) -> bool:
         d = self._policy.get("danger_ops", [])
-        return op in set(map(str, d))
+        return (op in set(map(str, d))) or self._change_mgmt.is_controlled(op)
 
     def authorize(self, *, op: str, actor_kind: str, mode: str, scope: str) -> AuthzDecision:
         allow = self._policy.get("allow", [])
