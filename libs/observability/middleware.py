@@ -10,6 +10,7 @@ from contracts.observability.contract_constants import SCHEMA_VERSION_CORRELATIO
 from libs.observability.correlation import make_correlation, set_correlation_response_headers
 from libs.observability.core import set_request_correlation_context
 from libs.observability.logging import build_log_event, emit_json
+from libs.observability.metrics import observe_http_request
 
 
 class ObservabilityMiddleware(BaseHTTPMiddleware):
@@ -26,6 +27,14 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
             set_correlation_response_headers(response.headers, corr, [SCHEMA_VERSION_CORRELATION])
 
             duration_ms = int((time.perf_counter() - started) * 1000)
+            observe_http_request(
+                service=self.service_name,
+                op="http_request",
+                method=request.method,
+                status_code=int(response.status_code),
+                duration_ms=duration_ms,
+            )
+
             event = build_log_event(
                 level="INFO",
                 msg="http_request",

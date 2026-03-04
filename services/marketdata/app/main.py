@@ -31,16 +31,12 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.append(str(_REPO_ROOT))
 
 from libs.observability import audit_event, error_envelope, request_id_middleware
-from libs.observability.audit import emit_audit_event
 from libs.observability.middleware import ObservabilityMiddleware
 from libs.observability.contracts import CapabilityFeature, CapabilityReason, FeatureState, HealthCheck, HealthStatus
 from libs.observability.core import set_request_correlation_context
 from libs.observability.correlation import now_utc_iso
 from libs.observability.http_contracts import build_capabilities_response, build_healthz_response
-from libs.observability.http_sanitize import (
-    sanitize_capability_reasons,
-    sanitize_health_check_details,
-)
+from libs.observability.metrics import ensure_metrics_initialized, expose_metrics_text
 from services.marketdata.app.bronze_store import BronzeStore, RawMetaRepository
 from services.marketdata.app.object_store import build_object_store_from_env
 from services.marketdata.app.gmo_ws_connector import GmoPublicWsConnector, GmoWsConfig
@@ -399,7 +395,8 @@ def _is_valid_rfc3339(ts: str) -> bool:
 app = FastAPI(title="profinaut-marketdata", version="0.1.0")
 app.add_middleware(request_id_middleware())
 _obs_service_name = os.getenv("PROFINAUT_SERVICE_NAME") or "marketdata"
-app.add_middleware(ObservabilityMiddleware, service_name=_obs_service_name)
+app.add_mid morningdleware(ObservabilityMiddleware, service_name=_obs_service_name)
+ensure_metrics_initialized(_obs_service_name)
 app.include_router(raw_ingest_router)
 _poller = MarketDataPoller(PollerConfig())
 _object_store, _object_store_status = build_object_store_from_env()
@@ -532,26 +529,6 @@ async def healthz(request: Request) -> JSONResponse:
             observed_at=now_utc_iso(),
         ),
     ]
-    redaction_violations = 0
-    redaction_keys: set[str] = set()
-    for check in checks:
-        if check.details:
-            sanitized_details, violation_count, keys = sanitize_health_check_details(check.details)
-            check.details = sanitized_details
-            if violation_count > 0:
-                redaction_violations += violation_count
-                redaction_keys.update(keys)
-                check.status = HealthStatus.DEGRADED
-                check.reason_code = "REDACTION_VIOLATION"
-                check.summary = f"{check.summary} (sanitized)"
-
-    if redaction_violations > 0:
-        emit_audit_event(
-            "redaction_violation",
-            {"count": redaction_violations, "keys": sorted(redaction_keys)},
-            service="marketdata",
-        )
-
     body, headers = build_healthz_response(request, checks)
     set_request_correlation_context(body["correlation"])
     return JSONResponse(content=body, headers=headers)
@@ -559,7 +536,7 @@ async def healthz(request: Request) -> JSONResponse:
 
 @app.get("/metrics")
 async def metrics() -> PlainTextResponse:
-    metric_lines = []
+    metric_lines = [expose_metrics_text(_obs_service_name).rstrip("\n")]
     for key, value in _mock_runtime.metrics().items():
         metric_lines.append(f"# TYPE {key} gauge")
         metric_lines.append(f"{key} {value}")
@@ -632,27 +609,6 @@ async def get_capabilities(request: Request) -> JSONResponse:
             reasons=[CapabilityReason(code="NOT_IMPLEMENTED", message="contract-level capability reporting only")],
         ),
     ]
-    redaction_violations = 0
-    redaction_keys: set[str] = set()
-    for feature in features:
-        reason_dicts = [reason.to_dict() for reason in feature.reasons]
-        sanitized_reasons, violation_count, keys = sanitize_capability_reasons(reason_dicts)
-        feature.reasons = [CapabilityReason(**reason) for reason in sanitized_reasons]
-        if violation_count > 0:
-            redaction_violations += violation_count
-            redaction_keys.update(keys)
-            feature.state = FeatureState.DEGRADED
-            feature.reasons.append(
-                CapabilityReason(code="REDACTION_VIOLATION", message="reason sanitized")
-            )
-
-    if redaction_violations > 0:
-        emit_audit_event(
-            "redaction_violation",
-            {"count": redaction_violations, "keys": sorted(redaction_keys)},
-            service="marketdata",
-        )
-
     body, headers = build_capabilities_response(request, features)
     set_request_correlation_context(body["correlation"])
     return JSONResponse(content=body, headers=headers)

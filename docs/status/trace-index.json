@@ -1736,28 +1736,28 @@
         "docs/verification/C-OBS-002.md"
       ]
     },
-    "C-OBS-003": {
-      "branch": "feature/c-obs-003-001",
+    "C-OBS-004": {
+      "branch": "feature/c-obs-004-001",
       "artifacts": [
-        "docs/policy/redaction.toml",
-        "docs/specs/observability/README.md",
-        "docs/specs/observability/data_classification.md",
+        "docs/contracts/observability/metrics_catalog.snapshot.txt",
+        "docs/specs/observability/metrics_catalog.md",
         "docs/status/trace-index.json",
-        "docs/verification/C-OBS-003.md",
-        "libs/observability/audit.py",
-        "libs/observability/http_sanitize.py",
-        "libs/observability/logging.py",
-        "libs/observability/redaction.py",
-        "scripts/ci/observability_redaction_lint.py",
+        "docs/verification/C-OBS-004.md",
+        "libs/observability/metrics.py",
+        "libs/observability/metrics_catalog.py",
+        "libs/observability/metrics_guard.py",
+        "libs/observability/middleware.py",
+        "scripts/ci/observability_metrics_check.py",
+        "scripts/ci/observability_metrics_snapshot.py",
         "services/dashboard-api/app/main.py",
         "services/execution/app/main.py",
         "services/marketdata/app/main.py",
-        "tests/test_observability_healthz_details_sanitized.py",
-        "tests/test_observability_redaction_deep.py",
-        "tests/test_observability_redaction_policy.py"
+        "tests/test_observability_metrics_guard_labels.py",
+        "tests/test_observability_metrics_required.py",
+        "tests/test_observability_metrics_snapshot_gate.py"
       ],
       "verification_evidence": [
-        "docs/verification/C-OBS-003.md"
+        "docs/verification/C-OBS-004.md"
       ]
     }
   },

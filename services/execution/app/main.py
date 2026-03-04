@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from .auth import require_execution_token
 from .config import Settings, get_settings
@@ -20,7 +20,6 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.append(str(_REPO_ROOT))
 
 from libs.observability import audit_event, error_envelope, request_id_middleware
-from libs.observability.audit import emit_audit_event
 from libs.observability.middleware import ObservabilityMiddleware
 from libs.observability.contracts import (
     CapabilityFeature,
@@ -32,10 +31,7 @@ from libs.observability.contracts import (
 from libs.observability.core import set_request_correlation_context
 from libs.observability.correlation import now_utc_iso
 from libs.observability.http_contracts import build_capabilities_response, build_healthz_response
-from libs.observability.http_sanitize import (
-    sanitize_capability_reasons,
-    sanitize_health_check_details,
-)
+from libs.observability.metrics import ensure_metrics_initialized, expose_metrics_text
 
 # Configure logging
 logging.basicConfig(
@@ -48,6 +44,7 @@ app = FastAPI(title="Profinaut Execution Service", version="0.1.0")
 app.add_middleware(request_id_middleware())
 _obs_service_name = os.getenv("PROFINAUT_SERVICE_NAME") or "execution"
 app.add_middleware(ObservabilityMiddleware, service_name=_obs_service_name)
+ensure_metrics_initialized(_obs_service_name)
 
 _live_backoff_until_utc: datetime | None = None
 _degraded_reason: str | None = None
@@ -190,26 +187,6 @@ def get_healthz(request: Request) -> JSONResponse:
             observed_at=now_utc_iso(),
         ),
     ]
-    redaction_violations = 0
-    redaction_keys: set[str] = set()
-    for check in checks:
-        if check.details:
-            sanitized_details, violation_count, keys = sanitize_health_check_details(check.details)
-            check.details = sanitized_details
-            if violation_count > 0:
-                redaction_violations += violation_count
-                redaction_keys.update(keys)
-                check.status = HealthStatus.DEGRADED
-                check.reason_code = "REDACTION_VIOLATION"
-                check.summary = f"{check.summary} (sanitized)"
-
-    if redaction_violations > 0:
-        emit_audit_event(
-            "redaction_violation",
-            {"count": redaction_violations, "keys": sorted(redaction_keys)},
-            service="execution",
-        )
-
     body, headers = build_healthz_response(request, checks)
     set_request_correlation_context(body["correlation"])
     return JSONResponse(content=body, headers=headers)
@@ -232,30 +209,14 @@ def get_capabilities(request: Request) -> JSONResponse:
             reasons=[CapabilityReason(code="DEGRADED", message=degraded_reason or "safe mode active")] if safe_mode in {"DEGRADED", "SAFE_MODE", "HALTED"} else [CapabilityReason(code="NOT_IMPLEMENTED", message="connectivity check not implemented")],
         ),
     ]
-    redaction_violations = 0
-    redaction_keys: set[str] = set()
-    for feature in features:
-        reason_dicts = [reason.to_dict() for reason in feature.reasons]
-        sanitized_reasons, violation_count, keys = sanitize_capability_reasons(reason_dicts)
-        feature.reasons = [CapabilityReason(**reason) for reason in sanitized_reasons]
-        if violation_count > 0:
-            redaction_violations += violation_count
-            redaction_keys.update(keys)
-            feature.state = FeatureState.DEGRADED
-            feature.reasons.append(
-                CapabilityReason(code="REDACTION_VIOLATION", message="reason sanitized")
-            )
-
-    if redaction_violations > 0:
-        emit_audit_event(
-            "redaction_violation",
-            {"count": redaction_violations, "keys": sorted(redaction_keys)},
-            service="execution",
-        )
-
     body, headers = build_capabilities_response(request, features)
     set_request_correlation_context(body["correlation"])
     return JSONResponse(content=body, headers=headers)
+
+
+@app.get("/metrics")
+def metrics() -> Response:
+    return Response(content=expose_metrics_text(_obs_service_name), media_type="text/plain; version=0.0.4")
 
 
 def _mark_live_degraded(reason: str) -> None:
