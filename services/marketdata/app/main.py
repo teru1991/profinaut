@@ -534,7 +534,7 @@ async def healthz(request: Request) -> JSONResponse:
 
 @app.get("/metrics")
 async def metrics() -> PlainTextResponse:
-    metric_lines = []
+    metric_lines = [expose_metrics_text(_obs_service_name).rstrip("\n")]
     for key, value in _mock_runtime.metrics().items():
         metric_lines.append(f"# TYPE {key} gauge")
         metric_lines.append(f"{key} {value}")

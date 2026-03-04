@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from .auth import require_execution_token
 from .config import Settings, get_settings
