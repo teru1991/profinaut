@@ -101,6 +101,18 @@ from libs.observability.correlation import now_utc_iso
 from libs.observability.http_contracts import build_capabilities_response, build_healthz_response
 
 
+from libs.observability.contracts import (
+    CapabilityFeature,
+    CapabilityReason,
+    FeatureState,
+    HealthCheck,
+    HealthStatus,
+)
+from libs.observability.core import set_request_correlation_context
+from libs.observability.correlation import now_utc_iso
+from libs.observability.http_contracts import build_capabilities_response, build_healthz_response
+
+
 app = FastAPI(title="Profinaut Dashboard API", version="0.4.0")
 app.add_middleware(request_id_middleware())
 _obs_service_name = os.getenv("PROFINAUT_SERVICE_NAME") or "dashboard-api"
