@@ -1,0 +1,21 @@
+schema_version: 1
+
+required_log_keys:
+  - exchange_id
+  - conn_id
+  - op
+  - symbol
+  - run_id
+  - decision_id
+
+# ここは “名前の固定” が目的。実メトリクス名はプロジェクト都合で拡張可だが、missing_metrics_policy に従う
+required_metrics:
+  - safety_lease_ok
+  - audit_chain_ok
+  - deps_health_ok
+  - metrics_pipeline_ok
+  - clock_health_ok
+  - execution_outbox_depth
+  - execution_lane0_queue_depth
+
+missing_metrics_policy: FAIL_CLOSE
