@@ -31,6 +31,16 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.append(str(_REPO_ROOT))
 
 from libs.observability import audit_event, error_envelope, request_id_middleware
+from libs.observability.audit import emit_audit_event
+from libs.observability.middleware import ObservabilityMiddleware
+from libs.observability.contracts import CapabilityFeature, CapabilityReason, FeatureState, HealthCheck, HealthStatus
+from libs.observability.core import set_request_correlation_context
+from libs.observability.correlation import now_utc_iso
+from libs.observability.http_contracts import build_capabilities_response, build_healthz_response
+from libs.observability.http_sanitize import (
+    sanitize_capability_reasons,
+    sanitize_health_check_details,
+)
 from services.marketdata.app.bronze_store import BronzeStore, RawMetaRepository
 from services.marketdata.app.object_store import build_object_store_from_env
 from services.marketdata.app.gmo_ws_connector import GmoPublicWsConnector, GmoWsConfig
@@ -388,6 +398,8 @@ def _is_valid_rfc3339(ts: str) -> bool:
         return False
 app = FastAPI(title="profinaut-marketdata", version="0.1.0")
 app.add_middleware(request_id_middleware())
+_obs_service_name = os.getenv("PROFINAUT_SERVICE_NAME") or "marketdata"
+app.add_middleware(ObservabilityMiddleware, service_name=_obs_service_name)
 app.include_router(raw_ingest_router)
 _poller = MarketDataPoller(PollerConfig())
 _object_store, _object_store_status = build_object_store_from_env()
@@ -485,7 +497,7 @@ async def _db_health_snapshot() -> tuple[bool, float | None, str | None]:
 
 
 @app.get("/healthz")
-async def healthz() -> dict[str, Any]:
+async def healthz(request: Request) -> JSONResponse:
     db_ok, db_latency_ms, db_reason = await _db_health_snapshot()
     runtime_storage_backend = os.getenv("OBJECT_STORE_BACKEND")
     storage_ready = bool(runtime_storage_backend)
@@ -497,23 +509,52 @@ async def healthz() -> dict[str, Any]:
     if not db_ok and db_reason is None and os.getenv("DB_DSN") is None and os.getenv("DATABASE_URL") is None:
         degraded_reasons.append("DB_NOT_CONFIGURED")
 
-    checks = [
-        {"name": "object_store", "ok": storage_ready and not bronze_health.get("degraded", False)},
-        {"name": "db", "ok": db_ok},
+    checks: list[HealthCheck] = [
+        HealthCheck(
+            name="self",
+            status=HealthStatus.OK,
+            reason_code="OK",
+            summary="service alive",
+            observed_at=now_utc_iso(),
+        ),
+        HealthCheck(
+            name="object_store",
+            status=HealthStatus.OK if storage_ready and not bronze_health.get("degraded", False) else HealthStatus.UNKNOWN,
+            reason_code="OK" if storage_ready else "NOT_IMPLEMENTED",
+            summary="object store configured" if storage_ready else "object store not configured",
+            observed_at=now_utc_iso(),
+        ),
+        HealthCheck(
+            name="db",
+            status=HealthStatus.OK if db_ok else HealthStatus.UNKNOWN,
+            reason_code="OK" if db_ok else ("NOT_IMPLEMENTED" if db_reason is None else "DEP_UNREACHABLE"),
+            summary="database healthy" if db_ok else (db_reason or "database not configured"),
+            observed_at=now_utc_iso(),
+        ),
     ]
-    payload = {
-        "status": "degraded" if degraded_reasons else "ok",
-        "db_ok": db_ok,
-        "db_latency_ms": db_latency_ms,
-        "degraded_reasons": degraded_reasons,
-        "checks": checks,
-        "ts": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
-        "registry_ok": _registry_error is None and _registry is not None,
-        "registry_venue": _registry_venue,
-        "bronze": bronze_health,
-    }
-    payload["mock"] = _mock_runtime.health()
-    return payload
+    redaction_violations = 0
+    redaction_keys: set[str] = set()
+    for check in checks:
+        if check.details:
+            sanitized_details, violation_count, keys = sanitize_health_check_details(check.details)
+            check.details = sanitized_details
+            if violation_count > 0:
+                redaction_violations += violation_count
+                redaction_keys.update(keys)
+                check.status = HealthStatus.DEGRADED
+                check.reason_code = "REDACTION_VIOLATION"
+                check.summary = f"{check.summary} (sanitized)"
+
+    if redaction_violations > 0:
+        emit_audit_event(
+            "redaction_violation",
+            {"count": redaction_violations, "keys": sorted(redaction_keys)},
+            service="marketdata",
+        )
+
+    body, headers = build_healthz_response(request, checks)
+    set_request_correlation_context(body["correlation"])
+    return JSONResponse(content=body, headers=headers)
 
 
 @app.get("/metrics")
@@ -541,7 +582,7 @@ async def metrics() -> PlainTextResponse:
 
 
 @app.get("/capabilities")
-async def get_capabilities() -> dict[str, Any]:
+async def get_capabilities(request: Request) -> JSONResponse:
     """Return service capabilities and health status."""
     async with _poller._lock:
         degraded_reason = _poller._degraded_reason
@@ -576,30 +617,45 @@ async def get_capabilities() -> dict[str, Any]:
 
     degraded = degraded or bool(degraded_reasons)
 
-    return {
-        "service": "marketdata",
-        "version": "0.1.0",
-        "status": "degraded" if degraded else "ok",
-        "features": ["ticker_latest", "gmo_poller", "gmo_ws_connector"],
-        "storage_backend": runtime_storage_backend,
-        "ingest_raw_enabled": bool(runtime_storage_backend and runtime_db_dsn),
-        "silver_enabled": silver_enabled,
-        "db_enabled": bool(runtime_db_dsn),
-        "degraded": degraded,
-        "db_ok": db_ok,
-        "db_latency_ms": db_latency_ms,
-        "degraded_reason": degraded_reason,
-        "degraded_reasons": degraded_reasons,
-        "generated_at": datetime.now(UTC).isoformat(),
-        "ingest_stats": ingest_metrics.summary(),
-        "registry": {
-            "venue": _registry.venue if _registry else _registry_venue,
-            "catalog_path": _registry.catalog_path if _registry else None,
-            "connections_total": len(_registry.connections) if _registry else 0,
-            "capabilities": _registry.capabilities if _registry else {},
-            "error": _registry_error,
-        },
-    }
+    features = [
+        CapabilityFeature(name="marketdata_ws_ingest", state=FeatureState.ENABLED),
+        CapabilityFeature(
+            name="marketdata_http_fetch",
+            state=FeatureState.DEGRADED if degraded else FeatureState.ENABLED,
+            reasons=[CapabilityReason(code="DEGRADED", message="runtime degraded")]
+            if degraded
+            else [],
+        ),
+        CapabilityFeature(
+            name="metrics_export",
+            state=FeatureState.NOT_IMPLEMENTED,
+            reasons=[CapabilityReason(code="NOT_IMPLEMENTED", message="contract-level capability reporting only")],
+        ),
+    ]
+    redaction_violations = 0
+    redaction_keys: set[str] = set()
+    for feature in features:
+        reason_dicts = [reason.to_dict() for reason in feature.reasons]
+        sanitized_reasons, violation_count, keys = sanitize_capability_reasons(reason_dicts)
+        feature.reasons = [CapabilityReason(**reason) for reason in sanitized_reasons]
+        if violation_count > 0:
+            redaction_violations += violation_count
+            redaction_keys.update(keys)
+            feature.state = FeatureState.DEGRADED
+            feature.reasons.append(
+                CapabilityReason(code="REDACTION_VIOLATION", message="reason sanitized")
+            )
+
+    if redaction_violations > 0:
+        emit_audit_event(
+            "redaction_violation",
+            {"count": redaction_violations, "keys": sorted(redaction_keys)},
+            service="marketdata",
+        )
+
+    body, headers = build_capabilities_response(request, features)
+    set_request_correlation_context(body["correlation"])
+    return JSONResponse(content=body, headers=headers)
 
 
 

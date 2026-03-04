@@ -1685,6 +1685,80 @@
       "verification_evidence": [
         "docs/verification/B-STEP5.md"
       ]
+    },
+    "C-OBS-001": {
+      "branch": "feature/c-obs-001-001",
+      "artifacts": [
+        "contracts/observability/__init__.py",
+        "contracts/observability/contract_constants.py",
+        "docs/contracts/observability/capabilities.schema.json",
+        "docs/contracts/observability/correlation.schema.json",
+        "docs/contracts/observability/healthz.schema.json",
+        "docs/specs/observability/README.md",
+        "docs/status/trace-index.json",
+        "docs/verification/C-OBS-001.md",
+        "libs/observability/contracts.py",
+        "libs/observability/correlation.py",
+        "libs/observability/core.py",
+        "libs/observability/http_contracts.py",
+        "scripts/ci/observability_contract_check.py",
+        "services/dashboard-api/app/main.py",
+        "services/execution/app/main.py",
+        "services/marketdata/app/main.py",
+        "tests/test_observability_contract_capabilities.py",
+        "tests/test_observability_contract_correlation_headers.py",
+        "tests/test_observability_contract_healthz.py"
+      ],
+      "verification_evidence": [
+        "docs/verification/C-OBS-001.md"
+      ]
+    },
+    "C-OBS-002": {
+      "branch": "feature/c-obs-002-001",
+      "artifacts": [
+        "docs/contracts/observability/log_event.schema.json",
+        "docs/specs/observability/README.md",
+        "docs/status/trace-index.json",
+        "docs/verification/C-OBS-002.md",
+        "libs/observability/__init__.py",
+        "libs/observability/core.py",
+        "libs/observability/logging.py",
+        "libs/observability/middleware.py",
+        "scripts/ci/observability_logging_check.py",
+        "services/dashboard-api/app/main.py",
+        "services/execution/app/main.py",
+        "services/marketdata/app/main.py",
+        "tests/test_observability_log_contract_schema.py",
+        "tests/test_observability_logging_required_keys.py",
+        "tests/test_observability_middleware_injects_headers_and_logs.py"
+      ],
+      "verification_evidence": [
+        "docs/verification/C-OBS-002.md"
+      ]
+    },
+    "C-OBS-003": {
+      "branch": "feature/c-obs-003-001",
+      "artifacts": [
+        "docs/policy/redaction.toml",
+        "docs/specs/observability/README.md",
+        "docs/specs/observability/data_classification.md",
+        "docs/status/trace-index.json",
+        "docs/verification/C-OBS-003.md",
+        "libs/observability/audit.py",
+        "libs/observability/http_sanitize.py",
+        "libs/observability/logging.py",
+        "libs/observability/redaction.py",
+        "scripts/ci/observability_redaction_lint.py",
+        "services/dashboard-api/app/main.py",
+        "services/execution/app/main.py",
+        "services/marketdata/app/main.py",
+        "tests/test_observability_healthz_details_sanitized.py",
+        "tests/test_observability_redaction_deep.py",
+        "tests/test_observability_redaction_policy.py"
+      ],
+      "verification_evidence": [
+        "docs/verification/C-OBS-003.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

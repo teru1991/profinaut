@@ -3,6 +3,7 @@ import base64
 import hashlib
 import hmac
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -86,9 +87,29 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.append(str(_REPO_ROOT))
 
 from libs.observability import audit_event, error_envelope, request_id_middleware
+from libs.observability.audit import emit_audit_event
+from libs.observability.middleware import ObservabilityMiddleware
+
+from libs.observability.contracts import (
+    CapabilityFeature,
+    CapabilityReason,
+    FeatureState,
+    HealthCheck,
+    HealthStatus,
+)
+from libs.observability.core import set_request_correlation_context
+from libs.observability.correlation import now_utc_iso
+from libs.observability.http_contracts import build_capabilities_response, build_healthz_response
+from libs.observability.http_sanitize import (
+    sanitize_capability_reasons,
+    sanitize_health_check_details,
+)
+
 
 app = FastAPI(title="Profinaut Dashboard API", version="0.4.0")
 app.add_middleware(request_id_middleware())
+_obs_service_name = os.getenv("PROFINAUT_SERVICE_NAME") or "dashboard-api"
+app.add_middleware(ObservabilityMiddleware, service_name=_obs_service_name)
 STALE_SECONDS = 120
 STRONG_COMMAND_TYPES = frozenset({"HALT", "FLATTEN", "CLOSE_ALL", "KILL_SWITCH"})
 
@@ -248,25 +269,89 @@ def get_marketdata_ticker_latest(
     return {"request_id": request_id, "data": payload}
 
 
-@app.get("/healthz", response_model=HealthResponse)
-def get_healthz() -> HealthResponse:
-    return HealthResponse(status="ok", timestamp=datetime.now(UTC))
+@app.get("/healthz")
+def get_healthz(request: Request) -> JSONResponse:
+    checks = [
+        HealthCheck(
+            name="self",
+            status=HealthStatus.OK,
+            reason_code="OK",
+            summary="service alive",
+            observed_at=now_utc_iso(),
+        ),
+        HealthCheck(
+            name="marketdata_probe",
+            status=HealthStatus.UNKNOWN,
+            reason_code="NOT_IMPLEMENTED",
+            summary="upstream health aggregation handled by /api/system/status",
+            observed_at=now_utc_iso(),
+        ),
+    ]
+    redaction_violations = 0
+    redaction_keys: set[str] = set()
+    for check in checks:
+        if check.details:
+            sanitized_details, violation_count, keys = sanitize_health_check_details(check.details)
+            check.details = sanitized_details
+            if violation_count > 0:
+                redaction_violations += violation_count
+                redaction_keys.update(keys)
+                check.status = HealthStatus.DEGRADED
+                check.reason_code = "REDACTION_VIOLATION"
+                check.summary = f"{check.summary} (sanitized)"
+
+    if redaction_violations > 0:
+        emit_audit_event(
+            "redaction_violation",
+            {"count": redaction_violations, "keys": sorted(redaction_keys)},
+            service="dashboard-api",
+        )
+
+    body, headers = build_healthz_response(request, checks)
+    set_request_correlation_context(body["correlation"])
+    return JSONResponse(content=body, headers=headers)
 
 
-@app.get("/capabilities", response_model=CapabilitiesResponse)
-def get_capabilities() -> CapabilitiesResponse:
+@app.get("/capabilities")
+def get_capabilities(request: Request) -> JSONResponse:
     settings = get_settings()
-    return CapabilitiesResponse(
-        version=app.version,
-        status="ok",
-        features=["bots", "commands", "portfolio", "analytics"],
-        command_safety_enforce_reason=settings.command_safety_enforce_reason,
-        dangerous_ops_confirmation={
-            "enabled": settings.dangerous_ops_confirmation,
-            "ttl_seconds": max(1, int(settings.dangerous_ops_confirmation_ttl_seconds)),
-        },
-        generated_at=datetime.now(UTC),
-    )
+    features = [
+        CapabilityFeature(name="bots", state=FeatureState.ENABLED),
+        CapabilityFeature(name="commands", state=FeatureState.ENABLED),
+        CapabilityFeature(name="portfolio", state=FeatureState.ENABLED),
+        CapabilityFeature(name="analytics", state=FeatureState.ENABLED),
+        CapabilityFeature(
+            name="dangerous_ops_confirmation",
+            state=FeatureState.ENABLED if settings.dangerous_ops_confirmation else FeatureState.DISABLED,
+            reasons=[]
+            if settings.dangerous_ops_confirmation
+            else [CapabilityReason(code="DISABLED", message="dangerous confirmation gate disabled")],
+        ),
+    ]
+    redaction_violations = 0
+    redaction_keys: set[str] = set()
+    for feature in features:
+        reason_dicts = [reason.to_dict() for reason in feature.reasons]
+        sanitized_reasons, violation_count, keys = sanitize_capability_reasons(reason_dicts)
+        feature.reasons = [CapabilityReason(**reason) for reason in sanitized_reasons]
+        if violation_count > 0:
+            redaction_violations += violation_count
+            redaction_keys.update(keys)
+            feature.state = FeatureState.DEGRADED
+            feature.reasons.append(
+                CapabilityReason(code="REDACTION_VIOLATION", message="reason sanitized")
+            )
+
+    if redaction_violations > 0:
+        emit_audit_event(
+            "redaction_violation",
+            {"count": redaction_violations, "keys": sorted(redaction_keys)},
+            service="dashboard-api",
+        )
+
+    body, headers = build_capabilities_response(request, features)
+    set_request_correlation_context(body["correlation"])
+    return JSONResponse(content=body, headers=headers)
 
 
 def _probe_status_component(*, name: str, url: str, timeout_seconds: float) -> StatusComponent:

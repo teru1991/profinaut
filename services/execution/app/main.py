@@ -20,6 +20,22 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.append(str(_REPO_ROOT))
 
 from libs.observability import audit_event, error_envelope, request_id_middleware
+from libs.observability.audit import emit_audit_event
+from libs.observability.middleware import ObservabilityMiddleware
+from libs.observability.contracts import (
+    CapabilityFeature,
+    CapabilityReason,
+    FeatureState,
+    HealthCheck,
+    HealthStatus,
+)
+from libs.observability.core import set_request_correlation_context
+from libs.observability.correlation import now_utc_iso
+from libs.observability.http_contracts import build_capabilities_response, build_healthz_response
+from libs.observability.http_sanitize import (
+    sanitize_capability_reasons,
+    sanitize_health_check_details,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -30,6 +46,8 @@ logger = logging.getLogger("execution")
 
 app = FastAPI(title="Profinaut Execution Service", version="0.1.0")
 app.add_middleware(request_id_middleware())
+_obs_service_name = os.getenv("PROFINAUT_SERVICE_NAME") or "execution"
+app.add_middleware(ObservabilityMiddleware, service_name=_obs_service_name)
 
 _live_backoff_until_utc: datetime | None = None
 _degraded_reason: str | None = None
@@ -145,31 +163,99 @@ def _log_context(
     }
 
 
-@app.get("/healthz", response_model=HealthResponse)
-def get_healthz() -> HealthResponse:
-    return HealthResponse(status="ok", timestamp=datetime.now(timezone.utc))
-
-
-@app.get("/capabilities", response_model=CapabilitiesResponse)
-def get_capabilities() -> CapabilitiesResponse:
+@app.get("/healthz")
+def get_healthz(request: Request) -> JSONResponse:
     settings = get_settings()
-    now = datetime.now(timezone.utc)
     safe_mode, degraded_reason = _resolve_safe_mode()
-    features = ["paper_execution"]
-    if settings.execution_live_enabled:
-        features.append("live_execution")
-        if not settings.is_live_mode():
-            features.append("live_dry_run")
-    return CapabilitiesResponse(
-        service="execution",
-        version=settings.service_version,
-        status="degraded" if safe_mode == "DEGRADED" else "ok",
-        safe_mode=safe_mode,
-        allowed_actions=_allowed_actions_for_mode(safe_mode),
-        features=features,
-        degraded_reason=degraded_reason,
-        generated_at=now,
-    )
+    checks = [
+        HealthCheck(
+            name="self",
+            status=HealthStatus.OK,
+            reason_code="OK",
+            summary="service alive",
+            observed_at=now_utc_iso(),
+        ),
+        HealthCheck(
+            name="execution_mode",
+            status=HealthStatus.DEGRADED if safe_mode in {"DEGRADED", "SAFE_MODE", "HALTED"} else HealthStatus.OK,
+            reason_code="SAFE_MODE" if safe_mode in {"DEGRADED", "SAFE_MODE", "HALTED"} else "OK",
+            summary=degraded_reason or f"mode={safe_mode}",
+            observed_at=now_utc_iso(),
+        ),
+        HealthCheck(
+            name="exchange_api",
+            status=HealthStatus.UNKNOWN,
+            reason_code="NOT_IMPLEMENTED",
+            summary="live dependency probe not implemented",
+            observed_at=now_utc_iso(),
+        ),
+    ]
+    redaction_violations = 0
+    redaction_keys: set[str] = set()
+    for check in checks:
+        if check.details:
+            sanitized_details, violation_count, keys = sanitize_health_check_details(check.details)
+            check.details = sanitized_details
+            if violation_count > 0:
+                redaction_violations += violation_count
+                redaction_keys.update(keys)
+                check.status = HealthStatus.DEGRADED
+                check.reason_code = "REDACTION_VIOLATION"
+                check.summary = f"{check.summary} (sanitized)"
+
+    if redaction_violations > 0:
+        emit_audit_event(
+            "redaction_violation",
+            {"count": redaction_violations, "keys": sorted(redaction_keys)},
+            service="execution",
+        )
+
+    body, headers = build_healthz_response(request, checks)
+    set_request_correlation_context(body["correlation"])
+    return JSONResponse(content=body, headers=headers)
+
+
+@app.get("/capabilities")
+def get_capabilities(request: Request) -> JSONResponse:
+    settings = get_settings()
+    safe_mode, degraded_reason = _resolve_safe_mode()
+    features = [
+        CapabilityFeature(name="paper_execution", state=FeatureState.ENABLED),
+        CapabilityFeature(
+            name="live_execution",
+            state=FeatureState.ENABLED if settings.execution_live_enabled else FeatureState.NOT_IMPLEMENTED,
+            reasons=[] if settings.execution_live_enabled else [CapabilityReason(code="NOT_IMPLEMENTED", message="live execution disabled")],
+        ),
+        CapabilityFeature(
+            name="live_exchange_connectivity",
+            state=FeatureState.DEGRADED if safe_mode in {"DEGRADED", "SAFE_MODE", "HALTED"} else FeatureState.NOT_IMPLEMENTED,
+            reasons=[CapabilityReason(code="DEGRADED", message=degraded_reason or "safe mode active")] if safe_mode in {"DEGRADED", "SAFE_MODE", "HALTED"} else [CapabilityReason(code="NOT_IMPLEMENTED", message="connectivity check not implemented")],
+        ),
+    ]
+    redaction_violations = 0
+    redaction_keys: set[str] = set()
+    for feature in features:
+        reason_dicts = [reason.to_dict() for reason in feature.reasons]
+        sanitized_reasons, violation_count, keys = sanitize_capability_reasons(reason_dicts)
+        feature.reasons = [CapabilityReason(**reason) for reason in sanitized_reasons]
+        if violation_count > 0:
+            redaction_violations += violation_count
+            redaction_keys.update(keys)
+            feature.state = FeatureState.DEGRADED
+            feature.reasons.append(
+                CapabilityReason(code="REDACTION_VIOLATION", message="reason sanitized")
+            )
+
+    if redaction_violations > 0:
+        emit_audit_event(
+            "redaction_violation",
+            {"count": redaction_violations, "keys": sorted(redaction_keys)},
+            service="execution",
+        )
+
+    body, headers = build_capabilities_response(request, features)
+    set_request_correlation_context(body["correlation"])
+    return JSONResponse(content=body, headers=headers)
 
 
 def _mark_live_degraded(reason: str) -> None:
