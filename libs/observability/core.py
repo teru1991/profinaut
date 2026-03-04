@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
+import contextvars
 from datetime import UTC, datetime
 from typing import Any, Callable
 
@@ -11,6 +12,9 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 LOGGER = logging.getLogger("observability")
 SENSITIVE_KEYS = {"api_key", "apikey", "secret", "token", "password", "passphrase"}
+_obs_correlation_ctx: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar(
+    "obs_correlation", default=None
+)
 
 
 def _redact(data: dict[str, Any]) -> dict[str, Any]:
@@ -51,6 +55,24 @@ def error_envelope(*, code: str, message: str, request_id: str, details: dict[st
     }
 
 
+def set_request_correlation_context(corr: dict[str, Any] | None) -> None:
+    _obs_correlation_ctx.set(corr)
+
+
+def get_request_correlation_context() -> dict[str, Any] | None:
+    return _obs_correlation_ctx.get()
+
+
+def _inject_correlation_fields(payload: dict[str, Any]) -> dict[str, Any]:
+    corr = get_request_correlation_context()
+    if not corr:
+        return payload
+    for key in ["run_id", "instance_id", "trace_id", "op", "schema_version"]:
+        if key in corr and key not in payload:
+            payload[key] = corr[key]
+    return payload
+
+
 def audit_event(*, service: str, event: str, request_id: str | None = None, **fields: Any) -> None:
     payload = {
         "ts_utc": datetime.now(UTC).isoformat(),
@@ -59,4 +81,5 @@ def audit_event(*, service: str, event: str, request_id: str | None = None, **fi
         "request_id": request_id,
         **_redact(fields),
     }
+    payload = _inject_correlation_fields(payload)
     LOGGER.info(json.dumps(payload, ensure_ascii=False))
