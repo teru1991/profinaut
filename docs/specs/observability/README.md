@@ -31,3 +31,9 @@ This directory defines the contract entrypoint for C-domain observability respon
 - Required keys: `schema_version`, `ts`, `level`, `msg`, `logger`, `service`, `op`, `run_id`, `instance_id`.
 - In STRICT mode (`PROFINAUT_OBS_LOG_STRICT=1`), missing required keys are treated as errors in tests/CI.
 - Forbidden keys from `docs/policy/forbidden_keys.toml` are masked in log `fields` payloads.
+
+## Data classification and redaction
+
+- Data classification SSOT: `docs/specs/observability/data_classification.md`
+- Runtime redaction policy: `docs/policy/redaction.toml`
+- Forbidden key source: `docs/policy/forbidden_keys.toml`

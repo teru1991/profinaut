@@ -3,13 +3,9 @@ from __future__ import annotations
 import json
 import os
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any
 
-try:
-    import tomllib
-except ModuleNotFoundError:  # pragma: no cover
-    tomllib = None  # type: ignore[assignment]
+from libs.observability.redaction import load_forbidden_keys, sanitize
 
 SCHEMA_VERSION_LOG_EVENT = "obs.log_event.v1"
 _REQUIRED_KEYS = [
@@ -34,42 +30,6 @@ def is_strict_mode() -> bool:
     return (os.getenv("PROFINAUT_OBS_LOG_STRICT") or "").strip() == "1"
 
 
-def _repo_root() -> Path:
-    current = Path(__file__).resolve()
-    for parent in [current.parent] + list(current.parents):
-        if (parent / "docs").exists() and (parent / "services").exists():
-            return parent
-    return Path.cwd()
-
-
-def load_forbidden_keys() -> set[str]:
-    if tomllib is None:
-        return set()
-
-    path = _repo_root() / "docs" / "policy" / "forbidden_keys.toml"
-    if not path.exists():
-        return set()
-
-    try:
-        data = tomllib.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return set()
-
-    keys: list[str] | None = None
-    if isinstance(data.get("keys"), dict):
-        key_list = data["keys"].get("list")
-        if isinstance(key_list, list):
-            keys = [str(item) for item in key_list]
-    if keys is None and isinstance(data.get("forbidden"), dict):
-        key_list = data["forbidden"].get("keys")
-        if isinstance(key_list, list):
-            keys = [str(item) for item in key_list]
-
-    if not keys:
-        return set()
-    return {key.strip().lower() for key in keys if key.strip()}
-
-
 def forbidden_keys() -> set[str]:
     global _FORBIDDEN_KEYS_CACHE
     if _FORBIDDEN_KEYS_CACHE is None:
@@ -80,17 +40,10 @@ def forbidden_keys() -> set[str]:
 def redact_fields(fields: dict[str, Any] | None) -> dict[str, Any] | None:
     if fields is None:
         return None
-    blocked = forbidden_keys()
-    if not blocked:
-        return dict(fields)
-
-    redacted: dict[str, Any] = {}
-    for key, value in fields.items():
-        if str(key).lower() in blocked:
-            redacted[key] = "***"
-        else:
-            redacted[key] = value
-    return redacted
+    sanitized, _violations = sanitize(fields)
+    if isinstance(sanitized, dict):
+        return sanitized
+    return {"sanitized": True}
 
 
 def validate_required_keys(event: dict[str, Any], strict: bool) -> None:
@@ -111,6 +64,11 @@ def build_log_event(
     reason_code: str | None = None,
 ) -> dict[str, Any]:
     correlation = corr or {}
+    sanitized_fields, violations = sanitize(fields or {})
+    effective_reason = reason_code
+    if violations and not effective_reason:
+        effective_reason = "REDACTION_VIOLATION"
+
     event: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION_LOG_EVENT,
         "ts": now_utc_iso(),
@@ -123,9 +81,12 @@ def build_log_event(
         "instance_id": correlation.get("instance_id"),
         "trace_id": correlation.get("trace_id"),
         "event_uid": correlation.get("event_uid"),
-        "reason_code": reason_code,
-        "fields": redact_fields(fields),
+        "reason_code": effective_reason,
+        "fields": sanitized_fields if isinstance(sanitized_fields, dict) else {"sanitized": True},
     }
+    if violations:
+        event["fields"]["redaction_violation_count"] = len(violations)
+
     for key in list(event.keys()):
         if event[key] is None:
             event.pop(key)
