@@ -1,0 +1,16 @@
+[redaction]
+mode = "mask"
+mask_value = "***"
+max_depth = 8
+max_keys = 2000
+
+[patterns]
+value_regex = [
+  "(?i)bearer\\s+[a-z0-9\\-_\\.]+",
+  "(?i)api[_-]?key\\s*[:=]\\s*[a-z0-9\\-_\\.]+"
+]
+
+[restricted_fields]
+contains = ["token", "secret", "password", "authorization", "cookie", "signature", "nonce"]
+trade_exact = ["client_order_id", "order_id", "price", "qty", "size", "amount", "notional"]
+infra_contains = ["host", "hostname", "ip", "internal_url", "endpoint", "base_url"]
