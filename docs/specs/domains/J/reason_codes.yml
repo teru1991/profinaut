@@ -1,0 +1,52 @@
+schema_version: 1
+
+reasons:
+  - code: J_POLICY_ALLOW
+    severity: INFO
+    default_action: ALLOW
+    description: "Policy allows the operation."
+
+  - code: J_POLICY_DENY_UNKNOWN_INPUT
+    severity: CRITICAL
+    default_action: HALT
+    description: "Required policy inputs are unknown/invalid; fail-close."
+
+  - code: J_POLICY_DENY_MISSING_REQUIRED_INPUT
+    severity: CRITICAL
+    default_action: HALT
+    description: "Required policy inputs are missing; fail-close."
+
+  - code: J_POLICY_HALT_AUDIT_CHAIN_BROKEN
+    severity: CRITICAL
+    default_action: HALT
+    description: "Audit chain continuity is broken; latch HALT until explicit remediation."
+
+  - code: J_POLICY_DENY_LEASE_MISSING
+    severity: ERROR
+    default_action: DENY
+    description: "Safety lease is missing/expired; block live operations."
+
+  - code: J_POLICY_CANCEL_ONLY_DEGRADED
+    severity: ERROR
+    default_action: CANCEL_ONLY
+    description: "System health degraded; allow only cancel/flatten."
+
+  - code: J_POLICY_DENY_QUIET_HOURS
+    severity: WARN
+    default_action: DENY
+    description: "Operation denied due to quiet hours restrictions."
+
+  - code: J_POLICY_DENY_FORBIDDEN_OP
+    severity: ERROR
+    default_action: DENY
+    description: "Operation is forbidden by policy."
+
+  - code: J_POLICY_DENY_RBAC
+    severity: ERROR
+    default_action: DENY
+    description: "Operation denied by RBAC matrix."
+
+  - code: J_POLICY_HALT_SAFE_MODE
+    severity: CRITICAL
+    default_action: HALT
+    description: "System is in SAFE_MODE/HALTED; halt live operations (latch)."

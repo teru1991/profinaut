@@ -1,0 +1,19 @@
+schema_version: 1
+
+fail_close:
+  on_unknown_input: true
+  on_missing_required_input: true
+
+required_inputs:
+  - metrics
+  - clock
+  - audit
+  - lease
+  - deps
+
+execution:
+  single_egress_required: true
+  lane0_priority_required: true
+
+portfolio:
+  tamper_evident_ledger_required: true

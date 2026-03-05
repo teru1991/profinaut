@@ -1,0 +1,70 @@
+schema_version: 1
+
+roles:
+  - viewer
+  - operator
+  - oncall
+  - admin
+
+ops:
+  - view_status
+  - request_break_glass
+  - approve_break_glass
+  - suppress_interlock
+  - set_mode
+  - live_send_new_order
+  - live_send_cancel
+  - live_send_flatten
+  - treasury_transfer_request
+  - treasury_transfer_approve
+  - generate_audit_pack
+
+rules:
+  - role: viewer
+    op: view_status
+    allow: true
+
+  - role: operator
+    op: request_break_glass
+    allow: true
+  - role: operator
+    op: live_send_cancel
+    allow: true
+  - role: operator
+    op: live_send_flatten
+    allow: true
+  - role: operator
+    op: live_send_new_order
+    allow: false
+
+  - role: oncall
+    op: request_break_glass
+    allow: true
+  - role: oncall
+    op: approve_break_glass
+    allow: true
+  - role: oncall
+    op: suppress_interlock
+    allow: true
+  - role: oncall
+    op: live_send_new_order
+    allow: true
+  - role: oncall
+    op: live_send_cancel
+    allow: true
+  - role: oncall
+    op: live_send_flatten
+    allow: true
+
+  - role: admin
+    op: set_mode
+    allow: true
+  - role: admin
+    op: treasury_transfer_request
+    allow: true
+  - role: admin
+    op: treasury_transfer_approve
+    allow: true
+  - role: admin
+    op: generate_audit_pack
+    allow: true

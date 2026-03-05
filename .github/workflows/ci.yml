@@ -218,3 +218,35 @@ jobs:
           cargo semver-checks check-release \
             --manifest-path ucel/crates/ucel-core/Cargo.toml \
             --baseline-root /tmp/ucel-baseline/ucel
+
+
+  execution-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run execution tests
+        run: scripts/ci/execution_tests.sh
+
+
+  portfolio-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run portfolio tests
+        run: scripts/ci/portfolio_tests.sh
