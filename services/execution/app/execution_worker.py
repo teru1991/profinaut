@@ -6,6 +6,7 @@ import time
 from dataclasses import dataclass
 from typing import Any, Callable
 
+from app.e_safety_adapter import append_send_intent_audit, evaluate_send_safety
 from app.i_events import append_event, ensure_events_schema
 from app.i_gate import GateContext, check_gate
 from app.i_outbox import dequeue_next, mark_blocked, mark_failed_with_backoff, mark_inflight, mark_sent
@@ -30,6 +31,13 @@ def worker_step(conn: sqlite3.Connection, sender: LiveSender, gate_ctx_base: Gat
         mark_inflight(conn, outbox_id)
         payload = json.loads(payload_json)
 
+        # E safety physical enforcement (lease + audit verify + interlocks)
+        safety_ok, safety_evidence = evaluate_send_safety(conn, payload, gate_ctx_base)
+        if not safety_ok:
+            mark_blocked(conn, outbox_id)
+            append_event(conn, "OUTBOX_BLOCKED", {"outbox_id": outbox_id, "evidence": {"safety": safety_evidence}})
+            return True
+
         action = "ORDER_INTENT"
         op = str(payload.get("op", ""))
         if op == "cancel":
@@ -37,7 +45,7 @@ def worker_step(conn: sqlite3.Connection, sender: LiveSender, gate_ctx_base: Gat
         elif op == "replace":
             action = "REPLACE"
 
-        allow, evidence = check_gate(
+        allow, gate_evidence = check_gate(
             GateContext(
                 action=action,
                 exchange=gate_ctx_base.exchange,
@@ -56,7 +64,16 @@ def worker_step(conn: sqlite3.Connection, sender: LiveSender, gate_ctx_base: Gat
         )
         if not allow:
             mark_blocked(conn, outbox_id)
-            append_event(conn, "OUTBOX_BLOCKED", {"outbox_id": outbox_id, "evidence": evidence})
+            append_event(conn, "OUTBOX_BLOCKED", {"outbox_id": outbox_id, "evidence": {"gate": gate_evidence}})
+            return True
+
+        # audit append must succeed before send
+        audit_append_ok, audit_append_evidence = append_send_intent_audit(
+            conn, outbox_id, lane, venue, symbol, payload, safety_evidence, gate_evidence
+        )
+        if not audit_append_ok:
+            mark_blocked(conn, outbox_id)
+            append_event(conn, "OUTBOX_BLOCKED", {"outbox_id": outbox_id, "evidence": {"audit_append": audit_append_evidence}})
             return True
 
         append_event(conn, "OUTBOX_SEND_ATTEMPT", {"outbox_id": outbox_id, "attempt": attempt, "lane": lane})
