@@ -2,20 +2,24 @@ import sqlite3
 import threading
 import uuid
 from datetime import datetime, timezone
+from typing import Any
 
+from .i_events import ensure_events_schema
+from .i_inbox import ensure_inbox_schema
+from .i_outbox import enqueue, ensure_outbox_schema
 from .schemas import Fill, Order, OrderIntent
 
 
 class OrderStorage:
-    """Thread-safe storage with SQLite-persisted idempotency mapping."""
+    """Thread-safe storage with SQLite-persisted idempotency mapping and durable I-core tables."""
 
     def __init__(self, db_path: str):
         self._lock = threading.Lock()
         self._orders: dict[str, Order] = {}
         self._fills: list[Fill] = []
-        self._idempotency_map: dict[str, str] = {}  # idempotency_key -> order_id
-        self._client_order_id_map: dict[str, str] = {}  # idempotency_key -> client_order_id
-        self._order_client_map: dict[str, str] = {}  # order_id -> client_order_id
+        self._idempotency_map: dict[str, str] = {}
+        self._client_order_id_map: dict[str, str] = {}
+        self._order_client_map: dict[str, str] = {}
 
         self._conn = sqlite3.connect(db_path, check_same_thread=False)
         self._conn.execute("PRAGMA journal_mode=WAL")
@@ -29,7 +33,17 @@ class OrderStorage:
             """
         )
         self._conn.commit()
+
+        # I-core durable schemas (append-only/logical outbox-inbox)
+        ensure_outbox_schema(self._conn)
+        ensure_inbox_schema(self._conn)
+        ensure_events_schema(self._conn)
+
         self._load_persisted_idempotency()
+
+    @property
+    def conn(self) -> sqlite3.Connection:
+        return self._conn
 
     def _load_persisted_idempotency(self) -> None:
         rows = self._conn.execute("SELECT idempotency_key, order_id, client_order_id FROM idempotency_map").fetchall()
@@ -50,6 +64,21 @@ class OrderStorage:
         except sqlite3.IntegrityError:
             return False
 
+    def enqueue_outbox(self, *, lane: str, venue: str, symbol: str, payload: dict[str, Any], dedupe_key: str) -> str:
+        with self._lock:
+            return enqueue(self._conn, lane=lane, venue=venue, symbol=symbol, payload=payload, dedupe_key=dedupe_key)  # type: ignore[arg-type]
+
+    def list_local_orders_for_reconcile(self) -> dict[str, dict[str, Any]]:
+        with self._lock:
+            return {
+                oid: {
+                    "state": "LIVE" if o.status == "ACCEPTED" else o.status,
+                    "symbol": o.symbol,
+                    "exchange": o.exchange,
+                }
+                for oid, o in self._orders.items()
+            }
+
     def create_order(
         self,
         intent: OrderIntent,
@@ -63,7 +92,6 @@ class OrderStorage:
 
             order_id = order_id or f"paper-{uuid.uuid4()}"
             if not self._persist_idempotency(intent.idempotency_key, order_id, client_order_id):
-                # race/restart-safe duplicate detected from persisted table
                 self._idempotency_map[intent.idempotency_key] = order_id
                 return None
 

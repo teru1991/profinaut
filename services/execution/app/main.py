@@ -9,6 +9,9 @@ from fastapi.responses import JSONResponse, Response
 
 from .auth import require_execution_token
 from .config import Settings, get_settings
+from .exchange_gateway import send_live_payload
+from .i_events import append_event
+from .i_outbox import mark_failed_with_backoff, mark_sent
 from .live import GmoLiveExecutor, LiveRateLimitError, LiveTimeoutError
 from .policy_gate import PolicyAction, PolicyGateInput, PolicyGateResult, evaluate_policy_gate
 from .schemas import CapabilitiesResponse, FillsHistoryResponse, HealthResponse, OrdersHistoryResponse, Order, OrderIntent
@@ -225,6 +228,29 @@ def _error_payload(code: str, message: str) -> dict[str, str]:
     return {"error": code, "message": message}
 
 
+
+
+def _single_egress_send(*, settings: Settings, payload: dict[str, object], lane: str, dedupe_key: str) -> dict[str, object]:
+    storage = get_storage()
+    outbox_id = storage.enqueue_outbox(
+        lane=lane,
+        venue=str(payload.get("exchange", "")),
+        symbol=str(payload.get("symbol", "")),
+        payload=payload,
+        dedupe_key=dedupe_key,
+    )
+
+    try:
+        result = send_live_payload(settings, payload)
+        mark_sent(storage.conn, outbox_id)
+        append_event(storage.conn, "OUTBOX_SENT", {"outbox_id": outbox_id, "result": result})
+        return result
+    except Exception:
+        mark_failed_with_backoff(storage.conn, outbox_id, attempt=1)
+        append_event(storage.conn, "OUTBOX_SEND_FAILED", {"outbox_id": outbox_id})
+        raise
+
+
 def _get_live_executor(settings: Settings) -> GmoLiveExecutor:
     api_key = os.getenv("GMO_API_KEY", "")
     api_secret = os.getenv("GMO_API_SECRET", "")
@@ -323,21 +349,28 @@ def post_order_intent(intent: OrderIntent) -> Order:
 
     # Create order (handles idempotency check)
     if intent.exchange == "gmo":
-        live = _get_live_executor(settings)
+        _get_live_executor(settings)
         client_order_id = GmoLiveExecutor.build_client_order_id(intent.idempotency_key)
         try:
-            placed = live.place_order(
-                symbol=intent.symbol,
-                side=intent.side,
-                qty=intent.qty,
-                order_type=intent.type,
-                limit_price=intent.limit_price,
-                client_order_id=client_order_id,
+            send_result = _single_egress_send(
+                settings=settings,
+                payload={
+                    "op": "new_order",
+                    "exchange": intent.exchange,
+                    "symbol": intent.symbol,
+                    "side": intent.side,
+                    "qty": intent.qty,
+                    "order_type": intent.type,
+                    "limit_price": intent.limit_price,
+                    "client_order_id": client_order_id,
+                },
+                lane="LANE2_NEW",
+                dedupe_key=intent.idempotency_key,
             )
         except (LiveRateLimitError, LiveTimeoutError) as exc:
             _mark_live_degraded(str(exc))
             raise HTTPException(status_code=503, detail=str(exc)) from exc
-        order = storage.create_order(intent, order_id=placed.order_id, client_order_id=client_order_id)
+        order = storage.create_order(intent, order_id=str(send_result.get("order_id", "")), client_order_id=client_order_id)
     else:
         order = storage.create_order(intent)
 
@@ -383,12 +416,23 @@ def cancel_order(order_id: str, _actor: str = Depends(require_execution_token)) 
 
     if order.exchange == "gmo":
         _enforce_policy_gate(action="CANCEL", exchange=order.exchange)
-        live = _get_live_executor(settings)
+        _get_live_executor(settings)
         client_order_id = storage.get_client_order_id_by_order_id(order_id)
         if client_order_id is None:
             raise HTTPException(status_code=409, detail="Missing client_order_id mapping")
         try:
-            live.cancel_order(order_id=order_id, client_order_id=client_order_id)
+            _single_egress_send(
+                settings=settings,
+                payload={
+                    "op": "cancel",
+                    "exchange": order.exchange,
+                    "symbol": order.symbol,
+                    "order_id": order_id,
+                    "client_order_id": client_order_id,
+                },
+                lane="LANE0_CANCEL",
+                dedupe_key=f"cancel::{order_id}",
+            )
         except (LiveRateLimitError, LiveTimeoutError) as exc:
             _mark_live_degraded(str(exc))
             raise HTTPException(status_code=503, detail=str(exc)) from exc
