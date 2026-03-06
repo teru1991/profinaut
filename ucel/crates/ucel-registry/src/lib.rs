@@ -390,3 +390,28 @@ pub fn evm_chain_capabilities(chain_id: u64) -> serde_json::Value {
         ]
     })
 }
+
+
+pub fn list_equity_vendors() -> Vec<&'static str> {
+    vec!["demo-equity"]
+}
+
+pub fn equity_vendor_exists(vendor: &str) -> bool {
+    list_equity_vendors().iter().any(|v| v.eq_ignore_ascii_case(vendor))
+}
+
+pub fn equity_vendor_capabilities(vendor: &str) -> Option<serde_json::Value> {
+    if !equity_vendor_exists(vendor) {
+        return None;
+    }
+    Some(serde_json::json!({
+        "vendor": "demo-equity",
+        "quotes": "supported",
+        "bars_intraday": "supported",
+        "bars_daily": "supported",
+        "symbols": "supported",
+        "calendar": "supported",
+        "corporate_actions": "supported",
+        "latency": ["delayed", "end_of_day"]
+    }))
+}

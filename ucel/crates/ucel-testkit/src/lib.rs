@@ -2,6 +2,7 @@ pub mod auth;
 pub mod chaos;
 pub mod chain_evm;
 pub mod coverage;
+pub mod equity;
 pub mod coverage_gate;
 pub mod coverage_v2;
 pub mod fixtures;

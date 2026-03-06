@@ -1,0 +1,96 @@
+# UCEL-EQUITY-DATA-012 Verification
+
+## 1) Changed files (`git diff --name-only` task scope)
+- docs/specs/ucel/equity_data_surface_v1.md
+- docs/status/trace-index.json
+- ucel/docs/equities/equity_adapter_policy.md
+- ucel/docs/equities/equity_symbol_mapping_policy.md
+- ucel/docs/equities/equity_calendar_policy.md
+- ucel/docs/equities/equity_corporate_action_policy.md
+- ucel/docs/equities/equity_vendor_support_matrix.md
+- ucel/crates/ucel-core/src/equity.rs
+- ucel/crates/ucel-core/src/lib.rs
+- ucel/crates/ucel-equity-core/Cargo.toml
+- ucel/crates/ucel-equity-core/src/lib.rs
+- ucel/crates/ucel-equity-core/src/models.rs
+- ucel/crates/ucel-equity-core/src/normalize.rs
+- ucel/crates/ucel-equity-core/src/calendar.rs
+- ucel/crates/ucel-equity-core/src/corporate_actions.rs
+- ucel/crates/ucel-equity-core/src/vendor.rs
+- ucel/crates/ucel-equity-core/src/errors.rs
+- ucel/crates/ucel-equity-adapter-demo/Cargo.toml
+- ucel/crates/ucel-equity-adapter-demo/src/lib.rs
+- ucel/crates/ucel-equity-adapter-demo/src/http.rs
+- ucel/crates/ucel-equity-adapter-demo/src/quote.rs
+- ucel/crates/ucel-equity-adapter-demo/src/bars.rs
+- ucel/crates/ucel-equity-adapter-demo/src/calendar.rs
+- ucel/crates/ucel-equity-adapter-demo/src/corporate_actions.rs
+- ucel/crates/ucel-equity-adapter-demo/src/symbols.rs
+- ucel/crates/ucel-equity-adapter-demo/src/errors.rs
+- ucel/crates/ucel-sdk/src/equity.rs
+- ucel/crates/ucel-sdk/src/lib.rs
+- ucel/crates/ucel-sdk/Cargo.toml
+- ucel/crates/ucel-registry/src/lib.rs
+- ucel/crates/ucel-testkit/src/equity.rs
+- ucel/crates/ucel-testkit/src/lib.rs
+- ucel/crates/ucel-testkit/Cargo.toml
+- ucel/crates/ucel-testkit/tests/equity_contract_matrix.rs
+- ucel/crates/ucel-testkit/tests/equity_quote_and_bar_normalization.rs
+- ucel/crates/ucel-testkit/tests/equity_calendar_and_session.rs
+- ucel/crates/ucel-testkit/tests/equity_corporate_actions.rs
+- ucel/crates/ucel-testkit/tests/equity_symbol_mapping.rs
+- ucel/examples/equity_data_preview.rs
+- ucel/examples/equity_calendar_preview.rs
+- ucel/fixtures/equity_data/README.md
+- ucel/Cargo.toml
+- ucel/Cargo.lock
+- docs/verification/UCEL-EQUITY-DATA-012.md
+
+## 2) What / Why
+- Added a new equity-data SSOT and policy docs to define canonical quote/bar/symbol/calendar/corporate-action behavior.
+- Introduced canonical equity models in `ucel-core`, plus vendor-agnostic abstraction in `ucel-equity-core`.
+- Implemented one end-to-end demo vendor adapter crate with normalization, capabilities, and fail-closed symbol/session handling.
+- Exposed equity facade via SDK and minimal vendor listing/capability helpers in registry.
+- Added equity testkit harness + regression tests for matrix, normalization, calendar/session, corporate actions, and symbol mapping.
+
+## 3) Self-check results
+- Allowed-path check: OK (task files are within the allowlist; pre-existing unrelated dirty files were not included in commit).
+- Tests added/updated: OK
+  - equity_contract_matrix
+  - equity_quote_and_bar_normalization
+  - equity_calendar_and_session
+  - equity_corporate_actions
+  - equity_symbol_mapping
+- Build/Unit command results:
+  - PASS: `cd ucel && cargo test -p ucel-core`
+  - PASS: `cd ucel && cargo test -p ucel-equity-core`
+  - PASS: `cd ucel && cargo test -p ucel-equity-adapter-demo`
+  - PASS: `cd ucel && cargo test -p ucel-sdk`
+  - PASS: `cd ucel && cargo test -p ucel-registry`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test equity_contract_matrix -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test equity_quote_and_bar_normalization -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test equity_calendar_and_session -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test equity_corporate_actions -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test equity_symbol_mapping -- --nocapture`
+  - NOTE: full `-p ucel-testkit` run is currently blocked by existing `support_bundle_manifest_gate` fixture path expectation outside this task scope.
+- trace-index json.tool: OK (`python -m json.tool docs/status/trace-index.json > /dev/null`).
+- Secrets scan: OK (added-lines scan for key/secret/private-key patterns produced no hits).
+- docs link existence check: OK (local `docs/` references in touched docs resolve).
+
+## 4) 履歴確認の証拠（必須）
+- `git log --oneline --decorate -n 50` / `git log --graph --oneline --decorate --all -n 80`:
+  - HEAD baseline before this task: `d17dd27` (previous broad EVM/public/ws-ingest change).
+  - Recent merge lineage includes `2d83fec`, `9048e35`, `0fd992a`.
+- `git show <head>` / last-touch checks:
+  - Core/SDK/Registry hotspots (`ucel-core/src/lib.rs`, `ucel-sdk/src/lib.rs`, `ucel-registry/src/lib.rs`) were last touched at `d17dd27`, so this task kept changes localized/minimal in those hotspots and moved new logic to new equity crates.
+- `git blame -w` review:
+  - Confirmed hotspots carry existing cross-asset exports and registry glue; equity additions were appended without rewriting prior exchange/chain surfaces.
+  - `ucel-ir` is not the right home for live equity price-data adapter responsibilities (kept separated in this task).
+- `git reflog -n 30` / `git branch -vv`:
+  - Working branch prepared from `d17dd27` and task implemented on `feature/ucel-equity-data-012-001`.
+- `git merge-base HEAD origin/master`:
+  - Environment limitation: `origin/master` ref unavailable in this container; conflict checks against that ref cannot be executed directly.
+- Design roots validated from code/docs history:
+  - Vendor/symbol/calendar/corporate-action conventions are codified before code wiring (SSOT-first).
+  - delayed-vs-realtime distinction is modeled via canonical `EquityLatencyClass` + vendor capabilities and tested.
+  - Additional implementation beyond minimal quote fetch: calendar/session and corporate actions were implemented because quote/bar alone is insufficient for safe upstream consumption.

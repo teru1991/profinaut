@@ -17,6 +17,8 @@ ucel-subscription-store = { path = "../ucel-subscription-store" }
 ucel-sdk = { path = "../ucel-sdk" }
 ucel-ws-rules = { path = "../ucel-ws-rules" }
 ucel-chain-ethereum = { path = "../ucel-chain-ethereum" }
+ucel-equity-core = { path = "../ucel-equity-core" }
+ucel-equity-adapter-demo = { path = "../ucel-equity-adapter-demo" }
 
 ucel-cex-bybit = { path = "../ucel-cex-bybit" }
 ucel-cex-bithumb = { path = "../ucel-cex-bithumb" }

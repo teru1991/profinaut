@@ -3794,6 +3794,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucel-equity-adapter-demo"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "ucel-core",
+ "ucel-equity-core",
+]
+
+[[package]]
+name = "ucel-equity-core"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "ucel-core",
+]
+
+[[package]]
 name = "ucel-execution-core"
 version = "0.1.0"
 dependencies = [
@@ -3873,6 +3893,8 @@ dependencies = [
  "tracing",
  "ucel-chain-ethereum",
  "ucel-core",
+ "ucel-equity-adapter-demo",
+ "ucel-equity-core",
  "ucel-registry",
  "ucel-symbol-adapter",
  "ucel-symbol-core",
@@ -3962,6 +3984,8 @@ dependencies = [
  "ucel-cex-gmocoin",
  "ucel-chain-ethereum",
  "ucel-core",
+ "ucel-equity-adapter-demo",
+ "ucel-equity-core",
  "ucel-registry",
  "ucel-sdk",
  "ucel-subscription-planner",

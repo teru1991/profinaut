@@ -12,6 +12,8 @@ ucel-symbol-adapter = { path = "../ucel-symbol-adapter" }
 ucel-symbol-store = { path = "../ucel-symbol-store" }
 ucel-symbol-core = { path = "../ucel-symbol-core" }
 ucel-chain-ethereum = { path = "../ucel-chain-ethereum" }
+ucel-equity-core = { path = "../ucel-equity-core" }
+ucel-equity-adapter-demo = { path = "../ucel-equity-adapter-demo" }
 
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }

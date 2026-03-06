@@ -2200,6 +2200,60 @@
       "verification_evidence": [
         "docs/verification/UCEL-CHAIN-EVM-011.md"
       ]
+    },
+    "UCEL-EQUITY-DATA-012": {
+      "branch": "feature/ucel-equity-data-012-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/specs/ucel/equity_data_surface_v1.md",
+        "ucel/docs/equities/equity_adapter_policy.md",
+        "ucel/docs/equities/equity_symbol_mapping_policy.md",
+        "ucel/docs/equities/equity_calendar_policy.md",
+        "ucel/docs/equities/equity_corporate_action_policy.md",
+        "ucel/docs/equities/equity_vendor_support_matrix.md",
+        "ucel/crates/ucel-core/src/equity.rs",
+        "ucel/crates/ucel-core/src/lib.rs",
+        "ucel/crates/ucel-equity-core/Cargo.toml",
+        "ucel/crates/ucel-equity-core/src/lib.rs",
+        "ucel/crates/ucel-equity-core/src/models.rs",
+        "ucel/crates/ucel-equity-core/src/normalize.rs",
+        "ucel/crates/ucel-equity-core/src/calendar.rs",
+        "ucel/crates/ucel-equity-core/src/corporate_actions.rs",
+        "ucel/crates/ucel-equity-core/src/vendor.rs",
+        "ucel/crates/ucel-equity-core/src/errors.rs",
+        "ucel/crates/ucel-equity-adapter-demo/Cargo.toml",
+        "ucel/crates/ucel-equity-adapter-demo/src/lib.rs",
+        "ucel/crates/ucel-equity-adapter-demo/src/http.rs",
+        "ucel/crates/ucel-equity-adapter-demo/src/quote.rs",
+        "ucel/crates/ucel-equity-adapter-demo/src/bars.rs",
+        "ucel/crates/ucel-equity-adapter-demo/src/calendar.rs",
+        "ucel/crates/ucel-equity-adapter-demo/src/corporate_actions.rs",
+        "ucel/crates/ucel-equity-adapter-demo/src/symbols.rs",
+        "ucel/crates/ucel-equity-adapter-demo/src/errors.rs",
+        "ucel/crates/ucel-sdk/src/equity.rs",
+        "ucel/crates/ucel-sdk/src/lib.rs",
+        "ucel/crates/ucel-sdk/Cargo.toml",
+        "ucel/crates/ucel-registry/src/lib.rs",
+        "ucel/crates/ucel-testkit/src/equity.rs",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/Cargo.toml",
+        "ucel/crates/ucel-testkit/tests/equity_contract_matrix.rs",
+        "ucel/crates/ucel-testkit/tests/equity_quote_and_bar_normalization.rs",
+        "ucel/crates/ucel-testkit/tests/equity_calendar_and_session.rs",
+        "ucel/crates/ucel-testkit/tests/equity_corporate_actions.rs",
+        "ucel/crates/ucel-testkit/tests/equity_symbol_mapping.rs",
+        "ucel/examples/equity_data_preview.rs",
+        "ucel/examples/equity_calendar_preview.rs",
+        "ucel/fixtures/equity_data/README.md",
+        "ucel/Cargo.toml",
+        "ucel/Cargo.lock",
+        "docs/status/trace-index.json",
+        "docs/verification/UCEL-EQUITY-DATA-012.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-EQUITY-DATA-012.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

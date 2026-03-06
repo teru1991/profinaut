@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod chain;
 pub mod decimal;
+pub mod equity;
 pub mod market_data;
 pub mod order_gate;
 pub mod policy;
@@ -20,6 +21,12 @@ pub use ws_ingest::{
     escalate_integrity_failure, failure_to_resume_directive, is_valid_transition,
     IngestCheckpoint, IngestFailureClass, IngestHeartbeatPolicy, IngestIntegrityMode,
     IngestLifecycleState, IngestResumeDirective, IngestRetryBudget, IngestStreamKey,
+};
+pub use equity::{
+    adjustment_mode_compatible, quote_is_stale, session_includes_local_time, validate_bar_timeframe,
+    EquityAdjustmentMode, EquityBar, EquityCorporateAction, EquityDividend, EquityExchangeCode,
+    EquityLatencyClass, EquityMarket, EquityMarketCalendar, EquityQuote, EquitySessionKind,
+    EquitySessionWindow, EquitySplit, EquitySupport, EquitySymbol,
 };
 pub use chain::{
     finality_at_least, receipt_is_success, validate_chain_id, validate_evm_address, ChainKind,
