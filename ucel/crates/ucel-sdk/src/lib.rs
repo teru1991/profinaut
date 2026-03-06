@@ -12,6 +12,7 @@ pub mod error;
 pub mod market_meta;
 pub mod order_normalize;
 pub mod private_rest;
+pub mod private_ws;
 pub mod sdk;
 pub mod secrets;
 pub mod support_bundle;

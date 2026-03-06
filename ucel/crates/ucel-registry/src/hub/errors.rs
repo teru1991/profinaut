@@ -16,6 +16,10 @@ pub enum HubError {
     Ws(#[source] Box<tokio_tungstenite::tungstenite::Error>),
     #[error("json error: {0}")]
     Json(#[from] serde_json::Error),
+    #[error("private ws blocked by policy for venue: {0}")]
+    PrivateWsBlockedByPolicy(String),
+    #[error("private ws missing auth material for channel: {0}")]
+    MissingPrivateWsAuth(String),
 }
 
 impl From<tokio_tungstenite::tungstenite::Error> for HubError {

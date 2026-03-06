@@ -2,6 +2,7 @@ pub mod auth;
 pub mod decimal;
 pub mod order_gate;
 pub mod policy;
+pub mod private_ws;
 pub mod private_rest;
 pub mod symbol;
 pub mod types;
@@ -19,6 +20,11 @@ pub use private_rest::{
     CanonicalBalance, CanonicalFill, CanonicalOrder, CanonicalPosition, PrivateReadRequest,
     PrivateRestOperation, PrivateRestResult, PrivateRestSupport, PrivateWriteRequest, RetrySafety,
     VenueRejectClass,
+};
+pub use private_ws::{
+    CanonicalBalanceEvent, CanonicalFillEvent, CanonicalOrderEvent, CanonicalPositionEvent,
+    CanonicalPrivateWsEvent, CanonicalSessionEvent, PrivateWsAckMode, PrivateWsChannel,
+    PrivateWsLifecycleState, PrivateWsOutcome, PrivateWsRejectClass, PrivateWsSupport,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt;
