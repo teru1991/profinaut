@@ -2,7 +2,7 @@ use super::config::HubConfig;
 use super::errors::HubError;
 use super::registry::SpecRegistry;
 use super::{ChannelKey, ExchangeId};
-use crate::policy::enforce_surface_for_catalog_entry;
+use crate::policy::{enforce_private_surface_allowed, enforce_surface_for_catalog_entry};
 use bytes::Bytes;
 use futures_util::{SinkExt, Stream, StreamExt};
 use serde_json::Value;
@@ -10,6 +10,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::Message;
+use ucel_core::PrivateWsChannel;
 use ucel_transport::security::{EndpointAllowlist, SubdomainPolicy};
 
 #[derive(Debug, Clone)]
@@ -38,7 +39,29 @@ impl WsHub {
         channel_key: impl Into<ChannelKey>,
         params: Option<Value>,
     ) -> Result<Pin<Box<dyn Stream<Item = Result<WsMessage, HubError>> + Send>>, HubError> {
-        let key = channel_key.into();
+        self.subscribe_impl(channel_key.into(), params).await
+    }
+
+    pub async fn subscribe_private(
+        &self,
+        channel: PrivateWsChannel,
+        key_id: Option<&str>,
+        params: Option<Value>,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<WsMessage, HubError>> + Send>>, HubError> {
+        enforce_private_surface_allowed(self.exchange.as_str())
+            .map_err(|_| HubError::PrivateWsBlockedByPolicy(self.exchange.as_str().to_string()))?;
+        if key_id.is_none() {
+            return Err(HubError::MissingPrivateWsAuth(format!("{channel:?}")));
+        }
+        let channel_key = private_channel_to_catalog_key(channel);
+        self.subscribe_impl(channel_key.into(), params).await
+    }
+
+    async fn subscribe_impl(
+        &self,
+        key: ChannelKey,
+        params: Option<Value>,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<WsMessage, HubError>> + Send>>, HubError> {
         let spec = SpecRegistry::global()?.resolve_ws(self.exchange, &key)?;
         enforce_surface_for_catalog_entry(self.exchange.as_str(), spec)
             .map_err(|e| HubError::RegistryValidation(e.to_string()))?;
@@ -123,6 +146,16 @@ impl WsHub {
         });
 
         Ok(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx)))
+    }
+}
+
+pub fn private_channel_to_catalog_key(channel: PrivateWsChannel) -> &'static str {
+    match channel {
+        PrivateWsChannel::Balances => "private_balances",
+        PrivateWsChannel::Orders => "private_orders",
+        PrivateWsChannel::Fills => "private_fills",
+        PrivateWsChannel::Positions => "private_positions",
+        PrivateWsChannel::Session => "private_session",
     }
 }
 

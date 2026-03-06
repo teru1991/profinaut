@@ -12,6 +12,7 @@ pub mod http_mock;
 pub mod normalize;
 pub mod okx;
 pub mod private_rest;
+pub mod private_ws;
 pub mod ssot_consistency;
 pub mod ssot_gate;
 pub mod ssot_integrity_gate;

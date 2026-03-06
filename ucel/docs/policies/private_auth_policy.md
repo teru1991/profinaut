@@ -46,3 +46,10 @@ This policy defines UCEL's **SSOT** for private authentication to prevent accide
 - Private REST for `public_only`/`blocked` venues MUST fail before network send (policy gate first).
 - Reject classes and retry-safety MUST be normalized at UCEL layer (no raw venue-only error propagation).
 - Contract matrix is tracked in `ucel/../exchanges/private_rest_matrix.md`.
+
+## 9) Private WS baseline (UCEL-PRIVATE-WS-006)
+- Private WS login/auth frame generation MUST pass Auth Core runtime.
+- Private WS MUST classify ACK model per venue as `explicit_ack` or `implicit_observation`.
+- `public_only` / `blocked` venues MUST be rejected before network send.
+- Session expiry / reauth / resubscribe MUST be normalized into canonical lifecycle/reject classes.
+- Preview/diagnostics/fixtures MUST NOT include raw token/signature/secret/private payload.

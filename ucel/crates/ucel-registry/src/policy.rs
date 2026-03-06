@@ -46,6 +46,11 @@ pub fn scope_for_venue(venue: &str) -> Result<VenueAccessScope, UcelError> {
     Ok(default_jp_resident_policy()?.scope_for_venue(venue))
 }
 
+pub fn enforce_private_surface_allowed(venue: &str) -> Result<(), UcelError> {
+    let policy = default_jp_resident_policy()?;
+    enforce_access(policy, venue, AccessSurface::PrivateWs)
+}
+
 pub fn enforce_surface_for_catalog_entry(
     venue: &str,
     entry: &CatalogEntry,
