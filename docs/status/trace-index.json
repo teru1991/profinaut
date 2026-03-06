@@ -1954,6 +1954,84 @@
       "verification_evidence": [
         "docs/verification/UCEL-SSOT-CONSISTENCY-003.md"
       ]
+    },
+    "UCEL-AUTH-CORE-004": {
+      "branch": "feature/ucel-auth-core-004-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/specs/ucel/auth_core_v1.md",
+        "docs/status/trace-index.json",
+        "docs/verification/UCEL-AUTH-CORE-004.md",
+        "ucel/Cargo.lock",
+        "ucel/crates/ucel-core/src/auth.rs",
+        "ucel/crates/ucel-core/src/lib.rs",
+        "ucel/crates/ucel-execution-core/Cargo.toml",
+        "ucel/crates/ucel-execution-core/src/auth.rs",
+        "ucel/crates/ucel-execution-core/src/lib.rs",
+        "ucel/crates/ucel-sdk/Cargo.toml",
+        "ucel/crates/ucel-sdk/src/auth.rs",
+        "ucel/crates/ucel-sdk/src/lib.rs",
+        "ucel/crates/ucel-testkit/src/auth.rs",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/tests/auth_core_nonce_and_clock.rs",
+        "ucel/crates/ucel-testkit/tests/auth_core_policy_boundary.rs",
+        "ucel/crates/ucel-testkit/tests/auth_core_redaction.rs",
+        "ucel/crates/ucel-testkit/tests/auth_core_signing.rs",
+        "ucel/crates/ucel-transport/src/auth.rs",
+        "ucel/crates/ucel-transport/src/lib.rs",
+        "ucel/crates/ucel-transport/src/redaction.rs",
+        "ucel/docs/policies/private_auth_policy.md",
+        "ucel/docs/policies/redaction_policy.md",
+        "ucel/examples/auth_core_preview.rs"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-AUTH-CORE-004.md"
+      ]
+    },
+    "UCEL-PRIVATE-REST-005": {
+      "branch": "feature/ucel-private-rest-005-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/specs/ucel/private_rest_surface_v1.md",
+        "docs/status/trace-index.json",
+        "docs/verification/UCEL-PRIVATE-REST-005.md",
+        "ucel/docs/policies/private_auth_policy.md",
+        "ucel/docs/exchanges/private_rest_matrix.md",
+        "ucel/crates/ucel-core/src/private_rest.rs",
+        "ucel/crates/ucel-core/src/lib.rs",
+        "ucel/crates/ucel-transport/src/redaction.rs",
+        "ucel/crates/ucel-registry/src/hub/rest.rs",
+        "ucel/crates/ucel-sdk/src/private_rest.rs",
+        "ucel/crates/ucel-sdk/src/lib.rs",
+        "ucel/crates/ucel-execution-core/src/private_rest.rs",
+        "ucel/crates/ucel-execution-core/src/lib.rs",
+        "ucel/crates/ucel-testkit/src/private_rest.rs",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/tests/private_rest_contract_matrix.rs",
+        "ucel/crates/ucel-testkit/tests/private_rest_reason_codes.rs",
+        "ucel/crates/ucel-testkit/tests/private_rest_policy_gate.rs",
+        "ucel/crates/ucel-testkit/tests/private_rest_wiremock.rs",
+        "ucel/fixtures/private_rest/bitbank/request_preview.json",
+        "ucel/fixtures/private_rest/bitbank/raw_response.json",
+        "ucel/fixtures/private_rest/bitbank/expected_canonical.json",
+        "ucel/fixtures/private_rest/bitflyer/request_preview.json",
+        "ucel/fixtures/private_rest/bitflyer/raw_response.json",
+        "ucel/fixtures/private_rest/bitflyer/expected_canonical.json",
+        "ucel/fixtures/private_rest/coincheck/request_preview.json",
+        "ucel/fixtures/private_rest/coincheck/raw_response.json",
+        "ucel/fixtures/private_rest/coincheck/expected_canonical.json",
+        "ucel/fixtures/private_rest/gmocoin/request_preview.json",
+        "ucel/fixtures/private_rest/gmocoin/raw_response.json",
+        "ucel/fixtures/private_rest/gmocoin/expected_canonical.json",
+        "ucel/fixtures/private_rest/bittrade/request_preview.json",
+        "ucel/fixtures/private_rest/bittrade/raw_response.json",
+        "ucel/fixtures/private_rest/bittrade/expected_canonical.json"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-PRIVATE-REST-005.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

@@ -158,6 +158,30 @@ fn validate_https_endpoint(exchange: ExchangeId, base: &str) -> Result<(), HubEr
     Ok(())
 }
 
+pub fn private_rest_operation_from_catalog_id(id: &str) -> Option<ucel_core::PrivateRestOperation> {
+    let id = id.to_ascii_lowercase();
+    if !id.contains("private") {
+        return None;
+    }
+    if id.contains("balance") || id.contains("assets") {
+        Some(ucel_core::PrivateRestOperation::GetBalances)
+    } else if id.contains("openorders") || id.contains("open_orders") {
+        Some(ucel_core::PrivateRestOperation::GetOpenOrders)
+    } else if id.contains("cancel") {
+        Some(ucel_core::PrivateRestOperation::CancelOrder)
+    } else if id.contains("fills") || id.contains("matchresults") || id.contains("executions") {
+        Some(ucel_core::PrivateRestOperation::GetFills)
+    } else if id.contains("position") {
+        Some(ucel_core::PrivateRestOperation::GetPositions)
+    } else if id.contains("order") {
+        Some(ucel_core::PrivateRestOperation::GetOrder)
+    } else if id.contains("account") || id.contains("profile") {
+        Some(ucel_core::PrivateRestOperation::GetAccountProfile)
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -172,5 +196,17 @@ mod tests {
         };
         assert_eq!(bounded_retry_delay_ms(&p, 10, None), 500);
         assert_eq!(bounded_retry_delay_ms(&p, 0, Some(2000)), 500);
+    }
+
+    #[test]
+    fn private_op_mapper_is_stable() {
+        assert_eq!(
+            private_rest_operation_from_catalog_id("private.rest.order.cancel.post"),
+            Some(ucel_core::PrivateRestOperation::CancelOrder)
+        );
+        assert_eq!(
+            private_rest_operation_from_catalog_id("public.rest.market.ticker"),
+            None
+        );
     }
 }

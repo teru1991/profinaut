@@ -32,3 +32,17 @@ This policy defines UCEL's **SSOT** for private authentication to prevent accide
 - coverage v1 is legacy/informational only.
 - CI gating MUST use coverage_v2 and policy gates outside v1 references.
 - Domestic venues MUST have mock request-shape gates (wiremock/httpmock) validating method/path/query/body/required headers without real keys.
+
+
+## 7) Auth Core boundary (UCEL-AUTH-CORE-004)
+- Private REST / WS / execution auth preparation MUST pass through shared Auth Core runtime APIs.
+- `requires_auth=true` with missing `key_id` or missing mode-specific material MUST fail before transport send.
+- Nonce generation MUST be scoped by `(venue,key_id,surface)` and monotonic within scope.
+- Sign preview/diagnostic output MUST be redacted per `../policies/redaction_policy.md`.
+
+
+## 8) Private REST baseline (UCEL-PRIVATE-REST-005)
+- Private REST canonical operations MUST map to `docs/specs/ucel/private_rest_surface_v1.md`.
+- Private REST for `public_only`/`blocked` venues MUST fail before network send (policy gate first).
+- Reject classes and retry-safety MUST be normalized at UCEL layer (no raw venue-only error propagation).
+- Contract matrix is tracked in `ucel/../exchanges/private_rest_matrix.md`.

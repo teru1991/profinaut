@@ -1,0 +1,95 @@
+# UCEL-PRIVATE-REST-005 Verification
+
+## 1) Changed files (`git diff --name-only` + new files)
+- docs/specs/ucel/private_rest_surface_v1.md
+- docs/status/trace-index.json
+- docs/verification/UCEL-PRIVATE-REST-005.md
+- ucel/docs/policies/private_auth_policy.md
+- ucel/docs/exchanges/private_rest_matrix.md
+- ucel/crates/ucel-core/src/private_rest.rs
+- ucel/crates/ucel-core/src/lib.rs
+- ucel/crates/ucel-transport/src/redaction.rs
+- ucel/crates/ucel-registry/src/hub/rest.rs
+- ucel/crates/ucel-sdk/src/private_rest.rs
+- ucel/crates/ucel-sdk/src/lib.rs
+- ucel/crates/ucel-execution-core/src/private_rest.rs
+- ucel/crates/ucel-execution-core/src/lib.rs
+- ucel/crates/ucel-testkit/src/private_rest.rs
+- ucel/crates/ucel-testkit/src/lib.rs
+- ucel/crates/ucel-testkit/tests/private_rest_contract_matrix.rs
+- ucel/crates/ucel-testkit/tests/private_rest_reason_codes.rs
+- ucel/crates/ucel-testkit/tests/private_rest_policy_gate.rs
+- ucel/crates/ucel-testkit/tests/private_rest_wiremock.rs
+- ucel/fixtures/private_rest/bitbank/request_preview.json
+- ucel/fixtures/private_rest/bitbank/raw_response.json
+- ucel/fixtures/private_rest/bitbank/expected_canonical.json
+- ucel/fixtures/private_rest/bitflyer/request_preview.json
+- ucel/fixtures/private_rest/bitflyer/raw_response.json
+- ucel/fixtures/private_rest/bitflyer/expected_canonical.json
+- ucel/fixtures/private_rest/coincheck/request_preview.json
+- ucel/fixtures/private_rest/coincheck/raw_response.json
+- ucel/fixtures/private_rest/coincheck/expected_canonical.json
+- ucel/fixtures/private_rest/gmocoin/request_preview.json
+- ucel/fixtures/private_rest/gmocoin/raw_response.json
+- ucel/fixtures/private_rest/gmocoin/expected_canonical.json
+- ucel/fixtures/private_rest/bittrade/request_preview.json
+- ucel/fixtures/private_rest/bittrade/raw_response.json
+- ucel/fixtures/private_rest/bittrade/expected_canonical.json
+
+## 2) What / Why
+- Added the Private REST v1 spec and matrix docs to pin canonical operations and policy-based enablement/blocked behavior.
+- Added shared canonical private REST model + reason/retry normalization helpers in `ucel-core`.
+- Added SDK facade and execution bridge primitives so upper layers can consume private REST in canonical types.
+- Added registry-side private REST operation mapping helper and transport redaction hardening for ACCESS-* auth headers.
+- Added testkit private REST harness/tests and fixtures so matrix/reason/policy/request-shape drift fails fast.
+
+## 3) Self-check results
+- Allowed-path check OK.
+  - Command:
+    - `git diff --name-only | awk '{ ok=($0 ~ /^docs\/specs\/ucel\// || $0=="docs/status/trace-index.json" || $0 ~ /^docs\/verification\// || $0 ~ /^ucel\/docs\/policies\// || $0 ~ /^ucel\/docs\/exchanges\// || $0 ~ /^ucel\/crates\/ucel-core\// || $0 ~ /^ucel\/crates\/ucel-transport\// || $0 ~ /^ucel\/crates\/ucel-execution-core\// || $0 ~ /^ucel\/crates\/ucel-sdk\// || $0 ~ /^ucel\/crates\/ucel-registry\// || $0 ~ /^ucel\/crates\/ucel-testkit\// || $0 ~ /^ucel\/crates\/ucel-cex-bitbank\// || $0 ~ /^ucel\/crates\/ucel-cex-bitflyer\// || $0 ~ /^ucel\/crates\/ucel-cex-coincheck\// || $0 ~ /^ucel\/crates\/ucel-cex-gmocoin\// || $0 ~ /^ucel\/crates\/ucel-cex-bittrade\// || $0 ~ /^ucel\/crates\/ucel-cex-sbivc\// || $0 ~ /^ucel\/crates\/ucel-cex-upbit\// || $0 ~ /^ucel\/examples\// || $0 ~ /^ucel\/fixtures\// || $0=="ucel/Cargo.toml" || $0=="ucel/Cargo.lock"); if(!ok) print $0 }'`
+  - Result: empty output.
+- Tests added/updated OK:
+  - `private_rest_contract_matrix.rs`
+  - `private_rest_reason_codes.rs`
+  - `private_rest_policy_gate.rs`
+  - `private_rest_wiremock.rs`
+- Build/Unit test command results:
+  - PASS: `cd ucel && cargo test -p ucel-core`
+  - PASS: `cd ucel && cargo test -p ucel-transport`
+  - PASS: `cd ucel && cargo test -p ucel-registry`
+  - PASS: `cd ucel && cargo test -p ucel-sdk`
+  - PASS: `cd ucel && cargo test -p ucel-execution-core`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test private_rest_contract_matrix -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test private_rest_reason_codes -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test private_rest_policy_gate -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test private_rest_wiremock -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-cex-bitbank -p ucel-cex-bitflyer -p ucel-cex-coincheck -p ucel-cex-gmocoin -p ucel-cex-bittrade`
+  - FAIL (pre-existing fixture gap):
+    - `cd ucel && cargo test -p ucel-core -p ucel-transport -p ucel-registry -p ucel-sdk -p ucel-testkit -p ucel-cex-bitbank -p ucel-cex-bitflyer -p ucel-cex-coincheck -p ucel-cex-gmocoin -p ucel-cex-bittrade`
+    - failure: `support_bundle_manifest_fixture_is_sane` missing `/workspace/profinaut/fixtures/support_bundle/manifest.json`.
+- trace-index json.tool OK:
+  - `python -m json.tool docs/status/trace-index.json > /dev/null`
+- Secrets scan OK:
+  - `rg -n "AKIA|BEGIN RSA PRIVATE KEY|BEGIN PRIVATE KEY|secret[[:space:]]*[:=][[:space:]]*\"[A-Za-z0-9_/+=-]{12,}\"" <changed files>`
+- docs link existence check OK for touched docs `docs/` references.
+
+## 4) History evidence (required)
+- Command evidence captured:
+  - `git log --oneline --decorate -n 50` (`/tmp/pr005_log50.txt`)
+  - `git log --graph --oneline --decorate --all -n 80` (`/tmp/pr005_graph80.txt`)
+  - `git show <HEAD>` (`/tmp/pr005_show_head.txt`)
+  - `git show <last touch SHA>` for hotspot files (`/tmp/pr005_show_hub_rest_last.txt`, `/tmp/pr005_show_sdk_lib_last.txt`, `/tmp/pr005_show_exec_lib_last.txt`, `/tmp/pr005_show_private_auth_policy_last.txt`)
+  - `git blame -w` for venue/registry/sdk/execution/policy files (`/tmp/pr005_blame_*`)
+  - `git reflog -n 30` (`/tmp/pr005_reflog.txt`)
+  - `git branch -vv` (`/tmp/pr005_branchvv.txt`)
+  - `git log --merges --oneline -n 30` (`/tmp/pr005_merges.txt`)
+- `origin/master` ref is not available in this environment:
+  - `git merge-base HEAD origin/master` and origin-targeted logs report `Not a valid object name origin/master`.
+- Venue private REST inventory conclusion:
+  - `bitbank/bitflyer/coincheck/gmocoin` have private request-builder evidence and policy `public_private` entries.
+  - `bittrade` has existing private REST lower-layer in execution connector, but current JP policy SSOT leaves it default `public_only` (blocked by policy).
+  - `sbivc` is explicitly `public_only`; `upbit` remains default `public_only` in current policy evidence.
+- Design rationale:
+  - Request builder / parser mismatch risk was addressed by adding canonical model + matrix fixtures and fail-fast policy tests.
+  - Reason code + retry-safe normalization was centralized in `ucel-core::private_rest` and exercised via testkit gates.
+  - Redaction coverage was expanded to include ACCESS-* header keys to prevent private-auth leakage in previews.
