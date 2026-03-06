@@ -13,7 +13,8 @@ fn golden_bundle_summary_matches_expected_fixture() {
     .unwrap();
 
     let (summary, _compat, _drift) =
-        ucel_diagnostics_analyzer::analyze_support_bundle_value(&bundle, &root).expect("analyze golden");
+        ucel_diagnostics_analyzer::analyze_support_bundle_value(&bundle, &root)
+            .expect("analyze golden");
     assert_eq!(summary, expected);
 }
 

@@ -8,7 +8,8 @@ fn old_bundle_is_supported_or_warning() {
     )
     .unwrap();
     let (_summary, compat, _drift) =
-        ucel_diagnostics_analyzer::analyze_support_bundle_value(&bundle, &root).expect("analyze old");
+        ucel_diagnostics_analyzer::analyze_support_bundle_value(&bundle, &root)
+            .expect("analyze old");
     let status = compat.get("status").and_then(|v| v.as_str()).unwrap_or("");
     assert!(status == "Supported" || status == "SupportedWithWarnings");
 }

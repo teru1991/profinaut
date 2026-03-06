@@ -1,6 +1,9 @@
 use crate::diagnostics::limits::{BundleBuildError, BundleLimits};
 
-pub fn normalize_and_validate(rel: &str, limits: &BundleLimits) -> Result<String, BundleBuildError> {
+pub fn normalize_and_validate(
+    rel: &str,
+    limits: &BundleLimits,
+) -> Result<String, BundleBuildError> {
     if rel.is_empty() {
         return Err(BundleBuildError::InvalidPath(rel.to_string()));
     }

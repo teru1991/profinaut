@@ -12,8 +12,13 @@ pub enum AnalyzeError {
     Redaction(String),
 }
 
-pub fn analyze_support_bundle_value(bundle: &serde_json::Value, repo_root: &Path) -> Result<(serde_json::Value, serde_json::Value, serde_json::Value), AnalyzeError> {
-    let manifest = bundle.get("manifest").ok_or(AnalyzeError::MissingManifest)?;
+pub fn analyze_support_bundle_value(
+    bundle: &serde_json::Value,
+    repo_root: &Path,
+) -> Result<(serde_json::Value, serde_json::Value, serde_json::Value), AnalyzeError> {
+    let manifest = bundle
+        .get("manifest")
+        .ok_or(AnalyzeError::MissingManifest)?;
 
     let diag_semver = manifest
         .get("diag_semver")

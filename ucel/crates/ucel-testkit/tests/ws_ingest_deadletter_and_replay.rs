@@ -10,7 +10,10 @@ fn deadletter_and_journal_redaction_replayable() {
         IngestLifecycleState::AwaitingAuth,
         IngestFailureClass::PolicyBlocked,
     );
-    assert!(matches!(directive, ucel_core::IngestResumeDirective::Deadletter));
+    assert!(matches!(
+        directive,
+        ucel_core::IngestResumeDirective::Deadletter
+    ));
     let details = &sup.journal.events()[0].detail;
     assert!(!details.contains("token"));
 }

@@ -11,13 +11,7 @@ pub struct ChainFacade {
 
 impl ChainFacade {
     pub fn get_native_balance(&self, address: EvmAddress) -> Result<u128, UcelError> {
-        Ok(get_native_balance(
-            &self.providers,
-            self.chain_id,
-            address,
-            EvmBlockRef::Latest,
-        )?
-        .wei)
+        Ok(get_native_balance(&self.providers, self.chain_id, address, EvmBlockRef::Latest)?.wei)
     }
 
     pub fn preview_capabilities(&self) -> serde_json::Value {
@@ -28,7 +22,12 @@ impl ChainFacade {
         })
     }
 
-    pub fn tx_preview(&self, from: EvmAddress, to: EvmAddress, nonce: u64) -> Result<String, UcelError> {
+    pub fn tx_preview(
+        &self,
+        from: EvmAddress,
+        to: EvmAddress,
+        nonce: u64,
+    ) -> Result<String, UcelError> {
         let fee = estimate_eip1559(10, 2, 21_000, FeePolicy::default())?;
         let tx = build_transaction(
             self.chain_id,
@@ -40,7 +39,9 @@ impl ChainFacade {
             fee,
             nonce,
         )?;
-        let signer = DeterministicTestSigner { signer_id: "sdk-preview".into() };
+        let signer = DeterministicTestSigner {
+            signer_id: "sdk-preview".into(),
+        };
         let signed = sign_transaction(&signer, &tx)?;
         Ok(signed.tx_hash)
     }

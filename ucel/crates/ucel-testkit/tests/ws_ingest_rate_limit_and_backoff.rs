@@ -16,5 +16,8 @@ fn rate_limit_backoff_and_reason_tracking() {
         IngestFailureClass::RateLimited,
     );
     assert_eq!(sup.journal.events().len(), 1);
-    assert_eq!(sup.journal.events()[0].failure, Some(IngestFailureClass::RateLimited));
+    assert_eq!(
+        sup.journal.events()[0].failure,
+        Some(IngestFailureClass::RateLimited)
+    );
 }

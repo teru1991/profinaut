@@ -1,7 +1,9 @@
 use ucel_core::{
     CanonicalPrivateWsEvent, PrivateWsAckMode, PrivateWsLifecycleState, PrivateWsRejectClass,
 };
-use ucel_transport::ws::private_runtime::{PrivateWsEventEnvelope, PrivateWsSession, PrivateWsSessionConfig};
+use ucel_transport::ws::private_runtime::{
+    PrivateWsEventEnvelope, PrivateWsSession, PrivateWsSessionConfig,
+};
 
 pub fn build_session(venue: &str, ack_mode: PrivateWsAckMode) -> PrivateWsSession {
     PrivateWsSession::new(PrivateWsSessionConfig {

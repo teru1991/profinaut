@@ -1,6 +1,6 @@
-use ucel_testkit::equity::demo_adapter;
 use ucel_equity_core::calendar::validate_sessions;
 use ucel_equity_core::vendor::EquityVendorAdapter;
+use ucel_testkit::equity::demo_adapter;
 
 #[test]
 fn calendar_timezone_and_sessions_are_explicit() {

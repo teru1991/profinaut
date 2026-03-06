@@ -4,11 +4,14 @@ use ucel_diagnostics_core::registry::*;
 struct P1;
 impl DiagnosticsProvider for P1 {
     fn meta(&self) -> ProviderMeta {
-        ProviderMeta { provider_id: "alpha".into(), provider_version: "0.1.0".into() }
+        ProviderMeta {
+            provider_id: "alpha".into(),
+            provider_version: "0.1.0".into(),
+        }
     }
     fn contributions(&self, _req: &DiagnosticsRequest) -> Vec<Contribution> {
         vec![
-            Contribution{
+            Contribution {
                 provider_id: "alpha".into(),
                 kind: ContributionKind::Text,
                 path: "logs/tail.txt".into(),
@@ -16,7 +19,7 @@ impl DiagnosticsProvider for P1 {
                 size_limit_bytes: 128,
                 content: ContributionContent::Text("hello".into()),
             },
-            Contribution{
+            Contribution {
                 provider_id: "alpha".into(),
                 kind: ContributionKind::Json,
                 path: "meta/info.json".into(),
@@ -31,19 +34,20 @@ impl DiagnosticsProvider for P1 {
 struct P2;
 impl DiagnosticsProvider for P2 {
     fn meta(&self) -> ProviderMeta {
-        ProviderMeta { provider_id: "beta".into(), provider_version: "0.1.0".into() }
+        ProviderMeta {
+            provider_id: "beta".into(),
+            provider_version: "0.1.0".into(),
+        }
     }
     fn contributions(&self, _req: &DiagnosticsRequest) -> Vec<Contribution> {
-        vec![
-            Contribution{
-                provider_id: "beta".into(),
-                kind: ContributionKind::Meta,
-                path: "meta/z.txt".into(),
-                mime: "".into(),
-                size_limit_bytes: 128,
-                content: ContributionContent::Text("z".into()),
-            }
-        ]
+        vec![Contribution {
+            provider_id: "beta".into(),
+            kind: ContributionKind::Meta,
+            path: "meta/z.txt".into(),
+            mime: "".into(),
+            size_limit_bytes: 128,
+            content: ContributionContent::Text("z".into()),
+        }]
     }
 }
 
@@ -55,16 +59,27 @@ fn registry_orders_deterministically() {
 
     let req = DiagnosticsRequest::default();
     let cs = r.collect(&req).unwrap();
-    let keys: Vec<(String,String,String)> = cs.iter().map(|c| {
-        let k = match c.kind { ContributionKind::Json=>"json", ContributionKind::Text=>"text", ContributionKind::Meta=>"meta", ContributionKind::Binary=>"binary" };
-        (c.provider_id.clone(), c.path.clone(), k.to_string())
-    }).collect();
+    let keys: Vec<(String, String, String)> = cs
+        .iter()
+        .map(|c| {
+            let k = match c.kind {
+                ContributionKind::Json => "json",
+                ContributionKind::Text => "text",
+                ContributionKind::Meta => "meta",
+                ContributionKind::Binary => "binary",
+            };
+            (c.provider_id.clone(), c.path.clone(), k.to_string())
+        })
+        .collect();
 
-    assert_eq!(keys, vec![
-        ("alpha".into(), "logs/tail.txt".into(), "text".into()),
-        ("alpha".into(), "meta/info.json".into(), "json".into()),
-        ("beta".into(), "meta/z.txt".into(), "meta".into()),
-    ]);
+    assert_eq!(
+        keys,
+        vec![
+            ("alpha".into(), "logs/tail.txt".into(), "text".into()),
+            ("alpha".into(), "meta/info.json".into(), "json".into()),
+            ("beta".into(), "meta/z.txt".into(), "meta".into()),
+        ]
+    );
 }
 
 #[test]
@@ -74,10 +89,13 @@ fn registry_rejects_traversal_paths() {
     struct Bad;
     impl DiagnosticsProvider for Bad {
         fn meta(&self) -> ProviderMeta {
-            ProviderMeta { provider_id: "bad".into(), provider_version: "0.1.0".into() }
+            ProviderMeta {
+                provider_id: "bad".into(),
+                provider_version: "0.1.0".into(),
+            }
         }
         fn contributions(&self, _req: &DiagnosticsRequest) -> Vec<Contribution> {
-            vec![Contribution{
+            vec![Contribution {
                 provider_id: "bad".into(),
                 kind: ContributionKind::Text,
                 path: "../secret.txt".into(),

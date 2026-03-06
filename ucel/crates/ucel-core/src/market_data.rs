@@ -140,11 +140,18 @@ pub fn apply_orderbook_delta(
     for level in &delta.asks {
         upsert_level(&mut next.asks, level.clone(), false);
     }
-    next.sequence = delta.sequence_end.or(delta.sequence_start).or(snapshot.sequence);
+    next.sequence = delta
+        .sequence_end
+        .or(delta.sequence_start)
+        .or(snapshot.sequence);
     next
 }
 
-fn upsert_level(levels: &mut Vec<CanonicalOrderBookLevel>, level: CanonicalOrderBookLevel, bid: bool) {
+fn upsert_level(
+    levels: &mut Vec<CanonicalOrderBookLevel>,
+    level: CanonicalOrderBookLevel,
+    bid: bool,
+) {
     if level.qty <= Decimal::from(0) {
         levels.retain(|x| x.price != level.price);
         return;
@@ -155,9 +162,17 @@ fn upsert_level(levels: &mut Vec<CanonicalOrderBookLevel>, level: CanonicalOrder
         levels.push(level);
     }
     if bid {
-        levels.sort_by(|a, b| b.price.partial_cmp(&a.price).unwrap_or(std::cmp::Ordering::Equal));
+        levels.sort_by(|a, b| {
+            b.price
+                .partial_cmp(&a.price)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
     } else {
-        levels.sort_by(|a, b| a.price.partial_cmp(&b.price).unwrap_or(std::cmp::Ordering::Equal));
+        levels.sort_by(|a, b| {
+            a.price
+                .partial_cmp(&b.price)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
     }
 }
 

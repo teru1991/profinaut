@@ -51,7 +51,8 @@ impl WsIngestSupervisor {
         from: IngestLifecycleState,
         failure: IngestFailureClass,
     ) -> IngestResumeDirective {
-        let directive = failure_to_resume_directive(failure, ucel_core::IngestIntegrityMode::Sequence);
+        let directive =
+            failure_to_resume_directive(failure, ucel_core::IngestIntegrityMode::Sequence);
         let to = if matches!(directive, IngestResumeDirective::Deadletter) {
             IngestLifecycleState::Deadlettered
         } else {

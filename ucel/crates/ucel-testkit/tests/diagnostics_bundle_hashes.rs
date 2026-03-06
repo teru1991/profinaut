@@ -20,7 +20,11 @@ fn support_bundle_contains_real_hashes_not_unknown() {
 #[test]
 fn canonical_newline_normalization_keeps_hash_stable() {
     let repo_root = ucel_testkit::diagnostics::repo_root();
-    let h1 = ucel_diagnostics_core::hash_paths(&repo_root, &["fixtures/support_bundle/manifest.json"]).unwrap();
-    let h2 = ucel_diagnostics_core::hash_paths(&repo_root, &["fixtures/support_bundle/manifest.json"]).unwrap();
+    let h1 =
+        ucel_diagnostics_core::hash_paths(&repo_root, &["fixtures/support_bundle/manifest.json"])
+            .unwrap();
+    let h2 =
+        ucel_diagnostics_core::hash_paths(&repo_root, &["fixtures/support_bundle/manifest.json"])
+            .unwrap();
     assert_eq!(h1, h2);
 }

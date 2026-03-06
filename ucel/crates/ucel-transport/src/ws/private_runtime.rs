@@ -44,13 +44,19 @@ pub struct PrivateWsSession {
 }
 
 pub trait PrivateWsAuthenticator {
-    fn build_login_frame(&self, auth_plan: &PrivateWsAuthPlan) -> Result<String, PrivateWsRejectClass>;
+    fn build_login_frame(
+        &self,
+        auth_plan: &PrivateWsAuthPlan,
+    ) -> Result<String, PrivateWsRejectClass>;
     fn handle_auth_message(&self, message: &str) -> Result<Option<bool>, PrivateWsRejectClass>;
     fn is_session_ready(&self, message: &str) -> bool;
 }
 
 pub trait PrivateWsSubscriber {
-    fn build_subscribe_frame(&self, channel: PrivateWsChannel) -> Result<String, PrivateWsRejectClass>;
+    fn build_subscribe_frame(
+        &self,
+        channel: PrivateWsChannel,
+    ) -> Result<String, PrivateWsRejectClass>;
     fn handle_subscribe_ack(&self, message: &str) -> Result<Option<bool>, PrivateWsRejectClass>;
     fn channel_from_message(&self, message: &str) -> Option<PrivateWsChannel>;
 }
@@ -131,7 +137,6 @@ mod tests {
         assert_eq!(s.state, PrivateWsLifecycleState::Active);
     }
 }
-
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PrivateRuntimeSignal {

@@ -399,7 +399,9 @@ fn strict_coverage_gate_has_no_gaps_and_includes_all_rest_ws_ids() {
 
     let mut covered: Vec<String> = manifest.entries.iter().map(|e| e.id.clone()).collect();
     covered.sort_unstable();
-    assert!(catalog_ids.iter().all(|id| covered.binary_search(id).is_ok()));
+    assert!(catalog_ids
+        .iter()
+        .all(|id| covered.binary_search(id).is_ok()));
 
     let gaps = ucel_testkit::evaluate_coverage_gate(&manifest);
     assert!(gaps.is_empty(), "strict gate requires zero gaps: {gaps:?}");

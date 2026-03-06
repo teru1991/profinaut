@@ -11,7 +11,10 @@ pub struct SupportBundleManifest {
 
 pub fn load_support_bundle_manifest(ucel_root: &Path) -> SupportBundleManifest {
     let candidates = [
-        ucel_root.join("fixtures").join("support_bundle").join("manifest.json"),
+        ucel_root
+            .join("fixtures")
+            .join("support_bundle")
+            .join("manifest.json"),
         ucel_root
             .join("ucel")
             .join("fixtures")
@@ -28,7 +31,10 @@ pub fn load_support_bundle_manifest(ucel_root: &Path) -> SupportBundleManifest {
 }
 
 pub fn support_bundle_manifest_path(ucel_root: &Path) -> PathBuf {
-    let direct = ucel_root.join("fixtures").join("support_bundle").join("manifest.json");
+    let direct = ucel_root
+        .join("fixtures")
+        .join("support_bundle")
+        .join("manifest.json");
     if direct.exists() {
         return direct;
     }
@@ -42,9 +48,6 @@ pub fn support_bundle_manifest_path(ucel_root: &Path) -> PathBuf {
 pub fn assert_no_denied_patterns(path: &str, bytes: &[u8], deny_patterns: &[String]) {
     let text = String::from_utf8_lossy(bytes);
     for pat in deny_patterns {
-        assert!(
-            !text.contains(pat),
-            "denied pattern found in {path}: {pat}"
-        );
+        assert!(!text.contains(pat), "denied pattern found in {path}: {pat}");
     }
 }

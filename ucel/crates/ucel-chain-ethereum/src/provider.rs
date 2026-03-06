@@ -5,7 +5,11 @@ use ucel_core::EvmChainId;
 
 pub trait EvmHttpProvider: Send + Sync {
     fn info(&self) -> &EvmProviderInfo;
-    fn rpc_call(&self, method: &str, params: serde_json::Value) -> Result<ProviderResponse, ProviderError>;
+    fn rpc_call(
+        &self,
+        method: &str,
+        params: serde_json::Value,
+    ) -> Result<ProviderResponse, ProviderError>;
 }
 
 pub trait EvmWsProvider: Send + Sync {
@@ -22,7 +26,10 @@ pub struct EvmProviderPolicy {
 
 impl Default for EvmProviderPolicy {
     fn default() -> Self {
-        Self { retry_budget: 2, timeout: Duration::from_secs(10) }
+        Self {
+            retry_budget: 2,
+            timeout: Duration::from_secs(10),
+        }
     }
 }
 
@@ -42,10 +49,16 @@ impl EvmProviderSet {
         expected_chain_id: EvmChainId,
     ) -> Result<ProviderResponse, ProviderError> {
         let mut providers: Vec<&dyn EvmHttpProvider> = vec![self.primary_http.as_ref()];
-        for p in &self.fallback_http { providers.push(p.as_ref()); }
+        for p in &self.fallback_http {
+            providers.push(p.as_ref());
+        }
 
         let mut attempts = 0u8;
-        let mut last_err = ProviderError { provider: "none".into(), reason: EvmReasonCode::ProviderTimeout, message: "no provider".into() };
+        let mut last_err = ProviderError {
+            provider: "none".into(),
+            reason: EvmReasonCode::ProviderTimeout,
+            message: "no provider".into(),
+        };
         for provider in providers {
             if provider.info().chain_id != expected_chain_id {
                 last_err = ProviderError {
@@ -60,7 +73,9 @@ impl EvmProviderSet {
                 Err(e) => {
                     last_err = e;
                     attempts += 1;
-                    if attempts > self.policy.retry_budget { break; }
+                    if attempts > self.policy.retry_budget {
+                        break;
+                    }
                 }
             }
         }

@@ -24,5 +24,8 @@ fn implicit_observation_moves_to_active_on_first_event() {
 
 #[test]
 fn auth_reject_is_normalized() {
-    assert_eq!(reject_from_text("auth failed"), PrivateWsRejectClass::AuthFailed);
+    assert_eq!(
+        reject_from_text("auth failed"),
+        PrivateWsRejectClass::AuthFailed
+    );
 }

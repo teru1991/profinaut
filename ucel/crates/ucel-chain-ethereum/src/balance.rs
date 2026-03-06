@@ -49,7 +49,12 @@ pub fn get_native_balance(
         )
         .map_err(|e| reason_to_error(e.reason, e.message))?;
     let wei = parse_hex_u128(r.value.as_str().unwrap_or("0x0"))?;
-    Ok(EvmNativeBalance { chain_id: expected, address, wei, block_ref })
+    Ok(EvmNativeBalance {
+        chain_id: expected,
+        address,
+        wei,
+        block_ref,
+    })
 }
 
 pub fn get_erc20_balance(
@@ -74,5 +79,11 @@ pub fn get_erc20_balance(
         .call_with_failover("eth_call", serde_json::json!([call, block]), expected)
         .map_err(|e| reason_to_error(e.reason, e.message))?;
     let amount = parse_hex_u128(r.value.as_str().unwrap_or("0x0"))?;
-    Ok(EvmTokenBalance { chain_id: expected, address: holder, token, amount, block_ref })
+    Ok(EvmTokenBalance {
+        chain_id: expected,
+        address: holder,
+        token,
+        amount,
+        block_ref,
+    })
 }

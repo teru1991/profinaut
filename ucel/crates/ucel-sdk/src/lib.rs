@@ -9,10 +9,10 @@
 pub mod auth;
 pub mod chain;
 pub mod config;
-pub mod error;
 pub mod equity;
-pub mod market_meta;
+pub mod error;
 pub mod market_data;
+pub mod market_meta;
 pub mod order_normalize;
 pub mod private_rest;
 pub mod private_ws;
@@ -42,8 +42,8 @@ pub use execution::{
 
 pub mod prelude {
     pub use crate::chain::ChainFacade;
-    pub use crate::equity::EquityDataFacade;
     pub use crate::config::{SdkConfig, SdkConfigFile};
+    pub use crate::equity::EquityDataFacade;
     pub use crate::error::{SdkError, SdkResult};
     pub use crate::sdk::{Sdk, SdkBuilder};
     pub use crate::secrets::SecretString;

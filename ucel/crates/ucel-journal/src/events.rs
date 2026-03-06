@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
-use ucel_core::{
-    IngestFailureClass, IngestLifecycleState, IngestResumeDirective, IngestStreamKey,
-};
+use ucel_core::{IngestFailureClass, IngestLifecycleState, IngestResumeDirective, IngestStreamKey};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IngestJournalEvent {

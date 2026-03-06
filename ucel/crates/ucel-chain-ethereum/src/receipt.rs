@@ -11,14 +11,26 @@ pub fn get_receipt(
     finality: FinalityPolicy,
 ) -> Result<Option<EvmTransactionReceipt>, UcelError> {
     let r = providers
-        .call_with_failover("eth_getTransactionReceipt", serde_json::json!([tx_hash]), chain_id)
+        .call_with_failover(
+            "eth_getTransactionReceipt",
+            serde_json::json!([tx_hash]),
+            chain_id,
+        )
         .map_err(|e| reason_to_error(e.reason, e.message))?;
     if r.value.is_null() {
         return Ok(None);
     }
-    let block_number_hex = r.value.get("blockNumber").and_then(|v| v.as_str()).unwrap_or("0x0");
+    let block_number_hex = r
+        .value
+        .get("blockNumber")
+        .and_then(|v| v.as_str())
+        .unwrap_or("0x0");
     let bn = u64::from_str_radix(block_number_hex.trim_start_matches("0x"), 16).unwrap_or(0);
-    let status = r.value.get("status").and_then(|v| v.as_str()).unwrap_or("0x1");
+    let status = r
+        .value
+        .get("status")
+        .and_then(|v| v.as_str())
+        .unwrap_or("0x1");
     let success = status != "0x0";
     let confirmations = latest_block.saturating_sub(bn);
     Ok(Some(EvmTransactionReceipt {
@@ -43,5 +55,8 @@ pub fn wait_for_receipt(
             return Ok(r);
         }
     }
-    Err(reason_to_error(EvmReasonCode::ReceiptTimeout, "receipt timeout"))
+    Err(reason_to_error(
+        EvmReasonCode::ReceiptTimeout,
+        "receipt timeout",
+    ))
 }

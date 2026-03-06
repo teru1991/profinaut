@@ -21,7 +21,10 @@ fn runbooks_contract_links_must_exist() {
             );
         }
 
-        let file_name = file.file_name().and_then(|s| s.to_str()).unwrap_or_default();
+        let file_name = file
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or_default();
         if file_name.contains("support_bundle") {
             assert!(
                 content.contains("bundle") || content.contains("support"),
@@ -58,7 +61,6 @@ fn extract_contract_paths(content: &str) -> Vec<String> {
     links.dedup();
     links
 }
-
 
 fn collect_markdown_files(root: &PathBuf) -> Vec<PathBuf> {
     let mut out = Vec::new();

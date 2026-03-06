@@ -12,7 +12,8 @@ fn balance_and_call_parse_and_validate() {
 
     let addr = EvmAddress("0x1111111111111111111111111111111111111111".into());
     let token = EvmAddress("0x2222222222222222222222222222222222222222".into());
-    let native = get_native_balance(&set, EvmChainId(1), addr.clone(), EvmBlockRef::Latest).unwrap();
+    let native =
+        get_native_balance(&set, EvmChainId(1), addr.clone(), EvmBlockRef::Latest).unwrap();
     assert!(native.wei > 0);
     let erc20 = get_erc20_balance(&set, EvmChainId(1), addr, token, EvmBlockRef::Safe).unwrap();
     assert_eq!(erc20.amount, 100);

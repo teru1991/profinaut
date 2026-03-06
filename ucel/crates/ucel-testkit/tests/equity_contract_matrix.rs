@@ -1,5 +1,5 @@
-use ucel_testkit::equity::{assert_vendor_supported_all, demo_adapter};
 use ucel_equity_core::vendor::EquityVendorAdapter;
+use ucel_testkit::equity::{assert_vendor_supported_all, demo_adapter};
 
 #[test]
 fn vendor_matrix_has_supported_demo_vendor() {

@@ -48,7 +48,10 @@ pub trait PublicWsNormalizer {
     fn normalize_orderbook(
         &self,
         message: &Value,
-    ) -> Option<(Option<CanonicalOrderBookSnapshot>, Option<CanonicalOrderBookDelta>)>;
+    ) -> Option<(
+        Option<CanonicalOrderBookSnapshot>,
+        Option<CanonicalOrderBookDelta>,
+    )>;
     fn normalize_candle(&self, message: &Value) -> Option<CanonicalCandle>;
 }
 
@@ -96,7 +99,6 @@ impl PublicWsSession {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PublicRuntimeSignal {
     AckObserved,
@@ -109,9 +111,15 @@ pub enum PublicRuntimeSignal {
 pub fn signal_to_failure(signal: PublicRuntimeSignal) -> Option<ucel_core::IngestFailureClass> {
     match signal {
         PublicRuntimeSignal::AckObserved => None,
-        PublicRuntimeSignal::HeartbeatTimeout => Some(ucel_core::IngestFailureClass::HeartbeatTimeout),
+        PublicRuntimeSignal::HeartbeatTimeout => {
+            Some(ucel_core::IngestFailureClass::HeartbeatTimeout)
+        }
         PublicRuntimeSignal::GapDetected => Some(ucel_core::IngestFailureClass::GapDetected),
-        PublicRuntimeSignal::ChecksumMismatch => Some(ucel_core::IngestFailureClass::ChecksumMismatch),
-        PublicRuntimeSignal::TransportClosed => Some(ucel_core::IngestFailureClass::TransportClosed),
+        PublicRuntimeSignal::ChecksumMismatch => {
+            Some(ucel_core::IngestFailureClass::ChecksumMismatch)
+        }
+        PublicRuntimeSignal::TransportClosed => {
+            Some(ucel_core::IngestFailureClass::TransportClosed)
+        }
     }
 }
