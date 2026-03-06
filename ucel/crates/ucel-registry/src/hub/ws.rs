@@ -195,3 +195,13 @@ fn validate_ws_endpoint(exchange: ExchangeId, url: &str) -> Result<(), HubError>
         .map_err(|e| HubError::RegistryValidation(e.message))?;
     Ok(())
 }
+
+
+pub fn public_channel_to_catalog_key(channel: ucel_core::MarketDataChannel) -> &'static str {
+    match channel {
+        ucel_core::MarketDataChannel::Ticker => "public_ticker",
+        ucel_core::MarketDataChannel::Trades => "public_trades",
+        ucel_core::MarketDataChannel::OrderBook => "public_orderbook",
+        ucel_core::MarketDataChannel::Candles => "public_candles",
+    }
+}

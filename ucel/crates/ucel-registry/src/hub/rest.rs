@@ -182,6 +182,22 @@ pub fn private_rest_operation_from_catalog_id(id: &str) -> Option<ucel_core::Pri
     }
 }
 
+
+pub fn public_rest_operation_from_catalog_id(id: &str) -> Option<ucel_core::MarketDataChannel> {
+    let id = id.to_ascii_lowercase();
+    if id.contains("ticker") {
+        Some(ucel_core::MarketDataChannel::Ticker)
+    } else if id.contains("trade") {
+        Some(ucel_core::MarketDataChannel::Trades)
+    } else if id.contains("book") || id.contains("orderbook") {
+        Some(ucel_core::MarketDataChannel::OrderBook)
+    } else if id.contains("candle") || id.contains("kline") {
+        Some(ucel_core::MarketDataChannel::Candles)
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -207,6 +223,10 @@ mod tests {
         assert_eq!(
             private_rest_operation_from_catalog_id("public.rest.market.ticker"),
             None
+        );
+        assert_eq!(
+            public_rest_operation_from_catalog_id("public.rest.market.orderbook"),
+            Some(ucel_core::MarketDataChannel::OrderBook)
         );
     }
 }
