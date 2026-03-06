@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod decimal;
+pub mod market_data;
 pub mod order_gate;
 pub mod policy;
 pub mod private_ws;
@@ -7,6 +8,12 @@ pub mod private_rest;
 pub mod symbol;
 pub mod types;
 pub mod value;
+pub use market_data::{
+    apply_orderbook_delta, guard_orderbook, validate_candle, validate_ticker, validate_trade,
+    CanonicalCandle, CanonicalOrderBookDelta, CanonicalOrderBookLevel, CanonicalOrderBookSnapshot,
+    CanonicalTicker, CanonicalTrade, MarketDataChannel, PublicAdapterSupport, PublicWsAckMode,
+    PublicWsIntegrityMode, PublicWsReasonCode,
+};
 pub use auth::{
     validate_auth_material, AuthMaterial, AuthMode, AuthRequestMeta, AuthSurface, IdempotencyKey,
     NonceScope, SecretRef, ServerTimeOffset, SignContext,

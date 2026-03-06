@@ -3859,6 +3859,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "blake3",
+ "futures-util",
  "serde",
  "serde_json",
  "tempfile",
@@ -4002,6 +4003,7 @@ dependencies = [
  "serde",
  "tempfile",
  "toml",
+ "ucel-core",
 ]
 
 [[package]]
