@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SupportBundleManifest {
@@ -10,12 +10,33 @@ pub struct SupportBundleManifest {
 }
 
 pub fn load_support_bundle_manifest(ucel_root: &Path) -> SupportBundleManifest {
-    let path = ucel_root
-        .join("fixtures")
-        .join("support_bundle")
-        .join("manifest.json");
+    let candidates = [
+        ucel_root.join("fixtures").join("support_bundle").join("manifest.json"),
+        ucel_root
+            .join("ucel")
+            .join("fixtures")
+            .join("support_bundle")
+            .join("manifest.json"),
+    ];
+    let path = candidates
+        .iter()
+        .find(|p| p.exists())
+        .cloned()
+        .unwrap_or_else(|| candidates[0].clone());
     let raw = fs::read_to_string(&path).unwrap_or_else(|_| panic!("read {}", path.display()));
     serde_json::from_str(&raw).unwrap_or_else(|_| panic!("parse {}", path.display()))
+}
+
+pub fn support_bundle_manifest_path(ucel_root: &Path) -> PathBuf {
+    let direct = ucel_root.join("fixtures").join("support_bundle").join("manifest.json");
+    if direct.exists() {
+        return direct;
+    }
+    ucel_root
+        .join("ucel")
+        .join("fixtures")
+        .join("support_bundle")
+        .join("manifest.json")
 }
 
 pub fn assert_no_denied_patterns(path: &str, bytes: &[u8], deny_patterns: &[String]) {

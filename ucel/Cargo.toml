@@ -28,6 +28,8 @@ members = [
   "crates/ucel-cex-okx",
   "crates/ucel-chain-ethereum",
   "crates/ucel-ir",
+  "crates/ucel-equity-core",
+  "crates/ucel-equity-adapter-demo",
   "crates/ucel-ws-rules",
   "crates/ucel-subscription-planner",
   "crates/ucel-subscription-store",

@@ -57,3 +57,8 @@ impl PrivateWsClient for PrivateWsFacade {
         self.subscribe_channel("private_session")
     }
 }
+
+
+pub fn ingest_runtime_hint() -> &'static str {
+    "private ingest requires reauth-then-resubscribe on restart"
+}

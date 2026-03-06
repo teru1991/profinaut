@@ -19,6 +19,9 @@ tokio-stream = "0.1"
 serde_yaml = { workspace = true }
 
 async-trait = "0.1"
+ucel-diagnostics-core = { path = "../ucel-diagnostics-core" }
+sha2 = { workspace = true }
+hex = { workspace = true }
 [dev-dependencies]
 httpmock = "0.7"
 

@@ -3730,6 +3730,9 @@ dependencies = [
 name = "ucel-chain-ethereum"
 version = "0.1.0"
 dependencies = [
+ "seahash",
+ "serde",
+ "serde_json",
  "ucel-core",
 ]
 
@@ -3756,6 +3759,7 @@ dependencies = [
  "tar",
  "tempfile",
  "thiserror 1.0.69",
+ "ucel-core",
  "ucel-diagnostics-core",
  "zstd",
 ]
@@ -3784,10 +3788,33 @@ dependencies = [
 name = "ucel-diagnostics-core"
 version = "0.1.0"
 dependencies = [
+ "hex",
  "semver",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "thiserror 1.0.69",
+ "ucel-core",
+]
+
+[[package]]
+name = "ucel-equity-adapter-demo"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "ucel-core",
+ "ucel-equity-core",
+]
+
+[[package]]
+name = "ucel-equity-core"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "ucel-core",
 ]
 
 [[package]]
@@ -3820,6 +3847,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "ucel-core",
 ]
 
 [[package]]
@@ -3839,17 +3867,20 @@ dependencies = [
  "async-trait",
  "bytes",
  "futures-util",
+ "hex",
  "httpmock",
  "rand 0.8.5",
  "reqwest",
  "serde",
  "serde_json",
  "serde_yaml",
+ "sha2 0.10.9",
  "thiserror 1.0.69",
  "tokio",
  "tokio-stream",
  "tokio-tungstenite",
  "ucel-core",
+ "ucel-diagnostics-core",
  "ucel-transport",
 ]
 
@@ -3860,14 +3891,20 @@ dependencies = [
  "async-trait",
  "blake3",
  "futures-util",
+ "hex",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "tempfile",
  "thiserror 1.0.69",
  "tokio",
  "toml",
  "tracing",
+ "ucel-chain-ethereum",
  "ucel-core",
+ "ucel-diagnostics-core",
+ "ucel-equity-adapter-demo",
+ "ucel-equity-core",
  "ucel-registry",
  "ucel-symbol-adapter",
  "ucel-symbol-core",
@@ -3894,6 +3931,7 @@ dependencies = [
  "rusqlite",
  "serde",
  "serde_json",
+ "ucel-core",
 ]
 
 [[package]]
@@ -3954,10 +3992,16 @@ dependencies = [
  "ucel-cex-coincheck",
  "ucel-cex-deribit",
  "ucel-cex-gmocoin",
+ "ucel-chain-ethereum",
  "ucel-core",
+ "ucel-diagnostics-analyzer",
+ "ucel-diagnostics-core",
+ "ucel-equity-adapter-demo",
+ "ucel-equity-core",
  "ucel-registry",
  "ucel-sdk",
  "ucel-subscription-planner",
+ "ucel-subscription-store",
  "ucel-transport",
  "ucel-ws-rules",
  "wiremock",

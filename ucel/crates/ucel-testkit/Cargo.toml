@@ -13,8 +13,14 @@ thiserror.workspace = true
 ucel-registry = { path = "../ucel-registry" }
 ucel-cex-binance = { path = "../ucel-cex-binance" }
 ucel-subscription-planner = { path = "../ucel-subscription-planner" }
+ucel-subscription-store = { path = "../ucel-subscription-store" }
 ucel-sdk = { path = "../ucel-sdk" }
 ucel-ws-rules = { path = "../ucel-ws-rules" }
+ucel-chain-ethereum = { path = "../ucel-chain-ethereum" }
+ucel-equity-core = { path = "../ucel-equity-core" }
+ucel-equity-adapter-demo = { path = "../ucel-equity-adapter-demo" }
+ucel-diagnostics-analyzer = { path = "../ucel-diagnostics-analyzer" }
+ucel-diagnostics-core = { path = "../ucel-diagnostics-core" }
 
 ucel-cex-bybit = { path = "../ucel-cex-bybit" }
 ucel-cex-bithumb = { path = "../ucel-cex-bithumb" }

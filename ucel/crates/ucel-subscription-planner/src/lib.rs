@@ -1,3 +1,5 @@
+pub mod plan;
+pub mod replan;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
@@ -664,3 +666,7 @@ entries:
         assert_eq!(sup, vec!["crypto.public.ws.ticker".to_string()]);
     }
 }
+
+
+pub use plan::{build_desired_plan, DesiredIngestStream};
+pub use replan::replan_for_resume;

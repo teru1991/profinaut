@@ -376,3 +376,42 @@ mod tests {
         assert_eq!(err.code, ErrorCode::CatalogDuplicateId);
     }
 }
+
+
+pub fn evm_chain_capabilities(chain_id: u64) -> serde_json::Value {
+    serde_json::json!({
+        "kind": "evm",
+        "chain_id": chain_id,
+        "supports": [
+            "get_chain_id", "get_block_number", "get_native_balance", "get_erc20_balance",
+            "estimate_gas", "estimate_fees", "get_nonce", "build_transaction", "sign_transaction",
+            "send_raw_transaction", "wait_for_receipt", "get_receipt", "get_logs",
+            "subscribe_logs", "subscribe_new_heads"
+        ]
+    })
+}
+
+
+pub fn list_equity_vendors() -> Vec<&'static str> {
+    vec!["demo-equity"]
+}
+
+pub fn equity_vendor_exists(vendor: &str) -> bool {
+    list_equity_vendors().iter().any(|v| v.eq_ignore_ascii_case(vendor))
+}
+
+pub fn equity_vendor_capabilities(vendor: &str) -> Option<serde_json::Value> {
+    if !equity_vendor_exists(vendor) {
+        return None;
+    }
+    Some(serde_json::json!({
+        "vendor": "demo-equity",
+        "quotes": "supported",
+        "bars_intraday": "supported",
+        "bars_daily": "supported",
+        "symbols": "supported",
+        "calendar": "supported",
+        "corporate_actions": "supported",
+        "latency": ["delayed", "end_of_day"]
+    }))
+}

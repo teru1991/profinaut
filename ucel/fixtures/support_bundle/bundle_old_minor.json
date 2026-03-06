@@ -1,0 +1,15 @@
+{
+  "manifest": {
+    "diag_semver": "1.0.0",
+    "generator_id": "fixture-old",
+    "build_info": "0.0.9",
+    "coverage_hash": "1",
+    "coverage_v2_hash": "2",
+    "ws_rules_hash": "3",
+    "catalog_hash": "4",
+    "policy_hash": "5",
+    "symbol_meta_hash": "6",
+    "execution_surface_hash": "7",
+    "runtime_capability_hash": "8"
+  }
+}

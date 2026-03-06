@@ -15,3 +15,7 @@ pub mod priority;
 pub mod shutdown;
 
 // Resilience primitives are implemented in reconnect/heartbeat/limiter/backpressure modules.
+
+pub mod supervisor;
+pub mod restart;
+pub mod backoff;

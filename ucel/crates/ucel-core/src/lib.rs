@@ -1,5 +1,8 @@
 pub mod auth;
+pub mod chain;
 pub mod decimal;
+pub mod diagnostics;
+pub mod equity;
 pub mod market_data;
 pub mod order_gate;
 pub mod policy;
@@ -8,11 +11,34 @@ pub mod private_rest;
 pub mod symbol;
 pub mod types;
 pub mod value;
+pub mod ws_ingest;
 pub use market_data::{
     apply_orderbook_delta, guard_orderbook, validate_candle, validate_ticker, validate_trade,
     CanonicalCandle, CanonicalOrderBookDelta, CanonicalOrderBookLevel, CanonicalOrderBookSnapshot,
     CanonicalTicker, CanonicalTrade, MarketDataChannel, PublicAdapterSupport, PublicWsAckMode,
     PublicWsIntegrityMode, PublicWsReasonCode,
+};
+pub use diagnostics::{
+    compare_semver, validate_manifest_hash_presence, AnalyzerSummary, BundleGeneratorInfo,
+    BundleHashSet, BundleManifest, CompatibilityStatus, DiagnosticsSemver, DiagnosticsSupport,
+    DriftFinding, RuntimeCapabilitiesDigest,
+};
+pub use ws_ingest::{
+    escalate_integrity_failure, failure_to_resume_directive, is_valid_transition,
+    IngestCheckpoint, IngestFailureClass, IngestHeartbeatPolicy, IngestIntegrityMode,
+    IngestLifecycleState, IngestResumeDirective, IngestRetryBudget, IngestStreamKey,
+};
+pub use equity::{
+    adjustment_mode_compatible, quote_is_stale, session_includes_local_time, validate_bar_timeframe,
+    EquityAdjustmentMode, EquityBar, EquityCorporateAction, EquityDividend, EquityExchangeCode,
+    EquityLatencyClass, EquityMarket, EquityMarketCalendar, EquityQuote, EquitySessionKind,
+    EquitySessionWindow, EquitySplit, EquitySupport, EquitySymbol,
+};
+pub use chain::{
+    finality_at_least, receipt_is_success, validate_chain_id, validate_evm_address, ChainKind,
+    ChainSupport, ChainSurface, EvmAddress, EvmBlockRef, EvmChainId, EvmFeeEstimate,
+    EvmFinalityState, EvmLogCursor, EvmLogEvent, EvmNativeBalance, EvmReorgEvent,
+    EvmSignedTransaction, EvmTokenBalance, EvmTransactionReceipt, EvmTransactionRequest,
 };
 pub use auth::{
     validate_auth_material, AuthMaterial, AuthMode, AuthRequestMeta, AuthSurface, IdempotencyKey,

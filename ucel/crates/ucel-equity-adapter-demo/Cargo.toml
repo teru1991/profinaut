@@ -1,0 +1,10 @@
+[package]
+name = "ucel-equity-adapter-demo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ucel-core = { path = "../ucel-core" }
+ucel-equity-core = { path = "../ucel-equity-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }

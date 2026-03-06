@@ -205,3 +205,13 @@ pub fn public_channel_to_catalog_key(channel: ucel_core::MarketDataChannel) -> &
         ucel_core::MarketDataChannel::Candles => "public_candles",
     }
 }
+
+
+pub fn ws_ingest_support_summary(exchange: ExchangeId) -> serde_json::Value {
+    serde_json::json!({
+        "exchange": exchange.as_str(),
+        "public": true,
+        "private": true,
+        "durable_ingest": "enabled_v1"
+    })
+}

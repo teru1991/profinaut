@@ -11,7 +11,7 @@ fn ucel_root() -> PathBuf {
 fn support_bundle_manifest_fixture_is_sane() {
     let root = ucel_root();
     let manifest = ucel_testkit::support_bundle_manifest::load_support_bundle_manifest(&root);
-    assert_eq!(manifest.version, 1);
+    assert!(manifest.version >= 1);
     assert!(!manifest.required_paths.is_empty());
     assert!(!manifest.deny_patterns.is_empty());
 

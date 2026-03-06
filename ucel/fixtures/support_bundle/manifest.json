@@ -1,16 +1,22 @@
 {
-  "version": 1,
+  "version": 2,
   "required_paths": [
-    "version",
-    "exchange_id",
-    "conn_id",
-    "health",
-    "metrics",
-    "events_tail",
-    "rules_snapshot",
-    "observability.metrics_prometheus_text",
-    "observability.events_json",
-    "manifest"
+    "metadata",
+    "ssot",
+    "transport",
+    "hub",
+    "wal",
+    "errors",
+    "manifest",
+    "manifest.diag_semver",
+    "manifest.coverage_hash",
+    "manifest.coverage_v2_hash",
+    "manifest.ws_rules_hash",
+    "manifest.catalog_hash",
+    "manifest.policy_hash",
+    "manifest.symbol_meta_hash",
+    "manifest.execution_surface_hash",
+    "manifest.runtime_capability_hash"
   ],
   "deny_patterns": [
     "AKIA",

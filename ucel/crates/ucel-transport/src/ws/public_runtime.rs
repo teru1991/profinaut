@@ -95,3 +95,23 @@ impl PublicWsSession {
         }
     }
 }
+
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PublicRuntimeSignal {
+    AckObserved,
+    HeartbeatTimeout,
+    GapDetected,
+    ChecksumMismatch,
+    TransportClosed,
+}
+
+pub fn signal_to_failure(signal: PublicRuntimeSignal) -> Option<ucel_core::IngestFailureClass> {
+    match signal {
+        PublicRuntimeSignal::AckObserved => None,
+        PublicRuntimeSignal::HeartbeatTimeout => Some(ucel_core::IngestFailureClass::HeartbeatTimeout),
+        PublicRuntimeSignal::GapDetected => Some(ucel_core::IngestFailureClass::GapDetected),
+        PublicRuntimeSignal::ChecksumMismatch => Some(ucel_core::IngestFailureClass::ChecksumMismatch),
+        PublicRuntimeSignal::TransportClosed => Some(ucel_core::IngestFailureClass::TransportClosed),
+    }
+}

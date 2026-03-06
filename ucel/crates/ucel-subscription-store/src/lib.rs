@@ -1,3 +1,6 @@
+pub mod state;
+pub mod persistence;
+pub mod resume;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
@@ -419,3 +422,8 @@ mod tests {
         assert_eq!(k, "x|op|BTC/USDT|{}");
     }
 }
+
+
+pub use persistence::{load_from_path, persist_to_path};
+pub use resume::resume_candidates;
+pub use state::{stream_id, DurableIngestState, DurableStateStore};

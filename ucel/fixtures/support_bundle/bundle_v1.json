@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "version": "support_bundle_spec_v1",
+    "run_id": "fixture-run-1",
+    "timestamp_unix": 1700000000
+  },
+  "manifest": {
+    "diag_semver": "1.1.0",
+    "generated_at": 1700000000,
+    "generator_id": "fixture",
+    "build_info": "0.1.0",
+    "coverage_hash": "a111",
+    "coverage_v2_hash": "b222",
+    "ws_rules_hash": "c333",
+    "catalog_hash": "d444",
+    "policy_hash": "e555",
+    "symbol_meta_hash": "f666",
+    "execution_surface_hash": "g777",
+    "runtime_capability_hash": "h888",
+    "bundle_redaction_version": "v1",
+    "runtime_capabilities": "digest-1"
+  },
+  "ssot": {},
+  "transport": {},
+  "hub": {},
+  "wal": {"recent_segments": [], "latency_stats": {}},
+  "errors": {"recent": []}
+}
