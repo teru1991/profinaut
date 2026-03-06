@@ -2099,6 +2099,55 @@
       "verification_evidence": [
         "docs/verification/UCEL-PUBLIC-ADAPTERS-009.md"
       ]
+    },
+    "UCEL-WS-INGEST-010": {
+      "branch": "feature/ucel-ws-ingest-010-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/specs/ucel/ws_ingest_runtime_v1.md",
+        "ucel/docs/marketdata/ws_ingest_policy.md",
+        "ucel/docs/marketdata/ws_deadletter_policy.md",
+        "ucel/docs/marketdata/ws_resume_policy.md",
+        "ucel/docs/exchanges/ws_ingest_matrix.md",
+        "ucel/crates/ucel-core/src/ws_ingest.rs",
+        "ucel/crates/ucel-core/src/lib.rs",
+        "ucel/crates/ucel-transport/src/ws/mod.rs",
+        "ucel/crates/ucel-transport/src/ws/public_runtime.rs",
+        "ucel/crates/ucel-transport/src/ws/private_runtime.rs",
+        "ucel/crates/ucel-transport/src/ws/supervisor.rs",
+        "ucel/crates/ucel-transport/src/ws/restart.rs",
+        "ucel/crates/ucel-transport/src/ws/backoff.rs",
+        "ucel/crates/ucel-ws-rules/src/lib.rs",
+        "ucel/crates/ucel-ws-rules/src/runtime_policy.rs",
+        "ucel/crates/ucel-subscription-planner/src/lib.rs",
+        "ucel/crates/ucel-subscription-planner/src/plan.rs",
+        "ucel/crates/ucel-subscription-planner/src/replan.rs",
+        "ucel/crates/ucel-subscription-store/Cargo.toml",
+        "ucel/crates/ucel-subscription-store/src/lib.rs",
+        "ucel/crates/ucel-subscription-store/src/state.rs",
+        "ucel/crates/ucel-subscription-store/src/persistence.rs",
+        "ucel/crates/ucel-subscription-store/src/resume.rs",
+        "ucel/crates/ucel-journal/Cargo.toml",
+        "ucel/crates/ucel-journal/src/lib.rs",
+        "ucel/crates/ucel-journal/src/events.rs",
+        "ucel/crates/ucel-journal/src/writer.rs",
+        "ucel/crates/ucel-journal/src/replay.rs",
+        "ucel/crates/ucel-testkit/Cargo.toml",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/src/ws_ingest.rs",
+        "ucel/crates/ucel-testkit/tests/ws_ingest_state_machine.rs",
+        "ucel/crates/ucel-testkit/tests/ws_ingest_resume_after_restart.rs",
+        "ucel/crates/ucel-testkit/tests/ws_ingest_deadletter_and_replay.rs",
+        "ucel/crates/ucel-testkit/tests/ws_ingest_heartbeat_and_stall.rs",
+        "ucel/crates/ucel-testkit/tests/ws_ingest_checksum_gap.rs",
+        "ucel/crates/ucel-testkit/tests/ws_ingest_rate_limit_and_backoff.rs",
+        "ucel/fixtures/ws_ingest/README.md",
+        "docs/verification/UCEL-WS-INGEST-010.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-WS-INGEST-010.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

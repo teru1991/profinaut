@@ -64,6 +64,29 @@ impl MarketDataFacade {
         })
     }
 
+
+
+    pub fn preview_ingest_plan(&self, symbol: &str, channels: &[&str]) -> Value {
+        serde_json::json!({
+            "exchange": self.exchange.as_str(),
+            "symbol": symbol,
+            "channels": channels,
+            "lifecycle": ["Planned", "PendingConnect", "Connecting", "AwaitingAck", "Active"]
+        })
+    }
+
+    pub fn start_ingest(&self) -> String {
+        format!("ws-ingest-started:{}", self.exchange.as_str())
+    }
+
+    pub fn stop_ingest(&self) -> String {
+        format!("ws-ingest-stopped:{}", self.exchange.as_str())
+    }
+
+    pub fn drain_ingest(&self) -> String {
+        format!("ws-ingest-drained:{}", self.exchange.as_str())
+    }
+
     async fn call_public_rest(&self, op: &'static str, symbol: &str) -> Result<Value, HubError> {
         let resp = self
             .hub

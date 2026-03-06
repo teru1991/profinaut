@@ -13,6 +13,7 @@ thiserror.workspace = true
 ucel-registry = { path = "../ucel-registry" }
 ucel-cex-binance = { path = "../ucel-cex-binance" }
 ucel-subscription-planner = { path = "../ucel-subscription-planner" }
+ucel-subscription-store = { path = "../ucel-subscription-store" }
 ucel-sdk = { path = "../ucel-sdk" }
 ucel-ws-rules = { path = "../ucel-ws-rules" }
 

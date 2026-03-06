@@ -131,3 +131,21 @@ mod tests {
         assert_eq!(s.state, PrivateWsLifecycleState::Active);
     }
 }
+
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PrivateRuntimeSignal {
+    AuthExpired,
+    AckTimeout,
+    HeartbeatTimeout,
+    TransportClosed,
+}
+
+pub fn signal_to_failure(signal: PrivateRuntimeSignal) -> ucel_core::IngestFailureClass {
+    match signal {
+        PrivateRuntimeSignal::AuthExpired => ucel_core::IngestFailureClass::AuthFailed,
+        PrivateRuntimeSignal::AckTimeout => ucel_core::IngestFailureClass::AckTimeout,
+        PrivateRuntimeSignal::HeartbeatTimeout => ucel_core::IngestFailureClass::HeartbeatTimeout,
+        PrivateRuntimeSignal::TransportClosed => ucel_core::IngestFailureClass::TransportClosed,
+    }
+}

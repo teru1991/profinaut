@@ -3820,6 +3820,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "ucel-core",
 ]
 
 [[package]]
@@ -3894,6 +3895,7 @@ dependencies = [
  "rusqlite",
  "serde",
  "serde_json",
+ "ucel-core",
 ]
 
 [[package]]
@@ -3958,6 +3960,7 @@ dependencies = [
  "ucel-registry",
  "ucel-sdk",
  "ucel-subscription-planner",
+ "ucel-subscription-store",
  "ucel-transport",
  "ucel-ws-rules",
  "wiremock",

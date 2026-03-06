@@ -8,11 +8,17 @@ pub mod private_rest;
 pub mod symbol;
 pub mod types;
 pub mod value;
+pub mod ws_ingest;
 pub use market_data::{
     apply_orderbook_delta, guard_orderbook, validate_candle, validate_ticker, validate_trade,
     CanonicalCandle, CanonicalOrderBookDelta, CanonicalOrderBookLevel, CanonicalOrderBookSnapshot,
     CanonicalTicker, CanonicalTrade, MarketDataChannel, PublicAdapterSupport, PublicWsAckMode,
     PublicWsIntegrityMode, PublicWsReasonCode,
+};
+pub use ws_ingest::{
+    escalate_integrity_failure, failure_to_resume_directive, is_valid_transition,
+    IngestCheckpoint, IngestFailureClass, IngestHeartbeatPolicy, IngestIntegrityMode,
+    IngestLifecycleState, IngestResumeDirective, IngestRetryBudget, IngestStreamKey,
 };
 pub use auth::{
     validate_auth_material, AuthMaterial, AuthMode, AuthRequestMeta, AuthSurface, IdempotencyKey,

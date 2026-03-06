@@ -20,6 +20,7 @@ pub mod ssot_integrity_gate;
 pub mod ssot_integrity_gate_types;
 pub mod support_bundle_manifest;
 pub mod ws_coverage_gate;
+pub mod ws_ingest;
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
