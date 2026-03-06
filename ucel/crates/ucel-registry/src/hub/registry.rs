@@ -5,6 +5,205 @@ use std::sync::OnceLock;
 
 use super::errors::HubError;
 
+#[derive(Debug, Clone, Copy)]
+pub struct ExchangeRegistration {
+    pub exchange_id: ExchangeId,
+    pub canonical_name: &'static str,
+    pub aliases: &'static [&'static str],
+    pub catalog_json: &'static str,
+    pub crate_family: &'static str,
+    pub notes: &'static str,
+}
+
+const REGISTRATIONS: &[ExchangeRegistration] = &[
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Binance,
+        canonical_name: "binance",
+        aliases: &["binance-spot"],
+        catalog_json: include_str!("../../../../../docs/exchanges/binance/catalog.json"),
+        crate_family: "ucel-cex-binance",
+        notes: "spot",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::BinanceUsdm,
+        canonical_name: "binance-usdm",
+        aliases: &["binance-futures-usdm"],
+        catalog_json: include_str!("../../../../../docs/exchanges/binance-usdm/catalog.json"),
+        crate_family: "ucel-cex-binance-usdm",
+        notes: "family split",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::BinanceCoinm,
+        canonical_name: "binance-coinm",
+        aliases: &["binance-futures-coinm"],
+        catalog_json: include_str!("../../../../../docs/exchanges/binance-coinm/catalog.json"),
+        crate_family: "ucel-cex-binance-coinm",
+        notes: "family split",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::BinanceOptions,
+        canonical_name: "binance-options",
+        aliases: &["binance-option"],
+        catalog_json: include_str!("../../../../../docs/exchanges/binance-options/catalog.json"),
+        crate_family: "ucel-cex-binance-options",
+        notes: "family split",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Bitbank,
+        canonical_name: "bitbank",
+        aliases: &[],
+        catalog_json: include_str!("../../../../../docs/exchanges/bitbank/catalog.json"),
+        crate_family: "ucel-cex-bitbank",
+        notes: "",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Bitflyer,
+        canonical_name: "bitflyer",
+        aliases: &[],
+        catalog_json: include_str!("../../../../../docs/exchanges/bitflyer/catalog.json"),
+        crate_family: "ucel-cex-bitflyer",
+        notes: "",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Bitget,
+        canonical_name: "bitget",
+        aliases: &[],
+        catalog_json: include_str!("../../../../../docs/exchanges/bitget/catalog.json"),
+        crate_family: "ucel-cex-bitget",
+        notes: "",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Bithumb,
+        canonical_name: "bithumb",
+        aliases: &[],
+        catalog_json: include_str!("../../../../../docs/exchanges/bithumb/catalog.json"),
+        crate_family: "ucel-cex-bithumb",
+        notes: "crate exists but may be out of workspace members",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Bitmex,
+        canonical_name: "bitmex",
+        aliases: &[],
+        catalog_json: include_str!("../../../../../docs/exchanges/bitmex/catalog.json"),
+        crate_family: "ucel-cex-bitmex",
+        notes: "",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Bittrade,
+        canonical_name: "bittrade",
+        aliases: &[],
+        catalog_json: include_str!("../../../../../docs/exchanges/bittrade/catalog.json"),
+        crate_family: "ucel-cex-bittrade",
+        notes: "",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Bybit,
+        canonical_name: "bybit",
+        aliases: &[],
+        catalog_json: include_str!("../../../../../docs/exchanges/bybit/catalog.json"),
+        crate_family: "ucel-cex-bybit",
+        notes: "",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Coinbase,
+        canonical_name: "coinbase",
+        aliases: &[],
+        catalog_json: include_str!("../../../../../docs/exchanges/coinbase/catalog.json"),
+        crate_family: "ucel-cex-coinbase",
+        notes: "",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Coincheck,
+        canonical_name: "coincheck",
+        aliases: &[],
+        catalog_json: include_str!("../../../../../docs/exchanges/coincheck/catalog.json"),
+        crate_family: "ucel-cex-coincheck",
+        notes: "",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Deribit,
+        canonical_name: "deribit",
+        aliases: &[],
+        catalog_json: include_str!("../../../../../docs/exchanges/deribit/catalog.json"),
+        crate_family: "ucel-cex-deribit",
+        notes: "catalog-empty: jsonrpc coverage staged",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Gmocoin,
+        canonical_name: "gmocoin",
+        aliases: &["gmo-coin"],
+        catalog_json: include_str!("../../../../../docs/exchanges/gmocoin/catalog.json"),
+        crate_family: "ucel-cex-gmocoin",
+        notes: "",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Htx,
+        canonical_name: "htx",
+        aliases: &["huobi"],
+        catalog_json: include_str!("../../../../../docs/exchanges/htx/catalog.json"),
+        crate_family: "ucel-cex-htx",
+        notes: "",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Kraken,
+        canonical_name: "kraken",
+        aliases: &[],
+        catalog_json: include_str!("../../../../../docs/exchanges/kraken/catalog.json"),
+        crate_family: "ucel-cex-kraken",
+        notes: "",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Okx,
+        canonical_name: "okx",
+        aliases: &[],
+        catalog_json: include_str!("../../../../../docs/exchanges/okx/catalog.json"),
+        crate_family: "ucel-cex-okx",
+        notes: "",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Sbivc,
+        canonical_name: "sbivc",
+        aliases: &["sbi-vc"],
+        catalog_json: include_str!("../../../../../docs/exchanges/sbivc/catalog.json"),
+        crate_family: "ucel-cex-sbivc",
+        notes: "public-only policy exception",
+    },
+    ExchangeRegistration {
+        exchange_id: ExchangeId::Upbit,
+        canonical_name: "upbit",
+        aliases: &[],
+        catalog_json: include_str!("../../../../../docs/exchanges/upbit/catalog.json"),
+        crate_family: "ucel-cex-upbit",
+        notes: "",
+    },
+];
+
+pub fn exchange_registrations() -> &'static [ExchangeRegistration] {
+    REGISTRATIONS
+}
+
+pub fn list_registered_exchanges() -> Vec<ExchangeId> {
+    REGISTRATIONS.iter().map(|r| r.exchange_id).collect()
+}
+
+pub fn find_registration(exchange: &str) -> Option<&'static ExchangeRegistration> {
+    let input = exchange.to_ascii_lowercase();
+    REGISTRATIONS.iter().find(|r| {
+        r.canonical_name == input
+            || r.aliases
+                .iter()
+                .any(|alias| alias.eq_ignore_ascii_case(&input))
+    })
+}
+
+pub fn catalog_for(exchange: ExchangeId) -> Result<ExchangeCatalog, HubError> {
+    let reg = REGISTRATIONS
+        .iter()
+        .find(|r| r.exchange_id == exchange)
+        .ok_or_else(|| HubError::UnknownExchange(exchange.as_str().to_string()))?;
+    serde_json::from_str::<ExchangeCatalog>(reg.catalog_json).map_err(HubError::Json)
+}
+
 #[derive(Debug)]
 pub struct SpecRegistry {
     rest: HashMap<(ExchangeId, OperationKey), EndpointSpec>,
@@ -27,7 +226,9 @@ impl SpecRegistry {
         let mut rest_keys: HashMap<ExchangeId, BTreeSet<OperationKey>> = HashMap::new();
         let mut ws_keys: HashMap<ExchangeId, BTreeSet<ChannelKey>> = HashMap::new();
 
-        for (exchange, catalog) in exchange_catalogs()? {
+        for registration in REGISTRATIONS {
+            let exchange = registration.exchange_id;
+            let catalog = catalog_for(exchange)?;
             for spec in catalog.rest_endpoints {
                 let key = spec.id.clone();
                 let idx = (exchange, key.clone());
@@ -48,6 +249,8 @@ impl SpecRegistry {
                 }
                 ws_keys.entry(exchange).or_default().insert(key);
             }
+            rest_keys.entry(exchange).or_default();
+            ws_keys.entry(exchange).or_default();
         }
 
         Ok(Self {
@@ -89,61 +292,26 @@ impl SpecRegistry {
             .map(|x| x.iter().cloned().collect())
             .unwrap_or_default()
     }
-}
 
-fn exchange_catalogs() -> Result<Vec<(ExchangeId, ExchangeCatalog)>, HubError> {
-    const CATALOGS: &[(ExchangeId, &str)] = &[
-        (
-            ExchangeId::Binance,
-            include_str!("../../../../../docs/exchanges/binance/catalog.json"),
-        ),
-        (
-            ExchangeId::Bybit,
-            include_str!("../../../../../docs/exchanges/bybit/catalog.json"),
-        ),
-        (
-            ExchangeId::Coinbase,
-            include_str!("../../../../../docs/exchanges/coinbase/catalog.json"),
-        ),
-        (
-            ExchangeId::Coincheck,
-            include_str!("../../../../../docs/exchanges/coincheck/catalog.json"),
-        ),
-        (
-            ExchangeId::Deribit,
-            include_str!("../../../../../docs/exchanges/deribit/catalog.json"),
-        ),
-        (
-            ExchangeId::Gmocoin,
-            include_str!("../../../../../docs/exchanges/gmocoin/catalog.json"),
-        ),
-        (
-            ExchangeId::Kraken,
-            include_str!("../../../../../docs/exchanges/kraken/catalog.json"),
-        ),
-        (
-            ExchangeId::Okx,
-            include_str!("../../../../../docs/exchanges/okx/catalog.json"),
-        ),
-        (
-            ExchangeId::Upbit,
-            include_str!("../../../../../docs/exchanges/upbit/catalog.json"),
-        ),
-    ];
-
-    CATALOGS
-        .iter()
-        .map(|(exchange, raw)| {
-            serde_json::from_str::<ExchangeCatalog>(raw)
-                .map(|catalog| (*exchange, catalog))
-                .map_err(HubError::Json)
-        })
-        .collect()
+    pub fn catalog_entries_counts(&self, exchange: ExchangeId) -> Result<(usize, usize), HubError> {
+        let rest = self
+            .rest_keys
+            .get(&exchange)
+            .map(|x| x.len())
+            .ok_or_else(|| HubError::UnknownExchange(exchange.as_str().to_string()))?;
+        let ws = self
+            .ws_keys
+            .get(&exchange)
+            .map(|x| x.len())
+            .ok_or_else(|| HubError::UnknownExchange(exchange.as_str().to_string()))?;
+        Ok((rest, ws))
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::str::FromStr;
 
     #[test]
     fn registry_resolves_and_lists_keys() {
@@ -164,5 +332,23 @@ mod tests {
             .resolve_ws(ExchangeId::Binance, "missing.key")
             .unwrap_err();
         assert!(matches!(err, HubError::UnknownChannel { .. }));
+    }
+
+    #[test]
+    fn exchange_roundtrip_and_alias() {
+        for id in ExchangeId::all() {
+            let canonical = id.as_str();
+            let parsed = ExchangeId::from_str(canonical).unwrap();
+            assert_eq!(*id, parsed);
+        }
+        assert_eq!(
+            ExchangeId::from_str("binance-spot").unwrap(),
+            ExchangeId::Binance
+        );
+    }
+
+    #[test]
+    fn registrations_align_with_exchange_id_all() {
+        assert_eq!(exchange_registrations().len(), ExchangeId::all().len());
     }
 }

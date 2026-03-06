@@ -128,11 +128,16 @@ impl WsHub {
 
 fn ws_allowlist(exchange: ExchangeId) -> Result<EndpointAllowlist, HubError> {
     let hosts: Vec<&str> = match exchange {
-        ExchangeId::Binance => vec![
-            "stream.binance.com",
-            "ws-fapi.binance.com",
-            "ws-dapi.binance.com",
-        ],
+        ExchangeId::Binance => vec!["stream.binance.com"],
+        ExchangeId::BinanceUsdm => vec!["fstream.binance.com", "ws-fapi.binance.com"],
+        ExchangeId::BinanceCoinm => vec!["dstream.binance.com", "ws-dapi.binance.com"],
+        ExchangeId::BinanceOptions => vec!["nbstream.binance.com"],
+        ExchangeId::Bitbank => vec!["stream.bitbank.cc"],
+        ExchangeId::Bitflyer => vec!["ws.lightstream.bitflyer.com"],
+        ExchangeId::Bitget => vec!["ws.bitget.com"],
+        ExchangeId::Bithumb => vec!["pubwss.bithumb.com"],
+        ExchangeId::Bitmex => vec!["www.bitmex.com"],
+        ExchangeId::Bittrade => vec!["ws.bittrade.co.jp"],
         ExchangeId::Bybit => vec!["stream.bybit.com", "stream-testnet.bybit.com"],
         ExchangeId::Coinbase => vec![
             "ws-feed.exchange.coinbase.com",
@@ -141,8 +146,10 @@ fn ws_allowlist(exchange: ExchangeId) -> Result<EndpointAllowlist, HubError> {
         ExchangeId::Coincheck => vec!["ws-api.coincheck.com"],
         ExchangeId::Deribit => vec!["www.deribit.com", "test.deribit.com"],
         ExchangeId::Gmocoin => vec!["api.coin.z.com"],
+        ExchangeId::Htx => vec!["api.htx.com", "api.huobi.pro"],
         ExchangeId::Kraken => vec!["ws.kraken.com", "ws-auth.kraken.com"],
         ExchangeId::Okx => vec!["ws.okx.com", "wsaws.okx.com"],
+        ExchangeId::Sbivc => vec!["stream.sbivc.co.jp"],
         ExchangeId::Upbit => vec!["api.upbit.com"],
     };
     EndpointAllowlist::new(hosts, SubdomainPolicy::Exact)

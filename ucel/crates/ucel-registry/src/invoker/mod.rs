@@ -219,6 +219,14 @@ impl Invoker {
         SpecRegistry::global()?.list_ids(venue)
     }
 
+    pub fn list_operations(&self, venue: &VenueId) -> Result<Vec<OperationId>, InvokerError> {
+        self.list_ids(venue)
+    }
+
+    pub fn list_ws_channels(&self, venue: &VenueId) -> Result<Vec<OperationId>, InvokerError> {
+        SpecRegistry::global()?.list_ws_channels(venue)
+    }
+
     pub async fn rest_call(
         &self,
         venue: &VenueId,

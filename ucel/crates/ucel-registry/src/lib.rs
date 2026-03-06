@@ -45,6 +45,7 @@ pub struct CatalogEntry {
     pub path: Option<String>,
     pub ws_url: Option<String>,
     pub ws: Option<CatalogWs>,
+    #[serde(default)]
     pub auth: CatalogAuth,
 }
 
@@ -300,6 +301,23 @@ pub fn default_capabilities(exchange: &str) -> Capabilities {
             execution_default_dry_run: true,
         },
     })
+}
+
+pub fn exchange_ids() -> Vec<hub::ExchangeId> {
+    hub::registry::list_registered_exchanges()
+}
+
+pub fn exchange_names() -> Vec<&'static str> {
+    hub::registry::exchange_registrations()
+        .iter()
+        .map(|r| r.canonical_name)
+        .collect()
+}
+
+pub fn default_capabilities_for_exchange(
+    exchange: hub::ExchangeId,
+) -> Result<Capabilities, UcelError> {
+    default_capabilities_for_residency(exchange.as_str())
 }
 
 pub fn default_runtime_policy(policy_id: impl Into<String>) -> RuntimePolicy {
