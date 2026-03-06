@@ -41,3 +41,9 @@ Each CEX crate must provide capability discoverability (e.g. `supported_ws_ops()
 - Strict CI gates use `ucel/coverage/coverage_v2/strict_venues.json` as the only strict venue source.
 - `ucel/coverage/*.yaml` (v1) is legacy/informational and MUST NOT be used for CI gating.
 
+## 4. Venue access policy linkage (JP resident)
+- Machine-readable venue access SSOT is `ucel/coverage/coverage_v2/jurisdictions/jp_resident_access.json`.
+- Default scope is `public_only`; venues without explicit entries are treated as public_only.
+- Explicit JP resident `public_private`: `bitbank`, `bitflyer`, `coincheck`, `gmocoin`.
+- Explicit JP resident exception: `sbivc` remains `public_only`.
+- Hub/Registry/Invoker MUST fail-fast private REST/WS/execution requests when scope disallows private surfaces.

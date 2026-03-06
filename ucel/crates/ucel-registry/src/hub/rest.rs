@@ -2,6 +2,7 @@ use super::config::HubConfig;
 use super::errors::HubError;
 use super::registry::SpecRegistry;
 use super::{ExchangeId, OperationKey};
+use crate::policy::enforce_surface_for_catalog_entry;
 use bytes::Bytes;
 use rand::Rng;
 use serde::de::DeserializeOwned;
@@ -58,6 +59,8 @@ impl RestHub {
     ) -> Result<RestResponse, HubError> {
         let key = op_key.into();
         let spec = SpecRegistry::global()?.resolve_rest(self.exchange, &key)?;
+        enforce_surface_for_catalog_entry(self.exchange.as_str(), spec)
+            .map_err(|e| HubError::RegistryValidation(e.to_string()))?;
         let url = format!(
             "{}{}",
             spec.base_url.clone().unwrap_or_default(),
@@ -117,14 +120,25 @@ impl RestHub {
 
 fn rest_allowlist(exchange: ExchangeId) -> Result<EndpointAllowlist, HubError> {
     let hosts: Vec<&str> = match exchange {
-        ExchangeId::Binance => vec!["api.binance.com", "fapi.binance.com", "dapi.binance.com"],
+        ExchangeId::Binance => vec!["api.binance.com"],
+        ExchangeId::BinanceUsdm => vec!["fapi.binance.com"],
+        ExchangeId::BinanceCoinm => vec!["dapi.binance.com"],
+        ExchangeId::BinanceOptions => vec!["eapi.binance.com"],
+        ExchangeId::Bitbank => vec!["api.bitbank.cc"],
+        ExchangeId::Bitflyer => vec!["api.bitflyer.com"],
+        ExchangeId::Bitget => vec!["api.bitget.com"],
+        ExchangeId::Bithumb => vec!["api.bithumb.com"],
+        ExchangeId::Bitmex => vec!["www.bitmex.com"],
+        ExchangeId::Bittrade => vec!["api.bittrade.co.jp"],
         ExchangeId::Bybit => vec!["api.bybit.com", "api-testnet.bybit.com"],
         ExchangeId::Coinbase => vec!["api.exchange.coinbase.com", "api.coinbase.com"],
         ExchangeId::Coincheck => vec!["coincheck.com", "api.coincheck.com"],
         ExchangeId::Deribit => vec!["www.deribit.com", "test.deribit.com"],
         ExchangeId::Gmocoin => vec!["api.coin.z.com"],
+        ExchangeId::Htx => vec!["api.htx.com", "api.huobi.pro"],
         ExchangeId::Kraken => vec!["api.kraken.com"],
         ExchangeId::Okx => vec!["www.okx.com", "aws.okx.com"],
+        ExchangeId::Sbivc => vec!["api.sbivc.co.jp"],
         ExchangeId::Upbit => vec!["api.upbit.com"],
     };
     EndpointAllowlist::new(hosts, SubdomainPolicy::Exact)
