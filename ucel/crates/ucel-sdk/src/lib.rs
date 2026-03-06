@@ -7,6 +7,7 @@
 //! - Provide a high-level builder that standardizes behavior and logging
 
 pub mod auth;
+pub mod chain;
 pub mod config;
 pub mod error;
 pub mod market_meta;
@@ -39,6 +40,7 @@ pub use execution::{
 };
 
 pub mod prelude {
+    pub use crate::chain::ChainFacade;
     pub use crate::config::{SdkConfig, SdkConfigFile};
     pub use crate::error::{SdkError, SdkResult};
     pub use crate::sdk::{Sdk, SdkBuilder};

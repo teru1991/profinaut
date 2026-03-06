@@ -2148,6 +2148,58 @@
       "verification_evidence": [
         "docs/verification/UCEL-WS-INGEST-010.md"
       ]
+    },
+    "UCEL-CHAIN-EVM-011": {
+      "branch": "feature/ucel-chain-evm-011-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/specs/ucel/chain_evm_surface_v1.md",
+        "ucel/docs/chains/evm_adapter_policy.md",
+        "ucel/docs/chains/evm_finality_policy.md",
+        "ucel/docs/chains/evm_nonce_and_fee_policy.md",
+        "ucel/docs/chains/evm_reorg_resume_policy.md",
+        "ucel/docs/chains/evm_support_matrix.md",
+        "ucel/crates/ucel-core/src/chain.rs",
+        "ucel/crates/ucel-core/src/lib.rs",
+        "ucel/crates/ucel-chain-ethereum/src/lib.rs",
+        "ucel/crates/ucel-chain-ethereum/src/provider.rs",
+        "ucel/crates/ucel-chain-ethereum/src/types.rs",
+        "ucel/crates/ucel-chain-ethereum/src/balance.rs",
+        "ucel/crates/ucel-chain-ethereum/src/tx.rs",
+        "ucel/crates/ucel-chain-ethereum/src/nonce.rs",
+        "ucel/crates/ucel-chain-ethereum/src/fees.rs",
+        "ucel/crates/ucel-chain-ethereum/src/receipt.rs",
+        "ucel/crates/ucel-chain-ethereum/src/logs.rs",
+        "ucel/crates/ucel-chain-ethereum/src/finality.rs",
+        "ucel/crates/ucel-chain-ethereum/src/reorg.rs",
+        "ucel/crates/ucel-chain-ethereum/src/resume.rs",
+        "ucel/crates/ucel-chain-ethereum/src/signer.rs",
+        "ucel/crates/ucel-chain-ethereum/src/errors.rs",
+        "ucel/crates/ucel-chain-ethereum/Cargo.toml",
+        "ucel/crates/ucel-sdk/src/chain.rs",
+        "ucel/crates/ucel-sdk/src/lib.rs",
+        "ucel/crates/ucel-sdk/Cargo.toml",
+        "ucel/crates/ucel-registry/src/lib.rs",
+        "ucel/crates/ucel-testkit/src/chain_evm.rs",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/Cargo.toml",
+        "ucel/crates/ucel-testkit/tests/chain_evm_provider_failover.rs",
+        "ucel/crates/ucel-testkit/tests/chain_evm_balance_and_call.rs",
+        "ucel/crates/ucel-testkit/tests/chain_evm_nonce_and_fee.rs",
+        "ucel/crates/ucel-testkit/tests/chain_evm_tx_lifecycle.rs",
+        "ucel/crates/ucel-testkit/tests/chain_evm_logs_and_resume.rs",
+        "ucel/crates/ucel-testkit/tests/chain_evm_reorg_handling.rs",
+        "ucel/examples/chain_evm_preview.rs",
+        "ucel/examples/chain_evm_logs_preview.rs",
+        "ucel/fixtures/chain_evm/README.md",
+        "docs/status/trace-index.json",
+        "docs/verification/UCEL-CHAIN-EVM-011.md",
+        "ucel/Cargo.lock"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-CHAIN-EVM-011.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

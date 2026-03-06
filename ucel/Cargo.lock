@@ -3730,6 +3730,9 @@ dependencies = [
 name = "ucel-chain-ethereum"
 version = "0.1.0"
 dependencies = [
+ "seahash",
+ "serde",
+ "serde_json",
  "ucel-core",
 ]
 
@@ -3868,6 +3871,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
+ "ucel-chain-ethereum",
  "ucel-core",
  "ucel-registry",
  "ucel-symbol-adapter",
@@ -3956,6 +3960,7 @@ dependencies = [
  "ucel-cex-coincheck",
  "ucel-cex-deribit",
  "ucel-cex-gmocoin",
+ "ucel-chain-ethereum",
  "ucel-core",
  "ucel-registry",
  "ucel-sdk",
