@@ -3956,6 +3956,7 @@ dependencies = [
  "ucel-sdk",
  "ucel-subscription-planner",
  "ucel-transport",
+ "ucel-ws-rules",
  "wiremock",
 ]
 

@@ -194,3 +194,37 @@ pub fn jp_scope_for_venue(policy: &JpResidentAccessPolicy, venue: &str) -> Strin
         .map(|entry| entry.scope.clone())
         .unwrap_or_else(|| policy.default_scope.clone())
 }
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CoverageV2Family {
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CoverageV2VenueYaml {
+    pub venue: String,
+    #[serde(default)]
+    pub strict: bool,
+    #[serde(default)]
+    pub families: Vec<CoverageV2Family>,
+}
+
+pub fn normalize_canonical_name(input: &str) -> String {
+    input.trim().to_ascii_lowercase()
+}
+
+pub fn load_coverage_v2_yaml(path: &Path) -> Result<CoverageV2VenueYaml, CoverageV2Error> {
+    let raw = std::fs::read_to_string(path)?;
+    let parsed: CoverageV2VenueYaml =
+        serde_yaml::from_str(&raw).map_err(|e| CoverageV2Error::Invalid {
+            path: path.display().to_string(),
+            reason: format!("yaml parse error: {e}"),
+        })?;
+    if parsed.venue.trim().is_empty() {
+        return Err(CoverageV2Error::Invalid {
+            path: path.display().to_string(),
+            reason: "missing venue".into(),
+        });
+    }
+    Ok(parsed)
+}

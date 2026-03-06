@@ -1929,6 +1929,31 @@
       "verification_evidence": [
         "docs/verification/UCEL-HUB-REGISTRY-002.md"
       ]
+    },
+    "UCEL-SSOT-CONSISTENCY-003": {
+      "branch": "feature/ucel-ssot-consistency-003-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/specs/ucel/ssot_consistency_gate_v1.md",
+        "docs/status/trace-index.json",
+        "docs/verification/UCEL-SSOT-CONSISTENCY-003.md",
+        "ucel/docs/ssot/ssot_consistency_policy.md",
+        "ucel/docs/ssot/coverage_migration_policy.md",
+        "ucel/crates/ucel-testkit/src/coverage_v2.rs",
+        "ucel/crates/ucel-testkit/src/ssot_consistency.rs",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/tests/ssot_consistency_gate.rs",
+        "ucel/crates/ucel-testkit/tests/ssot_ws_rules_alignment.rs",
+        "ucel/crates/ucel-testkit/tests/ssot_catalog_coverage_links.rs",
+        "ucel/crates/ucel-ws-rules/src/lib.rs",
+        "ucel/crates/ucel-ws-rules/src/validation.rs",
+        "ucel/crates/ucel-registry/src/hub/registry.rs",
+        "ucel/crates/ucel-testkit/Cargo.toml"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-SSOT-CONSISTENCY-003.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

@@ -186,6 +186,18 @@ pub fn list_registered_exchanges() -> Vec<ExchangeId> {
     REGISTRATIONS.iter().map(|r| r.exchange_id).collect()
 }
 
+pub fn list_registered_exchange_ids() -> Vec<ExchangeId> {
+    REGISTRATIONS.iter().map(|r| r.exchange_id).collect()
+}
+
+pub fn list_registered_exchange_names() -> Vec<&'static str> {
+    REGISTRATIONS.iter().map(|r| r.canonical_name).collect()
+}
+
+pub fn list_registered_catalog_keys() -> Vec<&'static str> {
+    REGISTRATIONS.iter().map(|r| r.canonical_name).collect()
+}
+
 pub fn find_registration(exchange: &str) -> Option<&'static ExchangeRegistration> {
     let input = exchange.to_ascii_lowercase();
     REGISTRATIONS.iter().find(|r| {
