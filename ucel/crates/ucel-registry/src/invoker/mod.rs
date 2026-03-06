@@ -3,6 +3,7 @@ pub mod coverage;
 pub mod errors;
 pub mod registry;
 
+use crate::policy::enforce_surface_for_catalog_entry;
 use bytes::Bytes;
 use futures_util::{SinkExt, Stream, StreamExt};
 use rand::Rng;
@@ -249,6 +250,8 @@ impl Invoker {
         ctx: InvocationContext,
     ) -> Result<RestResponse, InvokerError> {
         let spec = SpecRegistry::global()?.resolve(venue, id)?;
+        enforce_surface_for_catalog_entry(venue.as_str(), &spec.spec)
+            .map_err(|e| InvokerError::RegistryValidation(e.to_string()))?;
         if spec.kind != OperationKind::Rest {
             return Err(InvokerError::KindMismatch {
                 venue: venue.to_string(),
@@ -351,6 +354,8 @@ impl Invoker {
     ) -> Result<Pin<Box<dyn Stream<Item = Result<WsMessage, InvokerError>> + Send>>, InvokerError>
     {
         let spec = SpecRegistry::global()?.resolve(venue, id)?;
+        enforce_surface_for_catalog_entry(venue.as_str(), &spec.spec)
+            .map_err(|e| InvokerError::RegistryValidation(e.to_string()))?;
         if spec.kind != OperationKind::Ws {
             return Err(InvokerError::KindMismatch {
                 venue: venue.to_string(),

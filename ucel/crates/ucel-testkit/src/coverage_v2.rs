@@ -160,3 +160,37 @@ pub fn public_ws(v: &Value) -> Result<bool, CoverageV2Error> {
 pub fn private_enabled(v: &Value) -> bool {
     bool_at(v, &["private", "enabled"]).unwrap_or(false)
 }
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct JpResidentAccessEntry {
+    pub venue: String,
+    pub scope: String,
+    #[allow(dead_code)]
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct JpResidentAccessPolicy {
+    pub policy_id: String,
+    pub residency: String,
+    pub default_scope: String,
+    pub entries: Vec<JpResidentAccessEntry>,
+}
+
+pub fn load_jp_resident_access(
+    repo_root: &Path,
+) -> Result<JpResidentAccessPolicy, CoverageV2Error> {
+    let root = locate_coverage_v2_root(repo_root)?;
+    let path = root.join("jurisdictions/jp_resident_access.json");
+    let bytes = std::fs::read(path)?;
+    Ok(serde_json::from_slice(&bytes)?)
+}
+
+pub fn jp_scope_for_venue(policy: &JpResidentAccessPolicy, venue: &str) -> String {
+    policy
+        .entries
+        .iter()
+        .find(|entry| entry.venue.eq_ignore_ascii_case(venue))
+        .map(|entry| entry.scope.clone())
+        .unwrap_or_else(|| policy.default_scope.clone())
+}

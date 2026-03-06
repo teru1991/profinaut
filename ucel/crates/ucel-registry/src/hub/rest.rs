@@ -2,6 +2,7 @@ use super::config::HubConfig;
 use super::errors::HubError;
 use super::registry::SpecRegistry;
 use super::{ExchangeId, OperationKey};
+use crate::policy::enforce_surface_for_catalog_entry;
 use bytes::Bytes;
 use rand::Rng;
 use serde::de::DeserializeOwned;
@@ -58,6 +59,8 @@ impl RestHub {
     ) -> Result<RestResponse, HubError> {
         let key = op_key.into();
         let spec = SpecRegistry::global()?.resolve_rest(self.exchange, &key)?;
+        enforce_surface_for_catalog_entry(self.exchange.as_str(), spec)
+            .map_err(|e| HubError::RegistryValidation(e.to_string()))?;
         let url = format!(
             "{}{}",
             spec.base_url.clone().unwrap_or_default(),

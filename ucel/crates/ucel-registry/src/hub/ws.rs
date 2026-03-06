@@ -2,6 +2,7 @@ use super::config::HubConfig;
 use super::errors::HubError;
 use super::registry::SpecRegistry;
 use super::{ChannelKey, ExchangeId};
+use crate::policy::enforce_surface_for_catalog_entry;
 use bytes::Bytes;
 use futures_util::{SinkExt, Stream, StreamExt};
 use serde_json::Value;
@@ -39,6 +40,8 @@ impl WsHub {
     ) -> Result<Pin<Box<dyn Stream<Item = Result<WsMessage, HubError>> + Send>>, HubError> {
         let key = channel_key.into();
         let spec = SpecRegistry::global()?.resolve_ws(self.exchange, &key)?;
+        enforce_surface_for_catalog_entry(self.exchange.as_str(), spec)
+            .map_err(|e| HubError::RegistryValidation(e.to_string()))?;
         let url = spec
             .ws_url
             .clone()

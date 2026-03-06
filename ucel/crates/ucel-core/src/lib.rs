@@ -1,8 +1,13 @@
 pub mod decimal;
 pub mod order_gate;
+pub mod policy;
 pub mod symbol;
 pub mod types;
 pub mod value;
+pub use policy::{
+    AccessSurface, ResidencyClass, VenueAccessCapabilities, VenueAccessEntry, VenueAccessPolicy,
+    VenueAccessScope,
+};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use thiserror::Error;
@@ -263,6 +268,8 @@ pub struct Capabilities {
     pub auth: Option<AuthCapabilities>,
     pub rate_limit: Option<RateLimitCapabilities>,
     pub operational: Option<OperationalCapabilities>,
+    #[serde(default)]
+    pub venue_access: Option<VenueAccessCapabilities>,
     pub safe_defaults: SafeDefaults,
 }
 

@@ -23,8 +23,11 @@ pub use registry::SpecRegistry;
 pub use rest::{RestHub, RestResponse};
 pub use ws::{WsHub, WsMessage};
 
+use crate::default_capabilities_for_residency;
+use crate::policy;
 use std::str::FromStr;
 use std::sync::Arc;
+use ucel_core::{Capabilities, VenueAccessScope};
 
 pub type OperationKey = String;
 pub type ChannelKey = String;
@@ -109,6 +112,16 @@ impl Hub {
 
     pub fn list_channels(&self, exchange: ExchangeId) -> Result<Vec<ChannelKey>, HubError> {
         Ok(SpecRegistry::global()?.list_channels(exchange))
+    }
+
+    pub fn venue_access_scope(&self, exchange: ExchangeId) -> Result<VenueAccessScope, HubError> {
+        policy::scope_for_venue(exchange.as_str())
+            .map_err(|e| HubError::RegistryValidation(e.to_string()))
+    }
+
+    pub fn capabilities(&self, exchange: ExchangeId) -> Result<Capabilities, HubError> {
+        default_capabilities_for_residency(exchange.as_str())
+            .map_err(|e| HubError::RegistryValidation(e.to_string()))
     }
 }
 
