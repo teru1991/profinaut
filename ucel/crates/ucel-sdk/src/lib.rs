@@ -10,6 +10,7 @@ pub mod auth;
 pub mod config;
 pub mod error;
 pub mod market_meta;
+pub mod market_data;
 pub mod order_normalize;
 pub mod private_rest;
 pub mod private_ws;
@@ -43,6 +44,7 @@ pub mod prelude {
     pub use crate::sdk::{Sdk, SdkBuilder};
     pub use crate::secrets::SecretString;
 
+    pub use crate::market_data::MarketDataFacade;
     pub use crate::market_meta::{
         MarketMetaService, MarketMetaServiceConfig, MarketMetaServiceError,
     };

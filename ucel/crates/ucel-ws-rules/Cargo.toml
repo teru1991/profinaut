@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+ucel-core = { path = "../ucel-core" }
 serde = { workspace = true }
 toml = "0.8"
 

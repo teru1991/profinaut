@@ -2065,6 +2065,40 @@
       "verification_evidence": [
         "docs/verification/UCEL-PRIVATE-WS-006.md"
       ]
+    },
+    "UCEL-PUBLIC-ADAPTERS-009": {
+      "branch": "feature/ucel-public-adapters-009-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/specs/ucel/public_adapter_surface_v1.md",
+        "ucel/docs/marketdata/public_adapter_policy.md",
+        "ucel/docs/exchanges/public_adapter_matrix.md",
+        "ucel/crates/ucel-core/src/market_data.rs",
+        "ucel/crates/ucel-core/src/lib.rs",
+        "ucel/crates/ucel-transport/src/ws/mod.rs",
+        "ucel/crates/ucel-transport/src/ws/public_runtime.rs",
+        "ucel/crates/ucel-sdk/src/market_data.rs",
+        "ucel/crates/ucel-sdk/src/lib.rs",
+        "ucel/crates/ucel-sdk/Cargo.toml",
+        "ucel/crates/ucel-registry/src/hub/rest.rs",
+        "ucel/crates/ucel-registry/src/hub/ws.rs",
+        "ucel/crates/ucel-ws-rules/src/lib.rs",
+        "ucel/crates/ucel-ws-rules/src/public_rules.rs",
+        "ucel/crates/ucel-ws-rules/Cargo.toml",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/src/market_data.rs",
+        "ucel/crates/ucel-testkit/tests/public_adapter_contract_matrix.rs",
+        "ucel/crates/ucel-testkit/tests/public_rest_market_data.rs",
+        "ucel/crates/ucel-testkit/tests/public_ws_subscribe_and_resume.rs",
+        "ucel/crates/ucel-testkit/tests/public_ws_orderbook_integrity.rs",
+        "ucel/crates/ucel-testkit/tests/public_symbol_meta_links.rs",
+        "ucel/fixtures/market_data/README.md",
+        "docs/verification/UCEL-PUBLIC-ADAPTERS-009.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-PUBLIC-ADAPTERS-009.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

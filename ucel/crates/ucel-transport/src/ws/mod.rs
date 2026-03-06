@@ -5,6 +5,7 @@ pub mod heartbeat;
 pub mod limiter;
 pub mod reconnect;
 pub mod private_runtime;
+pub mod public_runtime;
 pub mod session;
 
 // New stabilizers (spec-fixed)
