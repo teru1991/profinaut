@@ -1,0 +1,13 @@
+{
+  "diag_semver": "1.1.0",
+  "generator_id": "fixture",
+  "build_info": "0.1.0",
+  "runtime_capability_hash": "h888",
+  "coverage_hash": "a111",
+  "coverage_v2_hash": "b222",
+  "ws_rules_hash": "c333",
+  "catalog_hash": "d444",
+  "policy_hash": "e555",
+  "symbol_meta_hash": "f666",
+  "execution_surface_hash": "g777"
+}

@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod chain;
 pub mod decimal;
+pub mod diagnostics;
 pub mod equity;
 pub mod market_data;
 pub mod order_gate;
@@ -16,6 +17,11 @@ pub use market_data::{
     CanonicalCandle, CanonicalOrderBookDelta, CanonicalOrderBookLevel, CanonicalOrderBookSnapshot,
     CanonicalTicker, CanonicalTrade, MarketDataChannel, PublicAdapterSupport, PublicWsAckMode,
     PublicWsIntegrityMode, PublicWsReasonCode,
+};
+pub use diagnostics::{
+    compare_semver, validate_manifest_hash_presence, AnalyzerSummary, BundleGeneratorInfo,
+    BundleHashSet, BundleManifest, CompatibilityStatus, DiagnosticsSemver, DiagnosticsSupport,
+    DriftFinding, RuntimeCapabilitiesDigest,
 };
 pub use ws_ingest::{
     escalate_integrity_failure, failure_to_resume_directive, is_valid_transition,

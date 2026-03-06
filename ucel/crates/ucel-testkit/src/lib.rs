@@ -5,6 +5,7 @@ pub mod coverage;
 pub mod equity;
 pub mod coverage_gate;
 pub mod coverage_v2;
+pub mod diagnostics;
 pub mod fixtures;
 pub mod fuzz;
 pub mod fuzz_corpus;

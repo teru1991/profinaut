@@ -1,0 +1,105 @@
+# UCEL-DIAGNOSTICS-013 Verification
+
+## 1) Changed files
+- docs/specs/ucel/diagnostics_bundle_v1.md
+- docs/specs/ucel/diagnostics_semver_policy_v1.md
+- docs/status/trace-index.json
+- ucel/docs/diagnostics/support_bundle_policy.md
+- ucel/docs/diagnostics/analyzer_policy.md
+- ucel/docs/diagnostics/runbook_drift_policy.md
+- ucel/docs/diagnostics/golden_bundle_policy.md
+- ucel/docs/diagnostics/diagnostics_support_matrix.md
+- ucel/crates/ucel-core/src/diagnostics.rs
+- ucel/crates/ucel-core/src/lib.rs
+- ucel/crates/ucel-registry/Cargo.toml
+- ucel/crates/ucel-registry/src/support_bundle.rs
+- ucel/crates/ucel-sdk/Cargo.toml
+- ucel/crates/ucel-sdk/src/support_bundle.rs
+- ucel/crates/ucel-diagnostics-core/Cargo.toml
+- ucel/crates/ucel-diagnostics-core/src/lib.rs
+- ucel/crates/ucel-diagnostics-core/src/bundle.rs
+- ucel/crates/ucel-diagnostics-core/src/hash.rs
+- ucel/crates/ucel-diagnostics-core/src/manifest.rs
+- ucel/crates/ucel-diagnostics-core/src/summary.rs
+- ucel/crates/ucel-diagnostics-core/src/compat.rs
+- ucel/crates/ucel-diagnostics-core/src/runbook.rs
+- ucel/crates/ucel-diagnostics-core/src/redaction.rs
+- ucel/crates/ucel-diagnostics-analyzer/Cargo.toml
+- ucel/crates/ucel-diagnostics-analyzer/src/lib.rs
+- ucel/crates/ucel-diagnostics-analyzer/src/analyze.rs
+- ucel/crates/ucel-diagnostics-analyzer/src/compat.rs
+- ucel/crates/ucel-diagnostics-analyzer/src/drift.rs
+- ucel/crates/ucel-diagnostics-analyzer/tests/runbook_drift.rs
+- ucel/crates/ucel-diagnostics-cli/src/args.rs
+- ucel/crates/ucel-diagnostics-cli/src/main.rs
+- ucel/crates/ucel-diagnostics-cli/src/cmd_analyze.rs
+- ucel/crates/ucel-diagnostics-cli/src/cmd_verify.rs
+- ucel/crates/ucel-testkit/Cargo.toml
+- ucel/crates/ucel-testkit/src/lib.rs
+- ucel/crates/ucel-testkit/src/diagnostics.rs
+- ucel/crates/ucel-testkit/src/support_bundle_manifest.rs
+- ucel/crates/ucel-testkit/tests/support_bundle_manifest_gate.rs
+- ucel/crates/ucel-testkit/tests/diagnostics_bundle_hashes.rs
+- ucel/crates/ucel-testkit/tests/diagnostics_bundle_analyzer.rs
+- ucel/crates/ucel-testkit/tests/diagnostics_bundle_compat.rs
+- ucel/crates/ucel-testkit/tests/diagnostics_runbook_drift.rs
+- ucel/crates/ucel-testkit/tests/diagnostics_golden_bundles.rs
+- ucel/fixtures/support_bundle/manifest.json
+- ucel/fixtures/support_bundle/bundle_v1.json
+- ucel/fixtures/support_bundle/bundle_old_minor.json
+- ucel/fixtures/support_bundle/bundle_broken.json
+- ucel/fixtures/support_bundle/expected_summary_v1.json
+- ucel/examples/diagnostics_bundle_preview.rs
+- ucel/examples/diagnostics_analyzer_preview.rs
+- ucel/Cargo.lock
+- docs/verification/UCEL-DIAGNOSTICS-013.md
+
+## 2) What / Why
+- Added diagnostics bundle schema + semver policy docs, and diagnostics policy pages for support bundle/analyzer/drift/golden fixtures.
+- Replaced support bundle SSOT hash placeholders with deterministic hash generation from repository evidence and runtime capability digest.
+- Added diagnostics core modules for hash/manifest/summary/compat/runbook-drift/redaction and exposed canonical diagnostics models in `ucel-core`.
+- Implemented analyzer-side bundle summary/compatibility/drift flow and CLI commands (`analyze`, `verify`) for CI/manual checks.
+- Added support-bundle fixtures and testkit regression tests for hash validity, analyzer output, compatibility behavior, drift checks, and golden bundle comparisons.
+
+## 3) Self-check results
+- Allowed-path check: OK (commit staging excludes pre-existing unrelated dirty files outside allowlist).
+- Tests added/updated: OK
+  - diagnostics_bundle_hashes
+  - diagnostics_bundle_analyzer
+  - diagnostics_bundle_compat
+  - diagnostics_runbook_drift
+  - diagnostics_golden_bundles
+  - support_bundle_manifest_gate (updated for new manifest schema version)
+- Build/Unit command results:
+  - PASS: `cd ucel && cargo test -p ucel-diagnostics-analyzer -p ucel-diagnostics-core -p ucel-diagnostics-cli`
+  - PASS: `cd ucel && cargo test -p ucel-registry`
+  - PASS: `cd ucel && cargo test -p ucel-sdk`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test diagnostics_bundle_hashes -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test diagnostics_bundle_analyzer -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test diagnostics_bundle_compat -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test diagnostics_runbook_drift -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test diagnostics_golden_bundles -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test support_bundle_manifest_gate -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-registry -p ucel-sdk -p ucel-diagnostics-core -p ucel-diagnostics-analyzer -p ucel-diagnostics-cli -p ucel-testkit`
+- trace-index json.tool: OK (`python -m json.tool docs/status/trace-index.json > /dev/null`).
+- Secrets scan: OK (support bundle fixtures/code reviewed for deny-pattern strings in added lines; no real credentials/private payload persisted).
+- docsリンク存在チェック: OK (`docs/` references in newly added diagnostics docs were checked for local existence).
+
+## 4) 履歴確認の証拠（必須）
+- `git log --oneline --decorate -n 50` / `git log --graph --oneline --decorate --all -n 80`:
+  - 直近ベースは `52c72dc`（equity task）。
+  - その前の大規模統合 `d17dd27`（EVM/public/ws/equity）を確認。
+- `git show <直近>` と対象最終更新確認:
+  - `ucel/crates/ucel-registry/src/support_bundle.rs` / `ucel/crates/ucel-sdk/src/support_bundle.rs` は placeholder hash (`unknown`) の暫定状態だったため、本タスクで deterministic hash 化。
+- `git blame -w` 棚卸し:
+  - support bundle 生成は registry/sdk 側の薄い実装で、diagnostics core/analyzer の実体化余地が大きいことを確認。
+  - ws-rules / coverage / coverage_v2 / docs / testkit の参照元を確認し、hash source と drift scope の根拠に採用。
+- `git reflog -n 30` / `git branch -vv`:
+  - 本タスクは `feature/ucel-diagnostics-013-001` 上で局所差分として実施。
+- `git merge-base HEAD origin/master`:
+  - 環境制約で `origin/master` ref が無いため直接比較不可（`Not a valid object name origin/master`）。
+- 設計根拠:
+  - hash/manifest/summary/compat/drift を diagnostics-core / analyzer に寄せ、registry/sdk は hook の最小差分。
+  - golden fixture は追加のみで読み取り専用運用（テストは比較のみ、再生成なし）。
+  - runbook drift は docs/spec/runbook のリンク整合性を fail-closed 判定。
+  - 追加実装不足補完: 既存 testkit の support-bundle fixture path 解決が root 依存で壊れていたため、候補ルート探索を実装して再発防止。

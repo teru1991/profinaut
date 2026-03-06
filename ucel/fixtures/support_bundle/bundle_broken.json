@@ -1,0 +1,18 @@
+{
+  "manifest": {
+    "diag_semver": "2.0.0",
+    "generator_id": "fixture-broken",
+    "build_info": "0.2.0",
+    "coverage_hash": "unknown",
+    "coverage_v2_hash": "",
+    "ws_rules_hash": "unknown",
+    "catalog_hash": "unknown",
+    "policy_hash": "unknown",
+    "symbol_meta_hash": "unknown",
+    "execution_surface_hash": "unknown",
+    "runtime_capability_hash": "unknown"
+  },
+  "transport": {
+    "authorization": "Authorization: Bearer SECRET-TOKEN"
+  }
+}
