@@ -12,5 +12,3 @@ pub use private_rules::{private_rule_view, AckMode, PrivateRuleView};
 
 
 pub use public_rules::{public_rule_view, PublicRuleView};
-
-pub use runtime_policy::{runtime_policy_for, RuntimePolicy};
