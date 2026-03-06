@@ -6,7 +6,9 @@ pub mod health;
 pub mod obs;
 pub mod security;
 
+pub mod auth;
 pub mod diagnostics;
+pub mod redaction;
 pub mod support_bundle;
 
 use bytes::Bytes;

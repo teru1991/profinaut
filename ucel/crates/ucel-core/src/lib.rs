@@ -1,8 +1,25 @@
+pub mod auth;
 pub mod decimal;
 pub mod order_gate;
+pub mod policy;
+pub mod private_rest;
 pub mod symbol;
 pub mod types;
 pub mod value;
+pub use auth::{
+    validate_auth_material, AuthMaterial, AuthMode, AuthRequestMeta, AuthSurface, IdempotencyKey,
+    NonceScope, SecretRef, ServerTimeOffset, SignContext,
+};
+pub use policy::{
+    AccessSurface, ResidencyClass, VenueAccessCapabilities, VenueAccessEntry, VenueAccessPolicy,
+    VenueAccessScope,
+};
+pub use private_rest::{
+    normalize_reject_class, retry_safety_for, CancelOutcome, CanonicalAccountProfile,
+    CanonicalBalance, CanonicalFill, CanonicalOrder, CanonicalPosition, PrivateReadRequest,
+    PrivateRestOperation, PrivateRestResult, PrivateRestSupport, PrivateWriteRequest, RetrySafety,
+    VenueRejectClass,
+};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use thiserror::Error;
@@ -263,6 +280,8 @@ pub struct Capabilities {
     pub auth: Option<AuthCapabilities>,
     pub rate_limit: Option<RateLimitCapabilities>,
     pub operational: Option<OperationalCapabilities>,
+    #[serde(default)]
+    pub venue_access: Option<VenueAccessCapabilities>,
     pub safe_defaults: SafeDefaults,
 }
 

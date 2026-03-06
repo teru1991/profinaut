@@ -3,6 +3,7 @@ pub mod hub;
 pub mod ingest;
 pub mod invoker;
 pub mod okx;
+pub mod policy;
 pub mod support_bundle;
 
 use serde::Deserialize;
@@ -10,7 +11,7 @@ use std::{collections::HashSet, fs, path::Path};
 use ucel_core::{
     AuthCapabilities, Capabilities, ErrorCode, FailoverPolicy, MarketDataCapabilities, OpMeta,
     OpName, OperationalCapabilities, RateLimitCapabilities, RuntimePolicy, SafeDefaults,
-    TradingCapabilities, UcelError,
+    TradingCapabilities, UcelError, VenueAccessCapabilities,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -44,6 +45,7 @@ pub struct CatalogEntry {
     pub path: Option<String>,
     pub ws_url: Option<String>,
     pub ws: Option<CatalogWs>,
+    #[serde(default)]
     pub auth: CatalogAuth,
 }
 
@@ -253,8 +255,9 @@ fn map_operation_fallback(id: &str) -> OpName {
     }
 }
 
-pub fn default_capabilities(exchange: &str) -> Capabilities {
-    Capabilities {
+pub fn default_capabilities_for_residency(exchange: &str) -> Result<Capabilities, UcelError> {
+    let scope = policy::scope_for_venue(exchange)?;
+    Ok(Capabilities {
         schema_version: "1.0.0".into(),
         kind: "exchange".into(),
         name: exchange.into(),
@@ -266,11 +269,55 @@ pub fn default_capabilities(exchange: &str) -> Capabilities {
         auth: Some(AuthCapabilities::default()),
         rate_limit: Some(RateLimitCapabilities::default()),
         operational: Some(OperationalCapabilities::default()),
+        venue_access: Some(VenueAccessCapabilities {
+            scope,
+            private_rest: scope.allows(ucel_core::AccessSurface::PrivateRest),
+            private_ws: scope.allows(ucel_core::AccessSurface::PrivateWs),
+            execution: scope.allows(ucel_core::AccessSurface::Execution),
+        }),
         safe_defaults: SafeDefaults {
             marketdata_default_on: true,
             execution_default_dry_run: true,
         },
-    }
+    })
+}
+
+pub fn default_capabilities(exchange: &str) -> Capabilities {
+    default_capabilities_for_residency(exchange).unwrap_or_else(|_| Capabilities {
+        schema_version: "1.0.0".into(),
+        kind: "exchange".into(),
+        name: exchange.into(),
+        marketdata: MarketDataCapabilities {
+            rest: true,
+            ws: true,
+        },
+        trading: Some(TradingCapabilities::default()),
+        auth: Some(AuthCapabilities::default()),
+        rate_limit: Some(RateLimitCapabilities::default()),
+        operational: Some(OperationalCapabilities::default()),
+        venue_access: None,
+        safe_defaults: SafeDefaults {
+            marketdata_default_on: true,
+            execution_default_dry_run: true,
+        },
+    })
+}
+
+pub fn exchange_ids() -> Vec<hub::ExchangeId> {
+    hub::registry::list_registered_exchanges()
+}
+
+pub fn exchange_names() -> Vec<&'static str> {
+    hub::registry::exchange_registrations()
+        .iter()
+        .map(|r| r.canonical_name)
+        .collect()
+}
+
+pub fn default_capabilities_for_exchange(
+    exchange: hub::ExchangeId,
+) -> Result<Capabilities, UcelError> {
+    default_capabilities_for_residency(exchange.as_str())
 }
 
 pub fn default_runtime_policy(policy_id: impl Into<String>) -> RuntimePolicy {

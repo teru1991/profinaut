@@ -14,6 +14,7 @@ ucel-registry = { path = "../ucel-registry" }
 ucel-cex-binance = { path = "../ucel-cex-binance" }
 ucel-subscription-planner = { path = "../ucel-subscription-planner" }
 ucel-sdk = { path = "../ucel-sdk" }
+ucel-ws-rules = { path = "../ucel-ws-rules" }
 
 ucel-cex-bybit = { path = "../ucel-cex-bybit" }
 ucel-cex-bithumb = { path = "../ucel-cex-bithumb" }

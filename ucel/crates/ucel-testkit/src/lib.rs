@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod chaos;
 pub mod coverage;
 pub mod coverage_gate;
@@ -10,6 +11,8 @@ pub mod golden_manifest;
 pub mod http_mock;
 pub mod normalize;
 pub mod okx;
+pub mod private_rest;
+pub mod ssot_consistency;
 pub mod ssot_gate;
 pub mod ssot_integrity_gate;
 pub mod ssot_integrity_gate_types;

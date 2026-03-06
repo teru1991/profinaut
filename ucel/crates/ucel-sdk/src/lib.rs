@@ -6,10 +6,12 @@
 //! - Re-export hub + ingest interfaces from ucel-registry
 //! - Provide a high-level builder that standardizes behavior and logging
 
+pub mod auth;
 pub mod config;
 pub mod error;
 pub mod market_meta;
 pub mod order_normalize;
+pub mod private_rest;
 pub mod sdk;
 pub mod secrets;
 pub mod support_bundle;

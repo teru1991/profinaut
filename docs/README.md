@@ -92,6 +92,7 @@ SSOTと矛盾する場合は **必ずSSOT側が正** です。
 - Apply Step 1 (Decimal Core): docs/runbooks/ucel_decimal_apply_step1_core_and_symbol.md
 - UCEL Golden Compatibility: docs/specs/ucel_golden/compatibility_notes.md
 - UCEL Library Hardening File-level Plan: docs/plans/ucel/ucel_library_hardening_filelevel_plan.md
+- UCEL Roadmap (locked 13-task split): docs/plans/ucel/ucel_roadmap_ucel-roadmap-001.md
 
 ## Docs OS Operations
 - docs/specs/system/docs_os_operations_policy.md

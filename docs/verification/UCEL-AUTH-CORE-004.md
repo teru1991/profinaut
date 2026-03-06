@@ -1,0 +1,93 @@
+# UCEL-AUTH-CORE-004 Verification
+
+## 1) Changed files (`git diff --name-only`)
+- docs/specs/ucel/auth_core_v1.md
+- docs/status/trace-index.json
+- docs/verification/UCEL-AUTH-CORE-004.md
+- ucel/docs/policies/private_auth_policy.md
+- ucel/docs/policies/redaction_policy.md
+- ucel/crates/ucel-core/src/auth.rs
+- ucel/crates/ucel-core/src/lib.rs
+- ucel/crates/ucel-transport/src/auth.rs
+- ucel/crates/ucel-transport/src/redaction.rs
+- ucel/crates/ucel-transport/src/lib.rs
+- ucel/crates/ucel-execution-core/src/auth.rs
+- ucel/crates/ucel-execution-core/src/lib.rs
+- ucel/crates/ucel-execution-core/Cargo.toml
+- ucel/crates/ucel-sdk/src/auth.rs
+- ucel/crates/ucel-sdk/src/lib.rs
+- ucel/crates/ucel-sdk/Cargo.toml
+- ucel/crates/ucel-testkit/src/auth.rs
+- ucel/crates/ucel-testkit/src/lib.rs
+- ucel/crates/ucel-testkit/tests/auth_core_signing.rs
+- ucel/crates/ucel-testkit/tests/auth_core_redaction.rs
+- ucel/crates/ucel-testkit/tests/auth_core_policy_boundary.rs
+- ucel/crates/ucel-testkit/tests/auth_core_nonce_and_clock.rs
+- ucel/examples/auth_core_preview.rs
+- ucel/Cargo.lock
+
+## 2) What / Why
+- Added Auth Core v1 spec and policy documentation to define responsibilities, fail-closed boundaries, and shared redaction behavior.
+- Implemented shared auth domain model (`AuthMode`, `AuthSurface`, `SignContext`, material validation) in `ucel-core`.
+- Added transport runtime abstractions (`SecretResolver`, nonce/idempotency/time providers, signer bridge, skew guard) and transport-level redaction helpers.
+- Added execution/sdk/testkit bridges so private flows can derive idempotency and produce redacted auth diagnostics consistently.
+- Added regression tests for signing flow, redaction leak prevention, policy/boundary behavior, and nonce/clock guards.
+
+## 3) Self-check results
+- Allowed-path check: OK.
+  - Command:
+    - `git diff --name-only | awk '{ ok=($0 ~ /^docs\/specs\/ucel\// || $0=="docs/status/trace-index.json" || $0 ~ /^docs\/verification\// || $0 ~ /^ucel\/docs\/policies\// || $0 ~ /^ucel\/crates\/ucel-core\// || $0 ~ /^ucel\/crates\/ucel-transport\// || $0 ~ /^ucel\/crates\/ucel-execution-core\// || $0 ~ /^ucel\/crates\/ucel-sdk\// || $0 ~ /^ucel\/crates\/ucel-testkit\// || $0 ~ /^ucel\/examples\// || $0=="ucel/Cargo.toml" || $0=="ucel/Cargo.lock"); if(!ok) print $0 }'`
+  - Result: empty output.
+- Tests added/updated: OK.
+  - Added:
+    - `ucel/crates/ucel-testkit/tests/auth_core_signing.rs`
+    - `ucel/crates/ucel-testkit/tests/auth_core_redaction.rs`
+    - `ucel/crates/ucel-testkit/tests/auth_core_policy_boundary.rs`
+    - `ucel/crates/ucel-testkit/tests/auth_core_nonce_and_clock.rs`
+  - Updated unit tests in:
+    - `ucel/crates/ucel-core/src/auth.rs`
+    - `ucel/crates/ucel-transport/src/auth.rs`
+    - `ucel/crates/ucel-sdk/src/auth.rs`
+    - `ucel/crates/ucel-execution-core/src/auth.rs`
+    - `ucel/crates/ucel-transport/src/redaction.rs`
+- Build/Unit test command results:
+  - PASS: `cd ucel && cargo test -p ucel-core`
+  - PASS: `cd ucel && cargo test -p ucel-transport`
+  - PASS: `cd ucel && cargo test -p ucel-execution-core`
+  - PASS: `cd ucel && cargo test -p ucel-sdk`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test auth_core_signing -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test auth_core_redaction -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test auth_core_policy_boundary -- --nocapture`
+  - PASS: `cd ucel && cargo test -p ucel-testkit --test auth_core_nonce_and_clock -- --nocapture`
+  - FAIL (pre-existing fixture gap): `cd ucel && cargo test -p ucel-core -p ucel-transport -p ucel-execution-core -p ucel-sdk -p ucel-testkit`
+    - failure: `support_bundle_manifest_fixture_is_sane` cannot read `/workspace/profinaut/fixtures/support_bundle/manifest.json`.
+- trace-index json.tool: OK.
+  - `python -m json.tool docs/status/trace-index.json > /dev/null`
+- Secrets scan: OK (no suspicious literal secret material found in changed files).
+  - `rg -n "AKIA|BEGIN RSA PRIVATE KEY|BEGIN PRIVATE KEY|secret[[:space:]]*[:=][[:space:]]*\"[A-Za-z0-9_/+=-]{12,}\"" <changed files>`
+- docs link existence check: OK for `docs/` references touched in this task.
+
+## 4) History evidence (required)
+- Executed history commands and captured evidence files:
+  - `git log --oneline --decorate -n 50` (`/tmp/auth_log50.txt`)
+  - `git log --graph --oneline --decorate --all -n 80` (`/tmp/auth_graph80.txt`)
+  - `git show <HEAD>` (`/tmp/auth_show_head.txt`)
+  - `git show <last touch SHA>` for transport/execution/sdk/policy (`/tmp/auth_show_transport.txt`, `/tmp/auth_show_exec.txt`, `/tmp/auth_show_sdk.txt`, `/tmp/auth_show_policy.txt`)
+  - `git blame -w` on required files (`/tmp/auth_blame_transport_lib.txt`, `/tmp/auth_blame_exec_lib.txt`, `/tmp/auth_blame_sdk_lib.txt`, `/tmp/auth_blame_private_policy.txt`)
+  - `git reflog -n 30` (`/tmp/auth_reflog.txt`)
+  - `git branch -vv` (`/tmp/auth_branchvv.txt`)
+  - `git log --merges --oneline -n 30` (`/tmp/auth_merges.txt`)
+- `origin/master` unavailable in this environment:
+  - `git merge-base HEAD origin/master` and `git log origin/master ...` report `fatal: Not a valid object name origin/master`.
+  - This limitation is recorded and treated as environment constraint for upstream-diff checks.
+- Branch lineage snapshot observed:
+  - HEAD branch `feature/ucel-auth-core-004-001` currently based on `ff36215d`.
+  - Prior task branch commits observed in reflog/log sequence:
+    - `39967099` (policy), `8f7a9ab2` (hub-registry), `ff36215d` (ssot-consistency).
+- Role mapping/compatibility conclusions from inventory + blame/log review:
+  - Existing `RequestContext` + `enforce_auth_boundary` remained backward-compatible (no breaking field changes) while adding new auth runtime modules.
+  - Shared auth abstractions were added in new files/modules to minimize hotspot churn (`ucel-core/src/auth.rs`, `ucel-transport/src/auth.rs`, `ucel-transport/src/redaction.rs`).
+  - Existing venue-specific signing remains untouched; this task adds common primitives and fail-fast guards only.
+- Additional implementation due identified gaps:
+  - Added structured runtime traits (resolver/nonce/idempotency/signer/time) and clock-skew guard so private REST/WS/execution can share one deterministic pre-send path.
+  - Added explicit redaction helpers/tests to ensure secrets do not leak through headers/query/body/preview diagnostics.

@@ -1,0 +1,12 @@
+{
+  "policy_id": "jp-resident-v1",
+  "residency": "jp_resident",
+  "default_scope": "public_only",
+  "entries": [
+    { "venue": "bitbank", "scope": "public_private", "reason": "domestic policy" },
+    { "venue": "bitflyer", "scope": "public_private", "reason": "domestic policy" },
+    { "venue": "coincheck", "scope": "public_private", "reason": "domestic policy" },
+    { "venue": "gmocoin", "scope": "public_private", "reason": "domestic policy" },
+    { "venue": "sbivc", "scope": "public_only", "reason": "documented exception" }
+  ]
+}

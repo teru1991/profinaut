@@ -160,3 +160,71 @@ pub fn public_ws(v: &Value) -> Result<bool, CoverageV2Error> {
 pub fn private_enabled(v: &Value) -> bool {
     bool_at(v, &["private", "enabled"]).unwrap_or(false)
 }
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct JpResidentAccessEntry {
+    pub venue: String,
+    pub scope: String,
+    #[allow(dead_code)]
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct JpResidentAccessPolicy {
+    pub policy_id: String,
+    pub residency: String,
+    pub default_scope: String,
+    pub entries: Vec<JpResidentAccessEntry>,
+}
+
+pub fn load_jp_resident_access(
+    repo_root: &Path,
+) -> Result<JpResidentAccessPolicy, CoverageV2Error> {
+    let root = locate_coverage_v2_root(repo_root)?;
+    let path = root.join("jurisdictions/jp_resident_access.json");
+    let bytes = std::fs::read(path)?;
+    Ok(serde_json::from_slice(&bytes)?)
+}
+
+pub fn jp_scope_for_venue(policy: &JpResidentAccessPolicy, venue: &str) -> String {
+    policy
+        .entries
+        .iter()
+        .find(|entry| entry.venue.eq_ignore_ascii_case(venue))
+        .map(|entry| entry.scope.clone())
+        .unwrap_or_else(|| policy.default_scope.clone())
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CoverageV2Family {
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CoverageV2VenueYaml {
+    pub venue: String,
+    #[serde(default)]
+    pub strict: bool,
+    #[serde(default)]
+    pub families: Vec<CoverageV2Family>,
+}
+
+pub fn normalize_canonical_name(input: &str) -> String {
+    input.trim().to_ascii_lowercase()
+}
+
+pub fn load_coverage_v2_yaml(path: &Path) -> Result<CoverageV2VenueYaml, CoverageV2Error> {
+    let raw = std::fs::read_to_string(path)?;
+    let parsed: CoverageV2VenueYaml =
+        serde_yaml::from_str(&raw).map_err(|e| CoverageV2Error::Invalid {
+            path: path.display().to_string(),
+            reason: format!("yaml parse error: {e}"),
+        })?;
+    if parsed.venue.trim().is_empty() {
+        return Err(CoverageV2Error::Invalid {
+            path: path.display().to_string(),
+            reason: "missing venue".into(),
+        });
+    }
+    Ok(parsed)
+}
