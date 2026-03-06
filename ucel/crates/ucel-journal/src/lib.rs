@@ -1,6 +1,6 @@
 pub mod events;
-pub mod writer;
 pub mod replay;
+pub mod writer;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
@@ -130,6 +130,10 @@ pub fn read_records(path: &Path) -> Result<Vec<RawRecord>, String> {
     Ok(out)
 }
 
+pub use events::{sanitize_detail, IngestJournalEvent};
+pub use replay::replay_last_state;
+pub use writer::IngestJournalWriter;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -165,8 +169,3 @@ mod tests {
         assert_eq!(recovered.len(), 1);
     }
 }
-
-
-pub use events::{sanitize_detail, IngestJournalEvent};
-pub use replay::replay_last_state;
-pub use writer::IngestJournalWriter;

@@ -11,17 +11,12 @@ use ucel_ws_rules::ExchangeWsRules;
 // Legacy coverage v1
 // --------------------
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum CoverageSupport {
+    #[default]
     Supported,
     NotSupported,
-}
-
-impl Default for CoverageSupport {
-    fn default() -> Self {
-        Self::Supported
-    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -593,6 +588,9 @@ pub fn generate_plan_v2(
     Plan { conn_plans, seed }
 }
 
+pub use plan::{build_desired_plan, DesiredIngestStream};
+pub use replan::replan_for_resume;
+
 #[cfg(test)]
 mod coverage_v1_tests {
     use super::*;
@@ -666,7 +664,3 @@ entries:
         assert_eq!(sup, vec!["crypto.public.ws.ticker".to_string()]);
     }
 }
-
-
-pub use plan::{build_desired_plan, DesiredIngestStream};
-pub use replan::replan_for_resume;

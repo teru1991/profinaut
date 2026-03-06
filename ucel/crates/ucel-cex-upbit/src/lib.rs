@@ -634,15 +634,9 @@ pub struct UpbitApiKey {
 
 fn parse_upbit_response(endpoint_id: &str, body: &[u8]) -> Result<UpbitRestResponse, UcelError> {
     match endpoint_id {
-        "quotation.public.rest.markets.list" => {
-            Ok(UpbitRestResponse::Markets(parse_json(body)?))
-        }
-        "quotation.public.rest.ticker.pairs" => {
-            Ok(UpbitRestResponse::Tickers(parse_json(body)?))
-        }
-        "quotation.public.rest.trades.recent" => {
-            Ok(UpbitRestResponse::Trades(parse_json(body)?))
-        }
+        "quotation.public.rest.markets.list" => Ok(UpbitRestResponse::Markets(parse_json(body)?)),
+        "quotation.public.rest.ticker.pairs" => Ok(UpbitRestResponse::Tickers(parse_json(body)?)),
+        "quotation.public.rest.trades.recent" => Ok(UpbitRestResponse::Trades(parse_json(body)?)),
         "quotation.public.rest.orderbook.snapshot" => {
             Ok(UpbitRestResponse::Orderbook(parse_json(body)?))
         }
@@ -653,18 +647,14 @@ fn parse_upbit_response(endpoint_id: &str, body: &[u8]) -> Result<UpbitRestRespo
         | "quotation.public.rest.candles.years" => {
             Ok(UpbitRestResponse::Candles(parse_json(body)?))
         }
-        "exchange.private.rest.accounts.list" => {
-            Ok(UpbitRestResponse::Accounts(parse_json(body)?))
-        }
+        "exchange.private.rest.accounts.list" => Ok(UpbitRestResponse::Accounts(parse_json(body)?)),
         "exchange.private.rest.orders.create" => {
             Ok(UpbitRestResponse::CreateOrder(parse_json(body)?))
         }
         "exchange.private.rest.orders.cancel" => {
             Ok(UpbitRestResponse::CancelOrder(parse_json(body)?))
         }
-        "exchange.private.rest.orders.open" => {
-            Ok(UpbitRestResponse::OpenOrders(parse_json(body)?))
-        }
+        "exchange.private.rest.orders.open" => Ok(UpbitRestResponse::OpenOrders(parse_json(body)?)),
         "exchange.private.rest.orders.closed" => {
             Ok(UpbitRestResponse::ClosedOrders(parse_json(body)?))
         }
@@ -677,21 +667,17 @@ fn parse_upbit_response(endpoint_id: &str, body: &[u8]) -> Result<UpbitRestRespo
         "exchange.private.rest.withdraws.coin" => {
             Ok(UpbitRestResponse::WithdrawCoin(parse_json(body)?))
         }
-        "exchange.private.rest.deposits.list" => {
-            Ok(UpbitRestResponse::Deposits(parse_json(body)?))
-        }
-        "exchange.private.rest.deposits.coin_address" => {
+        "exchange.private.rest.deposits.list" => Ok(UpbitRestResponse::Deposits(parse_json(body)?)),
+        "exchange.private.rest.deposits.address" => {
             Ok(UpbitRestResponse::DepositAddress(parse_json(body)?))
         }
-        "exchange.private.rest.travel_rule.vasps" => {
+        "exchange.private.rest.travelrule.vasps" => {
             Ok(UpbitRestResponse::TravelRuleVasps(parse_json(body)?))
         }
-        "exchange.private.rest.status.wallet" => {
+        "exchange.private.rest.service.walletstatus" => {
             Ok(UpbitRestResponse::WalletStatus(parse_json(body)?))
         }
-        "exchange.private.rest.api_keys.list" => {
-            Ok(UpbitRestResponse::ApiKeys(parse_json(body)?))
-        }
+        "exchange.private.rest.keys.list" => Ok(UpbitRestResponse::ApiKeys(parse_json(body)?)),
         other => Err(UcelError::new(
             ErrorCode::NotSupported,
             format!("unmapped response parser for endpoint: {other}"),
@@ -853,7 +839,11 @@ mod tests {
     #[test]
     fn all_ws_catalog_rows_build_subscribe_unsubscribe() {
         for spec in ws_channel_specs() {
-            let key = if spec.requires_auth { Some("kid") } else { None };
+            let key = if spec.requires_auth {
+                Some("kid")
+            } else {
+                None
+            };
             assert_eq!(
                 UpbitWsAdapter::build_subscribe(&spec.id, "KRW-BTC", key)
                     .unwrap()
@@ -891,9 +881,8 @@ mod tests {
 
     #[test]
     fn typed_deserialize_and_normalize() {
-        let t =
-            normalize_ws_message(r#"{"type":"ticker","code":"KRW-BTC","trade_price":1.0}"#)
-                .unwrap();
+        let t = normalize_ws_message(r#"{"type":"ticker","code":"KRW-BTC","trade_price":1.0}"#)
+            .unwrap();
         assert!(matches!(t, MarketEvent::Ticker { .. }));
     }
 
@@ -959,7 +948,7 @@ mod tests {
     #[test]
     fn strict_gate_enabled_and_zero_gaps() {
         let manifest_path =
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../coverage/upbit.yaml");
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../coverage/upbit.yaml");
         let manifest = ucel_testkit::load_coverage_manifest(&manifest_path).unwrap();
         assert!(manifest.strict);
         let gaps = ucel_testkit::evaluate_coverage_gate(&manifest);

@@ -49,12 +49,15 @@ fn builds_bundle_and_manifest_matches_archive() {
     r.register(Box::new(P)).unwrap();
 
     let req = DiagnosticsRequest::default();
-    let limits = BundleLimits::default();
+    let limits = BundleLimits {
+        max_concurrent_builds: 64,
+        ..Default::default()
+    };
     let built = build_support_bundle_tar_zst(&r, &req, &limits).unwrap();
 
     let v: serde_json::Value = serde_json::from_slice(&built.manifest_json).unwrap();
-    assert!(v.get("bundle_id").unwrap().as_str().unwrap().len() > 0);
-    assert!(v.get("diag_semver").unwrap().as_str().unwrap().len() > 0);
+    assert!(!v.get("bundle_id").unwrap().as_str().unwrap().is_empty());
+    assert!(!v.get("diag_semver").unwrap().as_str().unwrap().is_empty());
 
     let entries = read_tar_zst_entries(&built.archive_bytes).unwrap();
     assert_eq!(entries[0].0, "manifest.json");
@@ -80,7 +83,10 @@ fn is_deterministic_for_same_input() {
     let mut r = DiagnosticsRegistry::new(RegistryLimits::default());
     r.register(Box::new(P)).unwrap();
     let req = DiagnosticsRequest::default();
-    let limits = BundleLimits::default();
+    let limits = BundleLimits {
+        max_concurrent_builds: 64,
+        ..Default::default()
+    };
 
     let a = build_support_bundle_tar_zst(&r, &req, &limits).unwrap();
     let b = build_support_bundle_tar_zst(&r, &req, &limits).unwrap();
@@ -117,8 +123,11 @@ fn rejects_total_size_exceeded() {
     r.register(Box::new(Big)).unwrap();
 
     let req = DiagnosticsRequest::default();
-    let mut limits = BundleLimits::default();
-    limits.max_total_bytes = 512;
+    let limits = BundleLimits {
+        max_total_bytes: 512,
+        max_concurrent_builds: 64,
+        ..Default::default()
+    };
     let err = build_support_bundle_tar_zst(&r, &req, &limits).unwrap_err();
     match err {
         BundleBuildError::TotalSizeExceeded(_) => {}
@@ -152,7 +161,10 @@ fn rejects_invalid_path() {
     r.register(Box::new(Bad)).unwrap();
 
     let req = DiagnosticsRequest::default();
-    let limits = BundleLimits::default();
+    let limits = BundleLimits {
+        max_concurrent_builds: 64,
+        ..Default::default()
+    };
     let err = build_support_bundle_tar_zst(&r, &req, &limits).unwrap_err();
     let msg = format!("{err}");
     assert!(msg.contains("invalid path") || msg.contains("InvalidPath"));

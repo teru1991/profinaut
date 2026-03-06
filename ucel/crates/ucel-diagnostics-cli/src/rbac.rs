@@ -5,6 +5,7 @@ pub struct BreakGlass {
     pub ttl: Duration,
     pub reason: String,
     pub approvals: Vec<String>,
+    #[allow(dead_code)]
     pub approved_at: SystemTime,
 }
 
