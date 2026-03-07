@@ -59,7 +59,9 @@ def build_healthz_response(request: Request, checks: list[HealthCheck], op: str 
             )
         )
 
-    correlation_raw = make_correlation(op=op, request_headers=dict(request.headers))
+    state_corr = getattr(request.state, "correlation", None)
+    correlation_raw = state_corr.to_dict() if state_corr is not None else make_correlation(op=op, request_headers=dict(request.headers))
+    correlation_raw["op"] = op
     response = HealthzResponse(
         status=_aggregate_health_status(checks),
         checks=checks,
@@ -96,7 +98,9 @@ def build_capabilities_response(
         )
     )
 
-    correlation_raw = make_correlation(op=op, request_headers=dict(request.headers))
+    state_corr = getattr(request.state, "correlation", None)
+    correlation_raw = state_corr.to_dict() if state_corr is not None else make_correlation(op=op, request_headers=dict(request.headers))
+    correlation_raw["op"] = op
     response = CapabilitiesResponse(
         features=features,
         correlation=Correlation(**correlation_raw),

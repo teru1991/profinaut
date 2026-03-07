@@ -66,6 +66,37 @@ Platform Foundation（基盤・共通）
   - 無ければ：`(source, venue, stream, event_time, seq, payload_hash)` のような安定キーで構成
 - これらは **ログ・メトリクス・監査イベント・サポートバンドル**に共通で現れること
 
+### 2.3 Correlation & Process Identity（A-2 / A-9 固定）
+- `request_id`:
+  - request単位で必須。`X-Request-ID` が妥当なら採用、なければ受信時に生成。
+  - response header / error context / request-scoped log に同一値を使う。
+- `trace_id`:
+  - `X-Trace-ID` または tracing context (`traceparent`) から採用。なければ生成。
+  - response header と log の必須キー。
+- `run_id`:
+  - **process-stable**（同一プロセスで不変）。
+  - 外部 caller の `X-Run-ID` は既定で無視し、trusted hop かつ format 妥当時のみ override を許可。
+- `event_id`:
+  - background event / stream / outbox で優先保持。HTTP request では任意。
+- `schema_version`:
+  - correlation/log/event の contract version を観測可能に保持。
+- `component` / `source`:
+  - すべての log/error context で必須。service bootstrap で固定注入。
+
+### 2.4 Response Headers / Error Context / Logs の一致規約
+- HTTP response は `X-Request-ID` / `X-Trace-ID` / `X-Run-ID` / `X-Schema-Version` を必ず返す。
+- Error envelope context (`error.context`) には `request_id` / `trace_id` / `run_id` / `component` を含める。
+- request start / finish / error log は同じ `request_id` / `trace_id` / `run_id` を共有する。
+- `healthz` / `capabilities` / `metrics` / error response は exempt にしない。
+
+### 2.5 Strict JSON Logging（A-9 固定）
+- Logs are contracts。自由形式ログのみで運用しない。
+- strict mode の required keys（最低限）:
+  - `timestamp`, `level`, `message`, `component`, `trace_id`, `run_id`, `schema_version`
+  - request-scoped log では `request_id` も必須
+- event/background log は `event_id` を優先保持する。
+- required key 欠落は test で fail-fast させる。
+
 ---
 
 ## 3. Standard Error Model（標準エラーモデル：固定）

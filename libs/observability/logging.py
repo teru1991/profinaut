@@ -6,25 +6,24 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from contracts.observability.contract_constants import SCHEMA_VERSION_LOG_EVENT
 from libs.observability import budget
 from libs.observability.audit import emit_audit_event
+from libs.observability.correlation import current_correlation
 
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover
     tomllib = None  # type: ignore[assignment]
 
-SCHEMA_VERSION_LOG_EVENT = "obs.log_event.v1"
-_REQUIRED_KEYS = [
-    "schema_version",
-    "ts",
+_REQUIRED_BASE_KEYS = [
+    "timestamp",
     "level",
-    "msg",
-    "logger",
-    "service",
-    "op",
+    "message",
+    "component",
+    "trace_id",
     "run_id",
-    "instance_id",
+    "schema_version",
 ]
 _FORBIDDEN_KEYS_CACHE: set[str] | None = None
 _SEEN_FIELD_KEYS: set[str] = set()
@@ -130,10 +129,12 @@ def _apply_log_budget(fields: dict[str, Any] | None) -> dict[str, Any] | None:
     return sanitized
 
 
-def validate_required_keys(event: dict[str, Any], strict: bool) -> None:
-    missing = [key for key in _REQUIRED_KEYS if key not in event or event.get(key) in (None, "", [])]
-    if missing and strict:
-        raise ValueError(f"log_event missing required keys: {missing}")
+def validate_log_event(event: dict[str, Any], *, strict: bool, request_scoped: bool = False) -> None:
+    missing = [key for key in _REQUIRED_BASE_KEYS if not event.get(key)]
+    if request_scoped and not event.get("request_id"):
+        missing.append("request_id")
+    if strict and missing:
+        raise ValueError(f"log_event missing required keys: {sorted(set(missing))}")
 
 
 def build_log_event(
@@ -146,37 +147,51 @@ def build_log_event(
     corr: dict[str, Any] | None,
     fields: dict[str, Any] | None = None,
     reason_code: str | None = None,
+    error_code: str | None = None,
+    strict: bool | None = None,
 ) -> dict[str, Any]:
-    correlation = corr or {}
+    correlation = dict(corr or {})
+    ctx = current_correlation()
+    if ctx is not None:
+        correlation.setdefault("trace_id", ctx.trace_id)
+        correlation.setdefault("run_id", ctx.run_id)
+        correlation.setdefault("request_id", ctx.request_id)
+        correlation.setdefault("event_id", ctx.event_id)
+        correlation.setdefault("component", ctx.component)
+        correlation.setdefault("source", ctx.source)
+
     event: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION_LOG_EVENT,
-        "ts": now_utc_iso(),
-        "level": level,
-        "msg": msg,
-        "logger": logger,
-        "service": service,
+        "timestamp": now_utc_iso(),
+        "level": str(level).upper(),
+        "message": msg,
+        "component": str(correlation.get("component") or service),
+        "source": str(correlation.get("source") or service),
+        "logger_name": logger,
         "op": op,
-        "run_id": correlation.get("run_id"),
-        "instance_id": correlation.get("instance_id"),
         "trace_id": correlation.get("trace_id"),
-        "event_uid": correlation.get("event_uid"),
+        "run_id": correlation.get("run_id"),
+        "request_id": correlation.get("request_id"),
+        "event_id": correlation.get("event_id") or correlation.get("event_uid"),
+        "error_code": error_code,
         "reason_code": reason_code,
         "fields": _apply_log_budget(redact_fields(fields)),
     }
-    for key in list(event.keys()):
-        if event[key] is None:
-            event.pop(key)
+    for key in ["request_id", "event_id", "error_code", "reason_code", "fields"]:
+        if event.get(key) in (None, {}):
+            event.pop(key, None)
 
     cfg = budget.cfg()
     serialized = json.dumps(event, ensure_ascii=False, separators=(",", ":"))
     if len(serialized.encode("utf-8")) > cfg.max_event_bytes:
         budget.mark_logs_exceeded()
         emit_audit_event("budget_exceeded", service=service, details={"kind": "logs_bytes"})
-        event["msg"] = event["msg"][:128]
+        event["message"] = event["message"][:128]
         if "fields" in event:
             event["fields"] = {"_truncated": True}
 
-    validate_required_keys(event, strict=is_strict_mode())
+    strict_mode = is_strict_mode() if strict is None else strict
+    validate_log_event(event, strict=strict_mode, request_scoped=(op == "http_request"))
     return event
 
 

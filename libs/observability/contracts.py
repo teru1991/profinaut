@@ -35,10 +35,14 @@ class ContractBaseModel(BaseModel):
 
 class Correlation(ContractBaseModel):
     schema_version: str = Field(default=SCHEMA_VERSION_CORRELATION)
+    trace_id: str
     run_id: str
-    instance_id: str
-    trace_id: str | None = None
+    component: str
+    source: str
+    request_id: str | None = None
+    event_id: str | None = None
     event_uid: str | None = None
+    instance_id: str | None = None
     op: str
     emitted_at: str
     build: dict[str, str] | None = None

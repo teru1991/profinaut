@@ -30,8 +30,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.append(str(_REPO_ROOT))
 
-from libs.observability import audit_event, error_envelope, request_id_middleware
-from libs.observability.middleware import ObservabilityMiddleware
+from libs.observability import audit_event, error_envelope
+from libs.observability.middleware import install_correlation_middleware
 from libs.observability.contracts import CapabilityFeature, CapabilityReason, FeatureState, HealthCheck, HealthStatus
 from libs.observability.core import build_error_envelope, install_standard_error_handlers, set_request_correlation_context
 from libs.observability.correlation import now_utc_iso
@@ -404,9 +404,8 @@ def _is_valid_rfc3339(ts: str) -> bool:
     except ValueError:
         return False
 app = FastAPI(title="profinaut-marketdata", version="0.1.0")
-app.add_middleware(request_id_middleware())
 _obs_service_name = os.getenv("PROFINAUT_SERVICE_NAME") or "marketdata"
-app.add_middleware(ObservabilityMiddleware, service_name=_obs_service_name)
+install_correlation_middleware(app, component=_obs_service_name, source="services.marketdata", strict=True)
 install_standard_error_handlers(app, component="marketdata", source="services.marketdata")
 app.include_router(raw_ingest_router)
 _poller = MarketDataPoller(PollerConfig())

@@ -24,6 +24,8 @@ SCHEMA_PATH = Path("contracts/schemas/common/error_envelope.schema.json")
 SCHEMA = json.loads(SCHEMA_PATH.read_text())
 KIND_ENUM = set(SCHEMA["properties"]["error"]["properties"]["kind"]["enum"])
 SEVERITY_ENUM = set(SCHEMA["properties"]["error"]["properties"]["severity"]["enum"])
+CORRELATION_SCHEMA = json.loads(Path("docs/contracts/observability/correlation.schema.json").read_text())
+LOG_EVENT_SCHEMA = json.loads(Path("docs/contracts/observability/log_event.schema.json").read_text())
 
 
 def _validate_error_envelope(payload: dict) -> None:
@@ -133,3 +135,13 @@ def test_error_envelope_kind_enum_rejects_unknown(valid_error_envelope: dict) ->
     valid_error_envelope["error"]["kind"] = "made_up_kind"
     with pytest.raises(AssertionError):
         _validate_error_envelope(valid_error_envelope)
+
+
+def test_observability_correlation_schema_required_fields() -> None:
+    required = set(CORRELATION_SCHEMA["required"])
+    assert {"trace_id", "run_id", "component", "source", "schema_version"}.issubset(required)
+
+
+def test_observability_log_event_schema_required_fields() -> None:
+    required = set(LOG_EVENT_SCHEMA["required"])
+    assert {"timestamp", "level", "message", "component", "trace_id", "run_id", "schema_version"}.issubset(required)

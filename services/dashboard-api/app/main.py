@@ -86,8 +86,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.append(str(_REPO_ROOT))
 
-from libs.observability import audit_event, error_envelope, request_id_middleware
-from libs.observability.middleware import ObservabilityMiddleware
+from libs.observability import audit_event, error_envelope
+from libs.observability.middleware import install_correlation_middleware
 
 from libs.observability.contracts import (
     CapabilityFeature,
@@ -102,9 +102,8 @@ from libs.observability.http_contracts import build_capabilities_response, build
 
 
 app = FastAPI(title="Profinaut Dashboard API", version="0.4.0")
-app.add_middleware(request_id_middleware())
 _obs_service_name = os.getenv("PROFINAUT_SERVICE_NAME") or "dashboard-api"
-app.add_middleware(ObservabilityMiddleware, service_name=_obs_service_name)
+install_correlation_middleware(app, component=_obs_service_name, source="services.dashboard_api", strict=True)
 install_standard_error_handlers(app, component="dashboard-api", source="services.dashboard_api")
 STALE_SECONDS = 120
 STRONG_COMMAND_TYPES = frozenset({"HALT", "FLATTEN", "CLOSE_ALL", "KILL_SWITCH"})

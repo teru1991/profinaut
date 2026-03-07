@@ -23,6 +23,7 @@ from dashboard_api.safety_kill import router as safety_kill_router
 from dashboard_api.interlock_status import router as interlock_status_router
 from dashboard_api.safety_lease import router as safety_lease_router
 from libs.observability.core import install_standard_error_handlers
+from libs.observability.middleware import install_correlation_middleware
 
 # Setup logging
 setup_logging("dashboard-api")
@@ -37,6 +38,7 @@ app = FastAPI(
     description="Investment platform dashboard API",
     version="0.1.0",
 )
+install_correlation_middleware(app, component="dashboard-api", source="dashboard_api", strict=True)
 install_standard_error_handlers(app, component="dashboard-api", source="dashboard_api")
 
 # Kill switch (no real trading)
