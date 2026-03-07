@@ -1,0 +1,38 @@
+[
+  {
+    "source_id": "jp_issuer_ir_html_public",
+    "market": "jp",
+    "canonical_id": "JP-ACME-1111",
+    "name": "Acme Holdings JP",
+    "aliases": ["1111", "acme"],
+    "site_url": "https://example.co.jp/ir",
+    "slug": "acme-jp"
+  },
+  {
+    "source_id": "jp_issuer_ir_feed_public",
+    "market": "jp",
+    "canonical_id": "JP-ACME-1111",
+    "name": "Acme Holdings JP",
+    "aliases": ["1111", "acme"],
+    "site_url": "https://example.co.jp/ir",
+    "slug": "acme-jp"
+  },
+  {
+    "source_id": "us_issuer_ir_html_public",
+    "market": "us",
+    "canonical_id": "US-ACME-2222",
+    "name": "Acme Holdings US",
+    "aliases": ["ACME", "acme-us"],
+    "site_url": "https://investors.example.com",
+    "slug": "acme-us"
+  },
+  {
+    "source_id": "us_issuer_ir_feed_public",
+    "market": "us",
+    "canonical_id": "US-ACME-2222",
+    "name": "Acme Holdings US",
+    "aliases": ["ACME", "acme-us"],
+    "site_url": "https://investors.example.com",
+    "slug": "acme-us"
+  }
+]

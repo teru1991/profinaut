@@ -10,6 +10,7 @@ pub enum UcelIrErrorKind {
     Checkpoint,
     NotImplemented,
     Internal,
+    Policy,
 }
 
 #[derive(Debug, Error)]

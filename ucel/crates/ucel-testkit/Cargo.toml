@@ -21,6 +21,7 @@ ucel-equity-core = { path = "../ucel-equity-core" }
 ucel-equity-adapter-demo = { path = "../ucel-equity-adapter-demo" }
 ucel-diagnostics-analyzer = { path = "../ucel-diagnostics-analyzer" }
 ucel-diagnostics-core = { path = "../ucel-diagnostics-core" }
+ucel-ir = { path = "../ucel-ir" }
 
 ucel-cex-bybit = { path = "../ucel-cex-bybit" }
 ucel-cex-bithumb = { path = "../ucel-cex-bithumb" }

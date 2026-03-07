@@ -1,0 +1,8 @@
+{
+  "jpdoc1-html": "<html><body>jp news</body></html>",
+  "jpdoc2-pdf": "%PDF-1.7 jp presentation",
+  "jpdoc3-rss": "<rss><channel><item>jp release</item></channel></rss>",
+  "usdoc1-html": "<html><body>us transcript</body></html>",
+  "usdoc2-pdf": "%PDF-1.7 us integrated",
+  "usdoc3-rss": "<rss><channel><item>us fact sheet</item></channel></rss>"
+}
