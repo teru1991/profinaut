@@ -8,6 +8,7 @@ pub mod order_gate;
 pub mod policy;
 pub mod private_rest;
 pub mod private_ws;
+pub mod public_rest_ext;
 pub mod symbol;
 pub mod types;
 pub mod value;
@@ -53,6 +54,14 @@ pub use private_ws::{
     CanonicalBalanceEvent, CanonicalFillEvent, CanonicalOrderEvent, CanonicalPositionEvent,
     CanonicalPrivateWsEvent, CanonicalSessionEvent, PrivateWsAckMode, PrivateWsChannel,
     PrivateWsLifecycleState, PrivateWsOutcome, PrivateWsRejectClass, PrivateWsSupport,
+};
+pub use public_rest_ext::{
+    build_vendor_public_rest_typed_envelope, vendor_public_rest_operation_spec,
+    vendor_public_rest_operation_specs, VendorPublicMiscPayload,
+    VendorPublicOrderBookSummaryPayload, VendorPublicReferencePayload,
+    VendorPublicRestExtensionCategory, VendorPublicRestMetadata, VendorPublicRestOperationSpec,
+    VendorPublicRestPayloadType, VendorPublicRestSchemaVersion, VendorPublicRestTypedEnvelope,
+    VendorPublicRestTypedPayload, VendorPublicStatusPayload, VendorPublicTradesSummaryPayload,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt;
