@@ -216,6 +216,35 @@ pub fn catalog_for(exchange: ExchangeId) -> Result<ExchangeCatalog, HubError> {
     serde_json::from_str::<ExchangeCatalog>(reg.catalog_json).map_err(HubError::Json)
 }
 
+fn is_public_catalog_entry(id: &str, visibility: &str) -> bool {
+    let vis = visibility.trim().to_ascii_lowercase();
+    if vis == "public" {
+        return true;
+    }
+    if vis == "private" {
+        return false;
+    }
+    (id.contains(".public.") || id.starts_with("public.")) && !id.contains(".private.")
+}
+
+pub fn list_public_rest_entries(exchange: ExchangeId) -> Result<Vec<EndpointSpec>, HubError> {
+    let catalog = catalog_for(exchange)?;
+    Ok(catalog
+        .rest_endpoints
+        .into_iter()
+        .filter(|entry| is_public_catalog_entry(&entry.id, &entry.visibility))
+        .collect())
+}
+
+pub fn list_public_ws_entries(exchange: ExchangeId) -> Result<Vec<WsChannelSpec>, HubError> {
+    let catalog = catalog_for(exchange)?;
+    Ok(catalog
+        .ws_channels
+        .into_iter()
+        .filter(|entry| is_public_catalog_entry(&entry.id, &entry.visibility))
+        .collect())
+}
+
 #[derive(Debug)]
 pub struct SpecRegistry {
     rest: HashMap<(ExchangeId, OperationKey), EndpointSpec>,

@@ -1,0 +1,1888 @@
+{
+  "version": "1.0.0",
+  "venues": [
+    "bitbank",
+    "bitflyer",
+    "coincheck",
+    "gmocoin",
+    "bittrade",
+    "sbivc"
+  ],
+  "entries": [
+    {
+      "venue": "bitbank",
+      "venue_family": "bitbank",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.market.candlestick",
+      "path_or_channel": "/{pair}/candlestick/{candle-type}/{YYYY}",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "candles",
+      "canonical_surface": "get_candles",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitbank/catalog.json",
+        "ucel/coverage/bitbank.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitbank.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitbank",
+      "venue_family": "bitbank",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.market.circuit-break-info",
+      "path_or_channel": "/{pair}/circuit_break_info",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "maintenance_status",
+      "canonical_surface": "get_maintenance_status",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitbank/catalog.json",
+        "ucel/coverage/bitbank.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitbank.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitbank",
+      "venue_family": "bitbank",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.market.depth",
+      "path_or_channel": "/{pair}/depth",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "orderbook",
+      "canonical_surface": "get_orderbook_snapshot",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitbank/catalog.json",
+        "ucel/coverage/bitbank.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitbank.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitbank",
+      "venue_family": "bitbank",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.market.ticker",
+      "path_or_channel": "/{pair}/ticker",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "ticker",
+      "canonical_surface": "get_ticker",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitbank/catalog.json",
+        "ucel/coverage/bitbank.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitbank.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitbank",
+      "venue_family": "bitbank",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.market.tickers",
+      "path_or_channel": "/tickers",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "ticker",
+      "canonical_surface": "get_ticker",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitbank/catalog.json",
+        "ucel/coverage/bitbank.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitbank.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitbank",
+      "venue_family": "bitbank",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.market.tickers-jpy",
+      "path_or_channel": "/tickers_jpy",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "ticker",
+      "canonical_surface": "get_ticker",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitbank/catalog.json",
+        "ucel/coverage/bitbank.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitbank.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitbank",
+      "venue_family": "bitbank",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.market.transactions",
+      "path_or_channel": "/{pair}/transactions/{YYYYMMDD}",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitbank/catalog.json",
+        "ucel/coverage/bitbank.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitbank.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitbank",
+      "venue_family": "bitbank",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.spot.pairs",
+      "path_or_channel": "/spot/pairs",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "symbols",
+      "canonical_surface": "list_symbols",
+      "surface_class": "canonical_extended",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitbank/catalog.json",
+        "ucel/coverage/bitbank.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitbank.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitbank",
+      "venue_family": "bitbank",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.spot.status",
+      "path_or_channel": "/spot/status",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "system_status",
+      "canonical_surface": "get_system_status",
+      "surface_class": "canonical_extended",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitbank/catalog.json",
+        "ucel/coverage/bitbank.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitbank.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitbank",
+      "venue_family": "bitbank",
+      "api_kind": "ws",
+      "public_id": "crypto.public.ws.market.circuit-break-info",
+      "path_or_channel": "circuit_break_info_{pair}",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "maintenance_status",
+      "canonical_surface": "get_maintenance_status",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitbank/catalog.json",
+        "ucel/coverage/bitbank.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitbank.json",
+        "ucel/crates/ucel-ws-rules/rules/bitbank.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitbank",
+      "venue_family": "bitbank",
+      "api_kind": "ws",
+      "public_id": "crypto.public.ws.market.depth-diff",
+      "path_or_channel": "depth_diff_{pair}",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "orderbook",
+      "canonical_surface": "get_orderbook_snapshot",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitbank/catalog.json",
+        "ucel/coverage/bitbank.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitbank.json",
+        "ucel/crates/ucel-ws-rules/rules/bitbank.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitbank",
+      "venue_family": "bitbank",
+      "api_kind": "ws",
+      "public_id": "crypto.public.ws.market.depth-whole",
+      "path_or_channel": "depth_whole_{pair}",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "orderbook",
+      "canonical_surface": "get_orderbook_snapshot",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitbank/catalog.json",
+        "ucel/coverage/bitbank.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitbank.json",
+        "ucel/crates/ucel-ws-rules/rules/bitbank.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitbank",
+      "venue_family": "bitbank",
+      "api_kind": "ws",
+      "public_id": "crypto.public.ws.market.ticker",
+      "path_or_channel": "ticker_{pair}",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "ticker",
+      "canonical_surface": "get_ticker",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitbank/catalog.json",
+        "ucel/coverage/bitbank.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitbank.json",
+        "ucel/crates/ucel-ws-rules/rules/bitbank.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitbank",
+      "venue_family": "bitbank",
+      "api_kind": "ws",
+      "public_id": "crypto.public.ws.market.transactions",
+      "path_or_channel": "transactions_{pair}",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitbank/catalog.json",
+        "ucel/coverage/bitbank.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitbank.json",
+        "ucel/crates/ucel-ws-rules/rules/bitbank.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.board.get",
+      "path_or_channel": "/v1/getboard",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.boardstate.get",
+      "path_or_channel": "/v1/getboardstate",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.chats.get",
+      "path_or_channel": "/v1/getchats",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.executions.get",
+      "path_or_channel": "/v1/getexecutions",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.health.get",
+      "path_or_channel": "/v1/gethealth",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.markets.get",
+      "path_or_channel": "/v1/getmarkets",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "symbols",
+      "canonical_surface": "list_symbols",
+      "surface_class": "canonical_extended",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.ticker.get",
+      "path_or_channel": "/v1/getticker",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "ticker",
+      "canonical_surface": "get_ticker",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "rest",
+      "public_id": "fx.public.rest.board.get",
+      "path_or_channel": "/v1/getboard",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "rest",
+      "public_id": "fx.public.rest.boardstate.get",
+      "path_or_channel": "/v1/getboardstate",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "rest",
+      "public_id": "fx.public.rest.executions.get",
+      "path_or_channel": "/v1/getexecutions",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "rest",
+      "public_id": "fx.public.rest.health.get",
+      "path_or_channel": "/v1/gethealth",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "rest",
+      "public_id": "fx.public.rest.markets.get",
+      "path_or_channel": "/v1/getmarkets",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "symbols",
+      "canonical_surface": "list_symbols",
+      "surface_class": "canonical_extended",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "rest",
+      "public_id": "fx.public.rest.ticker.get",
+      "path_or_channel": "/v1/getticker",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "ticker",
+      "canonical_surface": "get_ticker",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "ws",
+      "public_id": "crypto.public.ws.board",
+      "path_or_channel": "lightning_board_{product_code}",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json",
+        "ucel/crates/ucel-ws-rules/rules/bitflyer.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "ws",
+      "public_id": "crypto.public.ws.board_snapshot",
+      "path_or_channel": "lightning_board_snapshot_{product_code}",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json",
+        "ucel/crates/ucel-ws-rules/rules/bitflyer.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "ws",
+      "public_id": "crypto.public.ws.executions",
+      "path_or_channel": "lightning_executions_{product_code}",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json",
+        "ucel/crates/ucel-ws-rules/rules/bitflyer.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "ws",
+      "public_id": "crypto.public.ws.ticker",
+      "path_or_channel": "lightning_ticker_{product_code}",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "ticker",
+      "canonical_surface": "get_ticker",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json",
+        "ucel/crates/ucel-ws-rules/rules/bitflyer.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "ws",
+      "public_id": "fx.public.ws.board",
+      "path_or_channel": "lightning_board_FX_BTC_JPY",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json",
+        "ucel/crates/ucel-ws-rules/rules/bitflyer.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "ws",
+      "public_id": "fx.public.ws.board_snapshot",
+      "path_or_channel": "lightning_board_snapshot_FX_BTC_JPY",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json",
+        "ucel/crates/ucel-ws-rules/rules/bitflyer.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "ws",
+      "public_id": "fx.public.ws.executions",
+      "path_or_channel": "lightning_executions_FX_BTC_JPY",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json",
+        "ucel/crates/ucel-ws-rules/rules/bitflyer.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bitflyer",
+      "venue_family": "bitflyer",
+      "api_kind": "ws",
+      "public_id": "fx.public.ws.ticker",
+      "path_or_channel": "lightning_ticker_FX_BTC_JPY",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "ticker",
+      "canonical_surface": "get_ticker",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bitflyer/catalog.json",
+        "ucel/coverage/bitflyer.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bitflyer.json",
+        "ucel/crates/ucel-ws-rules/rules/bitflyer.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bittrade",
+      "venue_family": "bittrade",
+      "api_kind": "rest",
+      "public_id": "public.rest.common.currencys.get",
+      "path_or_channel": "/v1/common/currencys",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bittrade/catalog.json",
+        "ucel/coverage/bittrade.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bittrade.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bittrade",
+      "venue_family": "bittrade",
+      "api_kind": "rest",
+      "public_id": "public.rest.common.symbols.get",
+      "path_or_channel": "/v1/common/symbols",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "symbols",
+      "canonical_surface": "list_symbols",
+      "surface_class": "canonical_extended",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bittrade/catalog.json",
+        "ucel/coverage/bittrade.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bittrade.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bittrade",
+      "venue_family": "bittrade",
+      "api_kind": "rest",
+      "public_id": "public.rest.common.timestamp.get",
+      "path_or_channel": "/v1/common/timestamp",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bittrade/catalog.json",
+        "ucel/coverage/bittrade.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bittrade.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bittrade",
+      "venue_family": "bittrade",
+      "api_kind": "rest",
+      "public_id": "public.rest.market.depth.get",
+      "path_or_channel": "/market/depth",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "orderbook",
+      "canonical_surface": "get_orderbook_snapshot",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bittrade/catalog.json",
+        "ucel/coverage/bittrade.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bittrade.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bittrade",
+      "venue_family": "bittrade",
+      "api_kind": "rest",
+      "public_id": "public.rest.market.detail.merged.get",
+      "path_or_channel": "/market/detail/merged",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bittrade/catalog.json",
+        "ucel/coverage/bittrade.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bittrade.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bittrade",
+      "venue_family": "bittrade",
+      "api_kind": "rest",
+      "public_id": "public.rest.market.history.trade.get",
+      "path_or_channel": "/market/history/trade",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "trades",
+      "canonical_surface": "get_trades",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bittrade/catalog.json",
+        "ucel/coverage/bittrade.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bittrade.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bittrade",
+      "venue_family": "bittrade",
+      "api_kind": "rest",
+      "public_id": "public.rest.market.kline.get",
+      "path_or_channel": "/market/history/kline",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "candles",
+      "canonical_surface": "get_candles",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bittrade/catalog.json",
+        "ucel/coverage/bittrade.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bittrade.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bittrade",
+      "venue_family": "bittrade",
+      "api_kind": "rest",
+      "public_id": "public.rest.market.tickers.get",
+      "path_or_channel": "/market/tickers",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "ticker",
+      "canonical_surface": "get_ticker",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bittrade/catalog.json",
+        "ucel/coverage/bittrade.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bittrade.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bittrade",
+      "venue_family": "bittrade",
+      "api_kind": "rest",
+      "public_id": "public.rest.market.trade.get",
+      "path_or_channel": "/market/trade",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "trades",
+      "canonical_surface": "get_trades",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bittrade/catalog.json",
+        "ucel/coverage/bittrade.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bittrade.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bittrade",
+      "venue_family": "bittrade",
+      "api_kind": "ws",
+      "public_id": "public.ws.market.bbo",
+      "path_or_channel": "market.$symbol.bbo",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bittrade/catalog.json",
+        "ucel/coverage/bittrade.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bittrade.json",
+        "ucel/crates/ucel-ws-rules/rules/bittrade.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bittrade",
+      "venue_family": "bittrade",
+      "api_kind": "ws",
+      "public_id": "public.ws.market.depth",
+      "path_or_channel": "market.$symbol.depth.$type",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "orderbook",
+      "canonical_surface": "get_orderbook_snapshot",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bittrade/catalog.json",
+        "ucel/coverage/bittrade.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bittrade.json",
+        "ucel/crates/ucel-ws-rules/rules/bittrade.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bittrade",
+      "venue_family": "bittrade",
+      "api_kind": "ws",
+      "public_id": "public.ws.market.detail",
+      "path_or_channel": "market.$symbol.detail",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bittrade/catalog.json",
+        "ucel/coverage/bittrade.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bittrade.json",
+        "ucel/crates/ucel-ws-rules/rules/bittrade.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bittrade",
+      "venue_family": "bittrade",
+      "api_kind": "ws",
+      "public_id": "public.ws.market.kline",
+      "path_or_channel": "market.$symbol.kline.$period",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "candles",
+      "canonical_surface": "get_candles",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bittrade/catalog.json",
+        "ucel/coverage/bittrade.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bittrade.json",
+        "ucel/crates/ucel-ws-rules/rules/bittrade.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "bittrade",
+      "venue_family": "bittrade",
+      "api_kind": "ws",
+      "public_id": "public.ws.market.trade.detail",
+      "path_or_channel": "market.$symbol.trade.detail",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "trades",
+      "canonical_surface": "get_trades",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/bittrade/catalog.json",
+        "ucel/coverage/bittrade.yaml",
+        "ucel/coverage/coverage_v2/exchanges/bittrade.json",
+        "ucel/crates/ucel-ws-rules/rules/bittrade.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "coincheck",
+      "venue_family": "coincheck",
+      "api_kind": "rest",
+      "public_id": "coincheck.rest.public.exchange.orders.rate.get",
+      "path_or_channel": "/api/exchange/orders/rate",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/coincheck/catalog.json",
+        "ucel/coverage/coincheck.yaml",
+        "ucel/coverage/coverage_v2/exchanges/coincheck.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "coincheck",
+      "venue_family": "coincheck",
+      "api_kind": "rest",
+      "public_id": "coincheck.rest.public.exchange_status.get",
+      "path_or_channel": "/api/exchange_status",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "system_status",
+      "canonical_surface": "get_system_status",
+      "surface_class": "canonical_extended",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/coincheck/catalog.json",
+        "ucel/coverage/coincheck.yaml",
+        "ucel/coverage/coverage_v2/exchanges/coincheck.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "coincheck",
+      "venue_family": "coincheck",
+      "api_kind": "rest",
+      "public_id": "coincheck.rest.public.order_books.get",
+      "path_or_channel": "/api/order_books",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "public_reference_other",
+      "canonical_surface": "vendor_public_call",
+      "surface_class": "vendor_public_extension",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/coincheck/catalog.json",
+        "ucel/coverage/coincheck.yaml",
+        "ucel/coverage/coverage_v2/exchanges/coincheck.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "coincheck",
+      "venue_family": "coincheck",
+      "api_kind": "rest",
+      "public_id": "coincheck.rest.public.rate.pair.get",
+      "path_or_channel": "/api/rate/{pair}",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "symbols",
+      "canonical_surface": "list_symbols",
+      "surface_class": "canonical_extended",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/coincheck/catalog.json",
+        "ucel/coverage/coincheck.yaml",
+        "ucel/coverage/coverage_v2/exchanges/coincheck.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "coincheck",
+      "venue_family": "coincheck",
+      "api_kind": "rest",
+      "public_id": "coincheck.rest.public.ticker.get",
+      "path_or_channel": "/api/ticker",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "ticker",
+      "canonical_surface": "get_ticker",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/coincheck/catalog.json",
+        "ucel/coverage/coincheck.yaml",
+        "ucel/coverage/coverage_v2/exchanges/coincheck.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "coincheck",
+      "venue_family": "coincheck",
+      "api_kind": "rest",
+      "public_id": "coincheck.rest.public.trades.get",
+      "path_or_channel": "/api/trades",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "trades",
+      "canonical_surface": "get_trades",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/coincheck/catalog.json",
+        "ucel/coverage/coincheck.yaml",
+        "ucel/coverage/coverage_v2/exchanges/coincheck.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "coincheck",
+      "venue_family": "coincheck",
+      "api_kind": "ws",
+      "public_id": "coincheck.ws.public.orderbook",
+      "path_or_channel": "{pair}-orderbook",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "orderbook",
+      "canonical_surface": "get_orderbook_snapshot",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/coincheck/catalog.json",
+        "ucel/coverage/coincheck.yaml",
+        "ucel/coverage/coverage_v2/exchanges/coincheck.json",
+        "ucel/crates/ucel-ws-rules/rules/coincheck.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "coincheck",
+      "venue_family": "coincheck",
+      "api_kind": "ws",
+      "public_id": "coincheck.ws.public.trades",
+      "path_or_channel": "{pair}-trades",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "trades",
+      "canonical_surface": "get_trades",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/coincheck/catalog.json",
+        "ucel/coverage/coincheck.yaml",
+        "ucel/coverage/coverage_v2/exchanges/coincheck.json",
+        "ucel/crates/ucel-ws-rules/rules/coincheck.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "gmocoin",
+      "venue_family": "gmocoin",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.klines.get",
+      "path_or_channel": "/public/v1/klines",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "candles",
+      "canonical_surface": "get_candles",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/coverage_v2/exchanges/gmocoin.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "gmocoin",
+      "venue_family": "gmocoin",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.orderbooks.get",
+      "path_or_channel": "/public/v1/orderbooks",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "orderbook",
+      "canonical_surface": "get_orderbook_snapshot",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/coverage_v2/exchanges/gmocoin.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "gmocoin",
+      "venue_family": "gmocoin",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.status.get",
+      "path_or_channel": "/public/v1/status",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "system_status",
+      "canonical_surface": "get_system_status",
+      "surface_class": "canonical_extended",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/coverage_v2/exchanges/gmocoin.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "gmocoin",
+      "venue_family": "gmocoin",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.ticker.get",
+      "path_or_channel": "/public/v1/ticker",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "ticker",
+      "canonical_surface": "get_ticker",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/coverage_v2/exchanges/gmocoin.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "gmocoin",
+      "venue_family": "gmocoin",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.trades.get",
+      "path_or_channel": "/public/v1/trades",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "trades",
+      "canonical_surface": "get_trades",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/coverage_v2/exchanges/gmocoin.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "gmocoin",
+      "venue_family": "gmocoin",
+      "api_kind": "rest",
+      "public_id": "fx.public.rest.klines.get",
+      "path_or_channel": "/fx/public/v1/klines",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "candles",
+      "canonical_surface": "get_candles",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/coverage_v2/exchanges/gmocoin.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "gmocoin",
+      "venue_family": "gmocoin",
+      "api_kind": "rest",
+      "public_id": "fx.public.rest.orderbooks.get",
+      "path_or_channel": "/fx/public/v1/orderbooks",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "orderbook",
+      "canonical_surface": "get_orderbook_snapshot",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/coverage_v2/exchanges/gmocoin.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "gmocoin",
+      "venue_family": "gmocoin",
+      "api_kind": "rest",
+      "public_id": "fx.public.rest.status.get",
+      "path_or_channel": "/fx/public/v1/status",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "system_status",
+      "canonical_surface": "get_system_status",
+      "surface_class": "canonical_extended",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/coverage_v2/exchanges/gmocoin.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "gmocoin",
+      "venue_family": "gmocoin",
+      "api_kind": "rest",
+      "public_id": "fx.public.rest.ticker.get",
+      "path_or_channel": "/fx/public/v1/ticker",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "ticker",
+      "canonical_surface": "get_ticker",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/coverage_v2/exchanges/gmocoin.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "gmocoin",
+      "venue_family": "gmocoin",
+      "api_kind": "rest",
+      "public_id": "fx.public.rest.trades.get",
+      "path_or_channel": "/fx/public/v1/trades",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "trades",
+      "canonical_surface": "get_trades",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/coverage_v2/exchanges/gmocoin.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "gmocoin",
+      "venue_family": "gmocoin",
+      "api_kind": "ws",
+      "public_id": "crypto.public.ws.orderbooks.update",
+      "path_or_channel": "orderbooks",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "orderbook",
+      "canonical_surface": "get_orderbook_snapshot",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/coverage_v2/exchanges/gmocoin.json",
+        "ucel/crates/ucel-ws-rules/rules/gmocoin.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "gmocoin",
+      "venue_family": "gmocoin",
+      "api_kind": "ws",
+      "public_id": "crypto.public.ws.ticker.update",
+      "path_or_channel": "ticker",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "ticker",
+      "canonical_surface": "get_ticker",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/coverage_v2/exchanges/gmocoin.json",
+        "ucel/crates/ucel-ws-rules/rules/gmocoin.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "gmocoin",
+      "venue_family": "gmocoin",
+      "api_kind": "ws",
+      "public_id": "crypto.public.ws.trades.update",
+      "path_or_channel": "trades",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "trades",
+      "canonical_surface": "get_trades",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/coverage_v2/exchanges/gmocoin.json",
+        "ucel/crates/ucel-ws-rules/rules/gmocoin.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "gmocoin",
+      "venue_family": "gmocoin",
+      "api_kind": "ws",
+      "public_id": "fx.public.ws.orderbooks.update",
+      "path_or_channel": "orderbooks",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "orderbook",
+      "canonical_surface": "get_orderbook_snapshot",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/coverage_v2/exchanges/gmocoin.json",
+        "ucel/crates/ucel-ws-rules/rules/gmocoin.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "gmocoin",
+      "venue_family": "gmocoin",
+      "api_kind": "ws",
+      "public_id": "fx.public.ws.ticker.update",
+      "path_or_channel": "ticker",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "ticker",
+      "canonical_surface": "get_ticker",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/coverage_v2/exchanges/gmocoin.json",
+        "ucel/crates/ucel-ws-rules/rules/gmocoin.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "gmocoin",
+      "venue_family": "gmocoin",
+      "api_kind": "ws",
+      "public_id": "fx.public.ws.trades.update",
+      "path_or_channel": "trades",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "trades",
+      "canonical_surface": "get_trades",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/gmocoin/catalog.json",
+        "ucel/coverage/gmocoin.yaml",
+        "ucel/coverage/coverage_v2/exchanges/gmocoin.json",
+        "ucel/crates/ucel-ws-rules/rules/gmocoin.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "sbivc",
+      "venue_family": "sbivc",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.market_data.orderbook",
+      "path_or_channel": "/v1/public/orderbook",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "orderbook",
+      "canonical_surface": "get_orderbook_snapshot",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/sbivc/catalog.json",
+        "ucel/coverage/sbivc.yaml",
+        "ucel/coverage/coverage_v2/exchanges/sbivc.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "sbivc",
+      "venue_family": "sbivc",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.market_data.symbols",
+      "path_or_channel": "/v1/public/symbols",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "symbols",
+      "canonical_surface": "list_symbols",
+      "surface_class": "canonical_extended",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/sbivc/catalog.json",
+        "ucel/coverage/sbivc.yaml",
+        "ucel/coverage/coverage_v2/exchanges/sbivc.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "sbivc",
+      "venue_family": "sbivc",
+      "api_kind": "rest",
+      "public_id": "crypto.public.rest.market_data.ticker",
+      "path_or_channel": "/v1/public/ticker",
+      "method_or_subscribe_kind": "GET",
+      "auth": "public",
+      "category": "ticker",
+      "canonical_surface": "get_ticker",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/sbivc/catalog.json",
+        "ucel/coverage/sbivc.yaml",
+        "ucel/coverage/coverage_v2/exchanges/sbivc.json"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "sbivc",
+      "venue_family": "sbivc",
+      "api_kind": "ws",
+      "public_id": "crypto.public.ws.market_data.orderbook",
+      "path_or_channel": "",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "orderbook",
+      "canonical_surface": "get_orderbook_snapshot",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/sbivc/catalog.json",
+        "ucel/coverage/sbivc.yaml",
+        "ucel/coverage/coverage_v2/exchanges/sbivc.json",
+        "ucel/crates/ucel-ws-rules/rules/sbivc.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "sbivc",
+      "venue_family": "sbivc",
+      "api_kind": "ws",
+      "public_id": "crypto.public.ws.market_data.ticker",
+      "path_or_channel": "",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "ticker",
+      "canonical_surface": "get_ticker",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/sbivc/catalog.json",
+        "ucel/coverage/sbivc.yaml",
+        "ucel/coverage/coverage_v2/exchanges/sbivc.json",
+        "ucel/crates/ucel-ws-rules/rules/sbivc.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    },
+    {
+      "venue": "sbivc",
+      "venue_family": "sbivc",
+      "api_kind": "ws",
+      "public_id": "crypto.public.ws.market_data.trades",
+      "path_or_channel": "",
+      "method_or_subscribe_kind": "subscribe",
+      "auth": "public",
+      "category": "trades",
+      "canonical_surface": "get_trades",
+      "surface_class": "canonical_core",
+      "current_repo_status": "implemented",
+      "evidence_files": [
+        "docs/exchanges/sbivc/catalog.json",
+        "ucel/coverage/sbivc.yaml",
+        "ucel/coverage/coverage_v2/exchanges/sbivc.json",
+        "ucel/crates/ucel-ws-rules/rules/sbivc.toml"
+      ],
+      "evidence_kinds": [
+        "catalog",
+        "coverage",
+        "ws_rules"
+      ],
+      "notes": ""
+    }
+  ]
+}
