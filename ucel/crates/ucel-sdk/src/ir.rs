@@ -1,11 +1,11 @@
 use crate::error::{SdkError, SdkResult};
 use ucel_core::{
     IrAccessPolicyClass, IrArtifactDescriptor, IrDocumentDescriptor, IrIssuerIdentityKind,
-    IrIssuerKey, IrMarket,
+    IrIssuerKey, IrMarket, IrNormalizedContent,
 };
 use ucel_ir::{
     jp_issuer_feed_adapter, jp_issuer_html_adapter, statutory_adapter, timely_adapter,
-    us_issuer_feed_adapter, us_issuer_html_adapter, IrArtifactFetchRequest, IrArtifactFetchResponse,
+    us_issuer_feed_adapter, us_issuer_html_adapter, normalize_artifact, IrArtifactFetchRequest, IrArtifactFetchResponse,
     IrArtifactListRequest, IrArtifactListResponse, IrDiscoverIssuersRequest,
     IrDocumentDetailRequest, IrDocumentDetailResponse, IrDocumentListRequest,
     IrDocumentListResponse, IrIssuerResolutionInput, IrIssuerResolutionResult, IrSourceAdapter,
@@ -84,6 +84,16 @@ impl IrFacade {
         Ok(adapter
             .fetch_artifact(request)
             .map_err(|e| SdkError::Config(e.to_string()))?)
+    }
+
+
+    pub fn normalize_ir_artifact(&self, request: &IrArtifactFetchRequest) -> SdkResult<IrNormalizedContent> {
+        let fetched = self.fetch_ir_artifact(request)?;
+        normalize_artifact(&fetched).map_err(|e| SdkError::Config(e.message))
+    }
+
+    pub fn preview_ir_normalization_support(&self) -> SdkResult<Vec<String>> {
+        Ok(registry::list_ir_normalizable_formats())
     }
 
     pub fn preview_ir_source_support(&self) -> SdkResult<Vec<(String, IrAccessPolicyClass)>> {

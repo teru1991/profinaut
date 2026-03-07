@@ -20,6 +20,7 @@ pub mod http_mock;
 pub mod ir_canonical;
 pub mod ir_inventory;
 pub mod ir_jp_official;
+pub mod ir_normalize;
 pub mod market_data;
 pub mod normalize;
 pub mod okx;

@@ -27,6 +27,8 @@ ucel-cex-bybit = { path = "../ucel-cex-bybit" }
 ucel-cex-bithumb = { path = "../ucel-cex-bithumb" }
 sha2 = "0.10"
 wiremock = "0.6"
+zip = "0.6"
+tempfile = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt"] }

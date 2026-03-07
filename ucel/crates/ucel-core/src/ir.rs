@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -196,6 +197,96 @@ pub enum IrFetchSupport {
     Supported,
     Partial,
     NotSupported,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum IrNormalizedFormat {
+    Html,
+    Pdf,
+    Xbrl,
+    Ixbrl,
+    Xml,
+    Txt,
+    Csv,
+    Json,
+    Rss,
+    Zip,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct IrNormalizationSchemaVersion {
+    pub major: u16,
+    pub minor: u16,
+    pub patch: u16,
+}
+
+impl Default for IrNormalizationSchemaVersion {
+    fn default() -> Self {
+        Self {
+            major: 1,
+            minor: 0,
+            patch: 0,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum IrNormalizationSupport {
+    Supported,
+    Partial,
+    NotSupported,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct IrNormalizationProvenance {
+    pub source_type: Option<String>,
+    pub source_ref: Option<String>,
+    pub context_ref: Option<String>,
+    pub extra: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct IrNormalizedSection {
+    pub heading_level: Option<u8>,
+    pub title: String,
+    pub ordinal: usize,
+    pub text_range: (usize, usize),
+    pub provenance: IrNormalizationProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct IrNormalizedTable {
+    pub caption: Option<String>,
+    pub headers: Vec<String>,
+    pub rows: Vec<Vec<String>>,
+    pub provenance: IrNormalizationProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct IrNormalizedAttachment {
+    pub path: String,
+    pub media_type: Option<String>,
+    pub size_bytes: u64,
+    pub checksum_sha256: Option<String>,
+    pub provenance: IrNormalizationProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct IrNormalizedContent {
+    pub document_key: IrDocumentKey,
+    pub artifact_key: IrArtifactKey,
+    pub normalization_schema_version: IrNormalizationSchemaVersion,
+    pub normalized_format: IrNormalizedFormat,
+    pub normalized_text: String,
+    pub sections: Vec<IrNormalizedSection>,
+    pub tables: Vec<IrNormalizedTable>,
+    pub extracted_attachments: Vec<IrNormalizedAttachment>,
+    pub language_hints: Vec<String>,
+    pub charset: Option<String>,
+    pub provenance: IrNormalizationProvenance,
+    pub support_level: IrNormalizationSupport,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
