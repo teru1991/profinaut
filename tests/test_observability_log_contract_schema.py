@@ -14,33 +14,30 @@ def test_log_event_schema_accepts_minimal():
     validator = Draft202012Validator(schema)
     sample = {
         "schema_version": "obs.log_event.v1",
-        "ts": "2026-01-01T00:00:00Z",
+        "timestamp": "2026-01-01T00:00:00Z",
         "level": "INFO",
-        "msg": "hello",
-        "logger": "test",
-        "service": "execution",
+        "message": "hello",
+        "component": "execution",
+        "source": "services.execution",
+        "logger_name": "test",
         "op": "healthz",
-        "run_id": "00000000-0000-0000-0000-000000000001",
-        "instance_id": "00000000-0000-0000-0000-000000000002",
-        "trace_id": None,
+        "run_id": "run-0000000000000001",
+        "trace_id": "trace-0000000000000001",
+        "request_id": "req-0000000000000001",
         "fields": {"k": "v"},
     }
     assert list(validator.iter_errors(sample)) == []
 
 
-def test_log_event_schema_rejects_extra():
+def test_log_event_schema_rejects_missing_required():
     schema = _load_schema("log_event.schema.json")
     validator = Draft202012Validator(schema)
     bad = {
         "schema_version": "obs.log_event.v1",
-        "ts": "2026-01-01T00:00:00Z",
+        "timestamp": "2026-01-01T00:00:00Z",
         "level": "INFO",
-        "msg": "hello",
-        "logger": "test",
-        "service": "execution",
-        "op": "healthz",
-        "run_id": "00000000-0000-0000-0000-000000000001",
-        "instance_id": "00000000-0000-0000-0000-000000000002",
-        "oops": 1,
+        "message": "hello",
+        "component": "execution",
+        "run_id": "run-0000000000000001",
     }
     assert list(validator.iter_errors(bad))

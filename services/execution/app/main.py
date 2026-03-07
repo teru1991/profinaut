@@ -22,8 +22,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.append(str(_REPO_ROOT))
 
-from libs.observability import audit_event, error_envelope, request_id_middleware
-from libs.observability.middleware import ObservabilityMiddleware
+from libs.observability import audit_event, error_envelope
+from libs.observability.middleware import install_correlation_middleware
 from libs.observability.contracts import (
     CapabilityFeature,
     CapabilityReason,
@@ -31,7 +31,7 @@ from libs.observability.contracts import (
     HealthCheck,
     HealthStatus,
 )
-from libs.observability.core import set_request_correlation_context
+from libs.observability.core import install_standard_error_handlers, set_request_correlation_context
 from libs.observability.correlation import now_utc_iso
 from libs.observability.http_contracts import build_capabilities_response, build_healthz_response
 
@@ -43,43 +43,12 @@ logging.basicConfig(
 logger = logging.getLogger("execution")
 
 app = FastAPI(title="Profinaut Execution Service", version="0.1.0")
-app.add_middleware(request_id_middleware())
 _obs_service_name = os.getenv("PROFINAUT_SERVICE_NAME") or "execution"
-app.add_middleware(ObservabilityMiddleware, service_name=_obs_service_name)
+install_correlation_middleware(app, component=_obs_service_name, source="services.execution", strict=True)
+install_standard_error_handlers(app, component="execution", source="services.execution")
 
 _live_backoff_until_utc: datetime | None = None
 _degraded_reason: str | None = None
-
-
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    request_id = getattr(request.state, "request_id", "unknown")
-    code = "HTTP_ERROR"
-    message = str(exc.detail)
-    details: dict[str, object] = {}
-
-    if isinstance(exc.detail, dict):
-        code = str(exc.detail.get("code") or exc.detail.get("error") or code)
-        message = str(exc.detail.get("message") or message)
-
-    return JSONResponse(
-        status_code=exc.status_code,
-        content=error_envelope(code=code, message=message, details=details, request_id=request_id),
-    )
-
-
-@app.exception_handler(Exception)
-async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    request_id = getattr(request.state, "request_id", "unknown")
-    return JSONResponse(
-        status_code=500,
-        content=error_envelope(
-            code="INTERNAL_ERROR",
-            message="Unexpected error",
-            details={},
-            request_id=request_id,
-        ),
-    )
 
 
 

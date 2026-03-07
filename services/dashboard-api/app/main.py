@@ -86,8 +86,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.append(str(_REPO_ROOT))
 
-from libs.observability import audit_event, error_envelope, request_id_middleware
-from libs.observability.middleware import ObservabilityMiddleware
+from libs.observability import audit_event, error_envelope
+from libs.observability.middleware import install_correlation_middleware
 
 from libs.observability.contracts import (
     CapabilityFeature,
@@ -96,58 +96,17 @@ from libs.observability.contracts import (
     HealthCheck,
     HealthStatus,
 )
-from libs.observability.core import set_request_correlation_context
+from libs.observability.core import install_standard_error_handlers, set_request_correlation_context
 from libs.observability.correlation import now_utc_iso
 from libs.observability.http_contracts import build_capabilities_response, build_healthz_response
 
 
 app = FastAPI(title="Profinaut Dashboard API", version="0.4.0")
-app.add_middleware(request_id_middleware())
 _obs_service_name = os.getenv("PROFINAUT_SERVICE_NAME") or "dashboard-api"
-app.add_middleware(ObservabilityMiddleware, service_name=_obs_service_name)
+install_correlation_middleware(app, component=_obs_service_name, source="services.dashboard_api", strict=True)
+install_standard_error_handlers(app, component="dashboard-api", source="services.dashboard_api")
 STALE_SECONDS = 120
 STRONG_COMMAND_TYPES = frozenset({"HALT", "FLATTEN", "CLOSE_ALL", "KILL_SWITCH"})
-
-
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    request_id = getattr(request.state, "request_id", "unknown")
-    code = "HTTP_ERROR"
-    message = "Request failed"
-    details: dict[str, object] = {"status_code": exc.status_code}
-    if isinstance(exc.detail, dict):
-        code = str(exc.detail.get("code") or code)
-        message = str(exc.detail.get("message") or message)
-        details = dict(exc.detail.get("details") or details)
-        details.setdefault("status_code", exc.status_code)
-
-    audit_event(
-        service="dashboard-api",
-        event="http_error",
-        request_id=request_id,
-        code=code,
-        status_code=exc.status_code,
-        exception_type=type(exc).__name__,
-    )
-    return JSONResponse(
-        status_code=exc.status_code,
-        content=error_envelope(code=code, message=message, details=details, request_id=request_id),
-    )
-
-
-@app.exception_handler(Exception)
-async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    request_id = getattr(request.state, "request_id", "unknown")
-    audit_event(
-        service="dashboard-api",
-        event="unhandled_exception",
-        request_id=request_id,
-        exception_type=type(exc).__name__,
-    )
-    return JSONResponse(
-        status_code=500,
-        content=error_envelope(code="INTERNAL_ERROR", message="Unexpected error", details={}, request_id=request_id),
-    )
 
 
 def write_audit(db: Session, actor: str, action: str, target_type: str, target_id: str, result: str, details: dict) -> None:
