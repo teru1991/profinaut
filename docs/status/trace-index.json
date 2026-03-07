@@ -2677,6 +2677,28 @@
       "verification_evidence": [
         "docs/verification/UCEL-IR-CONTENT-NORMALIZE-014F.md"
       ]
+    },
+    "A-ERROR-ENVELOPE-001": {
+      "branch": "feature/a-error-envelope-001",
+      "artifacts": [
+        "docs/specs/platform_foundation_spec.md",
+        "docs/specs/system/error_catalog_ssot.md",
+        "contracts/schemas/common/error_envelope.schema.json",
+        "libs/observability/core.py",
+        "libs/observability/contracts.py",
+        "services/execution/app/main.py",
+        "services/marketdata/app/main.py",
+        "services/dashboard-api/app/main.py",
+        "dashboard_api/main.py",
+        "tests/test_standard_error_envelope.py",
+        "tests/test_contracts.py"
+      ],
+      "verification_evidence": [
+        "docs/verification/a-error-envelope-001.md"
+      ],
+      "pr_urls": [],
+      "commit_shas": [],
+      "notes": "Standard error envelope rollout across execution/marketdata/dashboard APIs with contract tests."
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

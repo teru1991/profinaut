@@ -33,7 +33,7 @@ if str(_REPO_ROOT) not in sys.path:
 from libs.observability import audit_event, error_envelope, request_id_middleware
 from libs.observability.middleware import ObservabilityMiddleware
 from libs.observability.contracts import CapabilityFeature, CapabilityReason, FeatureState, HealthCheck, HealthStatus
-from libs.observability.core import set_request_correlation_context
+from libs.observability.core import build_error_envelope, install_standard_error_handlers, set_request_correlation_context
 from libs.observability.correlation import now_utc_iso
 from libs.observability.http_contracts import build_capabilities_response, build_healthz_response
 from services.marketdata.app.bronze_store import BronzeStore, RawMetaRepository
@@ -291,6 +291,18 @@ class MarketDataPoller:
                 await asyncio.sleep(sleep_for)
 
     def _degraded_payload(self, *, symbol: str, reason: str, code: str, message: str) -> dict[str, Any]:
+        standardized = build_error_envelope(
+            {
+                "code": code,
+                "reason_code": reason,
+                "kind": "unavailable_error",
+                "severity": "warn",
+                "retryable": reason in {"UPSTREAM_UNREACHABLE", "UPSTREAM_RATE_LIMITED", "STALE_TICKER"},
+                "source": "services.marketdata",
+                "message": message,
+                "context": {"component": "marketdata"},
+            }
+        )
         return {
             "symbol": symbol,
             "ts": None,
@@ -302,7 +314,7 @@ class MarketDataPoller:
             "quality": {"status": "DEGRADED"},
             "stale": True,
             "degraded_reason": reason,
-            "error": {"code": code, "message": message},
+            "error": standardized["error"],
         }
 
     async def latest_payload(self, symbol: str | None = None) -> tuple[int, dict[str, Any]]:
@@ -395,6 +407,7 @@ app = FastAPI(title="profinaut-marketdata", version="0.1.0")
 app.add_middleware(request_id_middleware())
 _obs_service_name = os.getenv("PROFINAUT_SERVICE_NAME") or "marketdata"
 app.add_middleware(ObservabilityMiddleware, service_name=_obs_service_name)
+install_standard_error_handlers(app, component="marketdata", source="services.marketdata")
 app.include_router(raw_ingest_router)
 _poller = MarketDataPoller(PollerConfig())
 _object_store, _object_store_status = build_object_store_from_env()
@@ -412,37 +425,6 @@ _clickhouse_store = ClickHouseLikeStore()
 _ops_store = PostgresOpsLikeStore()
 _read_metrics: dict[str, float] = {"requests": 0.0, "errors": 0.0, "latency_ms_sum": 0.0}
 
-
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    request_id = getattr(request.state, "request_id", "unknown")
-    code = "HTTP_ERROR"
-    message = str(exc.detail)
-    details: dict[str, object] = {}
-    if isinstance(exc.detail, dict):
-        code = str(exc.detail.get("code") or code)
-        message = str(exc.detail.get("message") or message)
-        details = dict(exc.detail.get("details") or {})
-    audit_event(service=SERVICE_NAME, event="http_error", request_id=request_id, code=code, message=message)
-    return JSONResponse(
-        status_code=exc.status_code,
-        content=error_envelope(code=code, message=message, details=details, request_id=request_id),
-    )
-
-
-@app.exception_handler(Exception)
-async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    request_id = getattr(request.state, "request_id", "unknown")
-    audit_event(service=SERVICE_NAME, event="unhandled_exception", request_id=request_id, error=str(exc))
-    return JSONResponse(
-        status_code=500,
-        content=error_envelope(
-            code="INTERNAL_ERROR",
-            message="Unexpected error",
-            details={},
-            request_id=request_id,
-        ),
-    )
 
 @app.on_event("startup")
 async def startup() -> None:

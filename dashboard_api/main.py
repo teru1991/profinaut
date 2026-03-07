@@ -22,6 +22,7 @@ from dashboard_api.safety_controller import router as safety_router
 from dashboard_api.safety_kill import router as safety_kill_router
 from dashboard_api.interlock_status import router as interlock_status_router
 from dashboard_api.safety_lease import router as safety_lease_router
+from libs.observability.core import install_standard_error_handlers
 
 # Setup logging
 setup_logging("dashboard-api")
@@ -36,6 +37,7 @@ app = FastAPI(
     description="Investment platform dashboard API",
     version="0.1.0",
 )
+install_standard_error_handlers(app, component="dashboard-api", source="dashboard_api")
 
 # Kill switch (no real trading)
 KILL_SWITCH = KillSwitch(enabled=True, message="Real trading disabled - demo mode only")
@@ -43,7 +45,7 @@ KILL_SWITCH = KillSwitch(enabled=True, message="Real trading disabled - demo mod
 app.include_router(safety_router)
 app.include_router(safety_kill_router)
 app.include_router(interlock_status_router)
-app.include_router(safety_lease_router
+app.include_router(safety_lease_router)
 
 @app.get("/health", response_model=HealthStatus)
 async def health_check():

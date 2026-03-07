@@ -77,3 +77,33 @@ class CapabilitiesResponse(ContractBaseModel):
     schema_version: str = Field(default=SCHEMA_VERSION_CAPABILITIES)
     features: list[CapabilityFeature]
     correlation: Correlation
+
+
+class ErrorContext(ContractBaseModel):
+    component: str
+    request_id: str | None = None
+    trace_id: str | None = None
+    run_id: str | None = None
+    path: str | None = None
+    method: str | None = None
+    status_code: int | None = None
+    upstream: str | None = None
+    retry_after_ms: int | None = None
+
+
+class StandardError(ContractBaseModel):
+    code: str
+    reason_code: str
+    kind: str
+    severity: str
+    retryable: bool
+    source: str
+    context: ErrorContext
+    message: str | None = None
+    details: dict[str, Any] | None = None
+    schema_version: str | None = None
+    contract_version: str | None = None
+
+
+class ErrorEnvelope(ContractBaseModel):
+    error: StandardError

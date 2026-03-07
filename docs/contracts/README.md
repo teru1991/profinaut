@@ -14,6 +14,7 @@
 - safety_state
 - startup_report
 - support_bundle_manifest
+- common/error_envelope
 
 ## 互換性
 互換性ルールは `docs/specs/system/versioning_policy.md` に従う。

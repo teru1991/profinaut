@@ -71,31 +71,57 @@ Platform Foundation（基盤・共通）
 ## 3. Standard Error Model（標準エラーモデル：固定）
 目的：障害を「分類→対応→再現」に繋げる。曖昧な例外は許容しない。
 
-### 3.1 エラーの分類（最低限）
-- `Transient`：一時的（再試行で回復しうる）
-- `RateLimited`：429等（バックオフ・ジッタ必須）
-- `Auth`：認証・署名・権限
-- `InvalidRequest`：入力不正（再試行しても治らない）
-- `Protocol`：外部仕様違反/互換性破綻
-- `Integrity`：整合性破綻（データ欠損/重複/時刻異常等）
-- `ResourceExhausted`：CPU/メモリ/ディスク/FD/帯域
-- `Safety`：危険操作ブロック/安全状態移行
-- `Unknown`：最終手段（ここに落ち続けるのは設計欠陥）
+### 3.1 Canonical error envelope（A-1固定）
+HTTP の失敗応答は、少なくとも次の shape を返す：
 
-### 3.2 必須フィールド（監査・再現に必要）
-各エラーは少なくとも以下を持つ（ログ/監査で出せる形で）：
-- `kind`（上記分類）
-- `code`（説明可能な一意ID：将来Yドメインで体系化）
-- `message`（人間向け）
-- `retryable`（bool）
-- `context`（trace_id/run_id、対象venue、対象stream、リクエスト種別など）
-- `source`（外部/内部、HTTP/WS/DB等）
+```json
+{
+  "error": {
+    "code": "PLATFORM_INTERNAL_ERROR",
+    "reason_code": "UNHANDLED_EXCEPTION",
+    "kind": "internal_error",
+    "severity": "critical",
+    "retryable": false,
+    "source": "services.execution",
+    "message": "internal server error",
+    "context": {
+      "component": "execution"
+    }
+  }
+}
+```
 
-### 3.3 エラー時の固定ルール
-- **秘密を含む可能性があるデータは必ず赤塗り**（詳細は crosscut と contracts の赤塗り規約に従う）
-- `Unknown` が一定以上発生したら、それ自体を危険信号として扱う（観測と安全の連動は crosscut）
+必須項目：
+- top-level: `error`
+- `error`: `code` / `reason_code` / `kind` / `severity` / `retryable` / `source` / `context`
+- `context`: `component`
 
----
+推奨項目：
+- `message` / `details` / `schema_version` / `contract_version`
+- `context.request_id` / `context.trace_id` / `context.run_id` / `context.path` / `context.method` / `context.status_code`
+
+### 3.2 HTTP status マッピング原則
+- 400: `PLATFORM_BAD_REQUEST`, `REQUEST_INVALID`, `client_error`, `warn`, `retryable=false`
+- 401: `PLATFORM_UNAUTHORIZED`, `AUTH_REQUIRED`, `auth_error`, `warn`, `retryable=false`
+- 403: `PLATFORM_FORBIDDEN`, `PERMISSION_DENIED`, `permission_error`, `warn`, `retryable=false`
+- 404: `PLATFORM_NOT_FOUND`, `RESOURCE_NOT_FOUND`, `client_error`, `info`, `retryable=false`
+- 409: `PLATFORM_CONFLICT`, `STATE_CONFLICT`, `conflict_error`, `warn`, `retryable=false`
+- 422: `PLATFORM_VALIDATION_ERROR`, `REQUEST_BODY_INVALID`, `validation_error`, `warn`, `retryable=false`
+- 429: `PLATFORM_RATE_LIMITED`, `TOO_MANY_REQUESTS`, `rate_limit_error`, `warn`, `retryable=true`
+- 503: `PLATFORM_UPSTREAM_UNAVAILABLE`, `UPSTREAM_UNAVAILABLE`, `unavailable_error`, `error`, `retryable=true`
+- 504: `PLATFORM_UPSTREAM_TIMEOUT`, `UPSTREAM_TIMEOUT`, `timeout_error`, `error`, `retryable=true`
+- unhandled: `PLATFORM_INTERNAL_ERROR`, `UNHANDLED_EXCEPTION`, `internal_error`, `critical`, `retryable=false`
+
+### 3.3 分類固定ルール
+- `HTTPException` / `RequestValidationError` / unhandled `Exception` は必ず canonical envelope へ正規化する。
+- `Unknown` 的な曖昧エラーの素通しは禁止。`reason_code` を必ず確定させる。
+- `message` や `details` に stacktrace・秘密値（token/password/secret 等）を直出ししない。
+- major な shape 変更は schema 更新 + 契約テスト追加を同時実施しない限り禁止。
+
+### 3.4 marketdata degraded payload 互換方針
+- 既存の top-level key（例: `symbol`, `stale`, `degraded_reason`）は維持する。
+- 追加情報は `error` subobject として埋め込み、既存 consumer を壊さない。
+- `error` は canonical error envelope の `error` object と同等の必須項目を満たす。
 
 ## 4. 冪等性（Idempotency）と重複排除（Dedupe）
 ### 4.1 冪等性の固定原則
