@@ -4,7 +4,8 @@ use ucel_core::{
     IrIssuerKey, IrMarket,
 };
 use ucel_ir::{
-    sec_adapter, statutory_adapter, timely_adapter, IrArtifactFetchRequest, IrArtifactFetchResponse,
+    jp_issuer_feed_adapter, jp_issuer_html_adapter, statutory_adapter, timely_adapter,
+    us_issuer_feed_adapter, us_issuer_html_adapter, IrArtifactFetchRequest, IrArtifactFetchResponse,
     IrArtifactListRequest, IrArtifactListResponse, IrDiscoverIssuersRequest,
     IrDocumentDetailRequest, IrDocumentDetailResponse, IrDocumentListRequest,
     IrDocumentListResponse, IrIssuerResolutionInput, IrIssuerResolutionResult, IrSourceAdapter,
@@ -19,7 +20,10 @@ impl IrFacade {
         match source_id {
             "edinet_api_documents_v2" => Ok(Box::new(statutory_adapter())),
             "jp_tdnet_timely_html" => Ok(Box::new(timely_adapter())),
-            "sec_edgar_submissions_api" => Ok(Box::new(sec_adapter())),
+            "jp_issuer_ir_html_public" => Ok(Box::new(jp_issuer_html_adapter())),
+            "jp_issuer_ir_feed_public" => Ok(Box::new(jp_issuer_feed_adapter())),
+            "us_issuer_ir_html_public" => Ok(Box::new(us_issuer_html_adapter())),
+            "us_issuer_ir_feed_public" => Ok(Box::new(us_issuer_feed_adapter())),
             _ => Err(SdkError::Config(format!(
                 "unsupported source route for sdk facade: {source_id}"
             ))),
@@ -140,45 +144,16 @@ impl IrFacade {
         Ok((docs.documents.len(), docs.documents, artifacts))
     }
 
-    pub fn resolve_jp_by_code(
-        &self,
-        source_id: &str,
-        code: &str,
-    ) -> SdkResult<Option<IrIssuerKey>> {
-        let out = self
-            .resolve_ir_issuer(&IrIssuerResolutionInput {
-                market: IrMarket::Jp,
-                source_id: source_id.to_string(),
-                identity_kind: IrIssuerIdentityKind::JpExchangeCodeLike,
-                value: code.to_string(),
-            })
-            .map_err(|e| SdkError::Config(e.to_string()))?;
-        Ok(out.map(|x| x.issuer_key))
-    }
 
-    pub fn discover_us_official_issuers(
+    pub fn preview_issuer_site_document_summary(
         &self,
         source_id: &str,
-        query: Option<String>,
-    ) -> SdkResult<Vec<IrIssuerResolutionResult>> {
-        let adapter = Self::adapter_for(source_id)?;
-        let res = adapter
-            .discover_issuers(&IrDiscoverIssuersRequest {
-                source_id: source_id.to_string(),
-                query,
-            })
-            .map_err(|e| SdkError::Config(e.to_string()))?;
-        Ok(res.issuers)
-    }
-
-    pub fn preview_us_official_document_summary(
-        &self,
-        source_id: &str,
+        market: IrMarket,
     ) -> SdkResult<(usize, Vec<IrDocumentDescriptor>, Vec<IrArtifactDescriptor>)> {
         let docs = self
             .list_ir_documents(&IrDocumentListRequest {
                 source_id: source_id.to_string(),
-                market: IrMarket::Us,
+                market,
                 issuer_key: None,
             })
             .map_err(|e| SdkError::Config(e.to_string()))?;
@@ -195,20 +170,19 @@ impl IrFacade {
         Ok((docs.documents.len(), docs.documents, artifacts))
     }
 
-    pub fn resolve_us_by_ticker(
+    pub fn resolve_jp_by_code(
         &self,
         source_id: &str,
-        ticker: &str,
+        code: &str,
     ) -> SdkResult<Option<IrIssuerKey>> {
         let out = self
             .resolve_ir_issuer(&IrIssuerResolutionInput {
-                market: IrMarket::Us,
+                market: IrMarket::Jp,
                 source_id: source_id.to_string(),
-                identity_kind: IrIssuerIdentityKind::TickerLike,
-                value: ticker.to_string(),
+                identity_kind: IrIssuerIdentityKind::JpExchangeCodeLike,
+                value: code.to_string(),
             })
             .map_err(|e| SdkError::Config(e.to_string()))?;
         Ok(out.map(|x| x.issuer_key))
     }
-
 }

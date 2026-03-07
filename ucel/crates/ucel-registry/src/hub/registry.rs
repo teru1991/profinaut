@@ -480,31 +480,27 @@ pub fn list_jp_ir_document_families() -> Result<Vec<String>, HubError> {
     Ok(out)
 }
 
-
-
-pub fn list_us_ir_sources() -> Result<Vec<IrInventorySource>, HubError> {
+pub fn list_issuer_site_ir_sources() -> Result<Vec<IrInventorySource>, HubError> {
     Ok(list_ir_sources()?
+        .into_iter()
+        .filter(|s| s.source_family == "jp_issuer_ir_site" || s.source_family == "us_issuer_ir_site")
+        .collect())
+}
+
+pub fn list_jp_issuer_site_ir_sources() -> Result<Vec<IrInventorySource>, HubError> {
+    Ok(list_issuer_site_ir_sources()?
+        .into_iter()
+        .filter(|s| s.market == "jp")
+        .collect())
+}
+
+pub fn list_us_issuer_site_ir_sources() -> Result<Vec<IrInventorySource>, HubError> {
+    Ok(list_issuer_site_ir_sources()?
         .into_iter()
         .filter(|s| s.market == "us")
         .collect())
 }
 
-pub fn list_us_official_ir_sources() -> Result<Vec<IrInventorySource>, HubError> {
-    Ok(list_us_ir_sources()?
-        .into_iter()
-        .filter(|s| s.source_family == "us_sec_disclosure")
-        .collect())
-}
-
-pub fn list_us_ir_document_families() -> Result<Vec<String>, HubError> {
-    let mut out = Vec::new();
-    for s in list_us_official_ir_sources()? {
-        out.extend(list_ir_document_families(&s.source_id)?);
-    }
-    out.sort();
-    out.dedup();
-    Ok(out)
-}
 pub fn list_ir_access_patterns(source_id: &str) -> Result<Vec<String>, HubError> {
     let mut out = list_ir_sources()?
         .into_iter()

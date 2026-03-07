@@ -9,6 +9,7 @@ pub mod errors;
 pub mod fetch;
 pub mod http;
 pub mod identity;
+pub mod issuer_sites;
 pub mod jp_official;
 pub mod model;
 pub mod providers;
@@ -56,4 +57,8 @@ pub use identity::{
 pub use model::{build_source_descriptor, inventory_taxonomy_supported};
 
 pub use jp_official::{statutory_adapter, timely_adapter, JpOfficialAdapter, JpPolitenessPolicy};
-pub use us_official::{sec_adapter, UsOfficialAdapter, UsPolitenessPolicy};
+
+pub use issuer_sites::{
+    jp_issuer_feed_adapter, jp_issuer_html_adapter, us_issuer_feed_adapter,
+    us_issuer_html_adapter, IssuerSiteAdapter, IssuerSitePolitenessPolicy,
+};

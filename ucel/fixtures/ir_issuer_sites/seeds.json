@@ -1,0 +1,34 @@
+[
+  {
+    "source_id": "jp_issuer_ir_html_public",
+    "market": "jp",
+    "issuer_canonical_id": "JP-ACME-1111",
+    "seed_url": "https://example.co.jp",
+    "ir_paths": ["/ir", "/ir/news", "/ir/library"],
+    "feed_endpoints": ["https://example.co.jp/ir/rss.xml"]
+  },
+  {
+    "source_id": "jp_issuer_ir_feed_public",
+    "market": "jp",
+    "issuer_canonical_id": "JP-ACME-1111",
+    "seed_url": "https://example.co.jp/ir",
+    "ir_paths": ["/ir", "/ir/news"],
+    "feed_endpoints": ["https://example.co.jp/ir/rss.xml"]
+  },
+  {
+    "source_id": "us_issuer_ir_html_public",
+    "market": "us",
+    "issuer_canonical_id": "US-ACME-2222",
+    "seed_url": "https://investors.example.com",
+    "ir_paths": ["/", "/news", "/events"],
+    "feed_endpoints": ["https://investors.example.com/rss.xml"]
+  },
+  {
+    "source_id": "us_issuer_ir_feed_public",
+    "market": "us",
+    "issuer_canonical_id": "US-ACME-2222",
+    "seed_url": "https://investors.example.com",
+    "ir_paths": ["/", "/news"],
+    "feed_endpoints": ["https://investors.example.com/rss.xml"]
+  }
+]
