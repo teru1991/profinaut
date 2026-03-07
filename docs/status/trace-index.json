@@ -2403,6 +2403,43 @@
       "verification_evidence": [
         "docs/verification/UCEL-DOMESTIC-PUBLIC-WS-009C.md"
       ]
+    },
+    "UCEL-DOMESTIC-PUBLIC-EXT-WS-009E": {
+      "branch": "feature/ucel-domestic-public-ext-ws-009e-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/specs/ucel/domestic_public_ext_ws_runtime_policy_v1.md",
+        "docs/specs/ucel/domestic_public_ext_ws_schema_policy_v1.md",
+        "docs/specs/ucel/domestic_public_ext_ws_surface_v1.md",
+        "docs/status/trace-index.json",
+        "docs/verification/UCEL-DOMESTIC-PUBLIC-EXT-WS-009E.md",
+        "ucel/crates/ucel-core/src/lib.rs",
+        "ucel/crates/ucel-core/src/public_ws_ext.rs",
+        "ucel/crates/ucel-registry/src/hub/ws.rs",
+        "ucel/crates/ucel-sdk/src/lib.rs",
+        "ucel/crates/ucel-sdk/src/public_ws_ext.rs",
+        "ucel/crates/ucel-testkit/src/domestic_public_ws_ext.rs",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ext_ws_compat.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ext_ws_contract_matrix.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ext_ws_docs_drift.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ext_ws_runtime.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ext_ws_schemas.rs",
+        "ucel/crates/ucel-transport/src/ws/ext_runtime.rs",
+        "ucel/crates/ucel-transport/src/ws/mod.rs",
+        "ucel/crates/ucel-ws-rules/src/ext_public_rules.rs",
+        "ucel/crates/ucel-ws-rules/src/lib.rs",
+        "ucel/docs/exchanges/domestic_public_ws_extension_matrix.md",
+        "ucel/docs/exchanges/domestic_public_ws_extension_runtime_matrix.md",
+        "ucel/docs/exchanges/domestic_public_ws_extension_schema_matrix.md",
+        "ucel/docs/exchanges/domestic_public_ws_extension_usage.md",
+        "ucel/examples/domestic_public_ext_ws_preview.rs",
+        "ucel/fixtures/domestic_public_ext_ws/"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-DOMESTIC-PUBLIC-EXT-WS-009E.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

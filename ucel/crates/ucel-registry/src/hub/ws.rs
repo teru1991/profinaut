@@ -43,6 +43,15 @@ impl WsHub {
         self.subscribe_impl(channel_key.into(), params).await
     }
 
+    pub async fn subscribe_vendor_public_typed(
+        &self,
+        operation_id: &str,
+        params: Option<Value>,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<WsMessage, HubError>> + Send>>, HubError> {
+        let op = vendor_public_ws_extension_operation(self.exchange, operation_id)?;
+        self.subscribe_impl(op.path_or_channel, params).await
+    }
+
     pub async fn subscribe_private(
         &self,
         channel: PrivateWsChannel,
@@ -225,6 +234,7 @@ struct DomesticPublicInventoryEntry {
     venue: String,
     api_kind: String,
     public_id: String,
+    path_or_channel: String,
     surface_class: String,
 }
 
@@ -256,4 +266,41 @@ pub fn list_pending_vendor_public_ws_extension_channel_ids(
         .collect::<Vec<_>>();
     ids.sort();
     Ok(ids)
+}
+
+pub fn list_vendor_public_ws_extension_operation_ids(
+    exchange: ExchangeId,
+) -> Result<Vec<String>, HubError> {
+    let mut ids = domestic_public_inventory()?
+        .entries
+        .iter()
+        .filter(|entry| {
+            entry.venue == exchange.as_str()
+                && entry.api_kind == "ws"
+                && entry.surface_class == "vendor_public_extension"
+        })
+        .map(|entry| entry.public_id.clone())
+        .collect::<Vec<_>>();
+    ids.sort();
+    Ok(ids)
+}
+
+fn vendor_public_ws_extension_operation(
+    exchange: ExchangeId,
+    operation_id: &str,
+) -> Result<DomesticPublicInventoryEntry, HubError> {
+    domestic_public_inventory()?
+        .entries
+        .iter()
+        .find(|entry| {
+            entry.venue == exchange.as_str()
+                && entry.api_kind == "ws"
+                && entry.surface_class == "vendor_public_extension"
+                && entry.public_id == operation_id
+        })
+        .cloned()
+        .ok_or_else(|| HubError::UnknownChannel {
+            exchange: exchange.as_str().to_string(),
+            key: operation_id.to_string(),
+        })
 }

@@ -8,6 +8,7 @@ pub mod diagnostics;
 pub mod domestic_public_inventory;
 pub mod domestic_public_rest_ext;
 pub mod domestic_public_ws;
+pub mod domestic_public_ws_ext;
 pub mod equity;
 pub mod fixtures;
 pub mod fuzz;

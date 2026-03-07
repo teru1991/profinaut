@@ -1,0 +1,14 @@
+{
+  "cases": [
+    {"venue":"bitbank","operation_id":"crypto.public.ws.market.circuit-break-info","source_channel":"crypto.public.ws.market.circuit-break-info","payload":{"status":"normal"}},
+    {"venue":"bitbank","operation_id":"crypto.public.ws.market.transactions","source_channel":"crypto.public.ws.market.transactions","payload":{"symbol":"btc_jpy","trades":[{"id":"1"}]}},
+    {"venue":"bitflyer","operation_id":"crypto.public.ws.board","source_channel":"crypto.public.ws.board","payload":{"symbol":"BTC_JPY","bids":[],"asks":[]}},
+    {"venue":"bitflyer","operation_id":"crypto.public.ws.board_snapshot","source_channel":"crypto.public.ws.board_snapshot","payload":{"symbol":"BTC_JPY","bids":[],"asks":[]}},
+    {"venue":"bitflyer","operation_id":"crypto.public.ws.executions","source_channel":"crypto.public.ws.executions","payload":{"symbol":"BTC_JPY","events":[{"id":"a"}]}},
+    {"venue":"bitflyer","operation_id":"fx.public.ws.board","source_channel":"fx.public.ws.board","payload":{"symbol":"FX_BTC_JPY","bids":[],"asks":[]}},
+    {"venue":"bitflyer","operation_id":"fx.public.ws.board_snapshot","source_channel":"fx.public.ws.board_snapshot","payload":{"symbol":"FX_BTC_JPY","bids":[],"asks":[]}},
+    {"venue":"bitflyer","operation_id":"fx.public.ws.executions","source_channel":"fx.public.ws.executions","payload":{"symbol":"FX_BTC_JPY","events":[{"id":"b"}]}},
+    {"venue":"bittrade","operation_id":"public.ws.market.bbo","source_channel":"public.ws.market.bbo","payload":{"symbol":"btcjpy","best_bid":"1"}},
+    {"venue":"bittrade","operation_id":"public.ws.market.detail","source_channel":"public.ws.market.detail","payload":{"status":"ok","symbol":"btcjpy"}}
+  ]
+}

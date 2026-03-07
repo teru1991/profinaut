@@ -10,6 +10,7 @@ pub mod private_rest;
 pub mod private_ws;
 pub mod public_rest_ext;
 pub mod public_ws;
+pub mod public_ws_ext;
 pub mod symbol;
 pub mod types;
 pub mod value;
@@ -72,6 +73,14 @@ pub use public_ws::{
     CanonicalWsOpenInterestReferenceEvent, CanonicalWsOrderbookDeltaEvent,
     CanonicalWsOrderbookSnapshotEvent, CanonicalWsSystemStatusEvent, CanonicalWsTickerEvent,
     CanonicalWsTradeEvent, PublicWsSupport, PublicWsSurface,
+};
+pub use public_ws_ext::{
+    build_vendor_public_ws_typed_envelope, validate_vendor_public_ws_metadata,
+    validate_vendor_public_ws_payload_shape, validate_vendor_public_ws_runtime_modes,
+    vendor_public_ws_operation_spec, vendor_public_ws_operation_specs,
+    VendorPublicWsExtensionCategory, VendorPublicWsIntegrityMode, VendorPublicWsMetadata,
+    VendorPublicWsOperationSpec, VendorPublicWsPayloadType, VendorPublicWsReadinessMode,
+    VendorPublicWsResumeMode, VendorPublicWsSchemaVersion, VendorPublicWsTypedEnvelope,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt;
