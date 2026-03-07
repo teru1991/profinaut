@@ -2539,6 +2539,52 @@
       "verification_evidence": [
         "docs/verification/UCEL-IR-CANONICAL-MODEL-014B.md"
       ]
+    },
+    "UCEL-IR-JP-OFFICIAL-014C": {
+      "branch": "feature/ucel-ir-jp-official-014c-001",
+      "artifacts": [
+        "docs/specs/ucel/ir_jp_official_surface_v1.md",
+        "docs/specs/ucel/ir_jp_official_fetch_policy_v1.md",
+        "docs/specs/ucel/ir_jp_official_identity_mapping_v1.md",
+        "docs/specs/ucel/ir_jp_official_artifact_policy_v1.md",
+        "ucel/docs/ir/jp_official_source_matrix.md",
+        "ucel/docs/ir/jp_official_fetch_flow.md",
+        "ucel/docs/ir/jp_official_identity_mapping.md",
+        "ucel/docs/ir/jp_official_artifact_matrix.md",
+        "ucel/docs/ir/jp_official_access_and_politeness.md",
+        "ucel/crates/ucel-ir/src/lib.rs",
+        "ucel/crates/ucel-ir/src/jp_official/mod.rs",
+        "ucel/crates/ucel-ir/src/jp_official/statutory.rs",
+        "ucel/crates/ucel-ir/src/jp_official/timely.rs",
+        "ucel/crates/ucel-ir/src/jp_official/identity.rs",
+        "ucel/crates/ucel-ir/src/jp_official/document.rs",
+        "ucel/crates/ucel-ir/src/jp_official/artifact.rs",
+        "ucel/crates/ucel-ir/src/jp_official/fetch.rs",
+        "ucel/crates/ucel-ir/src/jp_official/html.rs",
+        "ucel/crates/ucel-ir/src/jp_official/feed.rs",
+        "ucel/crates/ucel-ir/src/jp_official/download.rs",
+        "ucel/crates/ucel-ir/src/jp_official/access.rs",
+        "ucel/crates/ucel-ir/src/jp_official/errors.rs",
+        "ucel/crates/ucel-sdk/src/ir.rs",
+        "ucel/crates/ucel-registry/src/hub/registry.rs",
+        "ucel/crates/ucel-testkit/src/ir_jp_official.rs",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/tests/ir_jp_official_contract_matrix.rs",
+        "ucel/crates/ucel-testkit/tests/ir_jp_official_identity_resolution.rs",
+        "ucel/crates/ucel-testkit/tests/ir_jp_official_document_discovery.rs",
+        "ucel/crates/ucel-testkit/tests/ir_jp_official_artifact_download.rs",
+        "ucel/crates/ucel-testkit/tests/ir_jp_official_access_guard.rs",
+        "ucel/crates/ucel-testkit/tests/ir_jp_official_docs_drift.rs",
+        "ucel/examples/ir_jp_official_preview.rs",
+        "ucel/fixtures/ir_jp_official/issuers.json",
+        "ucel/fixtures/ir_jp_official/documents.json",
+        "ucel/fixtures/ir_jp_official/artifacts.json",
+        "ucel/fixtures/ir_jp_official/artifact_bytes.json",
+        "docs/verification/UCEL-IR-JP-OFFICIAL-014C.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-IR-JP-OFFICIAL-014C.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

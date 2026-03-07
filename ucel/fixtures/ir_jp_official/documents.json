@@ -1,0 +1,24 @@
+[
+  {
+    "source_id": "edinet_api_documents_v2",
+    "source_document_id": "S100AAA1",
+    "canonical_issuer_id": "JP:EDINET:E12345",
+    "family": "statutory_annual",
+    "title": "Annual Securities Report",
+    "language": "ja",
+    "filed_at": "2026-03-01",
+    "published_at": "2026-03-01",
+    "access_pattern": "api_list"
+  },
+  {
+    "source_id": "jp_tdnet_timely_html",
+    "source_document_id": "TD20260301001",
+    "canonical_issuer_id": "JP:TICKER:5678",
+    "family": "timely_disclosure",
+    "title": "Timely Disclosure Notice",
+    "language": "ja",
+    "filed_at": "2026-03-01",
+    "published_at": "2026-03-01",
+    "access_pattern": "html_detail"
+  }
+]

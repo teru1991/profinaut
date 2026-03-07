@@ -9,6 +9,7 @@ pub mod errors;
 pub mod fetch;
 pub mod http;
 pub mod identity;
+pub mod jp_official;
 pub mod model;
 pub mod providers;
 pub mod sinks;
@@ -52,3 +53,5 @@ pub use identity::{
     IrIssuerResolutionInput, IrIssuerResolutionResult, IrIssuerResolver,
 };
 pub use model::{build_source_descriptor, inventory_taxonomy_supported};
+
+pub use jp_official::{statutory_adapter, timely_adapter, JpOfficialAdapter, JpPolitenessPolicy};

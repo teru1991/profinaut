@@ -1,0 +1,20 @@
+[
+  {
+    "source_id": "edinet_api_documents_v2",
+    "canonical_id": "JP:EDINET:E12345",
+    "display_name": "Sample JP Statutory Corp",
+    "aliases": [
+      {"kind": "jp_edinet_code_like", "value": "E12345", "provenance": "edinet_list"},
+      {"kind": "jp_local_code_like", "value": "1234", "provenance": "issuer_master"}
+    ]
+  },
+  {
+    "source_id": "jp_tdnet_timely_html",
+    "canonical_id": "JP:TICKER:5678",
+    "display_name": "Sample JP Timely Corp",
+    "aliases": [
+      {"kind": "jp_exchange_code_like", "value": "5678", "provenance": "tdnet_html"},
+      {"kind": "url_like", "value": "https://example.jp/ir/5678", "provenance": "tdnet_html"}
+    ]
+  }
+]

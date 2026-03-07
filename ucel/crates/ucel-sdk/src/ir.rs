@@ -1,9 +1,13 @@
-use crate::error::SdkResult;
-use ucel_core::{IrAccessPolicyClass, IrArtifactDescriptor, IrDocumentDescriptor};
+use crate::error::{SdkError, SdkResult};
+use ucel_core::{
+    IrAccessPolicyClass, IrArtifactDescriptor, IrDocumentDescriptor, IrIssuerIdentityKind,
+    IrIssuerKey, IrMarket,
+};
 use ucel_ir::{
-    IrArtifactFetchRequest, IrArtifactFetchResponse, IrArtifactListRequest, IrArtifactListResponse,
+    statutory_adapter, timely_adapter, IrArtifactFetchRequest, IrArtifactFetchResponse,
+    IrArtifactListRequest, IrArtifactListResponse, IrDiscoverIssuersRequest,
     IrDocumentDetailRequest, IrDocumentDetailResponse, IrDocumentListRequest,
-    IrDocumentListResponse, IrIssuerResolutionInput, IrIssuerResolutionResult,
+    IrDocumentListResponse, IrIssuerResolutionInput, IrIssuerResolutionResult, IrSourceAdapter,
 };
 use ucel_registry::hub::registry;
 
@@ -11,54 +15,70 @@ use ucel_registry::hub::registry;
 pub struct IrFacade;
 
 impl IrFacade {
+    fn adapter_for(source_id: &str) -> SdkResult<Box<dyn IrSourceAdapter>> {
+        match source_id {
+            "edinet_api_documents_v2" => Ok(Box::new(statutory_adapter())),
+            "jp_tdnet_timely_html" => Ok(Box::new(timely_adapter())),
+            _ => Err(SdkError::Config(format!(
+                "unsupported source route for sdk facade: {source_id}"
+            ))),
+        }
+    }
+
     pub fn list_ir_sources(&self) -> SdkResult<Vec<registry::IrInventorySource>> {
         Ok(registry::list_ir_sources()?)
     }
 
     pub fn resolve_ir_issuer(
         &self,
-        _input: &IrIssuerResolutionInput,
+        input: &IrIssuerResolutionInput,
     ) -> SdkResult<Option<IrIssuerResolutionResult>> {
-        Ok(None)
+        let adapter = Self::adapter_for(&input.source_id)?;
+        Ok(Some(
+            adapter
+                .resolve_issuer(input)
+                .map_err(|e| SdkError::Config(e.to_string()))?,
+        ))
     }
 
     pub fn list_ir_documents(
         &self,
-        _request: &IrDocumentListRequest,
+        request: &IrDocumentListRequest,
     ) -> SdkResult<IrDocumentListResponse> {
-        Ok(IrDocumentListResponse {
-            documents: Vec::<IrDocumentDescriptor>::new(),
-            next_cursor: None,
-        })
+        let adapter = Self::adapter_for(&request.source_id)?;
+        Ok(adapter
+            .list_documents(request)
+            .map_err(|e| SdkError::Config(e.to_string()))?)
     }
 
     pub fn fetch_ir_document_detail(
         &self,
         request: &IrDocumentDetailRequest,
     ) -> SdkResult<IrDocumentDetailResponse> {
-        Err(crate::error::SdkError::Config(format!(
-            "document detail is not implemented for source={} doc={}",
-            request.source_id, request.key.source_document_id
-        )))
+        let adapter = Self::adapter_for(&request.source_id)?;
+        Ok(adapter
+            .fetch_document_detail(request)
+            .map_err(|e| SdkError::Config(e.to_string()))?)
     }
 
     pub fn list_ir_artifacts(
         &self,
-        _request: &IrArtifactListRequest,
+        request: &IrArtifactListRequest,
     ) -> SdkResult<IrArtifactListResponse> {
-        Ok(IrArtifactListResponse {
-            artifacts: Vec::<IrArtifactDescriptor>::new(),
-        })
+        let adapter = Self::adapter_for(&request.source_id)?;
+        Ok(adapter
+            .list_artifacts(request)
+            .map_err(|e| SdkError::Config(e.to_string()))?)
     }
 
     pub fn fetch_ir_artifact(
         &self,
         request: &IrArtifactFetchRequest,
     ) -> SdkResult<IrArtifactFetchResponse> {
-        Err(crate::error::SdkError::Config(format!(
-            "artifact fetch is not implemented for source={} artifact={}",
-            request.source_id, request.artifact_key.artifact_id
-        )))
+        let adapter = Self::adapter_for(&request.source_id)?;
+        Ok(adapter
+            .fetch_artifact(request)
+            .map_err(|e| SdkError::Config(e.to_string()))?)
     }
 
     pub fn preview_ir_source_support(&self) -> SdkResult<Vec<(String, IrAccessPolicyClass)>> {
@@ -78,5 +98,60 @@ impl IrFacade {
                 (s.source_id, policy)
             })
             .collect())
+    }
+
+    pub fn discover_jp_official_issuers(
+        &self,
+        source_id: &str,
+        query: Option<String>,
+    ) -> SdkResult<Vec<IrIssuerResolutionResult>> {
+        let adapter = Self::adapter_for(source_id)?;
+        let res = adapter
+            .discover_issuers(&IrDiscoverIssuersRequest {
+                source_id: source_id.to_string(),
+                query,
+            })
+            .map_err(|e| SdkError::Config(e.to_string()))?;
+        Ok(res.issuers)
+    }
+
+    pub fn preview_jp_official_document_summary(
+        &self,
+        source_id: &str,
+    ) -> SdkResult<(usize, Vec<IrDocumentDescriptor>, Vec<IrArtifactDescriptor>)> {
+        let docs = self
+            .list_ir_documents(&IrDocumentListRequest {
+                source_id: source_id.to_string(),
+                market: IrMarket::Jp,
+                issuer_key: None,
+            })
+            .map_err(|e| SdkError::Config(e.to_string()))?;
+        let mut artifacts = Vec::new();
+        for doc in &docs.documents {
+            let listed = self
+                .list_ir_artifacts(&IrArtifactListRequest {
+                    source_id: source_id.to_string(),
+                    document_key: doc.key.clone(),
+                })
+                .map_err(|e| SdkError::Config(e.to_string()))?;
+            artifacts.extend(listed.artifacts);
+        }
+        Ok((docs.documents.len(), docs.documents, artifacts))
+    }
+
+    pub fn resolve_jp_by_code(
+        &self,
+        source_id: &str,
+        code: &str,
+    ) -> SdkResult<Option<IrIssuerKey>> {
+        let out = self
+            .resolve_ir_issuer(&IrIssuerResolutionInput {
+                market: IrMarket::Jp,
+                source_id: source_id.to_string(),
+                identity_kind: IrIssuerIdentityKind::JpExchangeCodeLike,
+                value: code.to_string(),
+            })
+            .map_err(|e| SdkError::Config(e.to_string()))?;
+        Ok(out.map(|x| x.issuer_key))
     }
 }

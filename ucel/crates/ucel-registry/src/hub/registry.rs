@@ -453,6 +453,33 @@ pub fn list_ir_access_policy_classes() -> Result<Vec<String>, HubError> {
     Ok(classes)
 }
 
+pub fn list_jp_ir_sources() -> Result<Vec<IrInventorySource>, HubError> {
+    Ok(list_ir_sources()?
+        .into_iter()
+        .filter(|s| s.market == "jp")
+        .collect())
+}
+
+pub fn list_jp_official_ir_sources() -> Result<Vec<IrInventorySource>, HubError> {
+    Ok(list_jp_ir_sources()?
+        .into_iter()
+        .filter(|s| {
+            s.source_family == "jp_statutory_disclosure"
+                || s.source_family == "jp_timely_disclosure"
+        })
+        .collect())
+}
+
+pub fn list_jp_ir_document_families() -> Result<Vec<String>, HubError> {
+    let mut out = Vec::new();
+    for s in list_jp_official_ir_sources()? {
+        out.extend(list_ir_document_families(&s.source_id)?);
+    }
+    out.sort();
+    out.dedup();
+    Ok(out)
+}
+
 pub fn list_ir_access_patterns(source_id: &str) -> Result<Vec<String>, HubError> {
     let mut out = list_ir_sources()?
         .into_iter()
