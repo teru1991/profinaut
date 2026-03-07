@@ -3837,6 +3837,7 @@ dependencies = [
  "sha2 0.10.9",
  "thiserror 1.0.69",
  "tokio",
+ "ucel-core",
 ]
 
 [[package]]
@@ -3905,6 +3906,7 @@ dependencies = [
  "ucel-diagnostics-core",
  "ucel-equity-adapter-demo",
  "ucel-equity-core",
+ "ucel-ir",
  "ucel-registry",
  "ucel-symbol-adapter",
  "ucel-symbol-core",
@@ -3998,6 +4000,7 @@ dependencies = [
  "ucel-diagnostics-core",
  "ucel-equity-adapter-demo",
  "ucel-equity-core",
+ "ucel-ir",
  "ucel-registry",
  "ucel-sdk",
  "ucel-subscription-planner",

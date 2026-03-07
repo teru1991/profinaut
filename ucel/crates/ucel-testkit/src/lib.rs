@@ -5,6 +5,7 @@ pub mod coverage;
 pub mod coverage_gate;
 pub mod coverage_v2;
 pub mod diagnostics;
+pub mod domestic_public_compat;
 pub mod domestic_public_inventory;
 pub mod domestic_public_rest_ext;
 pub mod domestic_public_ws;
@@ -16,6 +17,9 @@ pub mod fuzz_corpus;
 pub mod golden;
 pub mod golden_manifest;
 pub mod http_mock;
+pub mod ir_canonical;
+pub mod ir_inventory;
+pub mod ir_jp_official;
 pub mod market_data;
 pub mod normalize;
 pub mod okx;
@@ -252,3 +256,5 @@ mod tests {
         ));
     }
 }
+
+pub mod ir_us_official;

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UCEL IR Inventory",
+  "type": "object",
+  "required": ["version", "markets", "sources", "identities", "documents"],
+  "properties": {
+    "version": {"type": "string"},
+    "markets": {"type": "array", "items": {"enum": ["jp", "us"]}, "minItems": 2},
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["market","source_family","source_id","source_kind","access_policy_class","access_patterns","issuer_identity_kind","document_family","artifact_kind","current_repo_status","evidence_files","evidence_kinds","notes"],
+        "properties": {
+          "market": {"enum": ["jp", "us"]},
+          "source_family": {"enum": ["jp_statutory_disclosure","jp_timely_disclosure","jp_issuer_ir_site","us_sec_disclosure","us_issuer_ir_site"]},
+          "source_id": {"type": "string", "minLength": 1},
+          "source_kind": {"enum": ["official_public_api","official_public_feed","official_public_html","issuer_ir_html","issuer_ir_feed","attachment_download"]},
+          "access_policy_class": {"enum": ["free_public_noauth_allowed","free_public_noauth_review_required","excluded_paid_or_contract","excluded_login_required","excluded_policy_blocked"]},
+          "access_patterns": {"type": "array", "items": {"enum": ["api_list","api_detail","rss_poll","feed_poll","html_index","html_detail","attachment_discover","artifact_download","issuer_lookup","search_query"]}, "minItems": 1},
+          "issuer_identity_kind": {"type": "array", "items": {"enum": ["jp_edinet_code_like","jp_local_code_like","jp_exchange_code_like","us_cik_like","ticker_like","exchange_ticker_like","issuer_site_slug_like","url_like"]}, "minItems": 1},
+          "document_family": {"type": "array", "items": {"enum": ["statutory_annual","statutory_quarterly","statutory_current","timely_disclosure","earnings_release","earnings_presentation","transcript","press_release","proxy","integrated_report","sustainability_report","fact_sheet","governance_report","misc_ir_document"]}, "minItems": 1},
+          "artifact_kind": {"type": "array", "items": {"enum": ["html","pdf","xbrl","ixbrl","xml","txt","csv","zip","json","rss"]}, "minItems": 1},
+          "current_repo_status": {"enum": ["implemented","partial","not_implemented","unknown_for_repo"]},
+          "evidence_files": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+          "evidence_kinds": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+          "notes": {"type": "string"}
+        }
+      }
+    },
+    "identities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["market","identity_kind","source_id","canonical_role","evidence_files","notes"],
+        "properties": {
+          "market": {"enum": ["jp", "us"]},
+          "identity_kind": {"enum": ["jp_edinet_code_like","jp_local_code_like","jp_exchange_code_like","us_cik_like","ticker_like","exchange_ticker_like","issuer_site_slug_like","url_like"]},
+          "source_id": {"type": "string", "minLength": 1},
+          "canonical_role": {"enum": ["primary_regulatory_id","secondary_market_id","lookup_alias","issuer_site_locator"]},
+          "evidence_files": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+          "notes": {"type": "string"}
+        }
+      }
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["market","source_id","document_family","artifact_kind","issuer_identity_kind","access_pattern","access_policy_class","current_repo_status","evidence_files","notes"],
+        "properties": {
+          "market": {"enum": ["jp", "us"]},
+          "source_id": {"type": "string", "minLength": 1},
+          "document_family": {"enum": ["statutory_annual","statutory_quarterly","statutory_current","timely_disclosure","earnings_release","earnings_presentation","transcript","press_release","proxy","integrated_report","sustainability_report","fact_sheet","governance_report","misc_ir_document"]},
+          "artifact_kind": {"enum": ["html","pdf","xbrl","ixbrl","xml","txt","csv","zip","json","rss"]},
+          "issuer_identity_kind": {"enum": ["jp_edinet_code_like","jp_local_code_like","jp_exchange_code_like","us_cik_like","ticker_like","exchange_ticker_like","issuer_site_slug_like","url_like"]},
+          "access_pattern": {"enum": ["api_list","api_detail","rss_poll","feed_poll","html_index","html_detail","attachment_discover","artifact_download","issuer_lookup","search_query"]},
+          "access_policy_class": {"enum": ["free_public_noauth_allowed","free_public_noauth_review_required","excluded_paid_or_contract","excluded_login_required","excluded_policy_blocked"]},
+          "current_repo_status": {"enum": ["implemented","partial","not_implemented","unknown_for_repo"]},
+          "evidence_files": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+          "notes": {"type": "string"}
+        }
+      }
+    }
+  }
+}

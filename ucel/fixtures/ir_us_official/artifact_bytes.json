@@ -1,0 +1,6 @@
+{
+  "filing-json": "{\"form\":\"10-K\",\"cik\":\"0000320193\"}",
+  "filing-html": "<html><body>SEC Filing HTML</body></html>",
+  "filing-ixbrl": "<xbrli:xbrl xmlns:xbrli=\"http://www.xbrl.org/2003/instance\"></xbrli:xbrl>",
+  "filing-pdf": "%PDF-1.4"
+}

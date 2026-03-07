@@ -1,0 +1,24 @@
+[
+  {
+    "source_id": "edinet_api_documents_v2",
+    "source_document_id": "S100AAA1",
+    "artifact_id": "main-json",
+    "kind": "json",
+    "content_type": "application/json",
+    "size_bytes": 2450,
+    "encoding": "utf-8",
+    "source_url": "https://api.edinet-fsa.go.jp/api/v2/documents/S100AAA1",
+    "checksum_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  {
+    "source_id": "jp_tdnet_timely_html",
+    "source_document_id": "TD20260301001",
+    "artifact_id": "timely-pdf",
+    "kind": "pdf",
+    "content_type": "application/pdf",
+    "size_bytes": 18321,
+    "encoding": null,
+    "source_url": "https://example.jp/tdnet/TD20260301001.pdf",
+    "checksum_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+  }
+]
