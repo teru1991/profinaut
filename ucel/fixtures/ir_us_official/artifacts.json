@@ -1,0 +1,46 @@
+[
+  {
+    "source_id": "sec_edgar_submissions_api",
+    "source_document_id": "0000320193-25-000081",
+    "artifact_id": "filing-json",
+    "kind": "json",
+    "content_type": "application/json",
+    "size_bytes": 2048,
+    "encoding": "utf-8",
+    "source_url": "https://data.sec.gov/submissions/CIK0000320193.json",
+    "checksum_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  {
+    "source_id": "sec_edgar_submissions_api",
+    "source_document_id": "0000320193-25-000041",
+    "artifact_id": "filing-html",
+    "kind": "html",
+    "content_type": "text/html",
+    "size_bytes": 4096,
+    "encoding": "utf-8",
+    "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000041/index.html",
+    "checksum_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  {
+    "source_id": "sec_edgar_submissions_api",
+    "source_document_id": "0000320193-25-000099",
+    "artifact_id": "filing-ixbrl",
+    "kind": "ixbrl",
+    "content_type": "application/xml",
+    "size_bytes": 5120,
+    "encoding": "utf-8",
+    "source_url": "https://www.sec.gov/ixviewer/ix.html?doc=/Archives/edgar/data/320193/000032019325000099/ixbrl.xml",
+    "checksum_sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+  },
+  {
+    "source_id": "sec_edgar_submissions_api",
+    "source_document_id": "0000320193-25-000120",
+    "artifact_id": "filing-pdf",
+    "kind": "pdf",
+    "content_type": "application/pdf",
+    "size_bytes": 1024,
+    "encoding": null,
+    "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000120/s3.pdf",
+    "checksum_sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+  }
+]

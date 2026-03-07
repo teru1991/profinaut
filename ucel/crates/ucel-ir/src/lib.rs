@@ -13,6 +13,7 @@ pub mod jp_official;
 pub mod model;
 pub mod providers;
 pub mod sinks;
+pub mod us_official;
 
 pub use checkpoint::{CheckpointStore, FsCheckpointStore, MemoryCheckpointStore};
 pub use client::{
@@ -55,3 +56,4 @@ pub use identity::{
 pub use model::{build_source_descriptor, inventory_taxonomy_supported};
 
 pub use jp_official::{statutory_adapter, timely_adapter, JpOfficialAdapter, JpPolitenessPolicy};
+pub use us_official::{sec_adapter, UsOfficialAdapter, UsPolitenessPolicy};

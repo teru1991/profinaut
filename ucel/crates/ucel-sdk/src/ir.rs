@@ -4,7 +4,7 @@ use ucel_core::{
     IrIssuerKey, IrMarket,
 };
 use ucel_ir::{
-    statutory_adapter, timely_adapter, IrArtifactFetchRequest, IrArtifactFetchResponse,
+    sec_adapter, statutory_adapter, timely_adapter, IrArtifactFetchRequest, IrArtifactFetchResponse,
     IrArtifactListRequest, IrArtifactListResponse, IrDiscoverIssuersRequest,
     IrDocumentDetailRequest, IrDocumentDetailResponse, IrDocumentListRequest,
     IrDocumentListResponse, IrIssuerResolutionInput, IrIssuerResolutionResult, IrSourceAdapter,
@@ -19,6 +19,7 @@ impl IrFacade {
         match source_id {
             "edinet_api_documents_v2" => Ok(Box::new(statutory_adapter())),
             "jp_tdnet_timely_html" => Ok(Box::new(timely_adapter())),
+            "sec_edgar_submissions_api" => Ok(Box::new(sec_adapter())),
             _ => Err(SdkError::Config(format!(
                 "unsupported source route for sdk facade: {source_id}"
             ))),
@@ -154,4 +155,60 @@ impl IrFacade {
             .map_err(|e| SdkError::Config(e.to_string()))?;
         Ok(out.map(|x| x.issuer_key))
     }
+
+    pub fn discover_us_official_issuers(
+        &self,
+        source_id: &str,
+        query: Option<String>,
+    ) -> SdkResult<Vec<IrIssuerResolutionResult>> {
+        let adapter = Self::adapter_for(source_id)?;
+        let res = adapter
+            .discover_issuers(&IrDiscoverIssuersRequest {
+                source_id: source_id.to_string(),
+                query,
+            })
+            .map_err(|e| SdkError::Config(e.to_string()))?;
+        Ok(res.issuers)
+    }
+
+    pub fn preview_us_official_document_summary(
+        &self,
+        source_id: &str,
+    ) -> SdkResult<(usize, Vec<IrDocumentDescriptor>, Vec<IrArtifactDescriptor>)> {
+        let docs = self
+            .list_ir_documents(&IrDocumentListRequest {
+                source_id: source_id.to_string(),
+                market: IrMarket::Us,
+                issuer_key: None,
+            })
+            .map_err(|e| SdkError::Config(e.to_string()))?;
+        let mut artifacts = Vec::new();
+        for doc in &docs.documents {
+            let listed = self
+                .list_ir_artifacts(&IrArtifactListRequest {
+                    source_id: source_id.to_string(),
+                    document_key: doc.key.clone(),
+                })
+                .map_err(|e| SdkError::Config(e.to_string()))?;
+            artifacts.extend(listed.artifacts);
+        }
+        Ok((docs.documents.len(), docs.documents, artifacts))
+    }
+
+    pub fn resolve_us_by_ticker(
+        &self,
+        source_id: &str,
+        ticker: &str,
+    ) -> SdkResult<Option<IrIssuerKey>> {
+        let out = self
+            .resolve_ir_issuer(&IrIssuerResolutionInput {
+                market: IrMarket::Us,
+                source_id: source_id.to_string(),
+                identity_kind: IrIssuerIdentityKind::TickerLike,
+                value: ticker.to_string(),
+            })
+            .map_err(|e| SdkError::Config(e.to_string()))?;
+        Ok(out.map(|x| x.issuer_key))
+    }
+
 }

@@ -1,0 +1,62 @@
+[
+  {
+    "source_id": "sec_edgar_submissions_api",
+    "source_document_id": "0000320193-25-000081",
+    "canonical_issuer_id": "us-cik-0000320193",
+    "family": "statutory_annual",
+    "filing_form": "10-K",
+    "title": "Annual Report 10-K",
+    "language": "en",
+    "filed_at": "2025-11-01T21:30:00Z",
+    "published_at": "2025-11-01T21:31:00Z",
+    "access_pattern": "api_list"
+  },
+  {
+    "source_id": "sec_edgar_submissions_api",
+    "source_document_id": "0000320193-25-000041",
+    "canonical_issuer_id": "us-cik-0000320193",
+    "family": "statutory_quarterly",
+    "filing_form": "10-Q",
+    "title": "Quarterly Report 10-Q",
+    "language": "en",
+    "filed_at": "2025-07-31T20:00:00Z",
+    "published_at": "2025-07-31T20:01:00Z",
+    "access_pattern": "api_detail"
+  },
+  {
+    "source_id": "sec_edgar_submissions_api",
+    "source_document_id": "0000320193-25-000099",
+    "canonical_issuer_id": "us-cik-0000320193",
+    "family": "statutory_current",
+    "filing_form": "8-K",
+    "title": "Current Report 8-K",
+    "language": "en",
+    "filed_at": "2025-09-10T14:30:00Z",
+    "published_at": "2025-09-10T14:31:00Z",
+    "access_pattern": "api_detail"
+  },
+  {
+    "source_id": "sec_edgar_submissions_api",
+    "source_document_id": "0000320193-25-000110",
+    "canonical_issuer_id": "us-cik-0000320193",
+    "family": "proxy",
+    "filing_form": "DEF 14A",
+    "title": "Definitive Proxy Statement",
+    "language": "en",
+    "filed_at": "2025-03-01T10:00:00Z",
+    "published_at": "2025-03-01T10:01:00Z",
+    "access_pattern": "html_detail"
+  },
+  {
+    "source_id": "sec_edgar_submissions_api",
+    "source_document_id": "0000320193-25-000120",
+    "canonical_issuer_id": "us-cik-0000320193",
+    "family": "misc_ir_document",
+    "filing_form": "S-3",
+    "title": "Registration Statement",
+    "language": "en",
+    "filed_at": "2025-02-02T12:00:00Z",
+    "published_at": "2025-02-02T12:01:00Z",
+    "access_pattern": "api_detail"
+  }
+]
