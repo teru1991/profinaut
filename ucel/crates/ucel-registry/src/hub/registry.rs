@@ -1,5 +1,6 @@
 use super::{ChannelKey, ExchangeId, OperationKey};
 use crate::{EndpointSpec, ExchangeCatalog, WsChannelSpec};
+use serde::Deserialize;
 use std::collections::{BTreeSet, HashMap};
 use std::sync::OnceLock;
 
@@ -347,6 +348,76 @@ impl SpecRegistry {
             .ok_or_else(|| HubError::UnknownExchange(exchange.as_str().to_string()))?;
         Ok((rest, ws))
     }
+}
+
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct IrInventorySource {
+    pub market: String,
+    pub source_family: String,
+    pub source_id: String,
+    pub source_kind: String,
+    pub access_policy_class: String,
+    pub access_patterns: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct IrInventoryRoot {
+    sources: Vec<IrInventorySource>,
+}
+
+pub fn list_ir_sources() -> Result<Vec<IrInventorySource>, HubError> {
+    let inv: IrInventoryRoot = serde_json::from_str(include_str!(
+        "../../../../../ucel/coverage_v2/ir/ir_inventory.json"
+    ))
+    .map_err(HubError::Json)?;
+    Ok(inv.sources)
+}
+
+pub fn list_ir_source_families() -> Result<Vec<String>, HubError> {
+    let mut families = list_ir_sources()?
+        .into_iter()
+        .map(|s| s.source_family)
+        .collect::<Vec<_>>();
+    families.sort();
+    families.dedup();
+    Ok(families)
+}
+
+pub fn list_ir_identity_kinds(source_id: &str) -> Result<Vec<String>, HubError> {
+    #[derive(Deserialize)]
+    struct Root {
+        identities: Vec<Item>,
+    }
+    #[derive(Deserialize)]
+    struct Item {
+        source_id: String,
+        identity_kind: String,
+    }
+    let root: Root = serde_json::from_str(include_str!(
+        "../../../../../ucel/coverage_v2/ir/ir_inventory.json"
+    ))
+    .map_err(HubError::Json)?;
+    let mut out = root
+        .identities
+        .into_iter()
+        .filter(|x| x.source_id == source_id)
+        .map(|x| x.identity_kind)
+        .collect::<Vec<_>>();
+    out.sort();
+    out.dedup();
+    Ok(out)
+}
+
+pub fn list_ir_access_patterns(source_id: &str) -> Result<Vec<String>, HubError> {
+    let mut out = list_ir_sources()?
+        .into_iter()
+        .filter(|x| x.source_id == source_id)
+        .flat_map(|x| x.access_patterns)
+        .collect::<Vec<_>>();
+    out.sort();
+    out.dedup();
+    Ok(out)
 }
 
 #[cfg(test)]
