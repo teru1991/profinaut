@@ -17,6 +17,7 @@ pub mod order_normalize;
 pub mod private_rest;
 pub mod private_ws;
 pub mod public_rest_ext;
+pub mod public_ws;
 pub mod sdk;
 pub mod secrets;
 pub mod support_bundle;
@@ -42,6 +43,7 @@ pub use execution::{
 };
 
 pub use public_rest_ext::DomesticPublicRestExtensionFacade;
+pub use public_ws::DomesticPublicWsFacade;
 
 pub mod prelude {
     pub use crate::chain::ChainFacade;
