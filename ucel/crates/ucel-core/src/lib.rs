@@ -41,7 +41,9 @@ pub use ir::{
     normalize_alias, validate_document_artifact_pair, IrAccessDecision, IrAccessPattern,
     IrAccessPolicyClass, IrArtifactDescriptor, IrArtifactKey, IrArtifactKind, IrArtifactSource,
     IrDocumentDescriptor, IrDocumentFamily, IrDocumentKey, IrFetchSupport, IrIssuerAlias,
-    IrIssuerIdentityKind, IrIssuerKey, IrMarket, IrSourceDescriptor, IrSourceFamily, IrSourceKind,
+    IrIssuerIdentityKind, IrIssuerKey, IrMarket, IrNormalizationProvenance, IrNormalizationSchemaVersion,
+    IrNormalizationSupport, IrNormalizedAttachment, IrNormalizedContent, IrNormalizedFormat, IrNormalizedSection,
+    IrNormalizedTable, IrSourceDescriptor, IrSourceFamily, IrSourceKind,
 };
 pub use market_data::{
     apply_orderbook_delta, guard_orderbook, validate_candle, validate_ticker, validate_trade,

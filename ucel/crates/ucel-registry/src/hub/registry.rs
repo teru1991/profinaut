@@ -556,3 +556,32 @@ mod tests {
         assert_eq!(exchange_registrations().len(), ExchangeId::all().len());
     }
 }
+
+
+pub fn list_ir_normalizable_formats() -> Vec<String> {
+    vec![
+        "html", "pdf", "xbrl", "ixbrl", "xml", "txt", "csv", "json", "rss", "zip",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+pub fn list_ir_normalization_reason_codes() -> Vec<String> {
+    vec![
+        "unknown_format",
+        "invalid_charset",
+        "parse_failed",
+        "oversized_artifact",
+        "invalid_archive",
+        "unsupported_nested_archive",
+        "malformed_xbrl",
+        "malformed_html",
+        "malformed_pdf",
+        "table_extraction_failed",
+        "provenance_lost",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}

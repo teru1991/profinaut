@@ -12,6 +12,7 @@ pub mod identity;
 pub mod issuer_sites;
 pub mod jp_official;
 pub mod model;
+pub mod normalize;
 pub mod providers;
 pub mod sinks;
 pub mod us_official;
@@ -62,3 +63,5 @@ pub use issuer_sites::{
     jp_issuer_feed_adapter, jp_issuer_html_adapter, us_issuer_feed_adapter,
     us_issuer_html_adapter, IssuerSiteAdapter, IssuerSitePolitenessPolicy,
 };
+
+pub use normalize::{normalize_artifact, normalize_artifact_with_format};
