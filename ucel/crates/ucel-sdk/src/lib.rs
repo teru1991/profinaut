@@ -11,6 +11,7 @@ pub mod chain;
 pub mod config;
 pub mod equity;
 pub mod error;
+pub mod ir;
 pub mod market_data;
 pub mod market_meta;
 pub mod order_normalize;
@@ -43,6 +44,7 @@ pub use execution::{
     Symbol, VenueId,
 };
 
+pub use ir::IrFacade;
 pub use public_rest_ext::DomesticPublicRestExtensionFacade;
 pub use public_ws::DomesticPublicWsFacade;
 pub use public_ws_ext::DomesticPublicWsExtensionFacade;
@@ -52,6 +54,7 @@ pub mod prelude {
     pub use crate::config::{SdkConfig, SdkConfigFile};
     pub use crate::equity::EquityDataFacade;
     pub use crate::error::{SdkError, SdkResult};
+    pub use crate::ir::IrFacade;
     pub use crate::sdk::{Sdk, SdkBuilder};
     pub use crate::secrets::SecretString;
 

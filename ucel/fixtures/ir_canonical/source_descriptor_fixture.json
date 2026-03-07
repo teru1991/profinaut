@@ -1,0 +1,8 @@
+{
+  "source_id": "sec_edgar_submissions_api",
+  "market": "us",
+  "source_family": {"kind": "us_sec_disclosure"},
+  "source_kind": "official_public_api",
+  "access_policy_class": "free_public_noauth_allowed",
+  "access_patterns": ["api_list", "api_detail", "artifact_download", "issuer_lookup"]
+}

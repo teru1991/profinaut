@@ -3,6 +3,7 @@ pub mod chain;
 pub mod decimal;
 pub mod diagnostics;
 pub mod equity;
+pub mod ir;
 pub mod market_data;
 pub mod order_gate;
 pub mod policy;
@@ -35,6 +36,12 @@ pub use equity::{
     validate_bar_timeframe, EquityAdjustmentMode, EquityBar, EquityCorporateAction, EquityDividend,
     EquityExchangeCode, EquityLatencyClass, EquityMarket, EquityMarketCalendar, EquityQuote,
     EquitySessionKind, EquitySessionWindow, EquitySplit, EquitySupport, EquitySymbol,
+};
+pub use ir::{
+    normalize_alias, validate_document_artifact_pair, IrAccessDecision, IrAccessPattern,
+    IrAccessPolicyClass, IrArtifactDescriptor, IrArtifactKey, IrArtifactKind, IrArtifactSource,
+    IrDocumentDescriptor, IrDocumentFamily, IrDocumentKey, IrFetchSupport, IrIssuerAlias,
+    IrIssuerIdentityKind, IrIssuerKey, IrMarket, IrSourceDescriptor, IrSourceFamily, IrSourceKind,
 };
 pub use market_data::{
     apply_orderbook_delta, guard_orderbook, validate_candle, validate_ticker, validate_trade,

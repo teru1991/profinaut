@@ -350,7 +350,6 @@ impl SpecRegistry {
     }
 }
 
-
 #[derive(Debug, Clone, Deserialize)]
 pub struct IrInventorySource {
     pub market: String,
@@ -407,6 +406,51 @@ pub fn list_ir_identity_kinds(source_id: &str) -> Result<Vec<String>, HubError> 
     out.sort();
     out.dedup();
     Ok(out)
+}
+
+pub fn list_ir_markets() -> Result<Vec<String>, HubError> {
+    let mut markets = list_ir_sources()?
+        .into_iter()
+        .map(|s| s.market)
+        .collect::<Vec<_>>();
+    markets.sort();
+    markets.dedup();
+    Ok(markets)
+}
+
+pub fn list_ir_document_families(source_id: &str) -> Result<Vec<String>, HubError> {
+    #[derive(Deserialize)]
+    struct Root {
+        documents: Vec<Item>,
+    }
+    #[derive(Deserialize)]
+    struct Item {
+        source_id: String,
+        document_family: String,
+    }
+    let root: Root = serde_json::from_str(include_str!(
+        "../../../../../ucel/coverage_v2/ir/ir_inventory.json"
+    ))
+    .map_err(HubError::Json)?;
+    let mut out = root
+        .documents
+        .into_iter()
+        .filter(|x| x.source_id == source_id)
+        .map(|x| x.document_family)
+        .collect::<Vec<_>>();
+    out.sort();
+    out.dedup();
+    Ok(out)
+}
+
+pub fn list_ir_access_policy_classes() -> Result<Vec<String>, HubError> {
+    let mut classes = list_ir_sources()?
+        .into_iter()
+        .map(|s| s.access_policy_class)
+        .collect::<Vec<_>>();
+    classes.sort();
+    classes.dedup();
+    Ok(classes)
 }
 
 pub fn list_ir_access_patterns(source_id: &str) -> Result<Vec<String>, HubError> {

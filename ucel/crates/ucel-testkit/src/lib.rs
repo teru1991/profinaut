@@ -17,6 +17,7 @@ pub mod fuzz_corpus;
 pub mod golden;
 pub mod golden_manifest;
 pub mod http_mock;
+pub mod ir_canonical;
 pub mod ir_inventory;
 pub mod market_data;
 pub mod normalize;

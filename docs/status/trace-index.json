@@ -2499,6 +2499,46 @@
       "verification_evidence": [
         "docs/verification/UCEL-IR-INVENTORY-014A.md"
       ]
+    },
+    "UCEL-IR-CANONICAL-MODEL-014B": {
+      "branch": "feature/ucel-ir-canonical-model-014b-001",
+      "artifacts": [
+        "docs/specs/ucel/ir_canonical_surface_v1.md",
+        "docs/specs/ucel/ir_fetch_contract_v1.md",
+        "docs/specs/ucel/ir_identity_contract_v1.md",
+        "docs/specs/ucel/ir_artifact_contract_v1.md",
+        "ucel/docs/ir/ir_canonical_model.md",
+        "ucel/docs/ir/ir_fetch_flow.md",
+        "ucel/docs/ir/ir_access_guard_policy.md",
+        "ucel/crates/ucel-core/src/ir.rs",
+        "ucel/crates/ucel-core/src/lib.rs",
+        "ucel/crates/ucel-ir/src/lib.rs",
+        "ucel/crates/ucel-ir/src/model.rs",
+        "ucel/crates/ucel-ir/src/identity.rs",
+        "ucel/crates/ucel-ir/src/document.rs",
+        "ucel/crates/ucel-ir/src/artifact.rs",
+        "ucel/crates/ucel-ir/src/fetch.rs",
+        "ucel/crates/ucel-ir/src/access.rs",
+        "ucel/crates/ucel-ir/src/errors.rs",
+        "ucel/crates/ucel-ir/Cargo.toml",
+        "ucel/crates/ucel-sdk/src/ir.rs",
+        "ucel/crates/ucel-sdk/src/lib.rs",
+        "ucel/crates/ucel-sdk/Cargo.toml",
+        "ucel/crates/ucel-registry/src/hub/registry.rs",
+        "ucel/crates/ucel-testkit/src/ir_canonical.rs",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/Cargo.toml",
+        "ucel/crates/ucel-testkit/tests/ir_canonical_model_gate.rs",
+        "ucel/crates/ucel-testkit/tests/ir_fetch_contract_gate.rs",
+        "ucel/crates/ucel-testkit/tests/ir_identity_contract_gate.rs",
+        "ucel/crates/ucel-testkit/tests/ir_docs_drift_canonical.rs",
+        "ucel/examples/ir_canonical_preview.rs",
+        "ucel/fixtures/ir_canonical/source_descriptor_fixture.json",
+        "docs/verification/UCEL-IR-CANONICAL-MODEL-014B.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-IR-CANONICAL-MODEL-014B.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
