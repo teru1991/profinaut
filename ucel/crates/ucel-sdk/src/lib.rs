@@ -16,6 +16,9 @@ pub mod market_meta;
 pub mod order_normalize;
 pub mod private_rest;
 pub mod private_ws;
+pub mod public_rest_ext;
+pub mod public_ws;
+pub mod public_ws_ext;
 pub mod sdk;
 pub mod secrets;
 pub mod support_bundle;
@@ -39,6 +42,10 @@ pub use execution::{
     ReconcileReport, ReconcileSource, SdkExecutionError, SdkExecutionErrorCode, SdkExecutionResult,
     Symbol, VenueId,
 };
+
+pub use public_rest_ext::DomesticPublicRestExtensionFacade;
+pub use public_ws::DomesticPublicWsFacade;
+pub use public_ws_ext::DomesticPublicWsExtensionFacade;
 
 pub mod prelude {
     pub use crate::chain::ChainFacade;

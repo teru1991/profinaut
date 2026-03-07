@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profinaut.local/ucel/coverage_v2/domestic_public/jp_public_inventory.schema.json",
+  "title": "UCEL JP Domestic Public API Inventory",
+  "type": "object",
+  "required": ["version", "venues", "entries"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "string" },
+    "venues": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "venue",
+          "venue_family",
+          "api_kind",
+          "public_id",
+          "path_or_channel",
+          "method_or_subscribe_kind",
+          "auth",
+          "category",
+          "canonical_surface",
+          "surface_class",
+          "current_repo_status",
+          "evidence_files",
+          "evidence_kinds",
+          "notes"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "venue": { "type": "string" },
+          "venue_family": { "type": "string" },
+          "api_kind": { "type": "string", "enum": ["rest", "ws"] },
+          "public_id": { "type": "string", "minLength": 1 },
+          "path_or_channel": { "type": "string" },
+          "method_or_subscribe_kind": { "type": "string" },
+          "auth": { "type": "string", "const": "public" },
+          "category": {
+            "type": "string",
+            "enum": [
+              "ticker",
+              "trades",
+              "orderbook",
+              "candles",
+              "symbols",
+              "market_meta",
+              "system_status",
+              "asset_status",
+              "network_status",
+              "maintenance_status",
+              "derivative_reference",
+              "funding_reference",
+              "open_interest_reference",
+              "liquidation_reference",
+              "public_reference_other"
+            ]
+          },
+          "canonical_surface": {
+            "type": "string",
+            "enum": [
+              "get_ticker",
+              "get_trades",
+              "get_orderbook_snapshot",
+              "get_candles",
+              "list_symbols",
+              "get_market_meta",
+              "get_system_status",
+              "get_asset_status",
+              "get_network_status",
+              "get_maintenance_status",
+              "get_public_derivative_reference",
+              "vendor_public_call"
+            ]
+          },
+          "surface_class": {
+            "type": "string",
+            "enum": [
+              "canonical_core",
+              "canonical_extended",
+              "vendor_public_extension",
+              "not_supported"
+            ]
+          },
+          "current_repo_status": {
+            "type": "string",
+            "enum": [
+              "implemented",
+              "partial",
+              "not_implemented",
+              "unknown_for_repo"
+            ]
+          },
+          "evidence_files": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" }
+          },
+          "evidence_kinds": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "enum": ["catalog", "coverage", "coverage_v2", "docs", "ws_rules", "registry"] },
+            "uniqueItems": true
+          },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

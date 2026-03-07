@@ -2314,6 +2314,132 @@
       "verification_evidence": [
         "docs/verification/UCEL-DIAGNOSTICS-013.md"
       ]
+    },
+    "UCEL-DOMESTIC-PUBLIC-INVENTORY-009A": {
+      "branch": "feature/ucel-domestic-public-inventory-009a-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/specs/ucel/domestic_public_api_inventory_v1.md",
+        "docs/specs/ucel/domestic_public_surface_classification_v1.md",
+        "ucel/docs/exchanges/domestic_public_api_matrix.md",
+        "ucel/docs/exchanges/domestic_public_endpoint_mapping.md",
+        "ucel/docs/exchanges/domestic_public_scope_policy.md",
+        "ucel/coverage_v2/domestic_public/jp_public_inventory.schema.json",
+        "ucel/coverage_v2/domestic_public/jp_public_inventory.json",
+        "ucel/crates/ucel-registry/src/hub/registry.rs",
+        "ucel/crates/ucel-testkit/src/domestic_public_inventory.rs",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_inventory_gate.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_surface_classification.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_docs_drift.rs",
+        "ucel/examples/domestic_public_inventory_preview.rs",
+        "docs/status/trace-index.json",
+        "docs/verification/UCEL-DOMESTIC-PUBLIC-INVENTORY-009A.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-DOMESTIC-PUBLIC-INVENTORY-009A.md"
+      ]
+    },
+    "UCEL-DOMESTIC-PUBLIC-EXT-REST-009D": {
+      "branch": "feature/ucel-domestic-public-ext-rest-009d-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/specs/ucel/domestic_public_ext_rest_surface_v1.md",
+        "docs/specs/ucel/domestic_public_ext_rest_schema_policy_v1.md",
+        "ucel/docs/exchanges/domestic_public_rest_extension_matrix.md",
+        "ucel/docs/exchanges/domestic_public_rest_extension_schema_matrix.md",
+        "ucel/docs/exchanges/domestic_public_rest_extension_usage.md",
+        "ucel/crates/ucel-core/src/public_rest_ext.rs",
+        "ucel/crates/ucel-core/src/lib.rs",
+        "ucel/crates/ucel-sdk/src/public_rest_ext.rs",
+        "ucel/crates/ucel-sdk/src/lib.rs",
+        "ucel/crates/ucel-registry/src/hub/rest.rs",
+        "ucel/crates/ucel-testkit/src/domestic_public_rest_ext.rs",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ext_rest_contract_matrix.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ext_rest_schemas.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ext_rest_docs_drift.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ext_rest_compat.rs",
+        "ucel/examples/domestic_public_ext_rest_preview.rs",
+        "ucel/fixtures/domestic_public_ext_rest/cases.json",
+        "docs/status/trace-index.json",
+        "docs/verification/UCEL-DOMESTIC-PUBLIC-EXT-REST-009D.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-DOMESTIC-PUBLIC-EXT-REST-009D.md"
+      ]
+    },
+    "UCEL-DOMESTIC-PUBLIC-WS-009C": {
+      "branch": "feature/ucel-domestic-public-ws-009c-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/specs/ucel/domestic_public_ws_runtime_v1.md",
+        "docs/specs/ucel/domestic_public_ws_surface_v1.md",
+        "docs/status/trace-index.json",
+        "docs/verification/UCEL-DOMESTIC-PUBLIC-WS-009C.md",
+        "ucel/crates/ucel-core/src/lib.rs",
+        "ucel/crates/ucel-core/src/public_ws.rs",
+        "ucel/crates/ucel-registry/src/hub/ws.rs",
+        "ucel/crates/ucel-sdk/src/lib.rs",
+        "ucel/crates/ucel-sdk/src/public_ws.rs",
+        "ucel/crates/ucel-testkit/src/domestic_public_ws.rs",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ws_contract_matrix.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ws_docs_drift.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ws_integrity.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ws_runtime.rs",
+        "ucel/crates/ucel-transport/src/ws/integrity.rs",
+        "ucel/crates/ucel-transport/src/ws/mod.rs",
+        "ucel/crates/ucel-transport/src/ws/public_runtime.rs",
+        "ucel/docs/exchanges/domestic_public_ws_integrity_policy.md",
+        "ucel/docs/exchanges/domestic_public_ws_matrix.md",
+        "ucel/docs/exchanges/domestic_public_ws_runtime_matrix.md",
+        "ucel/examples/domestic_public_ws_preview.rs",
+        "ucel/fixtures/domestic_public_ws/"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-DOMESTIC-PUBLIC-WS-009C.md"
+      ]
+    },
+    "UCEL-DOMESTIC-PUBLIC-EXT-WS-009E": {
+      "branch": "feature/ucel-domestic-public-ext-ws-009e-001",
+      "pr_urls": [],
+      "commit_shas": [],
+      "artifacts": [
+        "docs/specs/ucel/domestic_public_ext_ws_runtime_policy_v1.md",
+        "docs/specs/ucel/domestic_public_ext_ws_schema_policy_v1.md",
+        "docs/specs/ucel/domestic_public_ext_ws_surface_v1.md",
+        "docs/status/trace-index.json",
+        "docs/verification/UCEL-DOMESTIC-PUBLIC-EXT-WS-009E.md",
+        "ucel/crates/ucel-core/src/lib.rs",
+        "ucel/crates/ucel-core/src/public_ws_ext.rs",
+        "ucel/crates/ucel-registry/src/hub/ws.rs",
+        "ucel/crates/ucel-sdk/src/lib.rs",
+        "ucel/crates/ucel-sdk/src/public_ws_ext.rs",
+        "ucel/crates/ucel-testkit/src/domestic_public_ws_ext.rs",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ext_ws_compat.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ext_ws_contract_matrix.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ext_ws_docs_drift.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ext_ws_runtime.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_ext_ws_schemas.rs",
+        "ucel/crates/ucel-transport/src/ws/ext_runtime.rs",
+        "ucel/crates/ucel-transport/src/ws/mod.rs",
+        "ucel/crates/ucel-ws-rules/src/ext_public_rules.rs",
+        "ucel/crates/ucel-ws-rules/src/lib.rs",
+        "ucel/docs/exchanges/domestic_public_ws_extension_matrix.md",
+        "ucel/docs/exchanges/domestic_public_ws_extension_runtime_matrix.md",
+        "ucel/docs/exchanges/domestic_public_ws_extension_schema_matrix.md",
+        "ucel/docs/exchanges/domestic_public_ws_extension_usage.md",
+        "ucel/examples/domestic_public_ext_ws_preview.rs",
+        "ucel/fixtures/domestic_public_ext_ws/"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-DOMESTIC-PUBLIC-EXT-WS-009E.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."

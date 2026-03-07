@@ -5,9 +5,10 @@ use super::{ChannelKey, ExchangeId};
 use crate::policy::{enforce_private_surface_allowed, enforce_surface_for_catalog_entry};
 use bytes::Bytes;
 use futures_util::{SinkExt, Stream, StreamExt};
+use serde::Deserialize;
 use serde_json::Value;
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::Message;
 use ucel_core::PrivateWsChannel;
@@ -40,6 +41,15 @@ impl WsHub {
         params: Option<Value>,
     ) -> Result<Pin<Box<dyn Stream<Item = Result<WsMessage, HubError>> + Send>>, HubError> {
         self.subscribe_impl(channel_key.into(), params).await
+    }
+
+    pub async fn subscribe_vendor_public_typed(
+        &self,
+        operation_id: &str,
+        params: Option<Value>,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<WsMessage, HubError>> + Send>>, HubError> {
+        let op = vendor_public_ws_extension_operation(self.exchange, operation_id)?;
+        self.subscribe_impl(op.path_or_channel, params).await
     }
 
     pub async fn subscribe_private(
@@ -212,4 +222,85 @@ pub fn ws_ingest_support_summary(exchange: ExchangeId) -> serde_json::Value {
         "private": true,
         "durable_ingest": "enabled_v1"
     })
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct DomesticPublicInventory {
+    entries: Vec<DomesticPublicInventoryEntry>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct DomesticPublicInventoryEntry {
+    venue: String,
+    api_kind: String,
+    public_id: String,
+    path_or_channel: String,
+    surface_class: String,
+}
+
+fn domestic_public_inventory() -> Result<&'static DomesticPublicInventory, HubError> {
+    static INVENTORY: OnceLock<Result<DomesticPublicInventory, HubError>> = OnceLock::new();
+    INVENTORY
+        .get_or_init(|| {
+            serde_json::from_str::<DomesticPublicInventory>(include_str!(
+                "../../../../../ucel/coverage_v2/domestic_public/jp_public_inventory.json"
+            ))
+            .map_err(HubError::Json)
+        })
+        .as_ref()
+        .map_err(|e| HubError::RegistryValidation(e.to_string()))
+}
+
+pub fn list_pending_vendor_public_ws_extension_channel_ids(
+    exchange: ExchangeId,
+) -> Result<Vec<String>, HubError> {
+    let mut ids = domestic_public_inventory()?
+        .entries
+        .iter()
+        .filter(|entry| {
+            entry.venue == exchange.as_str()
+                && entry.api_kind == "ws"
+                && entry.surface_class == "vendor_public_extension"
+        })
+        .map(|entry| entry.public_id.clone())
+        .collect::<Vec<_>>();
+    ids.sort();
+    Ok(ids)
+}
+
+pub fn list_vendor_public_ws_extension_operation_ids(
+    exchange: ExchangeId,
+) -> Result<Vec<String>, HubError> {
+    let mut ids = domestic_public_inventory()?
+        .entries
+        .iter()
+        .filter(|entry| {
+            entry.venue == exchange.as_str()
+                && entry.api_kind == "ws"
+                && entry.surface_class == "vendor_public_extension"
+        })
+        .map(|entry| entry.public_id.clone())
+        .collect::<Vec<_>>();
+    ids.sort();
+    Ok(ids)
+}
+
+fn vendor_public_ws_extension_operation(
+    exchange: ExchangeId,
+    operation_id: &str,
+) -> Result<DomesticPublicInventoryEntry, HubError> {
+    domestic_public_inventory()?
+        .entries
+        .iter()
+        .find(|entry| {
+            entry.venue == exchange.as_str()
+                && entry.api_kind == "ws"
+                && entry.surface_class == "vendor_public_extension"
+                && entry.public_id == operation_id
+        })
+        .cloned()
+        .ok_or_else(|| HubError::UnknownChannel {
+            exchange: exchange.as_str().to_string(),
+            key: operation_id.to_string(),
+        })
 }

@@ -1,0 +1,100 @@
+{
+  "cases": [
+    {
+      "venue": "bitbank",
+      "operation_id": "crypto.public.rest.market.circuit-break-info",
+      "source_endpoint": "/{pair}/circuit_break_info",
+      "response_payload": {"status": "NORMAL", "pair": "btc_jpy", "code": "0"}
+    },
+    {
+      "venue": "bitbank",
+      "operation_id": "crypto.public.rest.market.transactions",
+      "source_endpoint": "/{pair}/transactions/{YYYYMMDD}",
+      "response_payload": {"data": [{"id": 1}, {"id": 2}], "pair": "btc_jpy"}
+    },
+    {
+      "venue": "bitflyer",
+      "operation_id": "crypto.public.rest.board.get",
+      "source_endpoint": "/v1/getboard",
+      "response_payload": {"bids": [{"price": "1"}], "asks": [{"price": "2"}], "mid_price": "1.5"}
+    },
+    {
+      "venue": "bitflyer",
+      "operation_id": "crypto.public.rest.boardstate.get",
+      "source_endpoint": "/v1/getboardstate",
+      "response_payload": {"health": "NORMAL", "state": "RUNNING", "product_code": "BTC_JPY"}
+    },
+    {
+      "venue": "bitflyer",
+      "operation_id": "crypto.public.rest.chats.get",
+      "source_endpoint": "/v1/getchats",
+      "response_payload": [{"nickname": "a", "message": "b"}]
+    },
+    {
+      "venue": "bitflyer",
+      "operation_id": "crypto.public.rest.executions.get",
+      "source_endpoint": "/v1/getexecutions",
+      "response_payload": [{"id": 10}, {"id": 11}, {"id": 12}]
+    },
+    {
+      "venue": "bitflyer",
+      "operation_id": "crypto.public.rest.health.get",
+      "source_endpoint": "/v1/gethealth",
+      "response_payload": {"status": "BUSY"}
+    },
+    {
+      "venue": "bitflyer",
+      "operation_id": "fx.public.rest.board.get",
+      "source_endpoint": "/v1/getboard",
+      "response_payload": {"bids": [{"price": "1"}, {"price": "0.9"}], "asks": [{"price": "1.1"}]}
+    },
+    {
+      "venue": "bitflyer",
+      "operation_id": "fx.public.rest.boardstate.get",
+      "source_endpoint": "/v1/getboardstate",
+      "response_payload": {"health": "NORMAL", "state": "RUNNING", "product_code": "FX_BTC_JPY"}
+    },
+    {
+      "venue": "bitflyer",
+      "operation_id": "fx.public.rest.executions.get",
+      "source_endpoint": "/v1/getexecutions",
+      "response_payload": [{"id": 20}, {"id": 21}]
+    },
+    {
+      "venue": "bitflyer",
+      "operation_id": "fx.public.rest.health.get",
+      "source_endpoint": "/v1/gethealth",
+      "response_payload": {"status": "NORMAL"}
+    },
+    {
+      "venue": "bittrade",
+      "operation_id": "public.rest.common.currencys.get",
+      "source_endpoint": "/v1/common/currencys",
+      "response_payload": [{"currency": "BTC"}, {"currency": "ETH"}]
+    },
+    {
+      "venue": "bittrade",
+      "operation_id": "public.rest.common.timestamp.get",
+      "source_endpoint": "/v1/common/timestamp",
+      "response_payload": {"status": "ok", "timestamp": "1700000000"}
+    },
+    {
+      "venue": "bittrade",
+      "operation_id": "public.rest.market.detail.merged.get",
+      "source_endpoint": "/market/detail/merged",
+      "response_payload": {"bids": [["1", "2"]], "asks": [["2", "1"]]}
+    },
+    {
+      "venue": "coincheck",
+      "operation_id": "coincheck.rest.public.exchange.orders.rate.get",
+      "source_endpoint": "/api/exchange/orders/rate",
+      "response_payload": {"rate": "100.0", "pair": "btc_jpy"}
+    },
+    {
+      "venue": "coincheck",
+      "operation_id": "coincheck.rest.public.order_books.get",
+      "source_endpoint": "/api/order_books",
+      "response_payload": {"bids": [["1", "2"], ["0.9", "2"]], "asks": [["1.1", "2"]]}
+    }
+  ]
+}

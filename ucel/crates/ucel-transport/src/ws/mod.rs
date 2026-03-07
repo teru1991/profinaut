@@ -1,7 +1,9 @@
 pub mod adapter;
 pub mod backpressure;
 pub mod connection;
+pub mod ext_runtime;
 pub mod heartbeat;
+pub mod integrity;
 pub mod limiter;
 pub mod private_runtime;
 pub mod public_runtime;

@@ -1,0 +1,10 @@
+{
+  "channels": [
+    {"venue":"bitbank","public_id":"crypto.public.ws.market.depth-diff","ack_mode":"implicit_observation","integrity_mode":"sequence_and_checksum","heartbeat_required":true},
+    {"venue":"bitflyer","public_id":"crypto.public.ws.ticker","ack_mode":"implicit_observation","integrity_mode":"none","heartbeat_required":false},
+    {"venue":"coincheck","public_id":"coincheck.ws.public.orderbook","ack_mode":"implicit_observation","integrity_mode":"snapshot_only","heartbeat_required":false},
+    {"venue":"gmocoin","public_id":"crypto.public.ws.orderbooks.update","ack_mode":"explicit_ack","integrity_mode":"sequence_and_checksum","heartbeat_required":true},
+    {"venue":"bittrade","public_id":"public.ws.market.depth","ack_mode":"implicit_observation","integrity_mode":"sequence_and_checksum","heartbeat_required":true},
+    {"venue":"sbivc","public_id":"crypto.public.ws.market_data.orderbook","ack_mode":"explicit_ack","integrity_mode":"sequence_and_checksum","heartbeat_required":true}
+  ]
+}
