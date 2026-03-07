@@ -2440,6 +2440,36 @@
       "verification_evidence": [
         "docs/verification/UCEL-DOMESTIC-PUBLIC-EXT-WS-009E.md"
       ]
+    },
+    "UCEL-DOMESTIC-PUBLIC-COMPAT-009F": {
+      "branch": "feature/ucel-domestic-public-compat-009f-001",
+      "artifacts": [
+        "docs/specs/ucel/domestic_public_compat_gate_v1.md",
+        "docs/specs/ucel/domestic_public_schema_evolution_policy_v1.md",
+        "ucel/docs/exchanges/domestic_public_final_support_report.md",
+        "ucel/docs/exchanges/domestic_public_compat_matrix.md",
+        "ucel/docs/exchanges/domestic_public_change_management.md",
+        "ucel/coverage_v2/domestic_public/jp_public_inventory.lock.json",
+        "ucel/crates/ucel-testkit/src/domestic_public_compat.rs",
+        "ucel/crates/ucel-testkit/src/lib.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_compat_inventory_lock.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_compat_route_reachability.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_compat_docs_and_matrices.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_compat_fixtures_and_goldens.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_compat_schema_runtime_evolution.rs",
+        "ucel/crates/ucel-testkit/tests/domestic_public_compat_workspace_scope.rs",
+        "ucel/examples/domestic_public_compat_preview.rs",
+        "ucel/fixtures/domestic_public_goldens/domestic_public_rest_golden.json",
+        "ucel/fixtures/domestic_public_goldens/domestic_public_ws_golden.json",
+        "ucel/fixtures/domestic_public_goldens/domestic_public_ext_rest_golden.json",
+        "ucel/fixtures/domestic_public_goldens/domestic_public_ext_ws_golden.json",
+        "ucel/fixtures/domestic_public_goldens/domestic_public_inventory_golden.json",
+        "scripts/check_domestic_public_lock.py",
+        "docs/verification/UCEL-DOMESTIC-PUBLIC-COMPAT-009F.md"
+      ],
+      "verification_evidence": [
+        "docs/verification/UCEL-DOMESTIC-PUBLIC-COMPAT-009F.md"
+      ]
     }
   },
   "notes": "SSOT mapping of task IDs to PR/branch metadata and verification evidence links, synchronized with GitHub API reality as of 2026-02-19."
