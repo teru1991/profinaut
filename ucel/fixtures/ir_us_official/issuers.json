@@ -1,0 +1,20 @@
+[
+  {
+    "source_id": "sec_edgar_submissions_api",
+    "canonical_id": "us-cik-0000320193",
+    "aliases": [
+      {"kind": "us_cik_like", "value": "0000320193", "provenance": "sec-submissions-cik"},
+      {"kind": "ticker_like", "value": "AAPL", "provenance": "sec-ticker-map"},
+      {"kind": "exchange_ticker_like", "value": "NASDAQ:AAPL", "provenance": "exchange-alias"},
+      {"kind": "url_like", "value": "https://www.sec.gov/ixviewer/ix.html?doc=/Archives/edgar/data/320193/", "provenance": "sec-html-detail"}
+    ]
+  },
+  {
+    "source_id": "sec_edgar_submissions_api",
+    "canonical_id": "us-cik-0000789019",
+    "aliases": [
+      {"kind": "us_cik_like", "value": "0000789019", "provenance": "sec-submissions-cik"},
+      {"kind": "ticker_like", "value": "MSFT", "provenance": "sec-ticker-map"}
+    ]
+  }
+]

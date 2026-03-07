@@ -14,6 +14,7 @@ pub mod jp_official;
 pub mod model;
 pub mod providers;
 pub mod sinks;
+pub mod us_official;
 
 pub use checkpoint::{CheckpointStore, FsCheckpointStore, MemoryCheckpointStore};
 pub use client::{
