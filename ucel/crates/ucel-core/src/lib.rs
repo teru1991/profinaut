@@ -8,6 +8,8 @@ pub mod order_gate;
 pub mod policy;
 pub mod private_rest;
 pub mod private_ws;
+pub mod public_rest_ext;
+pub mod public_ws;
 pub mod symbol;
 pub mod types;
 pub mod value;
@@ -53,6 +55,23 @@ pub use private_ws::{
     CanonicalBalanceEvent, CanonicalFillEvent, CanonicalOrderEvent, CanonicalPositionEvent,
     CanonicalPrivateWsEvent, CanonicalSessionEvent, PrivateWsAckMode, PrivateWsChannel,
     PrivateWsLifecycleState, PrivateWsOutcome, PrivateWsRejectClass, PrivateWsSupport,
+};
+pub use public_rest_ext::{
+    build_vendor_public_rest_typed_envelope, vendor_public_rest_operation_spec,
+    vendor_public_rest_operation_specs, VendorPublicMiscPayload,
+    VendorPublicOrderBookSummaryPayload, VendorPublicReferencePayload,
+    VendorPublicRestExtensionCategory, VendorPublicRestMetadata, VendorPublicRestOperationSpec,
+    VendorPublicRestPayloadType, VendorPublicRestSchemaVersion, VendorPublicRestTypedEnvelope,
+    VendorPublicRestTypedPayload, VendorPublicStatusPayload, VendorPublicTradesSummaryPayload,
+};
+pub use public_ws::{
+    validate_orderbook_integrity, validate_status_event_nonempty, ws_surface_runtime_requirements,
+    CanonicalPublicWsEvent, CanonicalWsAssetStatusEvent, CanonicalWsCandleEvent,
+    CanonicalWsDerivativeReferenceEvent, CanonicalWsFundingReferenceEvent,
+    CanonicalWsMaintenanceStatusEvent, CanonicalWsNetworkStatusEvent,
+    CanonicalWsOpenInterestReferenceEvent, CanonicalWsOrderbookDeltaEvent,
+    CanonicalWsOrderbookSnapshotEvent, CanonicalWsSystemStatusEvent, CanonicalWsTickerEvent,
+    CanonicalWsTradeEvent, PublicWsSupport, PublicWsSurface,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt;
