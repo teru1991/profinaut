@@ -19,7 +19,10 @@ fn request_shape_and_redaction_for_representative_venue() {
 
 #[test]
 fn fixture_raw_to_canonical_expectation_is_present() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("..").join("..");
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("..");
     let canonical = load_expected_canonical(&root, "bitbank").expect("fixture should parse");
     assert!(!canonical.balances.is_empty());
     assert_eq!(canonical.balances[0].asset, "BTC");

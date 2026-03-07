@@ -75,8 +75,8 @@ impl Redactor {
             value_res.push(Regex::new(p).map_err(|e| RedactionError::Regex(e.to_string()))?);
         }
 
-        let scanner =
-            ResidualScanner::new(&rules.deny_value_patterns).map_err(|e| RedactionError::Regex(format!("{e}")))?;
+        let scanner = ResidualScanner::new(&rules.deny_value_patterns)
+            .map_err(|e| RedactionError::Regex(format!("{e}")))?;
 
         Ok(Self {
             deny_json_keys_lc: rules
@@ -124,7 +124,6 @@ impl Redactor {
         }
         out
     }
-
 
     pub fn has_deny_pattern(&self, bytes: &[u8]) -> bool {
         !self.scanner.scan(bytes).is_empty()

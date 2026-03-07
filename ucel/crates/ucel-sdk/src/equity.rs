@@ -1,4 +1,6 @@
-use ucel_core::{EquityBar, EquityCorporateAction, EquityMarketCalendar, EquityQuote, EquitySymbol};
+use ucel_core::{
+    EquityBar, EquityCorporateAction, EquityMarketCalendar, EquityQuote, EquitySymbol,
+};
 use ucel_equity_adapter_demo::DemoEquityAdapter;
 use ucel_equity_core::errors::EquityAdapterError;
 use ucel_equity_core::vendor::EquityVendorAdapter;
@@ -9,7 +11,9 @@ pub struct EquityDataFacade {
 
 impl Default for EquityDataFacade {
     fn default() -> Self {
-        Self { adapter: Box::new(DemoEquityAdapter::default()) }
+        Self {
+            adapter: Box::new(DemoEquityAdapter::default()),
+        }
     }
 }
 
@@ -18,7 +22,12 @@ impl EquityDataFacade {
         self.adapter.get_quote(symbol)
     }
 
-    pub fn get_bars(&self, symbol: &str, timeframe: &str, limit: usize) -> Result<Vec<EquityBar>, EquityAdapterError> {
+    pub fn get_bars(
+        &self,
+        symbol: &str,
+        timeframe: &str,
+        limit: usize,
+    ) -> Result<Vec<EquityBar>, EquityAdapterError> {
         self.adapter.get_bars(symbol, timeframe, limit)
     }
 
@@ -26,11 +35,20 @@ impl EquityDataFacade {
         self.adapter.list_symbols()
     }
 
-    pub fn get_market_calendar(&self, market: &str, date: &str) -> Result<EquityMarketCalendar, EquityAdapterError> {
+    pub fn get_market_calendar(
+        &self,
+        market: &str,
+        date: &str,
+    ) -> Result<EquityMarketCalendar, EquityAdapterError> {
         self.adapter.get_market_calendar(market, date)
     }
 
-    pub fn get_corporate_actions(&self, symbol: &str, from: &str, to: &str) -> Result<Vec<EquityCorporateAction>, EquityAdapterError> {
+    pub fn get_corporate_actions(
+        &self,
+        symbol: &str,
+        from: &str,
+        to: &str,
+    ) -> Result<Vec<EquityCorporateAction>, EquityAdapterError> {
         self.adapter.get_corporate_actions(symbol, from, to)
     }
 

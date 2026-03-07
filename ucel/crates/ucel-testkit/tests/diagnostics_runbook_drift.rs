@@ -1,4 +1,3 @@
-
 #[test]
 fn runbook_drift_checker_runs_and_detects_missing_docs_path() {
     let root = ucel_testkit::diagnostics::repo_root();

@@ -2,7 +2,7 @@ use serde_json::json;
 use std::path::Path;
 
 use ucel_cex_gmocoin::ws::GmoCoinWsAdapter;
-use ucel_testkit::coverage::public_crypto_ws_ops_from_coverage;
+use ucel_subscription_planner::{extract_ws_ops, load_manifest};
 use ucel_transport::ws::adapter::{InboundClass, WsVenueAdapter};
 
 fn repo_root() -> std::path::PathBuf {
@@ -19,7 +19,10 @@ fn coverage_ops_are_all_supported_by_build_subscribe() {
     let root = repo_root();
     let coverage_dir = root.join("coverage");
 
-    let ops = public_crypto_ws_ops_from_coverage(&coverage_dir, "gmocoin").unwrap();
+    let manifest_path = coverage_dir.join("gmocoin.yaml");
+    let manifest = load_manifest(&manifest_path).unwrap();
+    let mut ops = extract_ws_ops(&manifest);
+    ops.retain(|op| op.starts_with("crypto.public.ws."));
     assert!(!ops.is_empty(), "gmocoin coverage has no public ws ops");
 
     for op in ops {

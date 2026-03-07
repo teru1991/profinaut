@@ -44,7 +44,8 @@ fn main() {
                 let bg = rbac::check_break_glass(ttl_minutes, &reason, &approval)
                     .map_err(|e| format!("RBAC:{e}"))?;
                 let bytes = std::fs::read(&input).map_err(|e| e.to_string())?;
-                let encrypted = export::encrypt_bundle(&bytes, &recipient_pubkey).map_err(|e| e.to_string())?;
+                let encrypted =
+                    export::encrypt_bundle(&bytes, &recipient_pubkey).map_err(|e| e.to_string())?;
                 std::fs::write(&output, encrypted).map_err(|e| e.to_string())?;
                 Ok(audit::BreakGlassSummary {
                     ttl_seconds: bg.ttl.as_secs(),

@@ -10,7 +10,7 @@ use ucel_sdk::execution::{
 use ucel_transport::Transport;
 
 /// Bittrade（Huobi 系）向け ExecutionConnectorAsync 実装。
-/// - account-id は初回に accounts.get を叩いてキャッシュ（Mutex<Option<String>>）
+/// - account-id は初回に accounts.get を叩いてキャッシュ（`Mutex<Option<String>>`）
 /// - place: /v1/order/orders/place（private.rest.order.place.post）
 /// - cancel: /v1/order/orders/{order-id}/submitcancel（private.rest.order.cancel.post）
 /// - list_open_orders: /v1/order/orders?states=submitted,partial-filled（private.rest.order.list.get）

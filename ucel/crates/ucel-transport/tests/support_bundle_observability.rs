@@ -32,12 +32,14 @@ fn support_bundle_contains_prom_and_event_context() {
         rules_snapshot: serde_json::json!({"ok": true}),
     });
 
-    let prom = bundle["observability"]["metrics_prometheus_text"]
+    let prom = bundle["transport"]["observability"]["metrics_prometheus_text"]
         .as_str()
         .unwrap();
     assert!(prom.contains("ucel_transport_reconnect_attempts_total 2"));
 
-    let events_json = bundle["observability"]["events_json"].as_str().unwrap();
+    let events_json = bundle["transport"]["observability"]["events_json"]
+        .as_str()
+        .unwrap();
     assert!(events_json.contains("run-1"));
     assert!(events_json.contains("ws_connection"));
 }

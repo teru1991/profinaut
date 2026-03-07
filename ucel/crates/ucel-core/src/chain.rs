@@ -136,7 +136,10 @@ pub fn validate_evm_address(addr: &EvmAddress) -> Result<(), UcelError> {
 
 pub fn validate_chain_id(chain_id: EvmChainId) -> Result<(), UcelError> {
     if chain_id.0 == 0 {
-        return Err(UcelError::new(ErrorCode::CatalogInvalid, "invalid chain id 0"));
+        return Err(UcelError::new(
+            ErrorCode::CatalogInvalid,
+            "invalid chain id 0",
+        ));
     }
     Ok(())
 }

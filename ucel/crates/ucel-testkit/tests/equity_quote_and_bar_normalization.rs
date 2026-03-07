@@ -1,5 +1,5 @@
-use ucel_testkit::equity::{assert_delayed_or_eod, demo_adapter};
 use ucel_equity_core::vendor::EquityVendorAdapter;
+use ucel_testkit::equity::{assert_delayed_or_eod, demo_adapter};
 
 #[test]
 fn quote_and_bar_normalization_and_latency_class() {

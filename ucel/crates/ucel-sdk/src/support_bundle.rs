@@ -8,7 +8,10 @@ pub fn generate_support_bundle(
     transport_diag: serde_json::Value,
 ) -> serde_json::Value {
     let hub_diag = ucel_registry::support_bundle::hub_bundle(hub);
-    let ssot = hub_diag.get("ssot").cloned().unwrap_or_else(|| serde_json::json!({}));
+    let ssot = hub_diag
+        .get("ssot")
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!({}));
 
     let runtime_digest = hash_value(&serde_json::json!({
         "transport": transport_diag,

@@ -1,4 +1,4 @@
-use ucel_core::{PrivateWsRejectClass, PrivateWsOutcome};
+use ucel_core::{PrivateWsOutcome, PrivateWsRejectClass};
 
 #[test]
 fn ack_timeout_is_retryable_failure() {

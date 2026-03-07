@@ -21,22 +21,66 @@ pub fn get_logs(
     let mut out = Vec::new();
     for item in arr {
         out.push(EvmLogEvent {
-            block_number: u64::from_str_radix(item.get("blockNumber").and_then(|v| v.as_str()).unwrap_or("0x0").trim_start_matches("0x"), 16).unwrap_or(0),
-            block_hash: item.get("blockHash").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
-            tx_hash: item.get("transactionHash").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
-            log_index: u64::from_str_radix(item.get("logIndex").and_then(|v| v.as_str()).unwrap_or("0x0").trim_start_matches("0x"), 16).unwrap_or(0),
-            address: EvmAddress(item.get("address").and_then(|v| v.as_str()).unwrap_or_default().to_string()),
-            topics: item.get("topics").and_then(|v| v.as_array()).cloned().unwrap_or_default().into_iter().filter_map(|v| v.as_str().map(str::to_string)).collect(),
-            data_hex: item.get("data").and_then(|v| v.as_str()).unwrap_or("0x").to_string(),
-            removed: item.get("removed").and_then(|v| v.as_bool()).unwrap_or(false),
+            block_number: u64::from_str_radix(
+                item.get("blockNumber")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("0x0")
+                    .trim_start_matches("0x"),
+                16,
+            )
+            .unwrap_or(0),
+            block_hash: item
+                .get("blockHash")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_string(),
+            tx_hash: item
+                .get("transactionHash")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_string(),
+            log_index: u64::from_str_radix(
+                item.get("logIndex")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("0x0")
+                    .trim_start_matches("0x"),
+                16,
+            )
+            .unwrap_or(0),
+            address: EvmAddress(
+                item.get("address")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .to_string(),
+            ),
+            topics: item
+                .get("topics")
+                .and_then(|v| v.as_array())
+                .cloned()
+                .unwrap_or_default()
+                .into_iter()
+                .filter_map(|v| v.as_str().map(str::to_string))
+                .collect(),
+            data_hex: item
+                .get("data")
+                .and_then(|v| v.as_str())
+                .unwrap_or("0x")
+                .to_string(),
+            removed: item
+                .get("removed")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false),
         });
     }
     Ok(out)
 }
 
 pub fn subscribe_logs(ws: &dyn EvmWsProvider, address: EvmAddress) -> Result<String, UcelError> {
-    ws.subscribe("eth_subscribe", serde_json::json!(["logs", {"address": address.0}]))
-        .map_err(|e| reason_to_error(e.reason, e.message))
+    ws.subscribe(
+        "eth_subscribe",
+        serde_json::json!(["logs", {"address": address.0}]),
+    )
+    .map_err(|e| reason_to_error(e.reason, e.message))
 }
 
 pub fn cursor_after(logs: &[EvmLogEvent], current: &EvmLogCursor) -> EvmLogCursor {

@@ -196,7 +196,6 @@ fn validate_ws_endpoint(exchange: ExchangeId, url: &str) -> Result<(), HubError>
     Ok(())
 }
 
-
 pub fn public_channel_to_catalog_key(channel: ucel_core::MarketDataChannel) -> &'static str {
     match channel {
         ucel_core::MarketDataChannel::Ticker => "public_ticker",
@@ -205,7 +204,6 @@ pub fn public_channel_to_catalog_key(channel: ucel_core::MarketDataChannel) -> &
         ucel_core::MarketDataChannel::Candles => "public_candles",
     }
 }
-
 
 pub fn ws_ingest_support_summary(exchange: ExchangeId) -> serde_json::Value {
     serde_json::json!({

@@ -11,7 +11,14 @@ fn logs_and_resume_cursor_dedup() {
     ]));
     let f = FakeHttpProvider::new("f", 1);
     let set = provider_set(p, f, 1);
-    let logs = get_logs(&set, EvmChainId(1), EvmAddress("0x1111111111111111111111111111111111111111".into()), 1, 16).unwrap();
+    let logs = get_logs(
+        &set,
+        EvmChainId(1),
+        EvmAddress("0x1111111111111111111111111111111111111111".into()),
+        1,
+        16,
+    )
+    .unwrap();
     let dedup = dedup_logs(logs);
     assert_eq!(dedup.len(), 1);
     let c = resume_cursor(16);

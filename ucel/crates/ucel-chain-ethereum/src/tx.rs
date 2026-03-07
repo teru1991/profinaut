@@ -6,6 +6,7 @@ use ucel_core::{
     EvmSignedTransaction, EvmTransactionRequest, UcelError,
 };
 
+#[allow(clippy::too_many_arguments)]
 pub fn build_transaction(
     chain_id: EvmChainId,
     from: EvmAddress,
@@ -33,7 +34,10 @@ pub fn build_transaction(
     })
 }
 
-pub fn sign_transaction(signer: &dyn EvmSigner, tx: &EvmTransactionRequest) -> Result<EvmSignedTransaction, UcelError> {
+pub fn sign_transaction(
+    signer: &dyn EvmSigner,
+    tx: &EvmTransactionRequest,
+) -> Result<EvmSignedTransaction, UcelError> {
     signer.sign_transaction(tx)
 }
 
@@ -51,7 +55,10 @@ pub fn send_raw_transaction(
         .map_err(|e| reason_to_error(e.reason, e.message))?;
     let tx_hash = r.value.as_str().unwrap_or_default().to_string();
     if !tx_hash.starts_with("0x") {
-        return Err(reason_to_error(EvmReasonCode::ExecutionReverted, "invalid tx hash"));
+        return Err(reason_to_error(
+            EvmReasonCode::ExecutionReverted,
+            "invalid tx hash",
+        ));
     }
     Ok(tx_hash)
 }

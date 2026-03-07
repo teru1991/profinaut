@@ -15,7 +15,9 @@ pub struct PrivateWsFacade {
 
 impl PrivateWsFacade {
     pub fn new(hub: &Hub, exchange: ExchangeId) -> Self {
-        Self { ws: hub.ws(exchange) }
+        Self {
+            ws: hub.ws(exchange),
+        }
     }
 
     pub fn preview_private_ws_plan(exchange: ExchangeId, channels: &[PrivateWsChannel]) -> String {
@@ -57,7 +59,6 @@ impl PrivateWsClient for PrivateWsFacade {
         self.subscribe_channel("private_session")
     }
 }
-
 
 pub fn ingest_runtime_hint() -> &'static str {
     "private ingest requires reauth-then-resubscribe on restart"

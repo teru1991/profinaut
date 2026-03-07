@@ -19,7 +19,10 @@ pub fn build_minimal_bundle_v2_major2() -> SynthBundle {
 fn build_bundle_with_diag_semver(diag_semver: &str) -> SynthBundle {
     let mut files: BTreeMap<String, Vec<u8>> = BTreeMap::new();
     files.insert("logs/tail.txt".into(), b"hello\n".to_vec());
-    files.insert("meta/diag_semver.txt".into(), format!("{diag_semver}\n").into_bytes());
+    files.insert(
+        "meta/diag_semver.txt".into(),
+        format!("{diag_semver}\n").into_bytes(),
+    );
     files.insert("meta/info.json".into(), br#"{"k":"v"}"#.to_vec());
 
     let manifest = ParsedManifest {

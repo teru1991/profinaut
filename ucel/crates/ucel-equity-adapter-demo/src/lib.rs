@@ -6,7 +6,10 @@ pub mod http;
 pub mod quote;
 pub mod symbols;
 
-use ucel_core::{EquityBar, EquityCorporateAction, EquityMarketCalendar, EquityQuote, EquitySupport, EquitySymbol};
+use ucel_core::{
+    EquityBar, EquityCorporateAction, EquityMarketCalendar, EquityQuote, EquitySupport,
+    EquitySymbol,
+};
 use ucel_equity_core::errors::EquityAdapterError;
 use ucel_equity_core::models::{EquityVendorCapabilities, EquityVendorSurfaceSupport};
 use ucel_equity_core::vendor::EquityVendorAdapter;
@@ -18,7 +21,11 @@ pub struct DemoEquityAdapter {
 
 impl Default for DemoEquityAdapter {
     fn default() -> Self {
-        Self { http: http::DemoHttpClient { vendor_id: "demo-equity".into() } }
+        Self {
+            http: http::DemoHttpClient {
+                vendor_id: "demo-equity".into(),
+            },
+        }
     }
 }
 
@@ -47,7 +54,12 @@ impl EquityVendorAdapter for DemoEquityAdapter {
         quote::get_quote(self, symbol)
     }
 
-    fn get_bars(&self, symbol: &str, timeframe: &str, limit: usize) -> Result<Vec<EquityBar>, EquityAdapterError> {
+    fn get_bars(
+        &self,
+        symbol: &str,
+        timeframe: &str,
+        limit: usize,
+    ) -> Result<Vec<EquityBar>, EquityAdapterError> {
         bars::get_bars(self, symbol, timeframe, limit)
     }
 
@@ -55,11 +67,20 @@ impl EquityVendorAdapter for DemoEquityAdapter {
         symbols::list_symbols(self)
     }
 
-    fn get_market_calendar(&self, market: &str, date: &str) -> Result<EquityMarketCalendar, EquityAdapterError> {
+    fn get_market_calendar(
+        &self,
+        market: &str,
+        date: &str,
+    ) -> Result<EquityMarketCalendar, EquityAdapterError> {
         calendar::get_market_calendar(self, market, date)
     }
 
-    fn get_corporate_actions(&self, symbol: &str, from: &str, to: &str) -> Result<Vec<EquityCorporateAction>, EquityAdapterError> {
+    fn get_corporate_actions(
+        &self,
+        symbol: &str,
+        from: &str,
+        to: &str,
+    ) -> Result<Vec<EquityCorporateAction>, EquityAdapterError> {
         corporate_actions::get_corporate_actions(self, symbol, from, to)
     }
 

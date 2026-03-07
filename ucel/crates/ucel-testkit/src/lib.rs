@@ -1,11 +1,11 @@
 pub mod auth;
-pub mod chaos;
 pub mod chain_evm;
+pub mod chaos;
 pub mod coverage;
-pub mod equity;
 pub mod coverage_gate;
 pub mod coverage_v2;
 pub mod diagnostics;
+pub mod equity;
 pub mod fixtures;
 pub mod fuzz;
 pub mod fuzz_corpus;
@@ -122,17 +122,12 @@ impl CatalogContractIndex {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum CoverageSupport {
+    #[default]
     Supported,
     NotSupported,
-}
-
-impl Default for CoverageSupport {
-    fn default() -> Self {
-        Self::Supported
-    }
 }
 
 #[derive(Debug, Clone, Deserialize)]

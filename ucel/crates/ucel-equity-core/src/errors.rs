@@ -31,6 +31,9 @@ pub struct EquityAdapterError {
 
 impl EquityAdapterError {
     pub fn new(kind: EquityAdapterErrorKind, message: impl Into<String>) -> Self {
-        Self { kind, message: message.into() }
+        Self {
+            kind,
+            message: message.into(),
+        }
     }
 }

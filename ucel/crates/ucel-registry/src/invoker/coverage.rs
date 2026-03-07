@@ -3,17 +3,12 @@ use serde::Deserialize;
 use std::fs;
 use std::path::Path;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum CoverageSupport {
+    #[default]
     Supported,
     NotSupported,
-}
-
-impl Default for CoverageSupport {
-    fn default() -> Self {
-        Self::Supported
-    }
 }
 
 #[derive(Debug, Clone, Deserialize)]

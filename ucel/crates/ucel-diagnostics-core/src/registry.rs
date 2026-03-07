@@ -66,7 +66,10 @@ impl DiagnosticsRegistry {
     /// - path safety & normalization constraints (no absolute, no '..')
     /// - deterministic sort
     /// - global count limit
-    pub fn collect(&self, req: &crate::provider::DiagnosticsRequest) -> Result<Vec<Contribution>, RegistryError> {
+    pub fn collect(
+        &self,
+        req: &crate::provider::DiagnosticsRequest,
+    ) -> Result<Vec<Contribution>, RegistryError> {
         let mut out: Vec<Contribution> = Vec::new();
         let mut seen_paths: BTreeSet<(String, String, u8)> = BTreeSet::new();
 
@@ -116,7 +119,10 @@ fn validate_path(p: &str, max_len: usize) -> Result<(), RegistryError> {
         return Err(RegistryError::InvalidPath(p.to_string()));
     }
     // very small allowlist of chars (future: tighten if needed)
-    if !p.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.' | '/')) {
+    if !p
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.' | '/'))
+    {
         return Err(RegistryError::InvalidPath(p.to_string()));
     }
     Ok(())

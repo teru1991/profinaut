@@ -187,8 +187,12 @@ mod tests {
 
     #[test]
     fn lifecycle_guard_rejects_invalid_transition() {
-        assert!(!PrivateWsLifecycleState::Connecting.can_transition_to(PrivateWsLifecycleState::Active));
-        assert!(PrivateWsLifecycleState::Subscribing.can_transition_to(PrivateWsLifecycleState::Active));
+        assert!(
+            !PrivateWsLifecycleState::Connecting.can_transition_to(PrivateWsLifecycleState::Active)
+        );
+        assert!(
+            PrivateWsLifecycleState::Subscribing.can_transition_to(PrivateWsLifecycleState::Active)
+        );
     }
 
     #[test]

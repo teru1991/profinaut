@@ -182,7 +182,6 @@ pub fn private_rest_operation_from_catalog_id(id: &str) -> Option<ucel_core::Pri
     }
 }
 
-
 pub fn public_rest_operation_from_catalog_id(id: &str) -> Option<ucel_core::MarketDataChannel> {
     let id = id.to_ascii_lowercase();
     if id.contains("ticker") {

@@ -190,6 +190,10 @@ def get_healthz(request: Request) -> JSONResponse:
     ]
     body, headers = build_healthz_response(request, checks)
     set_request_correlation_context(body["correlation"])
+    # Normalize status to lowercase and add timestamp for API consumers
+    if isinstance(body.get("status"), str):
+        body["status"] = body["status"].lower()
+    body["timestamp"] = now_utc_iso()
     return JSONResponse(content=body, headers=headers)
 
 
@@ -212,6 +216,14 @@ def get_capabilities(request: Request) -> JSONResponse:
     ]
     body, headers = build_capabilities_response(request, features)
     set_request_correlation_context(body["correlation"])
+    # Add fields expected by the API contract (tests and external consumers)
+    body["service"] = "execution"
+    body["version"] = app.version
+    body["status"] = "degraded" if safe_mode in {"DEGRADED", "SAFE_MODE", "HALTED"} else "ok"
+    body["safe_mode"] = safe_mode
+    body["allowed_actions"] = _allowed_actions_for_mode(safe_mode)
+    body["features"] = [f.name for f in features]
+    body["generated_at"] = now_utc_iso()
     return JSONResponse(content=body, headers=headers)
 
 

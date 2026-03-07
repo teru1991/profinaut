@@ -1,5 +1,5 @@
-use ucel_core::DriftFinding;
 use std::path::Path;
+use ucel_core::DriftFinding;
 
 pub fn detect_runbook_drift(repo_root: &Path) -> Vec<DriftFinding> {
     ucel_diagnostics_core::runbook::drift_findings_for_docs(

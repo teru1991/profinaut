@@ -106,17 +106,39 @@ pub struct EquityDividend {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum EquityCorporateAction {
-    Split { symbol: EquitySymbol, effective_date: String, split: EquitySplit },
-    ReverseSplit { symbol: EquitySymbol, effective_date: String, split: EquitySplit },
-    Dividend { symbol: EquitySymbol, ex_date: String, dividend: EquityDividend },
-    SymbolChange { from: EquitySymbol, to: EquitySymbol, effective_date: String },
-    Delist { symbol: EquitySymbol, effective_date: String },
+    Split {
+        symbol: EquitySymbol,
+        effective_date: String,
+        split: EquitySplit,
+    },
+    ReverseSplit {
+        symbol: EquitySymbol,
+        effective_date: String,
+        split: EquitySplit,
+    },
+    Dividend {
+        symbol: EquitySymbol,
+        ex_date: String,
+        dividend: EquityDividend,
+    },
+    SymbolChange {
+        from: EquitySymbol,
+        to: EquitySymbol,
+        effective_date: String,
+    },
+    Delist {
+        symbol: EquitySymbol,
+        effective_date: String,
+    },
 }
 
 pub fn validate_bar_timeframe(tf: &str) -> Result<(), UcelError> {
     let ok = ["1m", "5m", "15m", "1h", "1d", "1w"].contains(&tf);
     if !ok {
-        return Err(UcelError::new(ErrorCode::CatalogInvalid, "unsupported equity timeframe"));
+        return Err(UcelError::new(
+            ErrorCode::CatalogInvalid,
+            "unsupported equity timeframe",
+        ));
     }
     Ok(())
 }
@@ -135,6 +157,8 @@ pub fn session_includes_local_time(calendar: &EquityMarketCalendar, hhmm: &str) 
 pub fn adjustment_mode_compatible(mode: EquityAdjustmentMode, has_actions: bool) -> bool {
     match mode {
         EquityAdjustmentMode::Raw => true,
-        EquityAdjustmentMode::SplitAdjusted | EquityAdjustmentMode::SplitDividendAdjusted => has_actions,
+        EquityAdjustmentMode::SplitAdjusted | EquityAdjustmentMode::SplitDividendAdjusted => {
+            has_actions
+        }
     }
 }

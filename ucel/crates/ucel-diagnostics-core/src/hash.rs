@@ -22,7 +22,11 @@ pub fn hash_paths(repo_root: &Path, rel_paths: &[&str]) -> Result<String, HashEr
 
     let mut hasher = Sha256::new();
     for file in files {
-        let rel = file.strip_prefix(repo_root).unwrap_or(&file).to_string_lossy().replace('\\', "/");
+        let rel = file
+            .strip_prefix(repo_root)
+            .unwrap_or(&file)
+            .to_string_lossy()
+            .replace('\\', "/");
         hasher.update(rel.as_bytes());
         hasher.update(b"\n");
         let mut bytes = fs::read(&file)?;
@@ -35,14 +39,49 @@ pub fn hash_paths(repo_root: &Path, rel_paths: &[&str]) -> Result<String, HashEr
 
 pub fn default_hash_set(repo_root: &Path) -> Result<ucel_core::BundleHashSet, HashError> {
     Ok(ucel_core::BundleHashSet {
-        coverage_hash: hash_paths_existing(repo_root, &["ucel/coverage", "coverage"] )?,
-        coverage_v2_hash: hash_paths_existing(repo_root, &["ucel/coverage_v2", "coverage_v2"] )?,
-        ws_rules_hash: hash_paths_existing(repo_root, &["ucel/crates/ucel-ws-rules", "crates/ucel-ws-rules", "docs/specs/ucel/ws_ingest_runtime_v1.md"] )?,
-        catalog_hash: hash_paths_existing(repo_root, &["docs/exchanges", "ucel/docs/exchanges", "docs/specs/ucel"] )?,
-        policy_hash: hash_paths_existing(repo_root, &["ucel/docs/policies", "docs/policies", "docs/specs/ucel"] )?,
-        symbol_meta_hash: hash_paths_existing(repo_root, &["docs/specs/ucel/symbol_meta_surface_v1.md", "ucel/crates/ucel-symbol-core", "crates/ucel-symbol-core"] )?,
-        execution_surface_hash: hash_paths_existing(repo_root, &["docs/specs/ucel/execution_surface_v1.md", "ucel/crates/ucel-execution-core", "crates/ucel-execution-core"] )?,
-        runtime_capability_hash: hash_paths_existing(repo_root, &["ucel/crates/ucel-sdk/src", "crates/ucel-sdk/src", "ucel/crates/ucel-registry/src", "crates/ucel-registry/src"] )?,
+        coverage_hash: hash_paths_existing(repo_root, &["ucel/coverage", "coverage"])?,
+        coverage_v2_hash: hash_paths_existing(repo_root, &["ucel/coverage_v2", "coverage_v2"])?,
+        ws_rules_hash: hash_paths_existing(
+            repo_root,
+            &[
+                "ucel/crates/ucel-ws-rules",
+                "crates/ucel-ws-rules",
+                "docs/specs/ucel/ws_ingest_runtime_v1.md",
+            ],
+        )?,
+        catalog_hash: hash_paths_existing(
+            repo_root,
+            &["docs/exchanges", "ucel/docs/exchanges", "docs/specs/ucel"],
+        )?,
+        policy_hash: hash_paths_existing(
+            repo_root,
+            &["ucel/docs/policies", "docs/policies", "docs/specs/ucel"],
+        )?,
+        symbol_meta_hash: hash_paths_existing(
+            repo_root,
+            &[
+                "docs/specs/ucel/symbol_meta_surface_v1.md",
+                "ucel/crates/ucel-symbol-core",
+                "crates/ucel-symbol-core",
+            ],
+        )?,
+        execution_surface_hash: hash_paths_existing(
+            repo_root,
+            &[
+                "docs/specs/ucel/execution_surface_v1.md",
+                "ucel/crates/ucel-execution-core",
+                "crates/ucel-execution-core",
+            ],
+        )?,
+        runtime_capability_hash: hash_paths_existing(
+            repo_root,
+            &[
+                "ucel/crates/ucel-sdk/src",
+                "crates/ucel-sdk/src",
+                "ucel/crates/ucel-registry/src",
+                "crates/ucel-registry/src",
+            ],
+        )?,
     })
 }
 
@@ -69,6 +108,8 @@ fn collect_files(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), std::io::Erro
 }
 
 fn normalize_newlines(bytes: &mut Vec<u8>) {
-    let s = String::from_utf8_lossy(bytes).replace("\r\n", "\n").replace('\r', "\n");
+    let s = String::from_utf8_lossy(bytes)
+        .replace("\r\n", "\n")
+        .replace('\r', "\n");
     *bytes = s.into_bytes();
 }

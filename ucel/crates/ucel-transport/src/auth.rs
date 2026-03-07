@@ -55,6 +55,7 @@ impl Default for AuthRuntime {
 }
 
 impl AuthRuntime {
+    #[allow(clippy::too_many_arguments)]
     pub fn prepare_sign_context(
         &self,
         meta: &AuthRequestMeta,
@@ -88,6 +89,7 @@ impl AuthRuntime {
         validate_auth_material(meta, material)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn resolve_and_sign<R, N, I, S>(
         &self,
         resolver: &R,

@@ -16,7 +16,9 @@ fn tx_lifecycle_build_sign_send_receipt() {
     let tx = build_transaction(
         EvmChainId(1),
         EvmAddress("0x1111111111111111111111111111111111111111".into()),
-        Some(EvmAddress("0x2222222222222222222222222222222222222222".into())),
+        Some(EvmAddress(
+            "0x2222222222222222222222222222222222222222".into(),
+        )),
         "0x".into(),
         0,
         21_000,
@@ -24,9 +26,12 @@ fn tx_lifecycle_build_sign_send_receipt() {
         1,
     )
     .unwrap();
-    let signer = DeterministicTestSigner { signer_id: "s".into() };
+    let signer = DeterministicTestSigner {
+        signer_id: "s".into(),
+    };
     let signed = sign_transaction(&signer, &tx).unwrap();
     let hash = send_raw_transaction(&set, EvmChainId(1), &signed).unwrap();
-    let receipt = wait_for_receipt(&set, EvmChainId(1), &hash, 32, FinalityPolicy::default(), 1).unwrap();
+    let receipt =
+        wait_for_receipt(&set, EvmChainId(1), &hash, 32, FinalityPolicy::default(), 1).unwrap();
     assert!(receipt.success);
 }

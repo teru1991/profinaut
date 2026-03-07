@@ -8,7 +8,10 @@ pub struct FinalityPolicy {
 
 impl Default for FinalityPolicy {
     fn default() -> Self {
-        Self { safe_confirmations: 3, finalized_confirmations: 12 }
+        Self {
+            safe_confirmations: 3,
+            finalized_confirmations: 12,
+        }
     }
 }
 

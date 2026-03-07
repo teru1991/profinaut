@@ -6,33 +6,15 @@ pub mod equity;
 pub mod market_data;
 pub mod order_gate;
 pub mod policy;
-pub mod private_ws;
 pub mod private_rest;
+pub mod private_ws;
 pub mod symbol;
 pub mod types;
 pub mod value;
 pub mod ws_ingest;
-pub use market_data::{
-    apply_orderbook_delta, guard_orderbook, validate_candle, validate_ticker, validate_trade,
-    CanonicalCandle, CanonicalOrderBookDelta, CanonicalOrderBookLevel, CanonicalOrderBookSnapshot,
-    CanonicalTicker, CanonicalTrade, MarketDataChannel, PublicAdapterSupport, PublicWsAckMode,
-    PublicWsIntegrityMode, PublicWsReasonCode,
-};
-pub use diagnostics::{
-    compare_semver, validate_manifest_hash_presence, AnalyzerSummary, BundleGeneratorInfo,
-    BundleHashSet, BundleManifest, CompatibilityStatus, DiagnosticsSemver, DiagnosticsSupport,
-    DriftFinding, RuntimeCapabilitiesDigest,
-};
-pub use ws_ingest::{
-    escalate_integrity_failure, failure_to_resume_directive, is_valid_transition,
-    IngestCheckpoint, IngestFailureClass, IngestHeartbeatPolicy, IngestIntegrityMode,
-    IngestLifecycleState, IngestResumeDirective, IngestRetryBudget, IngestStreamKey,
-};
-pub use equity::{
-    adjustment_mode_compatible, quote_is_stale, session_includes_local_time, validate_bar_timeframe,
-    EquityAdjustmentMode, EquityBar, EquityCorporateAction, EquityDividend, EquityExchangeCode,
-    EquityLatencyClass, EquityMarket, EquityMarketCalendar, EquityQuote, EquitySessionKind,
-    EquitySessionWindow, EquitySplit, EquitySupport, EquitySymbol,
+pub use auth::{
+    validate_auth_material, AuthMaterial, AuthMode, AuthRequestMeta, AuthSurface, IdempotencyKey,
+    NonceScope, SecretRef, ServerTimeOffset, SignContext,
 };
 pub use chain::{
     finality_at_least, receipt_is_success, validate_chain_id, validate_evm_address, ChainKind,
@@ -40,9 +22,22 @@ pub use chain::{
     EvmFinalityState, EvmLogCursor, EvmLogEvent, EvmNativeBalance, EvmReorgEvent,
     EvmSignedTransaction, EvmTokenBalance, EvmTransactionReceipt, EvmTransactionRequest,
 };
-pub use auth::{
-    validate_auth_material, AuthMaterial, AuthMode, AuthRequestMeta, AuthSurface, IdempotencyKey,
-    NonceScope, SecretRef, ServerTimeOffset, SignContext,
+pub use diagnostics::{
+    compare_semver, validate_manifest_hash_presence, AnalyzerSummary, BundleGeneratorInfo,
+    BundleHashSet, BundleManifest, CompatibilityStatus, DiagnosticsSemver, DiagnosticsSupport,
+    DriftFinding, RuntimeCapabilitiesDigest,
+};
+pub use equity::{
+    adjustment_mode_compatible, quote_is_stale, session_includes_local_time,
+    validate_bar_timeframe, EquityAdjustmentMode, EquityBar, EquityCorporateAction, EquityDividend,
+    EquityExchangeCode, EquityLatencyClass, EquityMarket, EquityMarketCalendar, EquityQuote,
+    EquitySessionKind, EquitySessionWindow, EquitySplit, EquitySupport, EquitySymbol,
+};
+pub use market_data::{
+    apply_orderbook_delta, guard_orderbook, validate_candle, validate_ticker, validate_trade,
+    CanonicalCandle, CanonicalOrderBookDelta, CanonicalOrderBookLevel, CanonicalOrderBookSnapshot,
+    CanonicalTicker, CanonicalTrade, MarketDataChannel, PublicAdapterSupport, PublicWsAckMode,
+    PublicWsIntegrityMode, PublicWsReasonCode,
 };
 pub use policy::{
     AccessSurface, ResidencyClass, VenueAccessCapabilities, VenueAccessEntry, VenueAccessPolicy,
@@ -64,6 +59,11 @@ use std::fmt;
 use thiserror::Error;
 pub use types::{Decimal, OrderStatus, OrderType, SchemaVersion, Side};
 pub use value::{Notional, Price, Qty, StepSize, TickSize};
+pub use ws_ingest::{
+    escalate_integrity_failure, failure_to_resume_directive, is_valid_transition, IngestCheckpoint,
+    IngestFailureClass, IngestHeartbeatPolicy, IngestIntegrityMode, IngestLifecycleState,
+    IngestResumeDirective, IngestRetryBudget, IngestStreamKey,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Envelope<T> {

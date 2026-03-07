@@ -51,7 +51,9 @@ impl BundleReader {
         let mut manifest: Option<ParsedManifest> = None;
         let mut files: BTreeMap<String, Vec<u8>> = BTreeMap::new();
 
-        let entries = ar.entries().map_err(|e| BundleReadError::Tar(e.to_string()))?;
+        let entries = ar
+            .entries()
+            .map_err(|e| BundleReadError::Tar(e.to_string()))?;
         for entry in entries {
             let mut entry = entry.map_err(|e| BundleReadError::Tar(e.to_string()))?;
             let path = entry
@@ -80,11 +82,12 @@ impl BundleReader {
         files: &BTreeMap<String, Vec<u8>>,
     ) -> Result<(), BundleReadError> {
         for file in &manifest.files {
-            let bytes = files
-                .get(&file.path)
-                .ok_or_else(|| BundleReadError::IntegrityMismatch {
-                    path: file.path.clone(),
-                })?;
+            let bytes =
+                files
+                    .get(&file.path)
+                    .ok_or_else(|| BundleReadError::IntegrityMismatch {
+                        path: file.path.clone(),
+                    })?;
 
             if bytes.len() as u64 != file.size_bytes {
                 return Err(BundleReadError::IntegrityMismatch {

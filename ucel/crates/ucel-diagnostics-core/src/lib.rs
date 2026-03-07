@@ -13,7 +13,10 @@ pub use compat::compatibility_for;
 pub use diag_semver::{DiagSemver, DiagSemverError};
 pub use hash::{default_hash_set, hash_paths, HashError};
 pub use manifest::{manifest_to_pretty_json, parse_manifest_bytes, ManifestError};
-pub use provider::{Contribution, ContributionContent, ContributionKind, DiagnosticsProvider, DiagnosticsRequest, ProviderMeta};
+pub use provider::{
+    Contribution, ContributionContent, ContributionKind, DiagnosticsProvider, DiagnosticsRequest,
+    ProviderMeta,
+};
 pub use registry::{DiagnosticsRegistry, RegistryError, RegistryLimits};
 
 /// Fixed, repo-wide diagnostic interface SemVer.

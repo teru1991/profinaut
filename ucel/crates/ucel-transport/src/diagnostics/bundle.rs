@@ -84,16 +84,20 @@ pub fn build_support_bundle_tar_zst(
             }
             ucel_diagnostics_core::ContributionContent::Text(s) => {
                 if redactor.has_deny_pattern(s.as_bytes()) {
-                    return Err(BundleBuildError::RedactionFailed("source contained deny pattern".into()));
+                    return Err(BundleBuildError::RedactionFailed(
+                        "source contained deny pattern".into(),
+                    ));
                 }
                 redactor.redact_text(&s).into_bytes()
             }
             ucel_diagnostics_core::ContributionContent::Base64(s) => {
                 if redactor.has_deny_pattern(s.as_bytes()) {
-                    return Err(BundleBuildError::RedactionFailed("source contained deny pattern".into()));
+                    return Err(BundleBuildError::RedactionFailed(
+                        "source contained deny pattern".into(),
+                    ));
                 }
                 redactor.redact_text(&s).into_bytes()
-            },
+            }
         };
 
         redactor
@@ -169,7 +173,9 @@ pub fn build_support_bundle_tar_zst(
     })
 }
 
-pub fn read_tar_zst_entries(archive_bytes: &[u8]) -> Result<Vec<(String, Vec<u8>)>, BundleBuildError> {
+pub fn read_tar_zst_entries(
+    archive_bytes: &[u8],
+) -> Result<Vec<(String, Vec<u8>)>, BundleBuildError> {
     let mut decoder = zstd::Decoder::new(archive_bytes)?;
     let mut tar_raw = Vec::new();
     decoder.read_to_end(&mut tar_raw)?;
@@ -185,7 +191,11 @@ pub fn read_tar_zst_entries(archive_bytes: &[u8]) -> Result<Vec<(String, Vec<u8>
     Ok(out)
 }
 
-fn append_file<W: Write>(builder: &mut tar::Builder<W>, path: &str, bytes: &[u8]) -> Result<(), BundleBuildError> {
+fn append_file<W: Write>(
+    builder: &mut tar::Builder<W>,
+    path: &str,
+    bytes: &[u8],
+) -> Result<(), BundleBuildError> {
     let mut header = Header::new_gnu();
     header.set_size(bytes.len() as u64);
     header.set_mode(0o644);

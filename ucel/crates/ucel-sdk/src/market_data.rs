@@ -31,7 +31,11 @@ impl MarketDataFacade {
     }
 
     pub async fn list_symbols(&self) -> Result<Value, HubError> {
-        let resp = self.hub.rest(self.exchange).call("public_symbols", None, None).await?;
+        let resp = self
+            .hub
+            .rest(self.exchange)
+            .call("public_symbols", None, None)
+            .await?;
         resp.json_value()
     }
 
@@ -39,19 +43,31 @@ impl MarketDataFacade {
         self.call_public_rest("public_market_meta", symbol).await
     }
 
-    pub async fn subscribe_ticker(&self, symbol: &str) -> Result<Pin<Box<dyn Stream<Item = Result<WsMessage, HubError>> + Send>>, HubError> {
+    pub async fn subscribe_ticker(
+        &self,
+        symbol: &str,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<WsMessage, HubError>> + Send>>, HubError> {
         self.subscribe("public_ticker", symbol).await
     }
 
-    pub async fn subscribe_trades(&self, symbol: &str) -> Result<Pin<Box<dyn Stream<Item = Result<WsMessage, HubError>> + Send>>, HubError> {
+    pub async fn subscribe_trades(
+        &self,
+        symbol: &str,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<WsMessage, HubError>> + Send>>, HubError> {
         self.subscribe("public_trades", symbol).await
     }
 
-    pub async fn subscribe_orderbook(&self, symbol: &str) -> Result<Pin<Box<dyn Stream<Item = Result<WsMessage, HubError>> + Send>>, HubError> {
+    pub async fn subscribe_orderbook(
+        &self,
+        symbol: &str,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<WsMessage, HubError>> + Send>>, HubError> {
         self.subscribe("public_orderbook", symbol).await
     }
 
-    pub async fn subscribe_candles(&self, symbol: &str) -> Result<Pin<Box<dyn Stream<Item = Result<WsMessage, HubError>> + Send>>, HubError> {
+    pub async fn subscribe_candles(
+        &self,
+        symbol: &str,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<WsMessage, HubError>> + Send>>, HubError> {
         self.subscribe("public_candles", symbol).await
     }
 
@@ -63,8 +79,6 @@ impl MarketDataFacade {
             "ws": ["public_ticker", "public_trades", "public_orderbook", "public_candles"]
         })
     }
-
-
 
     pub fn preview_ingest_plan(&self, symbol: &str, channels: &[&str]) -> Value {
         serde_json::json!({

@@ -1,5 +1,5 @@
-use ucel_testkit::equity::demo_adapter;
 use ucel_equity_core::vendor::EquityVendorAdapter;
+use ucel_testkit::equity::demo_adapter;
 
 #[test]
 fn symbol_mapping_and_ambiguity_handling() {

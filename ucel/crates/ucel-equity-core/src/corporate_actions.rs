@@ -11,6 +11,9 @@ pub fn sort_actions(mut actions: Vec<EquityCorporateAction>) -> Vec<EquityCorpor
     actions
 }
 
-pub fn merge_actions(a: Vec<EquityCorporateAction>, b: Vec<EquityCorporateAction>) -> Vec<EquityCorporateAction> {
+pub fn merge_actions(
+    a: Vec<EquityCorporateAction>,
+    b: Vec<EquityCorporateAction>,
+) -> Vec<EquityCorporateAction> {
     sort_actions([a, b].concat())
 }

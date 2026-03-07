@@ -1,8 +1,8 @@
+use ucel_core::policy::enforce_access;
 use ucel_core::{
     AccessSurface, AuthMode, AuthRequestMeta, AuthSurface, ResidencyClass, VenueAccessPolicy,
     VenueAccessScope,
 };
-use ucel_core::policy::enforce_access;
 use ucel_transport::{enforce_auth_boundary, RequestContext};
 
 #[test]

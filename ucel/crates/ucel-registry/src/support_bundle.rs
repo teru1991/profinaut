@@ -25,8 +25,8 @@ pub fn hub_bundle(hub: &Hub) -> serde_json::Value {
     }
 
     let repo_root = detect_repo_root();
-    let mut hashes = ucel_diagnostics_core::default_hash_set(&repo_root)
-        .unwrap_or_else(|_| ucel_core::BundleHashSet {
+    let mut hashes = ucel_diagnostics_core::default_hash_set(&repo_root).unwrap_or_else(|_| {
+        ucel_core::BundleHashSet {
             coverage_hash: hash_literal("coverage-fallback"),
             coverage_v2_hash: hash_literal("coverage-v2-fallback"),
             ws_rules_hash: hash_literal("ws-rules-fallback"),
@@ -35,7 +35,8 @@ pub fn hub_bundle(hub: &Hub) -> serde_json::Value {
             symbol_meta_hash: hash_literal("symbol-meta-fallback"),
             execution_surface_hash: hash_literal("execution-fallback"),
             runtime_capability_hash: hash_literal("runtime-fallback"),
-        });
+        }
+    });
 
     let runtime_capability_hash = hash_literal(&serde_json::to_string(&venues).unwrap_or_default());
     hashes.runtime_capability_hash = runtime_capability_hash.clone();
